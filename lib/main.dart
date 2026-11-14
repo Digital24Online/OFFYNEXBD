@@ -3,7 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'lib/modules/writer/writer_screen.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_localizations/flutter_localizations.dart'
-    hide GlobalMaterialLocalizations;
+    hide GlobalMaterialLocalizations, GlobalCupertinoLocalizations;
 import 'package:cupertino_ui/cupertino_ui.dart';
 
 void main() {
