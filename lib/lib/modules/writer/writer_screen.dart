@@ -294,12 +294,17 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
           'Untitled Document',
     );
 
-    documentController = TextEditingController(
-      text: widget.document['content']?.toString() ?? '',
-    );
+    final initialText =
+    widget.document['content']?.toString() ?? '';
 
-    updateWordCount(documentController.text);
-  }
+quillController = QuillController(
+  document: Document()..insert(0, initialText),
+  selection: TextSelection.collapsed(
+    offset: initialText.length,
+  ),
+);
+
+updateWordCount(initialText);
 
   void updateWordCount(String text) {
     final words = text.trim().isEmpty
