@@ -1,6 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'modules/writer/writer_screen.dart';
+import 'lib/modules/writer/writer_screen.dart';
 
 void main() {
   runApp(const OFFYNEXBDApp());
