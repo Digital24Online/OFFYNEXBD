@@ -426,7 +426,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     if (mounted) setState(() {});
   }
 
-  @override
+    @override
   void dispose() {
     saveTimer?.cancel();
 
@@ -436,7 +436,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
 
     quillController.removeListener(onEditorChanged);
 
-    saveQueue = saveQueue.then((_) async {
+    saveQueue = saveQueue.catchError((_) {}).then((_) async {
       final documents = await loadDocuments();
 
       final index = documents.indexWhere(
