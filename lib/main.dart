@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 void main() {
@@ -306,7 +306,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   width: 43,
                                   height: 43,
                                   decoration: BoxDecoration(
-                                    color: module.color.withOpacity(0.11),
+                                    color: module.color.withValues(alpha: 0.11),
                                     borderRadius: BorderRadius.circular(13),
                                   ),
                                   child: Icon(
