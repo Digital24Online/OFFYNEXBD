@@ -136,18 +136,30 @@ class _HomeScreenState extends State<HomeScreen> {
     ),
   ];
 
-  void openModule(OfficeModule module) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          isBangla
-              ? '${module.banglaName} মডিউলের কাজ শিগগিরই শুরু হবে।'
-              : '${module.name} module is coming soon.',
-        ),
-        behavior: SnackBarBehavior.floating,
+  
+void openModule(OfficeModule module) {
+  if (module.name == 'Writer') {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const WriterScreen(),
       ),
     );
+    return;
   }
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        isBangla
+            ? '${module.banglaName} মডিউলের কাজ শিগগিরই শুরু হবে।'
+            : '${module.name} module is coming soon.',
+      ),
+      behavior: SnackBarBehavior.floating,
+    ),
+  );
+}
+  
 
   @override
   Widget build(BuildContext context) {
