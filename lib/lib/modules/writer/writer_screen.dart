@@ -1,5 +1,34 @@
+
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+const String documentsKey = 'offynex_writer_documents';
+
+Future<List<Map<String, dynamic>>> loadDocuments() async {
+  final prefs = await SharedPreferences.getInstance();
+  final raw = prefs.getString(documentsKey);
+
+  if (raw == null) return [];
+
+  try {
+    final decoded = jsonDecode(raw) as List;
+    return decoded
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList();
+  } catch (_) {
+    return [];
+  }
+}
+
+Future<void> storeDocuments(
+  List<Map<String, dynamic>> documents,
+) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString(documentsKey, jsonEncode(documents));
+}
 
 class WriterScreen extends StatefulWidget {
   const WriterScreen({super.key});
@@ -9,97 +38,143 @@ class WriterScreen extends StatefulWidget {
 }
 
 class _WriterScreenState extends State<WriterScreen> {
-  final TextEditingController titleController =
-      TextEditingController(text: 'Untitled Document');
-
-  final TextEditingController documentController =
-      TextEditingController();
-
-  double fontSize = 18;
-  int wordCount = 0;
+  List<Map<String, dynamic>> documents = [];
   bool isLoading = true;
-  bool isSaved = true;
-
-  static const String titleKey = 'writer_document_title';
-  static const String contentKey = 'writer_document_content';
 
   @override
   void initState() {
     super.initState();
-    loadDocument();
+    refreshDocuments();
   }
 
-  Future<void> loadDocument() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    final savedTitle = prefs.getString(titleKey);
-    final savedContent = prefs.getString(contentKey);
-
+  Future<void> refreshDocuments() async {
+    final result = await loadDocuments();
     if (!mounted) return;
 
-    titleController.text = savedTitle ?? 'Untitled Document';
-    documentController.text = savedContent ?? '';
-
-    updateWordCount(documentController.text);
-
     setState(() {
+      documents = result;
       isLoading = false;
-      isSaved = true;
     });
   }
 
-  Future<void> saveDocument() async {
+  Future<void> addDocument() async {
+    final id = DateTime.now().microsecondsSinceEpoch.toString();
+
+    final document = <String, dynamic>{
+      'id': id,
+      'title': 'Untitled Document',
+      'content': '',
+      'updated': DateTime.now().toIso8601String(),
+    };
+
+    final updated = [...documents, document];
+    await storeDocuments(updated);
+
     if (!mounted) return;
+    setState(() => documents = updated);
 
-    setState(() {
-      isSaved = false;
-    });
-
-    final prefs = await SharedPreferences.getInstance();
-
-    await prefs.setString(titleKey, titleController.text);
-    await prefs.setString(contentKey, documentController.text);
-
-    if (!mounted) return;
-
-    setState(() {
-      isSaved = true;
-    });
+    openDocument(document);
   }
 
-  void updateWordCount(String text) {
-    final words = text.trim().isEmpty
-        ? <String>[]
-        : text.trim().split(RegExp(r'\s+'));
-
-    setState(() {
-      wordCount = words.length;
-    });
-  }
-
-  void onDocumentChanged(String text) {
-    updateWordCount(text);
-    saveDocument();
-  }
-
-  void selectAllText() {
-    documentController.selection = TextSelection(
-      baseOffset: 0,
-      extentOffset: documentController.text.length,
+  Future<void> openDocument(Map<String, dynamic> document) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => WriterEditorScreen(
+          document: document,
+        ),
+      ),
     );
+
+    refreshDocuments();
   }
 
-  Future<void> clearDocument() async {
-    documentController.clear();
-    updateWordCount('');
-    await saveDocument();
+  Future<void> renameDocument(
+    Map<String, dynamic> document,
+  ) async {
+    final controller = TextEditingController(
+      text: document['title']?.toString() ?? '',
+    );
+
+    final newTitle = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Rename document'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'Document name',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(
+              dialogContext,
+              controller.text.trim(),
+            ),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    controller.dispose();
+
+    if (newTitle == null || newTitle.isEmpty) return;
+
+    final updated = documents.map((item) {
+      if (item['id'] == document['id']) {
+        return {
+          ...item,
+          'title': newTitle,
+          'updated': DateTime.now().toIso8601String(),
+        };
+      }
+      return item;
+    }).toList();
+
+    await storeDocuments(updated);
+    if (!mounted) return;
+    setState(() => documents = updated);
   }
 
-  @override
-  void dispose() {
-    titleController.dispose();
-    documentController.dispose();
-    super.dispose();
+  Future<void> deleteDocument(
+    Map<String, dynamic> document,
+  ) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete document?'),
+        content: const Text(
+          'এই ডকুমেন্টটি স্থায়ীভাবে মুছে যাবে।',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    final updated = documents
+        .where((item) => item['id'] != document['id'])
+        .toList();
+
+    await storeDocuments(updated);
+    if (!mounted) return;
+    setState(() => documents = updated);
   }
 
   @override
@@ -112,6 +187,246 @@ class _WriterScreenState extends State<WriterScreen> {
           'OFFYNEX Writer',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: addDocument,
+        icon: const Icon(Icons.add),
+        label: const Text('New Document'),
+      ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : documents.isEmpty
+              ? const Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.description_outlined,
+                        size: 65,
+                        color: Colors.grey,
+                      ),
+                      SizedBox(height: 12),
+                      Text('এখনো কোনো ডকুমেন্ট নেই'),
+                      Text('নতুন ডকুমেন্ট তৈরি করুন'),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: documents.length,
+                  itemBuilder: (context, index) {
+                    final document = documents[index];
+                    final title =
+                        document['title']?.toString() ??
+                        'Untitled Document';
+
+                    return Card(
+                      color: Colors.white,
+                      child: ListTile(
+                        leading: const Icon(
+                          Icons.description,
+                          color: Color(0xFF168BFA),
+                          size: 32,
+                        ),
+                        title: Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: const Text('Saved on device'),
+                        onTap: () => openDocument(document),
+                        trailing: PopupMenuButton<String>(
+                          onSelected: (value) {
+                            if (value == 'rename') {
+                              renameDocument(document);
+                            } else if (value == 'delete') {
+                              deleteDocument(document);
+                            }
+                          },
+                          itemBuilder: (_) => const [
+                            PopupMenuItem(
+                              value: 'rename',
+                              child: Text('Rename'),
+                            ),
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Text('Delete'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+    );
+  }
+}
+
+class WriterEditorScreen extends StatefulWidget {
+  final Map<String, dynamic> document;
+
+  const WriterEditorScreen({
+    super.key,
+    required this.document,
+  });
+
+  @override
+  State<WriterEditorScreen> createState() =>
+      _WriterEditorScreenState();
+}
+
+class _WriterEditorScreenState extends State<WriterEditorScreen> {
+  late final TextEditingController titleController;
+  late final TextEditingController documentController;
+
+  double fontSize = 18;
+  int wordCount = 0;
+  bool isSaved = true;
+  Future<void> saveQueue = Future.value();
+  Timer? saveTimer;
+
+  @override
+  void initState() {
+    super.initState();
+
+    titleController = TextEditingController(
+      text: widget.document['title']?.toString() ??
+          'Untitled Document',
+    );
+
+    documentController = TextEditingController(
+      text: widget.document['content']?.toString() ?? '',
+    );
+
+    updateWordCount(documentController.text);
+  }
+
+  void updateWordCount(String text) {
+    final words = text.trim().isEmpty
+        ? <String>[]
+        : text.trim().split(RegExp(r'\s+'));
+
+    wordCount = words.length;
+  }
+
+  void scheduleSave() {
+    saveTimer?.cancel();
+
+    if (mounted) {
+      setState(() => isSaved = false);
+    }
+
+    saveTimer = Timer(
+      const Duration(milliseconds: 500),
+      saveDocument,
+    );
+  }
+
+  Future<void> saveDocument() {
+    final title = titleController.text;
+    final content = documentController.text;
+    final id = widget.document['id'];
+
+    saveQueue = saveQueue.then((_) async {
+      final documents = await loadDocuments();
+
+      final index = documents.indexWhere(
+        (item) => item['id'] == id,
+      );
+
+      if (index == -1) return;
+
+      documents[index] = {
+        ...documents[index],
+        'title': title,
+        'content': content,
+        'updated': DateTime.now().toIso8601String(),
+      };
+
+      await storeDocuments(documents);
+
+      if (mounted) {
+        setState(() => isSaved = true);
+      }
+    });
+
+    return saveQueue;
+  }
+
+  void selectAllText() {
+    documentController.selection = TextSelection(
+      baseOffset: 0,
+      extentOffset: documentController.text.length,
+    );
+  }
+
+  Future<void> clearDocument() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Clear document?'),
+        content: const Text('সব লেখা মুছে ফেলতে চান?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Clear'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    documentController.clear();
+    updateWordCount('');
+    await saveDocument();
+
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    saveTimer?.cancel();
+
+    // শেষ পরিবর্তনটিও সংরক্ষণের জন্য Queue-তে পাঠানো হচ্ছে।
+    final title = titleController.text;
+    final content = documentController.text;
+    final id = widget.document['id'];
+
+    saveQueue = saveQueue.then((_) async {
+      final documents = await loadDocuments();
+      final index = documents.indexWhere(
+        (item) => item['id'] == id,
+      );
+
+      if (index == -1) return;
+
+      documents[index] = {
+        ...documents[index],
+        'title': title,
+        'content': content,
+        'updated': DateTime.now().toIso8601String(),
+      };
+
+      await storeDocuments(documents);
+    });
+
+    titleController.dispose();
+    documentController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF3F6FA),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        title: const Text('OFFYNEX Writer'),
         actions: [
           IconButton(
             tooltip: 'Select all',
@@ -125,142 +440,136 @@ class _WriterScreenState extends State<WriterScreen> {
           ),
         ],
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
+      body: Column(
+        children: [
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 10,
+            ),
+            child: TextField(
+              controller: titleController,
+              onChanged: (_) => scheduleSave(),
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                hintText: 'Document name',
+                prefixIcon: Icon(Icons.description_outlined),
+              ),
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Container(
+            color: const Color(0xFFEAF0F8),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 5,
+            ),
+            child: Row(
               children: [
-                Container(
-                  color: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
-                  child: TextField(
-                    controller: titleController,
-                    onChanged: (_) => saveDocument(),
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                      hintText: 'Document name',
-                      prefixIcon: Icon(Icons.description_outlined),
-                    ),
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                IconButton(
+                  onPressed: () {
+                    setState(() {
+                      if (fontSize > 10) fontSize -= 1;
+                    });
+                  },
+                  icon: const Icon(Icons.remove),
                 ),
-                Container(
-                  color: const Color(0xFFEAF0F8),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 5,
-                  ),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        tooltip: 'Decrease font size',
-                        onPressed: () {
-                          setState(() {
-                            if (fontSize > 10) fontSize -= 1;
-                          });
-                        },
-                        icon: const Icon(Icons.remove),
-                      ),
-                      Text(
-                        '${fontSize.toInt()}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      IconButton(
-                        tooltip: 'Increase font size',
-                        onPressed: () {
-                          setState(() {
-                            if (fontSize < 40) fontSize += 1;
-                          });
-                        },
-                        icon: const Icon(Icons.add),
-                      ),
-                      const Spacer(),
-                      TextButton.icon(
-                        onPressed: selectAllText,
-                        icon: const Icon(Icons.select_all, size: 18),
-                        label: const Text('Select all'),
-                      ),
-                    ],
-                  ),
+                Text('${fontSize.toInt()}'),
+                IconButton(
+                  onPressed: () {
+                    setState(() {
+                      if (fontSize < 40) fontSize += 1;
+                    });
+                  },
+                  icon: const Icon(Icons.add),
                 ),
-                Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.all(12),
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: TextField(
-                      controller: documentController,
-                      onChanged: onDocumentChanged,
-                      expands: true,
-                      minLines: null,
-                      maxLines: null,
-                      keyboardType: TextInputType.multiline,
-                      textAlignVertical: TextAlignVertical.top,
-                      style: TextStyle(
-                        fontSize: fontSize,
-                        height: 1.6,
-                        color: const Color(0xFF202124),
-                      ),
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        hintText: 'এখানে আপনার লেখা শুরু করুন...',
-                      ),
-                    ),
-                  ),
-                ),
-                Container(
-                  width: double.infinity,
-                  color: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.article_outlined,
-                        size: 18,
-                        color: Colors.grey,
-                      ),
-                      const SizedBox(width: 7),
-                      Text(
-                        'Words: $wordCount',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                      const Spacer(),
-                      Icon(
-                        isSaved ? Icons.cloud_done : Icons.sync,
-                        size: 15,
-                        color: isSaved ? Colors.green : Colors.orange,
-                      ),
-                      const SizedBox(width: 5),
-                      Text(
-                        isSaved ? 'Saved on device' : 'Saving...',
-                        style: const TextStyle(fontSize: 11),
-                      ),
-                    ],
-                  ),
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: selectAllText,
+                  icon: const Icon(Icons.select_all, size: 18),
+                  label: const Text('Select all'),
                 ),
               ],
             ),
+          ),
+          Expanded(
+            child: Container(
+              margin: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: TextField(
+                controller: documentController,
+                onChanged: (text) {
+                  updateWordCount(text);
+                  scheduleSave();
+                  setState(() {});
+                },
+                expands: true,
+                minLines: null,
+                maxLines: null,
+                keyboardType: TextInputType.multiline,
+                textAlignVertical: TextAlignVertical.top,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  height: 1.6,
+                  color: const Color(0xFF202124),
+                ),
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  hintText: 'এখানে আপনার লেখা শুরু করুন...',
+                ),
+              ),
+            ),
+          ),
+          Container(
+            width: double.infinity,
+            color: Colors.white,
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.article_outlined,
+                  size: 18,
+                  color: Colors.grey,
+                ),
+                const SizedBox(width: 7),
+                Text(
+                  'Words: $wordCount',
+                  style: const TextStyle(fontSize: 12),
+                ),
+                const Spacer(),
+                Icon(
+                  isSaved ? Icons.save : Icons.sync,
+                  size: 15,
+                  color: isSaved ? Colors.green : Colors.orange,
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  isSaved ? 'Saved on device' : 'Saving...',
+                  style: const TextStyle(fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
-
