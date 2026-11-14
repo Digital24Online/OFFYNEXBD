@@ -4,6 +4,7 @@ import 'lib/modules/writer/writer_screen.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_localizations/flutter_localizations.dart'
     hide GlobalMaterialLocalizations;
+import 'package:cupertino_ui/cupertino_ui.dart';
 
 void main() {
   runApp(const OFFYNEXBDApp());
