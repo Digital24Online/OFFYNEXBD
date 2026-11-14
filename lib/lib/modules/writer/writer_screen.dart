@@ -279,7 +279,6 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   late final TextEditingController titleController;
   late QuillController quillController;
 
-  double fontSize = 18;
   int wordCount = 0;
   bool isSaved = true;
   Future<void> saveQueue = Future.value();
@@ -294,17 +293,35 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
           'Untitled Document',
     );
 
-    final initialText =
-    widget.document['content']?.toString() ?? '';
+    final rawContent = widget.document['content'];
+    late Document initialDocument;
 
-quillController = QuillController(
-  document: Document()..insert(0, initialText),
-  selection: TextSelection.collapsed(
-    offset: initialText.length,
-  ),
-);
+    // পুরোনো সাধারণ লেখা এবং নতুন Quill ডকুমেন্ট দুটোই খুলবে।
+    if (rawContent is List) {
+      try {
+        initialDocument = Document.fromJson(
+          rawContent
+              .map((item) => Map<String, dynamic>.from(item as Map))
+              .toList(),
+        );
+      } catch (_) {
+        initialDocument = Document();
+      }
+    } else {
+      initialDocument = Document()
+        ..insert(0, rawContent?.toString() ?? '');
+    }
 
-updateWordCount(initialText);
+    quillController = QuillController(
+      document: initialDocument,
+      selection: TextSelection.collapsed(
+        offset: initialDocument.length - 1,
+      ),
+    );
+
+    updateWordCount(quillController.document.toPlainText());
+    quillController.addListener(onEditorChanged);
+  }
 
   void updateWordCount(String text) {
     final words = text.trim().isEmpty
@@ -312,6 +329,15 @@ updateWordCount(initialText);
         : text.trim().split(RegExp(r'\s+'));
 
     wordCount = words.length;
+  }
+
+  void onEditorChanged() {
+    updateWordCount(quillController.document.toPlainText());
+    scheduleSave();
+
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void scheduleSave() {
@@ -322,14 +348,16 @@ updateWordCount(initialText);
     }
 
     saveTimer = Timer(
-      const Duration(milliseconds: 500),
-      saveDocument,
+      const Duration(milliseconds: 700),
+      () {
+        saveDocument();
+      },
     );
   }
 
   Future<void> saveDocument() {
     final title = titleController.text;
-    final content = documentController.text;
+    final content = quillController.document.toDelta().toJson();
     final id = widget.document['id'];
 
     saveQueue = saveQueue.then((_) async {
@@ -359,9 +387,14 @@ updateWordCount(initialText);
   }
 
   void selectAllText() {
-    documentController.selection = TextSelection(
-      baseOffset: 0,
-      extentOffset: documentController.text.length,
+    final length = quillController.document.length - 1;
+
+    quillController.updateSelection(
+      TextSelection(
+        baseOffset: 0,
+        extentOffset: length,
+      ),
+      ChangeSource.local,
     );
   }
 
@@ -386,7 +419,7 @@ updateWordCount(initialText);
 
     if (confirm != true) return;
 
-    documentController.clear();
+    quillController.clear();
     updateWordCount('');
     await saveDocument();
 
@@ -397,13 +430,15 @@ updateWordCount(initialText);
   void dispose() {
     saveTimer?.cancel();
 
-    // শেষ পরিবর্তনটিও সংরক্ষণের জন্য Queue-তে পাঠানো হচ্ছে।
     final title = titleController.text;
-    final content = documentController.text;
+    final content = quillController.document.toDelta().toJson();
     final id = widget.document['id'];
+
+    quillController.removeListener(onEditorChanged);
 
     saveQueue = saveQueue.then((_) async {
       final documents = await loadDocuments();
+
       final index = documents.indexWhere(
         (item) => item['id'] == id,
       );
@@ -421,7 +456,8 @@ updateWordCount(initialText);
     });
 
     titleController.dispose();
-    documentController.dispose();
+    quillController.dispose();
+
     super.dispose();
   }
 
@@ -467,40 +503,29 @@ updateWordCount(initialText);
               ),
             ),
           ),
+
+          // আসল Rich Text Formatting Toolbar
           Container(
             color: const Color(0xFFEAF0F8),
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 5,
-            ),
-            child: Row(
-              children: [
-                IconButton(
-                  onPressed: () {
-                    setState(() {
-                      if (fontSize > 10) fontSize -= 1;
-                    });
-                  },
-                  icon: const Icon(Icons.remove),
-                ),
-                Text('${fontSize.toInt()}'),
-                IconButton(
-                  onPressed: () {
-                    setState(() {
-                      if (fontSize < 40) fontSize += 1;
-                    });
-                  },
-                  icon: const Icon(Icons.add),
-                ),
-                const Spacer(),
-                TextButton.icon(
-                  onPressed: selectAllText,
-                  icon: const Icon(Icons.select_all, size: 18),
-                  label: const Text('Select all'),
-                ),
-              ],
+            child: QuillSimpleToolbar(
+              controller: quillController,
+              config: const QuillSimpleToolbarConfig(
+                multiRowsDisplay: true,
+                showFontFamily: true,
+                showFontSize: true,
+                showBoldButton: true,
+                showItalicButton: true,
+                showUnderLineButton: true,
+                showAlignmentButtons: true,
+                showListNumbers: true,
+                showListBullets: true,
+                showIndent: true,
+                showUndo: true,
+                showRedo: true,
+              ),
             ),
           ),
+
           Expanded(
             child: Container(
               margin: const EdgeInsets.all(12),
@@ -516,30 +541,17 @@ updateWordCount(initialText);
                   ),
                 ],
               ),
-              child: TextField(
-                controller: documentController,
-                onChanged: (text) {
-                  updateWordCount(text);
-                  scheduleSave();
-                  setState(() {});
-                },
-                expands: true,
-                minLines: null,
-                maxLines: null,
-                keyboardType: TextInputType.multiline,
-                textAlignVertical: TextAlignVertical.top,
-                style: TextStyle(
-                  fontSize: fontSize,
-                  height: 1.6,
-                  color: const Color(0xFF202124),
-                ),
-                decoration: const InputDecoration(
-                  border: InputBorder.none,
-                  hintText: 'এখানে আপনার লেখা শুরু করুন...',
+              child: QuillEditor.basic(
+                controller: quillController,
+                config: const QuillEditorConfig(
+                  expands: true,
+                  padding: EdgeInsets.zero,
+                  placeholder: 'এখানে আপনার লেখা শুরু করুন...',
                 ),
               ),
             ),
           ),
+
           Container(
             width: double.infinity,
             color: Colors.white,
