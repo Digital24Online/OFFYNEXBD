@@ -22,6 +22,7 @@ class OFFYNEXBDApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
         ...FlutterQuillLocalizations.localizationsDelegates,
       ],
+      supportedLocales:
           FlutterQuillLocalizations.supportedLocales,
       theme: ThemeData(
         useMaterial3: true,
