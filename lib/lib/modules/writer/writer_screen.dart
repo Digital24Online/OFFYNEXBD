@@ -1,4 +1,5 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class WriterScreen extends StatefulWidget {
   const WriterScreen({super.key});
@@ -16,6 +17,55 @@ class _WriterScreenState extends State<WriterScreen> {
 
   double fontSize = 18;
   int wordCount = 0;
+  bool isLoading = true;
+  bool isSaved = true;
+
+  static const String titleKey = 'writer_document_title';
+  static const String contentKey = 'writer_document_content';
+
+  @override
+  void initState() {
+    super.initState();
+    loadDocument();
+  }
+
+  Future<void> loadDocument() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final savedTitle = prefs.getString(titleKey);
+    final savedContent = prefs.getString(contentKey);
+
+    if (!mounted) return;
+
+    titleController.text = savedTitle ?? 'Untitled Document';
+    documentController.text = savedContent ?? '';
+
+    updateWordCount(documentController.text);
+
+    setState(() {
+      isLoading = false;
+      isSaved = true;
+    });
+  }
+
+  Future<void> saveDocument() async {
+    if (!mounted) return;
+
+    setState(() {
+      isSaved = false;
+    });
+
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.setString(titleKey, titleController.text);
+    await prefs.setString(contentKey, documentController.text);
+
+    if (!mounted) return;
+
+    setState(() {
+      isSaved = true;
+    });
+  }
 
   void updateWordCount(String text) {
     final words = text.trim().isEmpty
@@ -27,6 +77,11 @@ class _WriterScreenState extends State<WriterScreen> {
     });
   }
 
+  void onDocumentChanged(String text) {
+    updateWordCount(text);
+    saveDocument();
+  }
+
   void selectAllText() {
     documentController.selection = TextSelection(
       baseOffset: 0,
@@ -34,9 +89,10 @@ class _WriterScreenState extends State<WriterScreen> {
     );
   }
 
-  void clearDocument() {
+  Future<void> clearDocument() async {
     documentController.clear();
     updateWordCount('');
+    await saveDocument();
   }
 
   @override
@@ -69,133 +125,142 @@ class _WriterScreenState extends State<WriterScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 10,
-            ),
-            child: TextField(
-              controller: titleController,
-              decoration: const InputDecoration(
-                border: InputBorder.none,
-                hintText: 'Document name',
-                prefixIcon: Icon(Icons.description_outlined),
-              ),
-              style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          Container(
-            color: const Color(0xFFEAF0F8),
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 5,
-            ),
-            child: Row(
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
               children: [
-                IconButton(
-                  tooltip: 'Decrease font size',
-                  onPressed: () {
-                    setState(() {
-                      if (fontSize > 10) fontSize -= 1;
-                    });
-                  },
-                  icon: const Icon(Icons.remove),
+                Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  child: TextField(
+                    controller: titleController,
+                    onChanged: (_) => saveDocument(),
+                    decoration: const InputDecoration(
+                      border: InputBorder.none,
+                      hintText: 'Document name',
+                      prefixIcon: Icon(Icons.description_outlined),
+                    ),
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
-                Text(
-                  '${fontSize.toInt()}',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                Container(
+                  color: const Color(0xFFEAF0F8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 5,
+                  ),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        tooltip: 'Decrease font size',
+                        onPressed: () {
+                          setState(() {
+                            if (fontSize > 10) fontSize -= 1;
+                          });
+                        },
+                        icon: const Icon(Icons.remove),
+                      ),
+                      Text(
+                        '${fontSize.toInt()}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Increase font size',
+                        onPressed: () {
+                          setState(() {
+                            if (fontSize < 40) fontSize += 1;
+                          });
+                        },
+                        icon: const Icon(Icons.add),
+                      ),
+                      const Spacer(),
+                      TextButton.icon(
+                        onPressed: selectAllText,
+                        icon: const Icon(Icons.select_all, size: 18),
+                        label: const Text('Select all'),
+                      ),
+                    ],
+                  ),
                 ),
-                IconButton(
-                  tooltip: 'Increase font size',
-                  onPressed: () {
-                    setState(() {
-                      if (fontSize < 40) fontSize += 1;
-                    });
-                  },
-                  icon: const Icon(Icons.add),
+                Expanded(
+                  child: Container(
+                    margin: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: TextField(
+                      controller: documentController,
+                      onChanged: onDocumentChanged,
+                      expands: true,
+                      minLines: null,
+                      maxLines: null,
+                      keyboardType: TextInputType.multiline,
+                      textAlignVertical: TextAlignVertical.top,
+                      style: TextStyle(
+                        fontSize: fontSize,
+                        height: 1.6,
+                        color: const Color(0xFF202124),
+                      ),
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        hintText: 'এখানে আপনার লেখা শুরু করুন...',
+                      ),
+                    ),
+                  ),
                 ),
-                const Spacer(),
-                TextButton.icon(
-                  onPressed: selectAllText,
-                  icon: const Icon(Icons.select_all, size: 18),
-                  label: const Text('Select all'),
+                Container(
+                  width: double.infinity,
+                  color: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.article_outlined,
+                        size: 18,
+                        color: Colors.grey,
+                      ),
+                      const SizedBox(width: 7),
+                      Text(
+                        'Words: $wordCount',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      const Spacer(),
+                      Icon(
+                        isSaved ? Icons.cloud_done : Icons.sync,
+                        size: 15,
+                        color: isSaved ? Colors.green : Colors.orange,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        isSaved ? 'Saved on device' : 'Saving...',
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
-          ),
-          Expanded(
-            child: Container(
-              margin: const EdgeInsets.all(12),
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: TextField(
-                controller: documentController,
-                onChanged: updateWordCount,
-                expands: true,
-                minLines: null,
-                maxLines: null,
-                keyboardType: TextInputType.multiline,
-                textAlignVertical: TextAlignVertical.top,
-                style: TextStyle(
-                  fontSize: fontSize,
-                  height: 1.6,
-                  color: const Color(0xFF202124),
-                ),
-                decoration: const InputDecoration(
-                  border: InputBorder.none,
-                  hintText: 'এখানে আপনার লেখা শুরু করুন...',
-                ),
-              ),
-            ),
-          ),
-          Container(
-            width: double.infinity,
-            color: Colors.white,
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.article_outlined,
-                  size: 18,
-                  color: Colors.grey,
-                ),
-                const SizedBox(width: 7),
-                Text(
-                  'Words: $wordCount',
-                  style: const TextStyle(fontSize: 12),
-                ),
-                const Spacer(),
-                const Text(
-                  'OFFYNEX Writer',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
+
