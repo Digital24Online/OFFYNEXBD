@@ -18,6 +18,7 @@ class OFFYNEXBDApp extends StatelessWidget {
       title: 'OFFYNEXBD',
       debugShowCheckedModeBanner: false,
       localizationsDelegates: [
+        GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
         ...FlutterQuillLocalizations.localizationsDelegates,
