@@ -427,7 +427,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   }
 
     @override
-  void dispose() {
+    void dispose() {
     saveTimer?.cancel();
 
     final title = titleController.text;
