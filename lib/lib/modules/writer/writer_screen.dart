@@ -277,7 +277,7 @@ class WriterEditorScreen extends StatefulWidget {
 
 class _WriterEditorScreenState extends State<WriterEditorScreen> {
   late final TextEditingController titleController;
-  late final TextEditingController documentController;
+  late QuillController quillController;
 
   double fontSize = 18;
   int wordCount = 0;
