@@ -16,9 +16,12 @@ class OFFYNEXBDApp extends StatelessWidget {
     return MaterialApp(
       title: 'OFFYNEXBD',
       debugShowCheckedModeBanner: false,
-      localizationsDelegates:
-          FlutterQuillLocalizations.localizationsDelegates,
-      supportedLocales:
+      localizationsDelegates: [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        ...FlutterQuillLocalizations.localizationsDelegates,
+      ],
           FlutterQuillLocalizations.supportedLocales,
       theme: ThemeData(
         useMaterial3: true,
