@@ -1,122 +1,371 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const OFFYNEXBDApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class OFFYNEXBDApp extends StatelessWidget {
+  const OFFYNEXBDApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'OFFYNEXBD',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
+        colorSchemeSeed: const Color(0xFF1677E8),
+        scaffoldBackgroundColor: const Color(0xFFF5F8FD),
+        fontFamily: 'Roboto',
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const HomeScreen(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+class OfficeModule {
+  final String name;
+  final String banglaName;
+  final String description;
+  final String banglaDescription;
+  final IconData icon;
+  final Color color;
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  const OfficeModule({
+    required this.name,
+    required this.banglaName,
+    required this.description,
+    required this.banglaDescription,
+    required this.icon,
+    required this.color,
+  });
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  bool isBangla = true;
+
+  final List<OfficeModule> modules = const [
+    OfficeModule(
+      name: 'Writer',
+      banglaName: 'রাইটার',
+      description: 'Create and edit documents',
+      banglaDescription: 'ডকুমেন্ট তৈরি ও সম্পাদনা',
+      icon: Icons.description_rounded,
+      color: Color(0xFF2878DB),
+    ),
+    OfficeModule(
+      name: 'Sheets',
+      banglaName: 'শিটস',
+      description: 'Spreadsheets and calculations',
+      banglaDescription: 'হিসাব ও স্প্রেডশিট',
+      icon: Icons.table_chart_rounded,
+      color: Color(0xFF159B68),
+    ),
+    OfficeModule(
+      name: 'Slides',
+      banglaName: 'স্লাইডস',
+      description: 'Create presentations',
+      banglaDescription: 'প্রেজেন্টেশন তৈরি',
+      icon: Icons.slideshow_rounded,
+      color: Color(0xFFE58A28),
+    ),
+    OfficeModule(
+      name: 'PDF',
+      banglaName: 'পিডিএফ',
+      description: 'Read, edit and manage PDFs',
+      banglaDescription: 'পিডিএফ পড়া ও সম্পাদনা',
+      icon: Icons.picture_as_pdf_rounded,
+      color: Color(0xFFE34B50),
+    ),
+    OfficeModule(
+      name: 'Fonts',
+      banglaName: 'ফন্টস',
+      description: 'Fonts and typography',
+      banglaDescription: 'ফন্ট ব্যবস্থাপনা',
+      icon: Icons.font_download_rounded,
+      color: Color(0xFF8055D9),
+    ),
+    OfficeModule(
+      name: 'AI Assistant',
+      banglaName: 'এআই সহকারী',
+      description: 'Smart productivity assistant',
+      banglaDescription: 'স্মার্ট কাজের সহকারী',
+      icon: Icons.auto_awesome_rounded,
+      color: Color(0xFF0C9CA6),
+    ),
+    OfficeModule(
+      name: 'Cloud',
+      banglaName: 'ক্লাউড',
+      description: 'Store and sync your files',
+      banglaDescription: 'ফাইল সংরক্ষণ ও সিঙ্ক',
+      icon: Icons.cloud_rounded,
+      color: Color(0xFF4386D9),
+    ),
+    OfficeModule(
+      name: 'Forms',
+      banglaName: 'ফর্মস',
+      description: 'Create digital forms',
+      banglaDescription: 'ডিজিটাল ফর্ম তৈরি',
+      icon: Icons.dynamic_form_rounded,
+      color: Color(0xFFCB7B35),
+    ),
+    OfficeModule(
+      name: 'Scan',
+      banglaName: 'স্ক্যান',
+      description: 'Scan documents and OCR',
+      banglaDescription: 'ডকুমেন্ট স্ক্যান ও OCR',
+      icon: Icons.document_scanner_rounded,
+      color: Color(0xFF347F9D),
+    ),
+    OfficeModule(
+      name: 'Database',
+      banglaName: 'ডেটাবেস',
+      description: 'Organize and manage data',
+      banglaDescription: 'তথ্য সংরক্ষণ ও ব্যবস্থাপনা',
+      icon: Icons.storage_rounded,
+      color: Color(0xFF6875B8),
+    ),
+  ];
+
+  void openModule(OfficeModule module) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          isBangla
+              ? '${module.banglaName} মডিউলের কাজ শিগগিরই শুরু হবে।'
+              : '${module.name} module is coming soon.',
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: .center,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        titleSpacing: 16,
+        title: Row(
           children: [
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+            SizedBox(
+              width: 42,
+              height: 42,
+              child: SvgPicture.asset(
+                'assets/branding/offynexbd_logo.svg',
+                fit: BoxFit.contain,
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Text(
+              'OFFYNEXBD',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.4,
+                fontSize: 19,
+              ),
             ),
           ],
         ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              setState(() {
+                isBangla = !isBangla;
+              });
+            },
+            child: Text(
+              isBangla ? 'English' : 'বাংলা',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(22),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFF1677E8),
+                      Color(0xFF174A9A),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isBangla
+                          ? 'আপনার কাজের নতুন ঠিকানা'
+                          : 'Your Workspace, Reimagined',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 23,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 9),
+                    Text(
+                      isBangla
+                          ? 'এক জায়গায় সব অফিস ও প্রোডাক্টিভিটি টুলস'
+                          : 'All your office and productivity tools in one place.',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    const Text(
+                      'The Future of Office Productivity',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 25),
+              Text(
+                isBangla ? 'আপনার অ্যাপস' : 'Your Applications',
+                style: const TextStyle(
+                  fontSize: 21,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF172B4D),
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                isBangla
+                    ? 'আপনার প্রয়োজনীয় টুলস নির্বাচন করুন'
+                    : 'Choose a tool to get started',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+              const SizedBox(height: 17),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final columns = constraints.maxWidth >= 650 ? 4 : 2;
+
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: modules.length,
+                    gridDelegate:
+                        SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: columns,
+                      crossAxisSpacing: 13,
+                      mainAxisSpacing: 13,
+                      childAspectRatio: 1.12,
+                    ),
+                    itemBuilder: (context, index) {
+                      final module = modules[index];
+
+                      return Material(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(17),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(17),
+                          onTap: () => openModule(module),
+                          child: Container(
+                            padding: const EdgeInsets.all(13),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(17),
+                              border: Border.all(
+                                color: const Color(0xFFE8EDF5),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  width: 43,
+                                  height: 43,
+                                  decoration: BoxDecoration(
+                                    color: module.color.withOpacity(0.11),
+                                    borderRadius: BorderRadius.circular(13),
+                                  ),
+                                  child: Icon(
+                                    module.icon,
+                                    color: module.color,
+                                    size: 25,
+                                  ),
+                                ),
+                                const SizedBox(height: 11),
+                                Text(
+                                  isBangla
+                                      ? module.banglaName
+                                      : module.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF172B4D),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  isBangla
+                                      ? module.banglaDescription
+                                      : module.description,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+              const SizedBox(height: 25),
+              Center(
+                child: Text(
+                  'OFFYNEXBD  •  Work Smart, Be Productive',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
+
