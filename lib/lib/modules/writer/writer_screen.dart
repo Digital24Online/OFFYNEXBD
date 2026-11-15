@@ -488,36 +488,133 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   );
   }
 
-  Widget buildHomeRibbon() {
+  
+Widget buildHomeRibbon() {
   return Container(
     width: double.infinity,
     color: const Color(0xFFF3F6FA),
-    padding: const EdgeInsets.all(12),
+    padding: const EdgeInsets.all(10),
     child: Wrap(
-      spacing: 16,
-      runSpacing: 12,
+      spacing: 10,
+      runSpacing: 10,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        const Text(
-          'Clipboard',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        // Font Name
+        DropdownButton<String>(
+          value: 'Sans Serif',
+          items: const [
+            DropdownMenuItem(
+              value: 'Sans Serif',
+              child: Text('Sans Serif'),
+            ),
+            DropdownMenuItem(
+              value: 'Serif',
+              child: Text('Serif'),
+            ),
+            DropdownMenuItem(
+              value: 'Monospace',
+              child: Text('Monospace'),
+            ),
+          ],
+          onChanged: (value) {
+            if (value != null) {
+              quillController.formatSelection(
+                Attribute.fromKeyValue('font', value),
+              );
+            }
+          },
         ),
-        const Text(
-          'Font',
-          style: TextStyle(fontWeight: FontWeight.bold),
+
+        // Numeric Font Size
+        DropdownButton<String>(
+          value: '16',
+          items: [
+            '8', '9', '10', '11', '12', '14',
+            '16', '18', '20', '22', '24', '26',
+            '28', '36', '48', '72',
+          ].map((size) {
+            return DropdownMenuItem(
+              value: size,
+              child: Text(size),
+            );
+          }).toList(),
+          onChanged: (value) {
+            if (value != null) {
+              quillController.formatSelection(
+                Attribute.fromKeyValue('size', '${value}px'),
+              );
+            }
+          },
         ),
-        const Text(
-          'Paragraph',
-          style: TextStyle(fontWeight: FontWeight.bold),
+
+        // Bold
+        IconButton(
+          tooltip: 'Bold',
+          onPressed: () {
+            quillController.formatSelection(Attribute.bold);
+          },
+          icon: const Icon(Icons.format_bold),
         ),
-        const Text(
-          'Styles',
-          style: TextStyle(fontWeight: FontWeight.bold),
+
+        // Italic
+        IconButton(
+          tooltip: 'Italic',
+          onPressed: () {
+            quillController.formatSelection(Attribute.italic);
+          },
+          icon: const Icon(Icons.format_italic),
+        ),
+
+        // Underline
+        IconButton(
+          tooltip: 'Underline',
+          onPressed: () {
+            quillController.formatSelection(Attribute.underline);
+          },
+          icon: const Icon(Icons.format_underline),
+        ),
+
+        // Strikethrough
+        IconButton(
+          tooltip: 'Strikethrough',
+          onPressed: () {
+            quillController.formatSelection(Attribute.strikeThrough);
+          },
+          icon: const Icon(Icons.format_strikethrough),
+        ),
+
+        // Text Color
+        IconButton(
+          tooltip: 'Red Text',
+          onPressed: () {
+            quillController.formatSelection(
+              Attribute.fromKeyValue('color', '#FF0000'),
+            );
+          },
+          icon: const Icon(
+            Icons.format_color_text,
+            color: Colors.red,
+          ),
+        ),
+
+        // Highlight
+        IconButton(
+          tooltip: 'Yellow Highlight',
+          onPressed: () {
+            quillController.formatSelection(
+              Attribute.fromKeyValue('background', '#FFFF00'),
+            );
+          },
+          icon: const Icon(
+            Icons.format_color_fill,
+            color: Colors.orange,
+          ),
         ),
       ],
     ),
   );
-  }
+}
+  
   
     @override
     void dispose() {
