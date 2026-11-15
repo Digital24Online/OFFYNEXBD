@@ -545,6 +545,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
               ),
               child: QuillEditor.basic(
                 controller: quillController,
+                focusNode: editorFocusNode,
                 config: const QuillEditorConfig(
                   expands: true,
                   padding: EdgeInsets.zero,
