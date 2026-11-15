@@ -1099,8 +1099,9 @@ Column(
         embedBuilders: [
           WriterTableEmbedBuilder(
             onEdit: editWriterTable,
-      ),
-    ],
+          ),
+          WriterImageEmbedBuilder(),
+        ],
   ),
 ),
               
