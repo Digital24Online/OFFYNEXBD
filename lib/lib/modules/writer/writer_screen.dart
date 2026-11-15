@@ -994,15 +994,15 @@ Column(
               ),
       
     child: QuillEditor.basic(
-  controller: quillController,
-  focusNode: editorFocusNode,
-  config: QuillEditorConfig(
-    expands: true,
-    padding: EdgeInsets.zero,
-    placeholder: 'এখানে আপনার লেখা শুরু করুন...',
-    embedBuilders: [
-      WriterTableEmbedBuilder(
-        onEdit: editWriterTable,
+      controller: quillController,
+      focusNode: editorFocusNode,
+      config: QuillEditorConfig(
+        expands: true,
+        padding: EdgeInsets.zero,
+        placeholder: 'এখানে আপনার লেখা শুরু করুন...',
+        embedBuilders: [
+          WriterTableEmbedBuilder(
+            onEdit: editWriterTable,
       ),
     ],
   ),
