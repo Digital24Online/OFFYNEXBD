@@ -1,5 +1,120 @@
 
+import 'dart:convert';
+
 import 'package:material_ui/material_ui.dart';
+import 'package:flutter_quill/flutter_quill.dart';
+
+typedef WriterTableEditCallback = Future<void> Function(
+  BuildContext context,
+  Map<String, dynamic> data,
+  int offset,
+);
+
+class WriterTableBlockEmbed extends CustomBlockEmbed {
+  static const String tableType = 'offynex_table';
+
+  const WriterTableBlockEmbed(String value)
+      : super(tableType, value);
+
+  factory WriterTableBlockEmbed.fromData(
+    Map<String, dynamic> data,
+  ) {
+    return WriterTableBlockEmbed(jsonEncode(data));
+  }
+
+  Map<String, dynamic> get tableData {
+    return Map<String, dynamic>.from(
+      jsonDecode(data) as Map,
+    );
+  }
+}
+
+class WriterTableEmbedBuilder extends EmbedBuilder {
+  final WriterTableEditCallback? onEdit;
+
+  WriterTableEmbedBuilder({this.onEdit});
+
+  @override
+  String get key => WriterTableBlockEmbed.tableType;
+
+  @override
+  Widget build(
+    BuildContext context,
+    EmbedContext embedContext,
+  ) {
+    final table = WriterTableBlockEmbed(
+      embedContext.node.value.data as String,
+    );
+
+    final data = table.tableData;
+    final rows = (data['rows'] as List? ?? [])
+        .map<List<String>>(
+          (row) => (row as List)
+              .map((cell) => cell.toString())
+              .toList(),
+        )
+        .toList();
+
+    final borderColor = data['borderColor'] as int? ??
+        0xFF333333;
+
+    final backgroundColor =
+        data['backgroundColor'] as int? ?? 0xFFFFFFFF;
+
+    return GestureDetector(
+      onTap: onEdit == null
+          ? null
+          : () => onEdit!(
+                context,
+                data,
+                embedContext.node.documentOffset,
+              ),
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Table(
+              border: TableBorder.all(
+                color: Color(borderColor),
+                width: 1,
+              ),
+              children: rows.map((row) {
+                return TableRow(
+                  children: row.map((cell) {
+                    return Container(
+                      color: Color(backgroundColor),
+                      padding: const EdgeInsets.all(10),
+                      constraints: const BoxConstraints(
+                        minHeight: 35,
+                      ),
+                      child: Text(
+                        cell,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    );
+                  }).toList(),
+                );
+              }).toList(),
+            ),
+            if (onEdit != null)
+              const Padding(
+                padding: EdgeInsets.only(top: 5),
+                child: Text(
+                  'টেবিল সম্পাদনা করতে ট্যাপ করুন',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class WriterTableEditor extends StatefulWidget {
   final Map<String, dynamic>? initialData;
@@ -29,18 +144,23 @@ class _WriterTableEditorState extends State<WriterTableEditor> {
     final data = widget.initialData;
 
     borderColor = data?['borderColor'] ?? 0xFF333333;
-    backgroundColor = data?['backgroundColor'] ?? 0xFFFFFFFF;
+    backgroundColor =
+        data?['backgroundColor'] ?? 0xFFFFFFFF;
 
     final savedRows = data?['rows'];
 
     if (savedRows is List && savedRows.isNotEmpty) {
-      cells = savedRows.map<List<TextEditingController>>((row) {
-        return (row as List).map<TextEditingController>((value) {
-          return TextEditingController(
-            text: value.toString(),
-          );
-        }).toList();
-      }).toList();
+      cells = savedRows.map<List<TextEditingController>>(
+        (row) {
+          return (row as List).map<TextEditingController>(
+            (value) {
+              return TextEditingController(
+                text: value.toString(),
+              );
+            },
+          ).toList();
+        },
+      ).toList();
     } else {
       cells = List.generate(
         3,
@@ -62,7 +182,7 @@ class _WriterTableEditorState extends State<WriterTableEditor> {
 
   Map<String, dynamic> getTableData() {
     return {
-      'type': 'offynex_table',
+      'type': WriterTableBlockEmbed.tableType,
       'rows': cells.map((row) {
         return row.map((cell) => cell.text).toList();
       }).toList(),
@@ -125,7 +245,7 @@ class _WriterTableEditorState extends State<WriterTableEditor> {
   }
 
   Future<void> chooseColor(bool isBorder) async {
-    final colors = <int>[
+    const colors = <int>[
       0xFF000000,
       0xFF333333,
       0xFF1565C0,
@@ -236,18 +356,14 @@ class _WriterTableEditorState extends State<WriterTableEditor> {
             ),
           ],
         ),
-
         const SizedBox(height: 12),
-
         Text(
           'Rows: ${cells.length}   Columns: ${cells.first.length}',
           style: const TextStyle(
             fontWeight: FontWeight.bold,
           ),
         ),
-
         const SizedBox(height: 10),
-
         Expanded(
           child: SingleChildScrollView(
             child: SingleChildScrollView(
