@@ -992,17 +992,22 @@ Column(
                   ),
                 ],
               ),
-              child: QuillEditor.basic(
-                controller: quillController,
-                focusNode: editorFocusNode,
-                config: const QuillEditorConfig(
-                  expands: true,
-                  padding: EdgeInsets.zero,
-                  placeholder: 'এখানে আপনার লেখা শুরু করুন...',
-                ),
-              ),
-            ),
-          ),
+      
+    child: QuillEditor.basic(
+  controller: quillController,
+  focusNode: editorFocusNode,
+  config: QuillEditorConfig(
+    expands: true,
+    padding: EdgeInsets.zero,
+    placeholder: 'এখানে আপনার লেখা শুরু করুন...',
+    embedBuilders: [
+      WriterTableEmbedBuilder(
+        onEdit: editWriterTable,
+      ),
+    ],
+  ),
+),
+              
 
           Container(
             width: double.infinity,
