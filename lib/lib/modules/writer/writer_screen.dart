@@ -598,27 +598,36 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
             ),
           ),
 
-          // আসল Rich Text Formatting Toolbar
-          Container(
-            color: const Color(0xFFEAF0F8),
-            buildRibbonTabs(),
-            child: QuillSimpleToolbar(
-              controller: quillController,
-              config: const QuillSimpleToolbarConfig(
-                multiRowsDisplay: true,
-                showFontFamily: true,
-                showFontSize: true,
-                showBoldButton: true,
-                showItalicButton: true,
-                showUnderLineButton: true,
-                showAlignmentButtons: true,
-                showListNumbers: true,
-                showListBullets: true,
-                showIndent: true,
-                showUndo: true,
-                showRedo: true,
+                    // OFFYNEXBD Desktop Ribbon
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              buildRibbonTabs(),
+
+              if (selectedRibbonTab == 1)
+                buildHomeRibbon(),
+
+              Container(
+                color: const Color(0xFFEAF0F8),
+                child: QuillSimpleToolbar(
+                  controller: quillController,
+                  config: const QuillSimpleToolbarConfig(
+                    multiRowsDisplay: true,
+                    showFontFamily: true,
+                    showFontSize: true,
+                    showBoldButton: true,
+                    showItalicButton: true,
+                    showUnderLineButton: true,
+                    showAlignmentButtons: true,
+                    showListNumbers: true,
+                    showListBullets: true,
+                    showIndent: true,
+                    showUndo: true,
+                    showRedo: true,
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
 
           Expanded(
