@@ -721,37 +721,51 @@ Widget buildHomeRibbon() {
             ),
           ),
 
-                    // OFFYNEXBD Desktop Ribbon
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              buildRibbonTabs(),
+                    
+// OFFYNEXBD Desktop Ribbon
+Column(
+  crossAxisAlignment: CrossAxisAlignment.stretch,
+  children: [
+    buildRibbonTabs(),
 
-              if (selectedRibbonTab == 1)
-                buildHomeRibbon(),
+    if (selectedRibbonTab == 1) ...[
+      buildHomeRibbon(),
 
-              Container(
-                color: const Color(0xFFEAF0F8),
-                child: QuillSimpleToolbar(
-                  controller: quillController,
-                  config: const QuillSimpleToolbarConfig(
-                    multiRowsDisplay: true,
-                    showFontFamily: true,
-                    showFontSize: true,
-                    showBoldButton: true,
-                    showItalicButton: true,
-                    showUnderLineButton: true,
-                    showAlignmentButtons: true,
-                    showListNumbers: true,
-                    showListBullets: true,
-                    showIndent: true,
-                    showUndo: true,
-                    showRedo: true,
-                  ),
-                ),
-              ),
-            ],
+      // Paragraph tools: Alignment, Lists, Indent, Undo, Redo
+      Container(
+        color: const Color(0xFFEAF0F8),
+        child: QuillSimpleToolbar(
+          controller: quillController,
+          config: const QuillSimpleToolbarConfig(
+            multiRowsDisplay: true,
+
+            showFontFamily: false,
+            showFontSize: false,
+            showBoldButton: false,
+            showItalicButton: false,
+            showUnderLineButton: false,
+
+            showAlignmentButtons: true,
+            showListNumbers: true,
+            showListBullets: true,
+            showIndent: true,
+            showUndo: true,
+            showRedo: true,
           ),
+        ),
+      ),
+    ] else
+      const Padding(
+        padding: EdgeInsets.all(16),
+        child: Center(
+          child: Text(
+            'এই ট্যাবের টুলগুলো পরবর্তী ধাপে যুক্ত হবে।',
+          ),
+        ),
+      ),
+  ],
+),
+          
 
           Expanded(
             child: Container(
