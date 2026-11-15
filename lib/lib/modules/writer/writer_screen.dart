@@ -339,16 +339,12 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   void onEditorChanged() {
     updateWordCount(quillController.document.toPlainText());
     scheduleSave();
-
-    if (mounted) {
-      setState(() {});
-    }
   }
 
   void scheduleSave() {
     saveTimer?.cancel();
 
-    if (mounted) {
+    if (mounted && isSaved) {
       setState(() => isSaved = false);
     }
 
@@ -365,43 +361,40 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     final content = quillController.document.toDelta().toJson();
     final id = widget.document['id'];
 
-    saveQueue = saveQueue.then((_) async {
-      final documents = await loadDocuments();
+    // আগের Save ব্যর্থ হলেও নতুন Save চালু থাকবে।
+    saveQueue = saveQueue
+        .catchError((Object error) {})
+        .then((_) async {
+          final documents = await loadDocuments();
 
-      final index = documents.indexWhere(
-        (item) => item['id'] == id,
-      );
+          final index = documents.indexWhere(
+            (item) => item['id'] == id,
+          );
 
-      if (index == -1) return;
+          if (index == -1) return;
 
-      documents[index] = {
-        ...documents[index],
-        'title': title,
-        'content': content,
-        'updated': DateTime.now().toIso8601String(),
-      };
+          documents[index] = {
+            ...documents[index],
+            'title': title,
+            'content': content,
+            'updated': DateTime.now().toIso8601String(),
+          };
 
-      await storeDocuments(documents);
+          await storeDocuments(documents);
 
-      if (mounted) {
-        setState(() => isSaved = true);
-      }
-    });
+          if (mounted) {
+            setState(() => isSaved = true);
+          }
+        })
+        .catchError((Object error) {
+          if (mounted) {
+            setState(() => isSaved = false);
+          }
+        });
 
     return saveQueue;
   }
-
-  void selectAllText() {
-    final length = quillController.document.length - 1;
-
-    quillController.updateSelection(
-      TextSelection(
-        baseOffset: 0,
-        extentOffset: length,
-      ),
-      ChangeSource.local,
-    );
-  }
+  
 
   Future<void> clearDocument() async {
     final confirm = await showDialog<bool>(
