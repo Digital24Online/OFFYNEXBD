@@ -1138,3 +1138,56 @@ Column(
     );
   }
 }
+
+    
+class WriterImageEmbedBuilder extends EmbedBuilder {
+  @override
+  String get key => BlockEmbed.imageType;
+
+  @override
+  Widget build(
+    BuildContext context,
+    EmbedContext embedContext,
+  ) {
+    final imagePath =
+        embedContext.node.value.data as String;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: GestureDetector(
+        onTap: () {
+          showDialog(
+            context: context,
+            builder: (dialogContext) {
+              return Dialog(
+                child: InteractiveViewer(
+                  child: Image.file(
+                    File(imagePath),
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) {
+                      return const Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Text('ছবি পাওয়া যায়নি।'),
+                      );
+                    },
+                  ),
+                ),
+              );
+            },
+          );
+        },
+        child: Image.file(
+          File(imagePath),
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) {
+            return const Icon(
+              Icons.broken_image,
+              size: 60,
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+    
