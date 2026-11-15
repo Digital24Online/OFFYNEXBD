@@ -487,6 +487,37 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     ),
   );
   }
+
+  Widget buildHomeRibbon() {
+  return Container(
+    width: double.infinity,
+    color: const Color(0xFFF3F6FA),
+    padding: const EdgeInsets.all(12),
+    child: Wrap(
+      spacing: 16,
+      runSpacing: 12,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        const Text(
+          'Clipboard',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        const Text(
+          'Font',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        const Text(
+          'Paragraph',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        const Text(
+          'Styles',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ],
+    ),
+  );
+  }
   
     @override
     void dispose() {
