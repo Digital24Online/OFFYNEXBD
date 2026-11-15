@@ -635,8 +635,8 @@ Widget buildHomeRibbon() {
 }
   
   
-    @override
-    void dispose() {
+  @override
+  void dispose() {
     saveTimer?.cancel();
 
     final title = titleController.text;
@@ -645,24 +645,28 @@ Widget buildHomeRibbon() {
 
     quillController.removeListener(onEditorChanged);
 
-    saveQueue = saveQueue.catchError((_) {}).then((_) async {
-      final documents = await loadDocuments();
+    // আগের Save শেষ হওয়ার পর সর্বশেষ লেখা সংরক্ষণ হবে।
+    saveQueue = saveQueue
+        .catchError((Object error) {})
+        .then((_) async {
+          final documents = await loadDocuments();
 
-      final index = documents.indexWhere(
-        (item) => item['id'] == id,
-      );
+          final index = documents.indexWhere(
+            (item) => item['id'] == id,
+          );
 
-      if (index == -1) return;
+          if (index == -1) return;
 
-      documents[index] = {
-        ...documents[index],
-        'title': title,
-        'content': content,
-        'updated': DateTime.now().toIso8601String(),
-      };
+          documents[index] = {
+            ...documents[index],
+            'title': title,
+            'content': content,
+            'updated': DateTime.now().toIso8601String(),
+          };
 
-      await storeDocuments(documents);
-    });
+          await storeDocuments(documents);
+        })
+        .catchError((Object error) {});
 
     editorFocusNode.dispose();
     titleController.dispose();
@@ -670,6 +674,7 @@ Widget buildHomeRibbon() {
 
     super.dispose();
   }
+  
 
   @override
   Widget build(BuildContext context) {
