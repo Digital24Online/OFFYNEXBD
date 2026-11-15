@@ -281,6 +281,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   late QuillController quillController;
 
   int wordCount = 0;
+  int selectedRibbonTab = 0;
   bool isSaved = true;
   Future<void> saveQueue = Future.value();
   Timer? saveTimer;
