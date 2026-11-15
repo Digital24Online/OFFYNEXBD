@@ -277,6 +277,7 @@ class WriterEditorScreen extends StatefulWidget {
 
 class _WriterEditorScreenState extends State<WriterEditorScreen> {
   late final TextEditingController titleController;
+  late final FocusNode editorFocusNode;
   late QuillController quillController;
 
   int wordCount = 0;
