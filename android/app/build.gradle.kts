@@ -51,6 +51,7 @@ android {
             signingConfig = signingConfigs.getByName("release")
         }
     }
+}
 
 kotlin {
     compilerOptions {
