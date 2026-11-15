@@ -750,6 +750,11 @@ Widget buildHomeRibbon() {
           ),
 
           ElevatedButton.icon(
+            onPressed: insertWriterImage,
+            icon: const Icon(Icons.image),
+            label: const Text('Image'),
+          ),
+          ElevatedButton.icon(
             onPressed: insertHyperlink,
             icon: const Icon(Icons.link),
             label: const Text('Hyperlink'),
