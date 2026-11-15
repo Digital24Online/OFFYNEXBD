@@ -289,6 +289,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   void initState() {
     super.initState();
 
+    editorFocusNode = FocusNode();
     titleController = TextEditingController(
       text: widget.document['title']?.toString() ??
           'Untitled Document',
