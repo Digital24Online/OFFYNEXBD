@@ -492,60 +492,82 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
 
   
 Widget buildHomeRibbon() {
+  const fontFamilies = <String, String>{
+    'Sans Serif': 'sans-serif',
+    'Serif': 'serif',
+    'Monospace': 'monospace',
+  };
+
+  const fontSizes = [
+    '8', '9', '10', '11', '12', '14',
+    '16', '18', '20', '22', '24', '26',
+    '28', '36', '48', '72',
+  ];
+
+  void applyFontSize(String points) {
+    final pointValue = double.parse(points);
+    final pixelValue = pointValue * (4 / 3);
+
+    quillController.formatSelection(
+      Attribute.fromKeyValue(
+        'size',
+        pixelValue.toStringAsFixed(2),
+      ),
+    );
+  }
+
   return Container(
     width: double.infinity,
     color: const Color(0xFFF3F6FA),
     padding: const EdgeInsets.all(10),
     child: Wrap(
-      spacing: 10,
-      runSpacing: 10,
+      spacing: 8,
+      runSpacing: 8,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        // Font Name
+        // Font Family
         DropdownButton<String>(
-          value: 'Sans Serif',
-          items: const [
-            DropdownMenuItem(
-              value: 'Sans Serif',
-              child: Text('Sans Serif'),
-            ),
-            DropdownMenuItem(
-              value: 'Serif',
-              child: Text('Serif'),
-            ),
-            DropdownMenuItem(
-              value: 'Monospace',
-              child: Text('Monospace'),
-            ),
-          ],
+          value: fontFamilies.containsValue(selectedFontFamily)
+              ? selectedFontFamily
+              : 'sans-serif',
+          items: fontFamilies.entries.map((entry) {
+            return DropdownMenuItem<String>(
+              value: entry.value,
+              child: Text(entry.key),
+            );
+          }).toList(),
           onChanged: (value) {
-            if (value != null) {
-              quillController.formatSelection(
-                Attribute.fromKeyValue('font', value),
-              );
-            }
+            if (value == null) return;
+
+            setState(() {
+              selectedFontFamily = value;
+            });
+
+            quillController.formatSelection(
+              Attribute.fromKeyValue('font', value),
+            );
           },
         ),
 
-        // Numeric Font Size
+        // Font Size (Points)
         DropdownButton<String>(
-          value: '16',
-          items: [
-            '8', '9', '10', '11', '12', '14',
-            '16', '18', '20', '22', '24', '26',
-            '28', '36', '48', '72',
-          ].map((size) {
-            return DropdownMenuItem(
+          value: fontSizes.contains(selectedFontSize)
+              ? selectedFontSize
+              : '16',
+          items: fontSizes.map((size) {
+            return DropdownMenuItem<String>(
               value: size,
               child: Text(size),
             );
           }).toList(),
           onChanged: (value) {
-            if (value != null) {
-              quillController.formatSelection(
-                Attribute.fromKeyValue('size', '${value}px'),
-              );
-            }
+            if (value == null) return;
+
+            setState(() {
+              selectedFontSize = value;
+            });
+
+            applyFontSize(value);
           },
         ),
 
@@ -580,12 +602,14 @@ Widget buildHomeRibbon() {
         IconButton(
           tooltip: 'Strikethrough',
           onPressed: () {
-            quillController.formatSelection(Attribute.strikeThrough);
+            quillController.formatSelection(
+              Attribute.strikeThrough,
+            );
           },
           icon: const Icon(Icons.format_strikethrough),
         ),
 
-        // Text Color
+        // Red Text
         IconButton(
           tooltip: 'Red Text',
           onPressed: () {
@@ -599,7 +623,7 @@ Widget buildHomeRibbon() {
           ),
         ),
 
-        // Highlight
+        // Yellow Highlight
         IconButton(
           tooltip: 'Yellow Highlight',
           onPressed: () {
