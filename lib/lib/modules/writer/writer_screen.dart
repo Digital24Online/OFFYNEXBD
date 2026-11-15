@@ -803,6 +803,50 @@ Widget buildHomeRibbon() {
     );
   }
   
+  
+  Future<void> insertWriterTable() async {
+    final data = await showWriterTableEditor(context);
+
+    if (data == null || !mounted) return;
+
+    final selection = quillController.selection;
+    final start = selection.start;
+    final length = selection.end - selection.start;
+
+    quillController.replaceText(
+      start,
+      length,
+      BlockEmbed.custom(
+        WriterTableBlockEmbed.fromData(data),
+      ),
+      TextSelection.collapsed(offset: start + 1),
+      source: ChangeSource.local,
+    );
+  }
+
+  Future<void> editWriterTable(
+    BuildContext editorContext,
+    Map<String, dynamic> data,
+    int offset,
+  ) async {
+    final updatedData = await showWriterTableEditor(
+      editorContext,
+      initialData: data,
+    );
+
+    if (updatedData == null || !mounted) return;
+
+    quillController.replaceText(
+      offset,
+      1,
+      BlockEmbed.custom(
+        WriterTableBlockEmbed.fromData(updatedData),
+      ),
+      TextSelection.collapsed(offset: offset + 1),
+      source: ChangeSource.local,
+    );
+  }
+  
   @override
   void dispose() {
     saveTimer?.cancel();
