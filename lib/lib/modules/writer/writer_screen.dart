@@ -457,6 +457,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
       await storeDocuments(documents);
     });
 
+    editorFocusNode.dispose();
     titleController.dispose();
     quillController.dispose();
 
