@@ -827,6 +827,94 @@ Widget buildHomeRibbon() {
     );
   }
 
+  
+Future<void> insertWriterImage() async {
+  final selection = quillController.selection;
+
+  try {
+    final pickedFile = await FilePicker.pickFile(
+      type: FileType.image,
+    );
+
+    if (pickedFile == null || !mounted) return;
+
+    final fileSize = await pickedFile.length();
+
+    if (fileSize > 15 * 1024 * 1024) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('ছবির সর্বোচ্চ সাইজ ১৫ MB হতে পারবে।'),
+        ),
+      );
+      return;
+    }
+
+    final extension =
+        (pickedFile.extension ?? 'png').toLowerCase();
+
+    const allowedExtensions = [
+      'jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp',
+    ];
+
+    if (!allowedExtensions.contains(extension)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('এই ছবির ফরম্যাট সমর্থিত নয়।'),
+        ),
+      );
+      return;
+    }
+
+    final bytes = await pickedFile.readAsBytes();
+
+    if (!mounted) return;
+
+    final appDirectory =
+        await getApplicationSupportDirectory();
+
+    final imageDirectory = Directory(
+      '${appDirectory.path}/offynexbd_images',
+    );
+
+    await imageDirectory.create(recursive: true);
+
+    final savedImage = File(
+      '${imageDirectory.path}/'
+      'offynex_${DateTime.now().microsecondsSinceEpoch}.'
+      '$extension',
+    );
+
+    await savedImage.writeAsBytes(bytes, flush: true);
+
+    final start = selection.start;
+    final length = selection.end - selection.start;
+
+    quillController.replaceText(
+      start,
+      length,
+      BlockEmbed.image(savedImage.path),
+      TextSelection.collapsed(offset: start + 1),
+      source: ChangeSource.local,
+    );
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('ছবি ডকুমেন্টে যুক্ত হয়েছে।'),
+        ),
+      );
+    }
+  } catch (error) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('ছবি যুক্ত করা যায়নি: $error'),
+      ),
+    );
+  }
+}
+  
   Future<void> editWriterTable(
     BuildContext editorContext,
     Map<String, dynamic> data,
