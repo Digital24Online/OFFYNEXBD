@@ -634,6 +634,173 @@ Widget buildHomeRibbon() {
   );
 }
   
+
+  void insertTextAtSelection(String text) {
+    final selection = quillController.selection;
+    final start = selection.start;
+    final length = selection.end - selection.start;
+
+    quillController.replaceText(
+      start,
+      length,
+      text,
+      TextSelection.collapsed(
+        offset: start + text.length,
+      ),
+      source: ChangeSource.local,
+    );
+  }
+
+  Future<void> insertHyperlink() async {
+    final selection = quillController.selection;
+
+    if (selection.isCollapsed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('প্রথমে যে লেখায় Link দিতে চান সেটি নির্বাচন করুন।'),
+        ),
+      );
+      return;
+    }
+
+    final controller = TextEditingController();
+
+    final url = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Insert Hyperlink'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: TextInputType.url,
+          decoration: const InputDecoration(
+            hintText: 'https://example.com',
+            labelText: 'Website URL',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(
+              dialogContext,
+              controller.text.trim(),
+            ),
+            child: const Text('Insert'),
+          ),
+        ],
+      ),
+    );
+
+    controller.dispose();
+
+    if (url == null || url.isEmpty) return;
+
+    final parsedUrl = Uri.tryParse(url);
+
+    if (parsedUrl == null ||
+        !['http', 'https'].contains(parsedUrl.scheme) ||
+        parsedUrl.host.isEmpty) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('সঠিক Website URL দিন।'),
+        ),
+      );
+      return;
+    }
+
+    quillController.formatText(
+      selection.start,
+      selection.end - selection.start,
+      Attribute.fromKeyValue('link', url),
+    );
+  }
+
+  Widget buildInsertRibbon() {
+    final now = DateTime.now();
+
+    final currentDate =
+        '${now.day.toString().padLeft(2, '0')}/'
+        '${now.month.toString().padLeft(2, '0')}/'
+        '${now.year}';
+
+    return Container(
+      width: double.infinity,
+      color: const Color(0xFFF3F6FA),
+      padding: const EdgeInsets.all(12),
+      child: Wrap(
+        spacing: 10,
+        runSpacing: 10,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          ElevatedButton.icon(
+            onPressed: () {
+              insertTextAtSelection(currentDate);
+            },
+            icon: const Icon(Icons.calendar_today),
+            label: const Text('Date'),
+          ),
+
+          ElevatedButton.icon(
+            onPressed: insertHyperlink,
+            icon: const Icon(Icons.link),
+            label: const Text('Hyperlink'),
+          ),
+
+          PopupMenuButton<String>(
+            tooltip: 'Insert Symbol',
+            onSelected: insertTextAtSelection,
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: '©',
+                child: Text('©  Copyright'),
+              ),
+              PopupMenuItem(
+                value: '®',
+                child: Text('®  Registered'),
+              ),
+              PopupMenuItem(
+                value: '™',
+                child: Text('™  Trademark'),
+              ),
+              PopupMenuItem(
+                value: '₹',
+                child: Text('₹  Rupee'),
+              ),
+              PopupMenuItem(
+                value: '৳',
+                child: Text('৳  Taka'),
+              ),
+              PopupMenuItem(
+                value: '°',
+                child: Text('°  Degree'),
+              ),
+              PopupMenuItem(
+                value: '±',
+                child: Text('±  Plus Minus'),
+              ),
+              PopupMenuItem(
+                value: '∞',
+                child: Text('∞  Infinity'),
+              ),
+              PopupMenuItem(
+                value: '✓',
+                child: Text('✓  Check'),
+              ),
+            ],
+            child: const Chip(
+              avatar: Icon(Icons.functions),
+              label: Text('Symbols'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
   
   @override
   void dispose() {
