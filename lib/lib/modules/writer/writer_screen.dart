@@ -919,6 +919,8 @@ Column(
           ),
         ),
       ),
+        ] else if (selectedRibbonTab == 2) ...[
+      buildInsertRibbon(),
     ] else
       const Padding(
         padding: EdgeInsets.all(16),
@@ -928,8 +930,6 @@ Column(
           ),
         ),
       ),
-  ],
-),
           
 
           Expanded(
