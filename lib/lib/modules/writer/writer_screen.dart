@@ -429,6 +429,65 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     if (mounted) setState(() {});
   }
 
+  Widget buildRibbonTabs() {
+  const tabs = [
+    'File',
+    'Home',
+    'Insert',
+    'Layout',
+    'References',
+    'Review',
+    'View',
+  ];
+
+  return Container(
+    color: Colors.white,
+    child: SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: List.generate(tabs.length, (index) {
+          final selected = selectedRibbonTab == index;
+
+          return InkWell(
+            onTap: () {
+              setState(() {
+                selectedRibbonTab = index;
+              });
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 18,
+                vertical: 14,
+              ),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: selected
+                        ? const Color(0xFF168BFA)
+                        : Colors.transparent,
+                    width: 3,
+                  ),
+                ),
+              ),
+              child: Text(
+                tabs[index],
+                style: TextStyle(
+                  color: selected
+                      ? const Color(0xFF168BFA)
+                      : Colors.black87,
+                  fontWeight: selected
+                      ? FontWeight.bold
+                      : FontWeight.normal,
+                ),
+              ),
+            ),
+          );
+        }),
+      ),
+    ),
+  );
+  }
+  
     @override
     void dispose() {
     saveTimer?.cancel();
