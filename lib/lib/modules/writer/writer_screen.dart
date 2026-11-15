@@ -570,6 +570,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
           // আসল Rich Text Formatting Toolbar
           Container(
             color: const Color(0xFFEAF0F8),
+            buildRibbonTabs(),
             child: QuillSimpleToolbar(
               controller: quillController,
               config: const QuillSimpleToolbarConfig(
