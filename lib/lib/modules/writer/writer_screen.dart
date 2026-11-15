@@ -281,7 +281,9 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   late QuillController quillController;
 
   int wordCount = 0;
-  int selectedRibbonTab = 0;
+  int selectedRibbonTab = 1;
+  String selectedFontFamily = 'sans-serif';
+  String selectedFontSize = '16';
   bool isSaved = true;
   Future<void> saveQueue = Future.value();
   Timer? saveTimer;
