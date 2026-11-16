@@ -35,10 +35,10 @@ class SheetsFormulaEngine {
     if (first == null || last == null) {
       throw const FormatException('Invalid range');
     }
-    final minColumn = math.min(first.$1, last.$1);
-    final maxColumn = math.max(first.$1, last.$1);
-    final minRow = math.min(first.$2, last.$2);
-    final maxRow = math.max(first.$2, last.$2);
+    final minColumn = math.min(first.$1, last.$1).toInt();
+    final maxColumn = math.max(first.$1, last.$1).toInt();
+    final minRow = math.min(first.$2, last.$2).toInt();
+    final maxRow = math.max(first.$2, last.$2).toInt();
     final cellCount = (maxColumn - minColumn + 1) *
         (maxRow - minRow + 1);
     if (cellCount > 10000) {
@@ -225,8 +225,8 @@ class _FormulaParser {
     switch (name) {
       case 'SUM': return values.fold<double>(0, (a, b) => a + b);
       case 'AVERAGE': return values.reduce((a, b) => a + b) / values.length;
-      case 'MIN': return values.reduce(math.min);
-      case 'MAX': return values.reduce(math.max);
+      case 'MIN': return values.reduce((a, b) => math.min(a, b).toDouble());
+      case 'MAX': return values.reduce((a, b) => math.max(a, b).toDouble());
     }
     throw const FormatException('Unsupported function');
   }
