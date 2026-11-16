@@ -1676,7 +1676,6 @@ Future<void> showCustomFontSizeDialog() async {
         WriterTableBlockEmbed.fromData(data),
       ),
       TextSelection.collapsed(offset: start + 1),
-      source: ChangeSource.local,
     );
   }
   
@@ -1759,7 +1758,6 @@ Future<void> insertWriterImage() async {
       length,
       BlockEmbed.image(savedImage.path),
       TextSelection.collapsed(offset: start + 1),
-      source: ChangeSource.local,
     );
 
     if (mounted) {
@@ -1799,7 +1797,6 @@ Future<void> insertWriterImage() async {
         WriterTableBlockEmbed.fromData(updatedData),
       ),
       TextSelection.collapsed(offset: offset + 1),
-      source: ChangeSource.local,
     );
   }
   
