@@ -1,8 +1,31 @@
-
 import 'dart:convert';
 
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+
+/// Custom Quill block for Writer tables.
+/// Keep this type unchanged so previously saved table blocks remain readable.
+class WriterTableBlockEmbed extends CustomBlockEmbed {
+  static const String type = 'offynexbd-writer-table';
+
+  const WriterTableBlockEmbed(String value) : super(type, value);
+
+  factory WriterTableBlockEmbed.fromData(Map<String, dynamic> data) {
+    return WriterTableBlockEmbed(jsonEncode(data));
+  }
+
+  Map<String, dynamic> get tableData {
+    try {
+      final decoded = jsonDecode(data);
+      if (decoded is Map) {
+        return Map<String, dynamic>.from(decoded);
+      }
+    } catch (_) {
+      // Keep malformed/older table data from crashing the editor.
+    }
+    return <String, dynamic>{'rows': <List<String>>[]};
+  }
+}
 
 typedef WriterTableEditCallback = Future<void> Function(
   BuildContext context,
@@ -10,241 +33,115 @@ typedef WriterTableEditCallback = Future<void> Function(
   int offset,
 );
 
-class WriterTableBlockEmbed extends CustomBlockEmbed {
-  static const String tableType = 'offynex_table';
-
-  const WriterTableBlockEmbed(String value)
-      : super(tableType, value);
-
-  factory WriterTableBlockEmbed.fromData(
-    Map<String, dynamic> data,
-  ) {
-    return WriterTableBlockEmbed(jsonEncode(data));
-  }
-
-  Map<String, dynamic> get tableData {
-    return Map<String, dynamic>.from(
-      jsonDecode(data) as Map,
-    );
-  }
+/// Opens the table creator/editor. Returns null when cancelled.
+Future<Map<String, dynamic>?> showWriterTableEditor(
+  BuildContext context, {
+  Map<String, dynamic>? initialData,
+}) {
+  return showDialog<Map<String, dynamic>>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => _WriterTableDialog(initialData: initialData),
+  );
 }
 
-class WriterTableEmbedBuilder extends EmbedBuilder {
-  final WriterTableEditCallback? onEdit;
+class _WriterTableDialog extends StatefulWidget {
+  const _WriterTableDialog({this.initialData});
 
-  WriterTableEmbedBuilder({this.onEdit});
-
-  @override
-  String get key => WriterTableBlockEmbed.tableType;
-
-  @override
-  Widget build(
-    BuildContext context,
-    EmbedContext embedContext,
-  ) {
-    final table = WriterTableBlockEmbed(
-      embedContext.node.value.data as String,
-    );
-
-    final data = table.tableData;
-    final rows = (data['rows'] as List? ?? [])
-        .map<List<String>>(
-          (row) => (row as List)
-              .map((cell) => cell.toString())
-              .toList(),
-        )
-        .toList();
-
-    final borderColor = data['borderColor'] as int? ??
-        0xFF333333;
-
-    final backgroundColor =
-        data['backgroundColor'] as int? ?? 0xFFFFFFFF;
-
-    return GestureDetector(
-      onTap: onEdit == null
-          ? null
-          : () => onEdit!(
-                context,
-                data,
-                embedContext.node.documentOffset,
-              ),
-      child: Container(
-        width: double.infinity,
-        margin: const EdgeInsets.symmetric(vertical: 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Table(
-              border: TableBorder.all(
-                color: Color(borderColor),
-                width: 1,
-              ),
-              children: rows.map((row) {
-                return TableRow(
-                  children: row.map((cell) {
-                    return Container(
-                      color: Color(backgroundColor),
-                      padding: const EdgeInsets.all(10),
-                      constraints: const BoxConstraints(
-                        minHeight: 35,
-                      ),
-                      child: Text(
-                        cell,
-                        style: const TextStyle(fontSize: 14),
-                      ),
-                    );
-                  }).toList(),
-                );
-              }).toList(),
-            ),
-            if (onEdit != null)
-              const Padding(
-                padding: EdgeInsets.only(top: 5),
-                child: Text(
-                  'টেবিল সম্পাদনা করতে ট্যাপ করুন',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class WriterTableEditor extends StatefulWidget {
   final Map<String, dynamic>? initialData;
-  final ValueChanged<Map<String, dynamic>>? onChanged;
-
-  const WriterTableEditor({
-    super.key,
-    this.initialData,
-    this.onChanged,
-  });
 
   @override
-  State<WriterTableEditor> createState() =>
-      _WriterTableEditorState();
+  State<_WriterTableDialog> createState() => _WriterTableDialogState();
 }
 
-class _WriterTableEditorState extends State<WriterTableEditor> {
+class _WriterTableDialogState extends State<_WriterTableDialog> {
   late List<List<TextEditingController>> cells;
-
   int borderColor = 0xFF333333;
   int backgroundColor = 0xFFFFFFFF;
 
   @override
   void initState() {
     super.initState();
-
     final data = widget.initialData;
+    borderColor = data?['borderColor'] is int
+        ? data!['borderColor'] as int
+        : 0xFF333333;
+    backgroundColor = data?['backgroundColor'] is int
+        ? data!['backgroundColor'] as int
+        : 0xFFFFFFFF;
 
-    borderColor = data?['borderColor'] ?? 0xFF333333;
-    backgroundColor =
-        data?['backgroundColor'] ?? 0xFFFFFFFF;
+    final rawRows = data?['rows'];
+    if (rawRows is List && rawRows.isNotEmpty) {
+      final values = rawRows.map<List<String>>((row) {
+        if (row is List) {
+          return row.map((value) => value?.toString() ?? '').toList();
+        }
+        return <String>[row?.toString() ?? ''];
+      }).toList();
 
-    final savedRows = data?['rows'];
+      final columnCount = values.fold<int>(
+        1,
+        (count, row) => row.length > count ? row.length : count,
+      ).clamp(1, 10).toInt();
 
-    if (savedRows is List && savedRows.isNotEmpty) {
-      cells = savedRows.map<List<TextEditingController>>(
-        (row) {
-          return (row as List).map<TextEditingController>(
-            (value) {
-              return TextEditingController(
-                text: value.toString(),
-              );
-            },
-          ).toList();
-        },
-      ).toList();
+      cells = values.take(20).map<List<TextEditingController>>((row) {
+        return List.generate(
+          columnCount,
+          (index) => TextEditingController(
+            text: index < row.length ? row[index] : '',
+          ),
+        );
+      }).toList();
+      if (cells.isEmpty) cells = _createEmptyCells();
     } else {
-      cells = List.generate(
-        3,
-        (_) => List.generate(
-          3,
-          (_) => TextEditingController(),
-        ),
-      );
-    }
-
-    final columnCount = cells.first.length;
-
-    for (final row in cells) {
-      while (row.length < columnCount) {
-        row.add(TextEditingController());
-      }
+      cells = _createEmptyCells();
     }
   }
 
-  Map<String, dynamic> getTableData() {
-    return {
-      'type': WriterTableBlockEmbed.tableType,
-      'rows': cells.map((row) {
-        return row.map((cell) => cell.text).toList();
-      }).toList(),
-      'borderColor': borderColor,
-      'backgroundColor': backgroundColor,
-    };
+  List<List<TextEditingController>> _createEmptyCells() {
+    return List.generate(
+      3,
+      (_) => List.generate(3, (_) => TextEditingController()),
+    );
   }
 
-  void notifyChanged() {
-    widget.onChanged?.call(getTableData());
-  }
+  int get columnCount => cells.isEmpty ? 1 : cells.first.length;
 
   void addRow() {
+    if (cells.length >= 20) return;
     setState(() {
-      cells.add(
-        List.generate(
-          cells.first.length,
-          (_) => TextEditingController(),
-        ),
-      );
+      cells.add(List.generate(columnCount, (_) => TextEditingController()));
     });
-
-    notifyChanged();
   }
 
   void removeRow() {
     if (cells.length <= 1) return;
-
     setState(() {
-      final removed = cells.removeLast();
-
-      for (final controller in removed) {
+      for (final controller in cells.removeLast()) {
         controller.dispose();
       }
     });
-
-    notifyChanged();
   }
 
   void addColumn() {
+    if (columnCount >= 10) return;
     setState(() {
       for (final row in cells) {
         row.add(TextEditingController());
       }
     });
-
-    notifyChanged();
   }
 
   void removeColumn() {
-    if (cells.first.length <= 1) return;
-
+    if (columnCount <= 1) return;
     setState(() {
       for (final row in cells) {
         row.removeLast().dispose();
       }
     });
-
-    notifyChanged();
   }
 
-  Future<void> chooseColor(bool isBorder) async {
+  Future<void> chooseColor({required bool chooseBorder}) async {
     const colors = <int>[
       0xFF000000,
       0xFF333333,
@@ -261,49 +158,51 @@ class _WriterTableEditorState extends State<WriterTableEditor> {
 
     final selected = await showDialog<int>(
       context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(
-            isBorder ? 'Border Color' : 'Background Color',
-          ),
-          content: Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: colors.map((color) {
-              return InkWell(
-                onTap: () => Navigator.pop(
-                  dialogContext,
-                  color,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(chooseBorder ? 'Border Color' : 'Background Color'),
+        content: Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: colors.map((color) {
+            return InkWell(
+              onTap: () => Navigator.pop(dialogContext, color),
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: Color(color),
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(6),
                 ),
-                child: Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: Color(color),
-                    border: Border.all(
-                      color: Colors.grey,
-                    ),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        );
-      },
+              ),
+            );
+          }).toList(),
+        ),
+      ),
     );
 
-    if (selected == null) return;
-
+    if (!mounted || selected == null) return;
     setState(() {
-      if (isBorder) {
+      if (chooseBorder) {
         borderColor = selected;
       } else {
         backgroundColor = selected;
       }
     });
+  }
 
-    notifyChanged();
+  void saveTable() {
+    final rows = cells
+        .map((row) => row.map((controller) => controller.text).toList())
+        .toList();
+
+    Navigator.of(context).pop(<String, dynamic>{
+      'rows': rows,
+      'headerRow': true,
+      'version': 1,
+      'borderColor': borderColor,
+      'backgroundColor': backgroundColor,
+    });
   }
 
   @override
@@ -313,145 +212,213 @@ class _WriterTableEditorState extends State<WriterTableEditor> {
         controller.dispose();
       }
     }
-
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
+    return AlertDialog(
+      title: Text(widget.initialData == null ? 'টেবিল তৈরি করুন' : 'টেবিল সম্পাদনা'),
+      content: SizedBox(
+        width: 560,
+        height: 430,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            OutlinedButton.icon(
-              onPressed: addRow,
-              icon: const Icon(Icons.add),
-              label: const Text('Add Row'),
-            ),
-            OutlinedButton.icon(
-              onPressed: removeRow,
-              icon: const Icon(Icons.remove),
-              label: const Text('Remove Row'),
-            ),
-            OutlinedButton.icon(
-              onPressed: addColumn,
-              icon: const Icon(Icons.add),
-              label: const Text('Add Column'),
-            ),
-            OutlinedButton.icon(
-              onPressed: removeColumn,
-              icon: const Icon(Icons.remove),
-              label: const Text('Remove Column'),
-            ),
-            OutlinedButton(
-              onPressed: () => chooseColor(true),
-              child: const Text('Border Color'),
-            ),
-            OutlinedButton(
-              onPressed: () => chooseColor(false),
-              child: const Text('Background'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Text(
-          'Rows: ${cells.length}   Columns: ${cells.first.length}',
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Expanded(
-          child: SingleChildScrollView(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Table(
-                defaultColumnWidth:
-                    const FixedColumnWidth(160),
-                border: TableBorder.all(
-                  color: Color(borderColor),
-                  width: 1,
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: cells.length >= 20 ? null : addRow,
+                  icon: const Icon(Icons.add),
+                  label: const Text('সারি যোগ'),
                 ),
-                children: List.generate(
-                  cells.length,
-                  (rowIndex) {
-                    return TableRow(
-                      children: List.generate(
-                        cells[rowIndex].length,
-                        (columnIndex) {
+                OutlinedButton.icon(
+                  onPressed: cells.length <= 1 ? null : removeRow,
+                  icon: const Icon(Icons.remove),
+                  label: const Text('সারি কমান'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: columnCount >= 10 ? null : addColumn,
+                  icon: const Icon(Icons.add),
+                  label: const Text('কলাম যোগ'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: columnCount <= 1 ? null : removeColumn,
+                  icon: const Icon(Icons.remove),
+                  label: const Text('কলাম কমান'),
+                ),
+                OutlinedButton(
+                  onPressed: () => chooseColor(chooseBorder: true),
+                  child: const Text('Border Color'),
+                ),
+                OutlinedButton(
+                  onPressed: () => chooseColor(chooseBorder: false),
+                  child: const Text('Background'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text('সারি: ${cells.length}  |  কলাম: $columnCount'),
+            const SizedBox(height: 8),
+            Expanded(
+              child: SingleChildScrollView(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Table(
+                    defaultColumnWidth: const FixedColumnWidth(150),
+                    border: TableBorder.all(color: Color(borderColor)),
+                    children: List.generate(cells.length, (rowIndex) {
+                      return TableRow(
+                        children: List.generate(columnCount, (columnIndex) {
                           return Container(
                             color: Color(backgroundColor),
                             padding: const EdgeInsets.all(5),
                             child: TextField(
-                              controller:
-                                  cells[rowIndex][columnIndex],
-                              onChanged: (_) => notifyChanged(),
+                              controller: cells[rowIndex][columnIndex],
                               maxLines: 3,
                               minLines: 1,
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
+                                hintText: '${rowIndex + 1}.${columnIndex + 1}',
                                 border: InputBorder.none,
-                                hintText: 'Type here...',
-                                contentPadding:
-                                    EdgeInsets.all(8),
+                                contentPadding: const EdgeInsets.all(8),
                               ),
                             ),
                           );
-                        },
-                      ),
-                    );
-                  },
+                        }),
+                      );
+                    }),
+                  ),
                 ),
               ),
             ),
-          ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('বাতিল'),
+        ),
+        FilledButton.icon(
+          onPressed: saveTable,
+          icon: const Icon(Icons.check),
+          label: const Text('সংরক্ষণ'),
         ),
       ],
     );
   }
 }
 
-Future<Map<String, dynamic>?> showWriterTableEditor(
-  BuildContext context, {
-  Map<String, dynamic>? initialData,
-}) {
-  return showDialog<Map<String, dynamic>>(
-    context: context,
-    builder: (dialogContext) {
-      final editorKey =
-          GlobalKey<_WriterTableEditorState>();
+/// Renders and edits a table block in the Quill document.
+class WriterTableEmbedBuilder extends EmbedBuilder {
+  WriterTableEmbedBuilder({required this.onEdit});
 
-      return AlertDialog(
-        title: const Text('Insert Table'),
-        content: SizedBox(
-          width: 700,
-          height: 450,
-          child: WriterTableEditor(
-            key: editorKey,
-            initialData: initialData,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton.icon(
-            onPressed: () {
-              final data =
-                  editorKey.currentState?.getTableData();
+  final WriterTableEditCallback onEdit;
 
-              if (data != null) {
-                Navigator.pop(dialogContext, data);
-              }
-            },
-            icon: const Icon(Icons.check),
-            label: const Text('Save Table'),
+  @override
+  String get key => WriterTableBlockEmbed.type;
+
+  @override
+  Widget build(BuildContext context, EmbedContext embedContext) {
+    final embed = embedContext.node.value;
+    final rawData = embed.data;
+    Map<String, dynamic> data;
+    try {
+      final decoded = jsonDecode(rawData);
+      data = decoded is Map
+          ? Map<String, dynamic>.from(decoded)
+          : <String, dynamic>{};
+    } catch (_) {
+      data = <String, dynamic>{};
+    }
+
+    final rawRows = data['rows'];
+    final rows = rawRows is List
+        ? rawRows.map<List<String>>((row) {
+            if (row is List) {
+              return row.map((value) => value?.toString() ?? '').toList();
+            }
+            return <String>[row?.toString() ?? ''];
+          }).toList()
+        : <List<String>>[];
+    final columnCount = rows.fold<int>(
+      1,
+      (count, row) => row.length > count ? row.length : count,
+    );
+
+    final border = data['borderColor'] is int
+        ? data['borderColor'] as int
+        : 0xFF333333;
+    final background = data['backgroundColor'] is int
+        ? data['backgroundColor'] as int
+        : 0xFFFFFFFF;
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        border: Border.all(color: Theme.of(context).dividerColor),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: embedContext.readOnly
+                  ? null
+                  : () => onEdit(
+                        context,
+                        data,
+                        embedContext.node.documentOffset,
+                      ),
+              icon: const Icon(Icons.edit, size: 16),
+              label: const Text('টেবিল সম্পাদনা'),
+            ),
           ),
+          if (rows.isEmpty)
+            const Text('খালি টেবিল')
+          else
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Table(
+                defaultColumnWidth: const IntrinsicColumnWidth(),
+                border: TableBorder.all(color: Color(border)),
+                children: List.generate(rows.length, (rowIndex) {
+                  final row = rows[rowIndex];
+                  return TableRow(
+                    decoration: rowIndex == 0
+                        ? BoxDecoration(
+                            color: Color(background).withValues(alpha: 0.85),
+                          )
+                        : null,
+                    children: List.generate(columnCount, (columnIndex) {
+                      final value = columnIndex < row.length
+                          ? row[columnIndex]
+                          : '';
+                      return Container(
+                        color: Color(background),
+                        padding: const EdgeInsets.all(8),
+                        child: Text(
+                          value,
+                          style: TextStyle(
+                            fontWeight: rowIndex == 0
+                                ? FontWeight.w600
+                                : FontWeight.normal,
+                          ),
+                        ),
+                      );
+                    }),
+                  );
+                }),
+              ),
+            ),
         ],
-      );
-    },
-  );
+      ),
+    );
+  }
 }
