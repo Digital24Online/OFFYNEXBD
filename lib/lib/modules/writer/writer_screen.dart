@@ -704,19 +704,24 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     final headings = <String>[];
 
     // Quill-এর আসল Heading 1/2/3 ফরম্যাট থেকে শিরোনাম সংগ্রহ।
+    var currentLine = '';
     for (final operation in quillController.document.toDelta().toJson()) {
-      if (operation is! Map) continue;
       final inserted = operation['insert'];
       final attributes = operation['attributes'];
-      if (inserted is! String || attributes is! Map) continue;
-      if (attributes['header'] == null) continue;
+      if (inserted is! String) continue;
 
-      headings.addAll(
-        inserted
-            .split('\n')
-            .map((line) => line.trim())
-            .where((line) => line.isNotEmpty),
-      );
+      final parts = inserted.split('\n');
+      for (var index = 0; index < parts.length; index++) {
+        currentLine += parts[index];
+        if (index < parts.length - 1) {
+          if (attributes is Map &&
+              attributes['header'] != null &&
+              currentLine.trim().isNotEmpty) {
+            headings.add(currentLine.trim());
+          }
+          currentLine = '';
+        }
+      }
     }
 
     // পুরোনো Markdown-ধাঁচের # Heading-ও সমর্থন থাকবে।
@@ -784,8 +789,8 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   Future<void> addReviewComment() async {
     final selection = quillController.selection;
     final plainText = quillController.document.toPlainText();
-    final start = selection.start.clamp(0, plainText.length) as int;
-    final end = selection.end.clamp(start, plainText.length) as int;
+    final start = selection.start.clamp(0, plainText.length);
+    final end = selection.end.clamp(start, plainText.length);
     final selectedText =
         selection.isCollapsed ? '' : plainText.substring(start, end);
 
@@ -876,9 +881,9 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
                           final maxOffset =
                               quillController.document.length - 1;
                           final start =
-                              startValue.toInt().clamp(0, maxOffset) as int;
+                              startValue.toInt().clamp(0, maxOffset);
                           final end =
-                              endValue.toInt().clamp(start, maxOffset) as int;
+                              endValue.toInt().clamp(start, maxOffset);
                           quillController.updateSelection(
                             TextSelection(
                               baseOffset: start,
