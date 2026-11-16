@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'sheets_formula_engine.dart';
 
 const String _sheetStorageKey = 'offynex_sheets_workbook_v1';
 
@@ -90,86 +91,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
   }
 
   double? _numericValue(String reference, [Set<String>? visiting]) {
-    final key = reference.toUpperCase();
-    final raw = _cells[key]?.trim() ?? '';
-    if (raw.isEmpty) return 0;
-    if (!raw.startsWith('=')) return double.tryParse(raw);
-    final seen = visiting ?? <String>{};
-    if (!seen.add(key)) return null;
-    final result = _evaluateFormula(raw.substring(1), seen);
-    seen.remove(key);
-    return result;
-  }
-
-  double? _evaluateFormula(String formula, Set<String> visiting) {
-    final expression = formula.trim().toUpperCase();
-    final functionMatch = RegExp(r'^(SUM|AVERAGE|COUNT|MIN|MAX)\(([^)]+)\)$')
-        .firstMatch(expression);
-    if (functionMatch != null) {
-      final function = functionMatch.group(1)!;
-      final range = functionMatch.group(2)!.split(':');
-      if (range.length != 2) return null;
-      final start = RegExp(r'^([A-Z]+)(\d+)$').firstMatch(range[0].trim());
-      final end = RegExp(r'^([A-Z]+)(\d+)$').firstMatch(range[1].trim());
-      if (start == null || end == null) return null;
-      int columnIndex(String letters) {
-        var value = 0;
-        for (final rune in letters.runes) {
-          value = value * 26 + rune - 64;
-        }
-        return value - 1;
-      }
-      final c1 = columnIndex(start.group(1)!);
-      final c2 = columnIndex(end.group(1)!);
-      final r1 = int.parse(start.group(2)!) - 1;
-      final r2 = int.parse(end.group(2)!) - 1;
-      final values = <double>[];
-      for (var row = r1; row <= r2 && values.length < 10000; row++) {
-        for (var col = c1; col <= c2 && values.length < 10000; col++) {
-          final value = _numericValue(_cellKey(row, col), visiting);
-          if (value != null) values.add(value);
-        }
-      }
-      if (values.isEmpty) return function == 'COUNT' ? 0 : null;
-      switch (function) {
-        case 'SUM': return values.fold<double>(0, (a, b) => a + b);
-        case 'AVERAGE': return values.reduce((a, b) => a + b) / values.length;
-        case 'COUNT': return values.length.toDouble();
-        case 'MIN': return values.reduce((a, b) => a < b ? a : b);
-        case 'MAX': return values.reduce((a, b) => a > b ? a : b);
-      }
-    }
-
-    final reference = RegExp(r'^([A-Z]+\d+)$').firstMatch(expression);
-    if (reference != null) return _numericValue(expression, visiting);
-
-    final arithmetic = RegExp(r'^(-?\d+(?:\.\d+)?)\s*([+\-*/])\s*(-?\d+(?:\.\d+)?)$')
-        .firstMatch(expression);
-    if (arithmetic != null) {
-      final left = double.parse(arithmetic.group(1)!);
-      final right = double.parse(arithmetic.group(3)!);
-      switch (arithmetic.group(2)) {
-        case '+': return left + right;
-        case '-': return left - right;
-        case '*': return left * right;
-        case '/': return right == 0 ? null : left / right;
-      }
-    }
-
-    final refArithmetic = RegExp(r'^([A-Z]+\d+)\s*([+\-*/])\s*([A-Z]+\d+)$')
-        .firstMatch(expression);
-    if (refArithmetic != null) {
-      final left = _numericValue(refArithmetic.group(1)!, visiting);
-      final right = _numericValue(refArithmetic.group(3)!, visiting);
-      if (left == null || right == null) return null;
-      switch (refArithmetic.group(2)) {
-        case '+': return left + right;
-        case '-': return left - right;
-        case '*': return left * right;
-        case '/': return right == 0 ? null : left / right;
-      }
-    }
-    return double.tryParse(expression);
+    return SheetsFormulaEngine(_cells).evaluateCell(reference, visiting);
   }
 
   String _displayValue(String key) {
