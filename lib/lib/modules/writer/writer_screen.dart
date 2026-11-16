@@ -657,7 +657,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
                 : ListView.separated(
                     shrinkWrap: true,
                     itemCount: writerCitations.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    separatorBuilder: (context, index) => const Divider(height: 1),
                     itemBuilder: (context, index) {
                       final source = writerCitations[index];
                       final author = source['author']?.toString() ?? '';
