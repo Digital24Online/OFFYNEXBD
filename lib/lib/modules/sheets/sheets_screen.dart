@@ -89,14 +89,17 @@ class _SheetsScreenState extends State<SheetsScreen> {
       'updatedAt': DateTime.now().toIso8601String(),
     });
     if (mounted) setState(() => _saved = false);
-    _saveQueue = _saveQueue.then((_) async {
+    _saveQueue = _saveQueue.catchError((_) {}).then((_) async {
       final prefs = await SharedPreferences.getInstance();
       final success = await prefs.setString(_sheetStorageKey, snapshot);
       if (!success) throw StateError('Workbook could not be saved');
     });
+    final saveOperation = _saveQueue;
     try {
-      await _saveQueue;
-      if (mounted) setState(() => _saved = true);
+      await saveOperation;
+      if (mounted && identical(_saveQueue, saveOperation)) {
+        setState(() => _saved = true);
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() => _saved = false);
