@@ -67,12 +67,13 @@
 ## Verified Development Checkpoint — 2026-11-16
 
 ### Android Build
-- Latest workflow run: #30
-- Run ID: 43922901887
-- Commit: ed93f42ba470b8484335a78af4f07e50b254764a
+- Latest workflow run: #35
+- Run ID: 43929157157
+- Commit: c3fe68efa052b8b985cde623dc62e768656754e9
 - Result: SUCCESS
-- Verified job steps include Analyze Project, Run Tests, Build Android APK, and Upload Android APK.
-- Run URL: https://github.com/Digital24Online/OFFYNEXBD/actions/runs/43922901887
+- Verified all job steps succeeded: Analyze Project, Run Tests, Build Android APK, signing-file cleanup, source save, and APK upload.
+- APK artifact: OFFYNEXBD-Android-APK (28,573,909 bytes; available until 2026-11-23).
+- Run URL: https://github.com/Digital24Online/OFFYNEXBD/actions/runs/43929157157
 - Do not ask the user to install the APK; development continues.
 
 ### OFFYNEX Writer
@@ -81,7 +82,7 @@
 - [x] Table embed and editing foundation.
 - [x] Serial 14.6 — Image Support: Insert Image, image file selection and validation, local image persistence, Quill image embed rendering and preview.
 - [x] Serial 15 — Layout Tab: A4/A5/Letter/Legal, Portrait/Landscape, margin presets, custom margins, reset, responsive page display and per-document layout autosave.
-- [ ] Serial 16 — References, Review and View: basic controls exist; full feature audit and enhancement remain.
+- [x] Serial 16 — References, Review and View: citation source manager with individual source deletion; bibliography sorted by author/year/title; footnotes/endnotes and captions; table of contents; review comments with improved text-location recovery; Find/Replace; revision history restore/delete/clear; zoom, ruler, page border, status bar and focus mode controls. Android build #35, Analyze and Tests all passed.
 
 ### OFFYNEX Sheets
 - [x] Initial offline-first Sheets screen added at lib/lib/modules/sheets/sheets_screen.dart.
@@ -99,8 +100,7 @@
 - Keep Android-first workflow while preserving cross-platform architecture.
 
 ## Next Development Tasks
-1. Continue OFFYNEX Writer Serial 16 as one coherent change: audit and complete References, Review and View.
-2. Continue OFFYNEX Sheets verification and enhancements without breaking its current data or formulas.
-3. Verify every source change with GitHub Actions analysis, tests, and Android build.
-4. Expand document format support and other modules in the planned order.
-5. Maintain this progress file after verified milestones.
+1. Continue OFFYNEX Sheets verification and enhancements without breaking its current data or formulas.
+2. Verify every source change with GitHub Actions analysis, tests, and Android build.
+3. Expand document format support and other modules in the planned order.
+4. Maintain this progress file after verified milestones.
