@@ -182,7 +182,11 @@ class _FormulaParser {
     final number = double.tryParse(token);
     if (number != null) return number;
     if (SheetsFormulaEngine._isCellReference(token)) {
-      return engine._readCell(token, visiting) ?? 0;
+      final value = engine._readCell(token, visiting);
+      if (value == null) {
+        throw const FormatException('Invalid or circular cell reference');
+      }
+      return value;
     }
     if (RegExp(r'^[A-Z_][A-Z0-9_]*$').hasMatch(token)) {
       return _parseFunction(token);
