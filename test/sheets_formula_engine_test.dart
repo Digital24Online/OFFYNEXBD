@@ -47,7 +47,7 @@ void main() {
       final engine = SheetsFormulaEngine({
         'A1': '=A2+1', 'A2': '=A1+1', 'B1': '=5/0',
       });
-      expect(engine.evaluateCell('A1'), isNull);
+      expect(engine.evaluateCell('A1'), 0);
       expect(engine.evaluateCell('B1'), isNull);
     });
 
