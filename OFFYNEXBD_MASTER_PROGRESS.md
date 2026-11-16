@@ -88,3 +88,29 @@ Actual application development has not started.
 - Do not ask the user to upload documents or images.
 - Do not repeat completed steps.
 - Preserve this progress after important changes.
+
+## Verified Development Checkpoint — 2026-11-16
+
+### Current Repository
+- Repository: `Digital24Online/OFFYNEXBD`
+- Active branch: `main`
+- Android Build: **SUCCESS**
+- Latest verified workflow run: `43918721213`
+- Android APK artifact: `OFFYNEXBD-Android-APK` (28.5 MB)
+- Automatic Build is enabled for source changes under `lib/**`, `modules/**`, and workflow changes.
+
+### OFFYNEX Writer — Verified Serial Status
+- [x] Serial 14.6 — Image Support: Insert Image button, image file selection and size/format checks, local image persistence, Quill image embed rendering and preview.
+- [x] Serial 15 — Layout Tab: A4/A5/Letter/Legal paper sizes; Portrait/Landscape; Normal/Narrow/Moderate/Wide presets; Custom Margins; Reset Layout; responsive page display; per-document Layout Auto Save.
+- [ ] Serial 16 — References, Review and View: existing basic controls are present in `writer_screen.dart`; complete feature audit and enhancement are still required before marking complete.
+
+### Important Technical Notes
+- Writer screen: `lib/lib/modules/writer/writer_screen.dart`
+- Writer table embed: `lib/lib/modules/writer/writer_table.dart`
+- Preserve existing table embed identifier: `offynexbd-writer-table`.
+- Image files currently live in the app's private `offynexbd_images` directory. Portable document export/import must package images with the document; do not treat local file paths as portable.
+- Existing documents, Quill Delta content, table embeds, images, autosave, page layout, comments, citations and revisions must remain compatible during future changes.
+- Keep the app bilingual (Bangla and English) and preserve the Android-first workflow.
+
+### Next Work
+Continue with Serial 16 — complete References, Review and View features as one coherent change. Audit the full existing code first; retain working controls and do not repeat completed work. Run automatic GitHub Build and verify the APK artifact before reporting completion.
