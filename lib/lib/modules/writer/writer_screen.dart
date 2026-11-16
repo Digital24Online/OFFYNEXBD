@@ -639,9 +639,23 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
       _showMessage('আগে Insert Citation থেকে উদ্ধৃতি যোগ করুন।');
       return;
     }
-    final lines = writerCitations.map((item) =>
+    final sortedSources = List<Map<String, dynamic>>.from(writerCitations)
+      ..sort((a, b) {
+        final authorCompare = (a['author']?.toString() ?? '')
+            .toLowerCase()
+            .compareTo((b['author']?.toString() ?? '').toLowerCase());
+        if (authorCompare != 0) return authorCompare;
+        final yearCompare = (a['year']?.toString() ?? '')
+            .compareTo(b['year']?.toString() ?? '');
+        if (yearCompare != 0) return yearCompare;
+        return (a['title']?.toString() ?? '')
+            .toLowerCase()
+            .compareTo((b['title']?.toString() ?? '').toLowerCase());
+      });
+    final lines = sortedSources.map((item) =>
       '${item['author']} (${item['year']}). ${item['title']}.').join('\n');
     insertTextAtSelection('\n\nReferences\n$lines\n');
+    scheduleSave();
   }
 
   Future<void> manageCitationSources() async {
@@ -943,24 +957,46 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       onTap: () {
-                        final startValue = item['startOffset'];
-                        final endValue = item['endOffset'];
-                        if (startValue is num && endValue is num) {
-                          final maxOffset =
-                              quillController.document.length - 1;
-                          final start =
-                              startValue.toInt().clamp(0, maxOffset);
-                          final end =
-                              endValue.toInt().clamp(start, maxOffset);
-                          quillController.updateSelection(
-                            TextSelection(
-                              baseOffset: start,
-                              extentOffset: end,
-                            ),
-                            ChangeSource.local,
-                          );
-                          editorFocusNode.requestFocus();
+                        final plainText =
+                            quillController.document.toPlainText();
+                        final savedStart = item['startOffset'];
+                        final savedEnd = item['endOffset'];
+                        var start = savedStart is num
+                            ? savedStart.toInt()
+                            : 0;
+                        var end = savedEnd is num
+                            ? savedEnd.toInt()
+                            : start;
+
+                        // লেখা সম্পাদনার পর পুরোনো offset সরে গেলে
+                        // নির্বাচিত বাক্য খুঁজে নতুন অবস্থান নির্ণয় করা হয়।
+                        if (selectedText.isNotEmpty) {
+                          final occurrences = <int>[];
+                          var searchFrom = 0;
+                          while (searchFrom <=
+                              plainText.length - selectedText.length) {
+                            final found =
+                                plainText.indexOf(selectedText, searchFrom);
+                            if (found < 0) break;
+                            occurrences.add(found);
+                            searchFrom = found + selectedText.length;
+                          }
+                          if (occurrences.isNotEmpty) {
+                            occurrences.sort((a, b) =>
+                                (a - start).abs().compareTo((b - start).abs()));
+                            start = occurrences.first;
+                            end = start + selectedText.length;
+                          }
                         }
+
+                        final maxOffset = plainText.length;
+                        start = start.clamp(0, maxOffset);
+                        end = end.clamp(start, maxOffset);
+                        quillController.updateSelection(
+                          TextSelection(baseOffset: start, extentOffset: end),
+                          ChangeSource.local,
+                        );
+                        editorFocusNode.requestFocus();
                         Navigator.pop(dialogContext);
                       },
                       trailing: IconButton(
