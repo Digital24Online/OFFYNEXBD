@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 /// Safe formula evaluator for OFFYNEX Sheets.
+/// Blank cells evaluate as zero; non-numeric text and circular formulas fail.
 class SheetsFormulaEngine {
   SheetsFormulaEngine(this.cells);
 
