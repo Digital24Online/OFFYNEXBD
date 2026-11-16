@@ -341,7 +341,10 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   }
 
   void onEditorChanged() {
-    updateWordCount(quillController.document.toPlainText());
+    if (!mounted) return;
+    setState(() {
+      updateWordCount(quillController.document.toPlainText());
+    });
     scheduleSave();
   }
 
@@ -399,6 +402,17 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     return saveQueue;
   }
   
+
+  void selectAllText() {
+    final endOffset = quillController.document.length - 1;
+    if (endOffset <= 0) return;
+
+    quillController.updateSelection(
+      TextSelection(baseOffset: 0, extentOffset: endOffset),
+      ChangeSource.local,
+    );
+    editorFocusNode.requestFocus();
+  }
 
   Future<void> clearDocument() async {
     final confirm = await showDialog<bool>(
@@ -726,7 +740,6 @@ Widget buildHomeRibbon() {
 
   Widget buildInsertRibbon() {
     final now = DateTime.now();
-
     final currentDate =
         '${now.day.toString().padLeft(2, '0')}/'
         '${now.month.toString().padLeft(2, '0')}/'
@@ -742,13 +755,15 @@ Widget buildHomeRibbon() {
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           ElevatedButton.icon(
-            onPressed: () {
-              insertTextAtSelection(currentDate);
-            },
+                        onPressed: () => insertTextAtSelection(currentDate),
             icon: const Icon(Icons.calendar_today),
             label: const Text('Date'),
           ),
-
+          ElevatedButton.icon(
+            onPressed: insertWriterTable,
+            icon: const Icon(Icons.table_chart),
+            label: const Text('Table'),
+          ),
           ElevatedButton.icon(
             onPressed: insertWriterImage,
             icon: const Icon(Icons.image),
@@ -759,47 +774,19 @@ Widget buildHomeRibbon() {
             icon: const Icon(Icons.link),
             label: const Text('Hyperlink'),
           ),
-
           PopupMenuButton<String>(
             tooltip: 'Insert Symbol',
             onSelected: insertTextAtSelection,
             itemBuilder: (context) => const [
-              PopupMenuItem(
-                value: '©',
-                child: Text('©  Copyright'),
-              ),
-              PopupMenuItem(
-                value: '®',
-                child: Text('®  Registered'),
-              ),
-              PopupMenuItem(
-                value: '™',
-                child: Text('™  Trademark'),
-              ),
-              PopupMenuItem(
-                value: '₹',
-                child: Text('₹  Rupee'),
-              ),
-              PopupMenuItem(
-                value: '৳',
-                child: Text('৳  Taka'),
-              ),
-              PopupMenuItem(
-                value: '°',
-                child: Text('°  Degree'),
-              ),
-              PopupMenuItem(
-                value: '±',
-                child: Text('±  Plus Minus'),
-              ),
-              PopupMenuItem(
-                value: '∞',
-                child: Text('∞  Infinity'),
-              ),
-              PopupMenuItem(
-                value: '✓',
-                child: Text('✓  Check'),
-              ),
+              PopupMenuItem(value: '©', child: Text('©  Copyright')),
+              PopupMenuItem(value: '®', child: Text('®  Registered')),
+              PopupMenuItem(value: '™', child: Text('™  Trademark')),
+              PopupMenuItem(value: '₹', child: Text('₹  Rupee')),
+              PopupMenuItem(value: '৳', child: Text('৳  Taka')),
+              PopupMenuItem(value: '°', child: Text('°  Degree')),
+              PopupMenuItem(value: '±', child: Text('±  Plus Minus')),
+              PopupMenuItem(value: '∞', child: Text('∞  Infinity')),
+              PopupMenuItem(value: '✓', child: Text('✓  Check')),
             ],
             child: const Chip(
               avatar: Icon(Icons.functions),
@@ -810,8 +797,7 @@ Widget buildHomeRibbon() {
       ),
     );
   }
-  
-  
+
   Future<void> insertWriterTable() async {
     final data = await showWriterTableEditor(context);
 
@@ -843,7 +829,16 @@ Future<void> insertWriterImage() async {
 
     if (pickedFile == null || !mounted) return;
 
-    final fileSize = await pickedFile.length();
+    final fileSize = pickedFile.lengthSync() ?? await pickedFile.length();
+
+    if (fileSize == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('ছবির ফাইলের সাইজ পড়া যায়নি।'),
+        ),
+      );
+      return;
+    }
 
     if (fileSize > 15 * 1024 * 1024) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -860,8 +855,8 @@ Future<void> insertWriterImage() async {
     const allowedExtensions = [
       'jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp',
     ];
-
-    if (!allowedExtensions.contains(extension)) {
+    
+        if (!allowedExtensions.contains(extension)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('এই ছবির ফরম্যাট সমর্থিত নয়।'),
@@ -876,12 +871,14 @@ Future<void> insertWriterImage() async {
 
     final appDirectory =
         await getApplicationSupportDirectory();
+    if (!mounted) return;
 
     final imageDirectory = Directory(
       '${appDirectory.path}/offynexbd_images',
     );
 
     await imageDirectory.create(recursive: true);
+    if (!mounted) return;
 
     final savedImage = File(
       '${imageDirectory.path}/'
@@ -890,6 +887,7 @@ Future<void> insertWriterImage() async {
     );
 
     await savedImage.writeAsBytes(bytes, flush: true);
+    if (!mounted) return;
 
     final start = selection.start;
     final length = selection.end - selection.start;
@@ -899,7 +897,7 @@ Future<void> insertWriterImage() async {
       length,
       BlockEmbed.image(savedImage.path),
       TextSelection.collapsed(offset: start + 1),
-      source: ChangeSource.local,
+            source: ChangeSource.local,
     );
 
     if (mounted) {
@@ -1004,7 +1002,7 @@ Future<void> insertWriterImage() async {
           ),
         ],
       ),
-      body: Column(
+            body: Column(
         children: [
           Container(
             color: Colors.white,
@@ -1026,53 +1024,46 @@ Future<void> insertWriterImage() async {
               ),
             ),
           ),
-
-                    
-// OFFYNEXBD Desktop Ribbon
-Column(
-  crossAxisAlignment: CrossAxisAlignment.stretch,
-  children: [
-    buildRibbonTabs(),
-
-    if (selectedRibbonTab == 1) ...[
-      buildHomeRibbon(),
-
-      // Paragraph tools: Alignment, Lists, Indent, Undo, Redo
-      Container(
-        color: const Color(0xFFEAF0F8),
-        child: QuillSimpleToolbar(
-          controller: quillController,
-          config: const QuillSimpleToolbarConfig(
-            multiRowsDisplay: true,
-
-            showFontFamily: false,
-            showFontSize: false,
-            showBoldButton: false,
-            showItalicButton: false,
-            showUnderLineButton: false,
-
-            showAlignmentButtons: true,
-            showListNumbers: true,
-            showListBullets: true,
-            showIndent: true,
-            showUndo: true,
-            showRedo: true,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              buildRibbonTabs(),
+              if (selectedRibbonTab == 1) ...[
+                buildHomeRibbon(),
+                Container(
+                  color: const Color(0xFFEAF0F8),
+                  child: QuillSimpleToolbar(
+                    controller: quillController,
+                    config: const QuillSimpleToolbarConfig(
+                      multiRowsDisplay: true,
+                      showFontFamily: false,
+                      showFontSize: false,
+                      showBoldButton: false,
+                      showItalicButton: false,
+                      showUnderLineButton: false,
+                      showAlignmentButtons: true,
+                      showListNumbers: true,
+                      showListBullets: true,
+                      showIndent: true,
+                      showUndo: true,
+                      showRedo: true,
+                    ),
+                  ),
+                ),
+              ] else if (selectedRibbonTab == 2) ...[
+                buildInsertRibbon(),
+              ] else ...[
+                const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Center(
+                    child: Text(
+                      'এই ট্যাবের টুলগুলো পরবর্তী ধাপে যুক্ত হবে।',
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
-        ),
-      ),
-        ] else if (selectedRibbonTab == 2) ...[
-      buildInsertRibbon(),
-    ] else
-      const Padding(
-        padding: EdgeInsets.all(16),
-        child: Center(
-          child: Text(
-            'এই ট্যাবের টুলগুলো পরবর্তী ধাপে যুক্ত হবে।',
-          ),
-        ),
-      ),
-          
-
           Expanded(
             child: Container(
               margin: const EdgeInsets.all(12),
@@ -1088,25 +1079,24 @@ Column(
                   ),
                 ],
               ),
-      
-    child: QuillEditor.basic(
-      controller: quillController,
-      focusNode: editorFocusNode,
-      config: QuillEditorConfig(
-        expands: true,
-        padding: EdgeInsets.zero,
-        placeholder: 'এখানে আপনার লেখা শুরু করুন...',
-        embedBuilders: [
-          WriterTableEmbedBuilder(
-            onEdit: editWriterTable,
+              child: QuillEditor.basic(
+                controller: quillController,
+                focusNode: editorFocusNode,
+                config: QuillEditorConfig(
+                  expands: true,
+                  padding: EdgeInsets.zero,
+                  placeholder: 'এখানে আপনার লেখা শুরু করুন...',
+                  embedBuilders: [
+                    WriterTableEmbedBuilder(
+                      onEdit: editWriterTable,
+                    ),
+                    WriterImageEmbedBuilder(),
+                  ],
+                ),
+              ),
+            ),
           ),
-          WriterImageEmbedBuilder(),
-        ],
-  ),
-),
-              
-
-          Container(
+                    Container(
             width: double.infinity,
             color: Colors.white,
             padding: const EdgeInsets.symmetric(
@@ -1143,6 +1133,7 @@ Column(
       ),
     );
   }
+
 }
 
     
@@ -1170,7 +1161,7 @@ class WriterImageEmbedBuilder extends EmbedBuilder {
                   child: Image.file(
                     File(imagePath),
                     fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) {
+                                        errorBuilder: (_, __, ___) {
                       return const Padding(
                         padding: EdgeInsets.all(24),
                         child: Text('ছবি পাওয়া যায়নি।'),
@@ -1196,4 +1187,4 @@ class WriterImageEmbedBuilder extends EmbedBuilder {
     );
   }
 }
-    
+
