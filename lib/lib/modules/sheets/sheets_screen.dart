@@ -228,7 +228,8 @@ class _SheetsScreenState extends State<SheetsScreen> {
     if (_columnCount <= 1) return;
     final lastColumn = _columnName(_columnCount - 1);
     final escapedLastColumn = RegExp.escape(lastColumn);
-    final cellPattern = RegExp('^' + escapedLastColumn + r'[1-9]\d*
+    final cellPattern = RegExp('^' + escapedLastColumn + r'[1-9]\d*$', caseSensitive: false);
+    final formulaPattern = RegExp('(?<![A-Z0-9_])' + escapedLastColumn + r'[1-9]\d*(?!\d)', caseSensitive: false);
     final hasData = _cells.entries.any((entry) =>
         cellPattern.hasMatch(entry.key) && entry.value.isNotEmpty);
     final hasFormulaReference = _cells.values.any((value) =>
@@ -248,7 +249,6 @@ class _SheetsScreenState extends State<SheetsScreen> {
     await _saveWorkbook();
   }
 
-  Future<void> _importWorkbook() async {
     try {
       final picked = await FilePicker.pickFile(
         type: FileType.custom,
