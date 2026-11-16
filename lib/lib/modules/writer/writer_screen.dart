@@ -802,7 +802,6 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
         quillController.replaceText(
           found, find.length, replacement,
           TextSelection.collapsed(offset: found + replacement.length),
-          source: ChangeSource.local,
         );
       }
       _showMessage('${offsets.length}টি জায়গায় পরিবর্তন হয়েছে।');
@@ -871,7 +870,6 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
                             quillController.replaceText(
                               0, quillController.document.length - 1, content,
                               const TextSelection.collapsed(offset: 0),
-                              source: ChangeSource.local,
                             );
                           }
                           updateWordCount(quillController.document.toPlainText());
@@ -1530,7 +1528,6 @@ Future<void> showCustomFontSizeDialog() async {
       TextSelection.collapsed(
         offset: start + text.length,
       ),
-      source: ChangeSource.local,
     );
   }
 
