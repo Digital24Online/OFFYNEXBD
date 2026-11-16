@@ -80,8 +80,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
   }
 
   Future<void> _saveWorkbook() async {
-    // Capture an immutable snapshot now and serialize writes to prevent older saves
-    // from overwriting a newer edit when several saves happen close together.
+    // Capture a snapshot now and serialize writes to prevent stale saves winning races.
     final snapshot = jsonEncode({
       'name': _sheetName,
       'rows': _rowCount,
@@ -197,7 +196,51 @@ class _SheetsScreenState extends State<SheetsScreen> {
 
   Future<void> _removeLastRow() async {
     if (_rowCount <= 1) return;
-    final pattern = RegExp(r'^[A-Z]+' + _rowCount.toString() + r'
+    final rowNumber = _rowCount;
+    final cellPattern = RegExp('^[A-Z]+' + rowNumber.toString() + r'$');
+    final formulaPattern = RegExp(r'(?<![A-Z0-9_])[A-Z]+' + rowNumber.toString() + r'(?!\d)');
+    final hasData = _cells.entries.any((entry) =>
+        cellPattern.hasMatch(entry.key.toUpperCase()) && entry.value.isNotEmpty);
+    final hasFormulaReference = _cells.values.any((value) =>
+        value.startsWith('=') && formulaPattern.hasMatch(value.toUpperCase()));
+    if (hasData || hasFormulaReference) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t('শেষ Row-তে তথ্য বা Formula reference আছে। আগে তা সরান।', 'The last row has data or formula references. Clear them first.'))),
+      );
+      return;
+    }
+    setState(() {
+      _rowCount--;
+      if (_selectedCell != null && cellPattern.hasMatch(_selectedCell!)) {
+        _selectedCell = null;
+      }
+    });
+    await _saveWorkbook();
+  }
+
+  Future<void> _removeLastColumn() async {
+    if (_columnCount <= 1) return;
+    final lastColumn = _columnName(_columnCount - 1);
+    final cellPattern = RegExp('^' + lastColumn + r'[1-9]\d*$', caseSensitive: false);
+    final formulaPattern = RegExp(r'(?<![A-Z0-9_])' + lastColumn + r'[1-9]\d*(?!\d)', caseSensitive: false);
+    final hasData = _cells.entries.any((entry) =>
+        cellPattern.hasMatch(entry.key) && entry.value.isNotEmpty);
+    final hasFormulaReference = _cells.values.any((value) =>
+        value.startsWith('=') && formulaPattern.hasMatch(value));
+    if (hasData || hasFormulaReference) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t('শেষ Column-তে তথ্য বা Formula reference আছে। আগে তা সরান।', 'The last column has data or formula references. Clear them first.'))),
+      );
+      return;
+    }
+    setState(() {
+      _columnCount--;
+      if (_selectedCell != null && cellPattern.hasMatch(_selectedCell!)) {
+        _selectedCell = null;
+      }
+    });
+    await _saveWorkbook();
+  }
 
   Future<void> _clearSheet() async {
     final confirm = await showDialog<bool>(
@@ -281,592 +324,6 @@ class _SheetsScreenState extends State<SheetsScreen> {
                         onPressed: _columnCount > 1 ? _removeLastColumn : null,
                         icon: const Icon(Icons.remove, size: 17),
                         label: Text(_t('শেষ Column বাদ', 'Remove last column')),
-                      ),
-                      Chip(
-                        avatar: Icon(_saved ? Icons.cloud_done_outlined : Icons.sync, size: 16),
-                        label: Text(_saved ? _t('সংরক্ষিত', 'Saved') : _t('সংরক্ষণ হচ্ছে', 'Saving')),
-                      ),
-                    ],
-                  ),
-                ),
-                if (_selectedCell != null)
-                  Container(
-                    width: double.infinity,
-                    color: const Color(0xFFEAF2FC),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    child: Row(
-                      children: [
-                        Text(_selectedCell!, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        const SizedBox(width: 12),
-                        Expanded(child: Text(_cells[_selectedCell!] ?? '', maxLines: 1, overflow: TextOverflow.ellipsis)),
-                        Text('= ${_displayValue(_selectedCell!)}', style: const TextStyle(fontWeight: FontWeight.w600)),
-                      ],
-                    ),
-                  ),
-                Expanded(
-                  child: Scrollbar(
-                    controller: _verticalController,
-                    thumbVisibility: true,
-                    child: SingleChildScrollView(
-                      controller: _verticalController,
-                      child: Scrollbar(
-                        controller: _horizontalController,
-                        thumbVisibility: true,
-                        notificationPredicate: (notification) => notification.depth == 1,
-                        child: SingleChildScrollView(
-                          controller: _horizontalController,
-                          scrollDirection: Axis.horizontal,
-                          child: DataTable(
-                            horizontalMargin: 8,
-                            columnSpacing: 4,
-                            headingRowHeight: 38,
-                            dataRowMinHeight: 42,
-                            dataRowMaxHeight: 48,
-                            headingRowColor: WidgetStateProperty.all(const Color(0xFFE5ECF5)),
-                            columns: [
-                              DataColumn(label: SizedBox(width: 42, child: Center(child: Text('#')))),
-                              for (var column = 0; column < _columnCount; column++)
-                                DataColumn(
-                                  label: SizedBox(
-                                    width: 104,
-                                    child: Center(
-                                      child: Text(_columnName(column), style: const TextStyle(fontWeight: FontWeight.bold)),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                            rows: [
-                              for (var row = 0; row < _rowCount; row++)
-                                DataRow(
-                                  cells: [
-                                    DataCell(SizedBox(width: 42, child: Center(child: Text('${row + 1}', style: const TextStyle(color: Colors.black54))))),
-                                    for (var column = 0; column < _columnCount; column++)
-                                      DataCell(
-                                        SizedBox(
-                                          width: 104,
-                                          child: InkWell(
-                                            onTap: () => _editCell(row, column),
-                                            child: Container(
-                                              alignment: Alignment.centerLeft,
-                                              padding: const EdgeInsets.symmetric(horizontal: 8),
-                                              decoration: BoxDecoration(
-                                                color: _selectedCell == _cellKey(row, column) ? const Color(0xFFDCEBFF) : Colors.white,
-                                                border: Border.all(color: const Color(0xFFE1E6ED), width: 0.5),
-                                              ),
-                                              child: Text(
-                                                _displayValue(_cellKey(row, column)),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                Container(
-                  width: double.infinity,
-                  color: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.grid_on, size: 17, color: Color(0xFF159B68)),
-                      const SizedBox(width: 8),
-                      Text(_sheetName, style: const TextStyle(fontWeight: FontWeight.w600)),
-                      const Spacer(),
-                      Text('$_rowCount × $_columnCount', style: const TextStyle(color: Colors.black54, fontSize: 12)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-    );
-  }
-}
-);
-    final hasData = _cells.entries.any((entry) =>
-        pattern.hasMatch(entry.key.toUpperCase()) && entry.value.isNotEmpty);
-    if (hasData) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_t('শেষ Row-তে তথ্য আছে। আগে তথ্য সরান।', 'The last row contains data. Clear it before removing.'))),
-      );
-      return;
-    }
-    setState(() {
-      _rowCount--;
-      if (_selectedCell != null && RegExp(r'^[A-Z]+' + (_rowCount + 1).toString() + r'
-
-  Future<void> _clearSheet() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(_t('শিট খালি করবেন?', 'Clear sheet?')),
-        content: Text(_t('সব সেলের তথ্য মুছে যাবে।', 'All cell data will be deleted.')),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(_t('বাতিল', 'Cancel'))),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text(_t('মুছুন', 'Clear'))),
-        ],
-      ),
-    );
-    if (confirm != true || !mounted) return;
-    setState(() {
-      _cells.clear();
-      _selectedCell = null;
-    });
-    await _saveWorkbook();
-  }
-
-  @override
-  void dispose() {
-    _horizontalController.dispose();
-    _verticalController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FB),
-      appBar: AppBar(
-        title: Text(_t('OFFYNEX শিটস', 'OFFYNEX Sheets')),
-        backgroundColor: Colors.white,
-        actions: [
-          IconButton(
-            tooltip: _t('শিটের নাম পরিবর্তন', 'Rename sheet'),
-            onPressed: _renameSheet,
-            icon: const Icon(Icons.drive_file_rename_outline),
-          ),
-          IconButton(
-            tooltip: _t('সংরক্ষণ', 'Save'),
-            onPressed: _saveWorkbook,
-            icon: const Icon(Icons.save_outlined),
-          ),
-          IconButton(
-            tooltip: _t('সব মুছুন', 'Clear all'),
-            onPressed: _clearSheet,
-            icon: const Icon(Icons.delete_outline),
-          ),
-        ],
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Container(
-                  color: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  child: Wrap(
-                    spacing: 6,
-                    runSpacing: 4,
-                    children: [
-                      OutlinedButton.icon(
-                        onPressed: _addRows,
-                        icon: const Icon(Icons.add, size: 17),
-                        label: Text(_t('১০টি Row', '10 Rows')),
-                      ),
-                      OutlinedButton.icon(
-                        onPressed: _addColumns,
-                        icon: const Icon(Icons.add, size: 17),
-                        label: Text(_t('২টি Column', '2 Columns')),
-                      ),
-                      Chip(
-                        avatar: Icon(_saved ? Icons.cloud_done_outlined : Icons.sync, size: 16),
-                        label: Text(_saved ? _t('সংরক্ষিত', 'Saved') : _t('সংরক্ষণ হচ্ছে', 'Saving')),
-                      ),
-                    ],
-                  ),
-                ),
-                if (_selectedCell != null)
-                  Container(
-                    width: double.infinity,
-                    color: const Color(0xFFEAF2FC),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    child: Row(
-                      children: [
-                        Text(_selectedCell!, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        const SizedBox(width: 12),
-                        Expanded(child: Text(_cells[_selectedCell!] ?? '', maxLines: 1, overflow: TextOverflow.ellipsis)),
-                        Text('= ${_displayValue(_selectedCell!)}', style: const TextStyle(fontWeight: FontWeight.w600)),
-                      ],
-                    ),
-                  ),
-                Expanded(
-                  child: Scrollbar(
-                    controller: _verticalController,
-                    thumbVisibility: true,
-                    child: SingleChildScrollView(
-                      controller: _verticalController,
-                      child: Scrollbar(
-                        controller: _horizontalController,
-                        thumbVisibility: true,
-                        notificationPredicate: (notification) => notification.depth == 1,
-                        child: SingleChildScrollView(
-                          controller: _horizontalController,
-                          scrollDirection: Axis.horizontal,
-                          child: DataTable(
-                            horizontalMargin: 8,
-                            columnSpacing: 4,
-                            headingRowHeight: 38,
-                            dataRowMinHeight: 42,
-                            dataRowMaxHeight: 48,
-                            headingRowColor: WidgetStateProperty.all(const Color(0xFFE5ECF5)),
-                            columns: [
-                              DataColumn(label: SizedBox(width: 42, child: Center(child: Text('#')))),
-                              for (var column = 0; column < _columnCount; column++)
-                                DataColumn(
-                                  label: SizedBox(
-                                    width: 104,
-                                    child: Center(
-                                      child: Text(_columnName(column), style: const TextStyle(fontWeight: FontWeight.bold)),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                            rows: [
-                              for (var row = 0; row < _rowCount; row++)
-                                DataRow(
-                                  cells: [
-                                    DataCell(SizedBox(width: 42, child: Center(child: Text('${row + 1}', style: const TextStyle(color: Colors.black54))))),
-                                    for (var column = 0; column < _columnCount; column++)
-                                      DataCell(
-                                        SizedBox(
-                                          width: 104,
-                                          child: InkWell(
-                                            onTap: () => _editCell(row, column),
-                                            child: Container(
-                                              alignment: Alignment.centerLeft,
-                                              padding: const EdgeInsets.symmetric(horizontal: 8),
-                                              decoration: BoxDecoration(
-                                                color: _selectedCell == _cellKey(row, column) ? const Color(0xFFDCEBFF) : Colors.white,
-                                                border: Border.all(color: const Color(0xFFE1E6ED), width: 0.5),
-                                              ),
-                                              child: Text(
-                                                _displayValue(_cellKey(row, column)),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                Container(
-                  width: double.infinity,
-                  color: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.grid_on, size: 17, color: Color(0xFF159B68)),
-                      const SizedBox(width: 8),
-                      Text(_sheetName, style: const TextStyle(fontWeight: FontWeight.w600)),
-                      const Spacer(),
-                      Text('$_rowCount × $_columnCount', style: const TextStyle(color: Colors.black54, fontSize: 12)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-    );
-  }
-}
-).hasMatch(_selectedCell!)) {
-        _selectedCell = null;
-      }
-    });
-    await _saveWorkbook();
-  }
-
-  Future<void> _removeLastColumn() async {
-    if (_columnCount <= 1) return;
-    final lastColumn = _columnName(_columnCount - 1);
-    final pattern = RegExp('^' + lastColumn + r'[1-9]\\d*
-
-  Future<void> _clearSheet() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(_t('শিট খালি করবেন?', 'Clear sheet?')),
-        content: Text(_t('সব সেলের তথ্য মুছে যাবে।', 'All cell data will be deleted.')),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(_t('বাতিল', 'Cancel'))),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text(_t('মুছুন', 'Clear'))),
-        ],
-      ),
-    );
-    if (confirm != true || !mounted) return;
-    setState(() {
-      _cells.clear();
-      _selectedCell = null;
-    });
-    await _saveWorkbook();
-  }
-
-  @override
-  void dispose() {
-    _horizontalController.dispose();
-    _verticalController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FB),
-      appBar: AppBar(
-        title: Text(_t('OFFYNEX শিটস', 'OFFYNEX Sheets')),
-        backgroundColor: Colors.white,
-        actions: [
-          IconButton(
-            tooltip: _t('শিটের নাম পরিবর্তন', 'Rename sheet'),
-            onPressed: _renameSheet,
-            icon: const Icon(Icons.drive_file_rename_outline),
-          ),
-          IconButton(
-            tooltip: _t('সংরক্ষণ', 'Save'),
-            onPressed: _saveWorkbook,
-            icon: const Icon(Icons.save_outlined),
-          ),
-          IconButton(
-            tooltip: _t('সব মুছুন', 'Clear all'),
-            onPressed: _clearSheet,
-            icon: const Icon(Icons.delete_outline),
-          ),
-        ],
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Container(
-                  color: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  child: Wrap(
-                    spacing: 6,
-                    runSpacing: 4,
-                    children: [
-                      OutlinedButton.icon(
-                        onPressed: _addRows,
-                        icon: const Icon(Icons.add, size: 17),
-                        label: Text(_t('১০টি Row', '10 Rows')),
-                      ),
-                      OutlinedButton.icon(
-                        onPressed: _addColumns,
-                        icon: const Icon(Icons.add, size: 17),
-                        label: Text(_t('২টি Column', '2 Columns')),
-                      ),
-                      Chip(
-                        avatar: Icon(_saved ? Icons.cloud_done_outlined : Icons.sync, size: 16),
-                        label: Text(_saved ? _t('সংরক্ষিত', 'Saved') : _t('সংরক্ষণ হচ্ছে', 'Saving')),
-                      ),
-                    ],
-                  ),
-                ),
-                if (_selectedCell != null)
-                  Container(
-                    width: double.infinity,
-                    color: const Color(0xFFEAF2FC),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    child: Row(
-                      children: [
-                        Text(_selectedCell!, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        const SizedBox(width: 12),
-                        Expanded(child: Text(_cells[_selectedCell!] ?? '', maxLines: 1, overflow: TextOverflow.ellipsis)),
-                        Text('= ${_displayValue(_selectedCell!)}', style: const TextStyle(fontWeight: FontWeight.w600)),
-                      ],
-                    ),
-                  ),
-                Expanded(
-                  child: Scrollbar(
-                    controller: _verticalController,
-                    thumbVisibility: true,
-                    child: SingleChildScrollView(
-                      controller: _verticalController,
-                      child: Scrollbar(
-                        controller: _horizontalController,
-                        thumbVisibility: true,
-                        notificationPredicate: (notification) => notification.depth == 1,
-                        child: SingleChildScrollView(
-                          controller: _horizontalController,
-                          scrollDirection: Axis.horizontal,
-                          child: DataTable(
-                            horizontalMargin: 8,
-                            columnSpacing: 4,
-                            headingRowHeight: 38,
-                            dataRowMinHeight: 42,
-                            dataRowMaxHeight: 48,
-                            headingRowColor: WidgetStateProperty.all(const Color(0xFFE5ECF5)),
-                            columns: [
-                              DataColumn(label: SizedBox(width: 42, child: Center(child: Text('#')))),
-                              for (var column = 0; column < _columnCount; column++)
-                                DataColumn(
-                                  label: SizedBox(
-                                    width: 104,
-                                    child: Center(
-                                      child: Text(_columnName(column), style: const TextStyle(fontWeight: FontWeight.bold)),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                            rows: [
-                              for (var row = 0; row < _rowCount; row++)
-                                DataRow(
-                                  cells: [
-                                    DataCell(SizedBox(width: 42, child: Center(child: Text('${row + 1}', style: const TextStyle(color: Colors.black54))))),
-                                    for (var column = 0; column < _columnCount; column++)
-                                      DataCell(
-                                        SizedBox(
-                                          width: 104,
-                                          child: InkWell(
-                                            onTap: () => _editCell(row, column),
-                                            child: Container(
-                                              alignment: Alignment.centerLeft,
-                                              padding: const EdgeInsets.symmetric(horizontal: 8),
-                                              decoration: BoxDecoration(
-                                                color: _selectedCell == _cellKey(row, column) ? const Color(0xFFDCEBFF) : Colors.white,
-                                                border: Border.all(color: const Color(0xFFE1E6ED), width: 0.5),
-                                              ),
-                                              child: Text(
-                                                _displayValue(_cellKey(row, column)),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                Container(
-                  width: double.infinity,
-                  color: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.grid_on, size: 17, color: Color(0xFF159B68)),
-                      const SizedBox(width: 8),
-                      Text(_sheetName, style: const TextStyle(fontWeight: FontWeight.w600)),
-                      const Spacer(),
-                      Text('$_rowCount × $_columnCount', style: const TextStyle(color: Colors.black54, fontSize: 12)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-    );
-  }
-}
-, caseSensitive: false);
-    final hasData = _cells.entries.any((entry) =>
-        pattern.hasMatch(entry.key) && entry.value.isNotEmpty);
-    if (hasData) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_t('শেষ Column-তে তথ্য আছে। আগে তথ্য সরান।', 'The last column contains data. Clear it before removing.'))),
-      );
-      return;
-    }
-    setState(() {
-      _columnCount--;
-      if (_selectedCell != null && _selectedCell!.startsWith(lastColumn)) {
-        _selectedCell = null;
-      }
-    });
-    await _saveWorkbook();
-  }
-
-  Future<void> _clearSheet() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(_t('শিট খালি করবেন?', 'Clear sheet?')),
-        content: Text(_t('সব সেলের তথ্য মুছে যাবে।', 'All cell data will be deleted.')),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(_t('বাতিল', 'Cancel'))),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text(_t('মুছুন', 'Clear'))),
-        ],
-      ),
-    );
-    if (confirm != true || !mounted) return;
-    setState(() {
-      _cells.clear();
-      _selectedCell = null;
-    });
-    await _saveWorkbook();
-  }
-
-  @override
-  void dispose() {
-    _horizontalController.dispose();
-    _verticalController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FB),
-      appBar: AppBar(
-        title: Text(_t('OFFYNEX শিটস', 'OFFYNEX Sheets')),
-        backgroundColor: Colors.white,
-        actions: [
-          IconButton(
-            tooltip: _t('শিটের নাম পরিবর্তন', 'Rename sheet'),
-            onPressed: _renameSheet,
-            icon: const Icon(Icons.drive_file_rename_outline),
-          ),
-          IconButton(
-            tooltip: _t('সংরক্ষণ', 'Save'),
-            onPressed: _saveWorkbook,
-            icon: const Icon(Icons.save_outlined),
-          ),
-          IconButton(
-            tooltip: _t('সব মুছুন', 'Clear all'),
-            onPressed: _clearSheet,
-            icon: const Icon(Icons.delete_outline),
-          ),
-        ],
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Container(
-                  color: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  child: Wrap(
-                    spacing: 6,
-                    runSpacing: 4,
-                    children: [
-                      OutlinedButton.icon(
-                        onPressed: _addRows,
-                        icon: const Icon(Icons.add, size: 17),
-                        label: Text(_t('১০টি Row', '10 Rows')),
-                      ),
-                      OutlinedButton.icon(
-                        onPressed: _addColumns,
-                        icon: const Icon(Icons.add, size: 17),
-                        label: Text(_t('২টি Column', '2 Columns')),
                       ),
                       Chip(
                         avatar: Icon(_saved ? Icons.cloud_done_outlined : Icons.sync, size: 16),
