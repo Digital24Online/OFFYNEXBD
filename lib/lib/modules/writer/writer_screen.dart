@@ -513,7 +513,9 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     final delta = quillController.document.toDelta().toJson();
     final encodedDelta = jsonEncode(delta);
     if (writerRevisions.isNotEmpty &&
-        writerRevisions.last['deltaJson'] == encodedDelta) return;
+        writerRevisions.last['deltaJson'] == encodedDelta) {
+      return;
+    }
     writerRevisions.add({
       'content': text,
       'delta': delta,
@@ -1691,6 +1693,7 @@ Future<void> insertWriterImage() async {
     if (pickedFile == null || !mounted) return;
 
     final fileSize = pickedFile.lengthSync() ?? await pickedFile.length();
+    if (!mounted) return;
 
     if (fileSize == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2053,7 +2056,7 @@ class WriterImageEmbedBuilder extends EmbedBuilder {
                   child: Image.file(
                     File(imagePath),
                     fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) {
+                    errorBuilder: (context, error, stackTrace) {
                       return const Padding(
                         padding: EdgeInsets.all(24),
                         child: Text('ছবি পাওয়া যায়নি।'),
@@ -2068,7 +2071,7 @@ class WriterImageEmbedBuilder extends EmbedBuilder {
         child: Image.file(
           File(imagePath),
           fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) {
+          errorBuilder: (context, error, stackTrace) {
             return const Icon(
               Icons.broken_image,
               size: 60,
