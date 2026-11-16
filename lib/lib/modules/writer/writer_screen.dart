@@ -1024,66 +1024,185 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   Future<void> showRevisionHistory() async {
     await showDialog<void>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Revision Snapshots'),
-        content: SizedBox(
-          width: 420,
-          child: writerRevisions.isEmpty
-              ? const Text('Revision সংরক্ষণ চালু করুন; এরপর Save হলে snapshot তৈরি হবে।')
-              : ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: writerRevisions.length,
-                  itemBuilder: (context, index) {
-                    final item = writerRevisions[writerRevisions.length - 1 - index];
-                    final date = item['savedAt']?.toString() ?? '';
-                    final content = item['content']?.toString() ?? '';
-                    return ListTile(
-                      title: Text(date),
-                      subtitle: Text(content, maxLines: 2, overflow: TextOverflow.ellipsis),
-                      onTap: () async {
-                        final confirm = await showDialog<bool>(
-                          context: context,
-                          builder: (c) => AlertDialog(
-                            title: const Text('Restore this snapshot?'),
-                            content: const Text('বর্তমান লেখা প্রতিস্থাপিত হবে।'),
-                            actions: [
-                              TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
-                              ElevatedButton(onPressed: () => Navigator.pop(c, true), child: const Text('Restore')),
-                            ],
-                          ),
-                        );
-                        if (confirm == true && mounted) {
-                          final savedDelta = item['delta'];
-                          if (savedDelta is List) {
-                            final restoredDocument = Document.fromJson(
-                              savedDelta
-                                  .map((op) => Map<String, dynamic>.from(op as Map))
-                                  .toList(),
-                            );
-                            quillController.document = restoredDocument;
-                            quillController.updateSelection(
-                              TextSelection.collapsed(
-                                offset: restoredDocument.length - 1,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, refreshDialog) => AlertDialog(
+          title: const Text('Revision Snapshots'),
+          content: SizedBox(
+            width: 420,
+            child: writerRevisions.isEmpty
+                ? const Text(
+                    'Revision সংরক্ষণ চালু করুন; এরপর Save হলে snapshot তৈরি হবে।',
+                  )
+                : ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: writerRevisions.length,
+                    itemBuilder: (context, index) {
+                      final revisionIndex =
+                          writerRevisions.length - 1 - index;
+                      final item = writerRevisions[revisionIndex];
+                      final date = item['savedAt']?.toString() ?? '';
+                      final content = item['content']?.toString() ?? '';
+
+                      return ListTile(
+                        title: Text(
+                          date.isEmpty ? 'তারিখ নেই' : date,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(
+                          content,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        onTap: () async {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (confirmContext) => AlertDialog(
+                              title: const Text('Restore this snapshot?'),
+                              content: const Text(
+                                'বর্তমান লেখা প্রতিস্থাপিত হবে।',
                               ),
-          ChangeSource.local,
-                            );
-                          } else {
-                            // পুরোনো plain-text snapshot সমর্থন।
-                            quillController.replaceText(
-                              0, quillController.document.length - 1, content,
-                              const TextSelection.collapsed(offset: 0),
-                            );
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(
+                                    confirmContext,
+                                    false,
+                                  ),
+                                  child: const Text('Cancel'),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () => Navigator.pop(
+                                    confirmContext,
+                                    true,
+                                  ),
+                                  child: const Text('Restore'),
+                                ),
+                              ],
+                            ),
+                          );
+
+                          if (confirm == true && mounted) {
+                            try {
+                              final savedDelta = item['delta'];
+                              if (savedDelta is List) {
+                                final restoredDocument = Document.fromJson(
+                                  savedDelta
+                                      .map((op) =>
+                                          Map<String, dynamic>.from(op as Map))
+                                      .toList(),
+                                );
+                                quillController.document = restoredDocument;
+                                quillController.updateSelection(
+                                  TextSelection.collapsed(
+                                    offset: restoredDocument.length - 1,
+                                  ),
+                                  ChangeSource.local,
+                                );
+                              } else {
+                                // পুরোনো plain-text snapshot সমর্থন।
+                                quillController.replaceText(
+                                  0,
+                                  quillController.document.length - 1,
+                                  content,
+                                  const TextSelection.collapsed(offset: 0),
+                                );
+                              }
+                              updateWordCount(
+                                quillController.document.toPlainText(),
+                              );
+                              scheduleSave();
+                              if (dialogContext.mounted) {
+                                Navigator.pop(dialogContext);
+                              }
+                              _showMessage('পুরোনো সংস্করণ ফিরিয়ে আনা হয়েছে।');
+                            } catch (_) {
+                              _showMessage(
+                                'এই Revision খোলা যায়নি; বর্তমান লেখা অপরিবর্তিত আছে।',
+                              );
+                            }
                           }
-                          updateWordCount(quillController.document.toPlainText());
-                          scheduleSave();
-                        }
-                        if (dialogContext.mounted) Navigator.pop(dialogContext);
-                      },
-                    );
-                  },
-                ),
+                        },
+                        trailing: IconButton(
+                          tooltip: 'Delete snapshot',
+                          icon: const Icon(Icons.delete_outline),
+                          onPressed: () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (confirmContext) => AlertDialog(
+                                title: const Text('Delete snapshot?'),
+                                content: const Text(
+                                  'এই Revision স্থায়ীভাবে মুছে যাবে।',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(
+                                      confirmContext,
+                                      false,
+                                    ),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () => Navigator.pop(
+                                      confirmContext,
+                                      true,
+                                    ),
+                                    child: const Text('Delete'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirm == true && mounted) {
+                              setState(() {
+                                writerRevisions.removeAt(revisionIndex);
+                              });
+                              scheduleSave();
+                              refreshDialog(() {});
+                            }
+                          },
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          actions: [
+            if (writerRevisions.isNotEmpty)
+              TextButton(
+                onPressed: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (confirmContext) => AlertDialog(
+                      title: const Text('Clear revision history?'),
+                      content: const Text(
+                        'সব সংরক্ষিত Revision মুছে যাবে। ডকুমেন্টের বর্তমান লেখা মুছবে না।',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () =>
+                              Navigator.pop(confirmContext, false),
+                          child: const Text('Cancel'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () =>
+                              Navigator.pop(confirmContext, true),
+                          child: const Text('Clear History'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirm == true && mounted) {
+                    setState(() => writerRevisions.clear());
+                    scheduleSave();
+                    refreshDialog(() {});
+                  }
+                },
+                child: const Text('Clear History'),
+              ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Close'),
+            ),
+          ],
         ),
-        actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Close'))],
       ),
     );
   }
