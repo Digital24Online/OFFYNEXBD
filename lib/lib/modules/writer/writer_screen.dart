@@ -654,39 +654,96 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
           controller: controller,
           minLines: 2,
           maxLines: 5,
-          decoration: const InputDecoration(hintText: 'নোট লিখুন'),
+          decoration: const InputDecoration(
+            hintText: 'নোট লিখুন',
+            labelText: 'Note',
+          ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
-          ElevatedButton(onPressed: () => Navigator.pop(dialogContext, controller.text.trim()), child: const Text('Insert')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () =>
+                Navigator.pop(dialogContext, controller.text.trim()),
+            child: const Text('Insert'),
+          ),
         ],
       ),
     );
     controller.dispose();
+
     if (note == null || note.isEmpty || !mounted) return;
-    final number = writerComments.length + writerCitations.length + 1;
+
+    final plainText = quillController.document.toPlainText();
+    final notePattern =
+        RegExp(r'(?:Footnote|Endnote)\s+(\d+):');
+    var number = 1;
+    for (final match in notePattern.allMatches(plainText)) {
+      final existing = int.tryParse(match.group(1) ?? '');
+      if (existing != null && existing >= number) {
+        number = existing + 1;
+      }
+    }
+
     insertTextAtSelection('[$number]');
     final kind = endnote ? 'Endnote' : 'Footnote';
+    final noteText = '\n\n$kind $number: $note';
     final end = quillController.document.length - 1;
     quillController.replaceText(
-      end, 0, '\n\n$kind $number: $note',
-      TextSelection.collapsed(offset: end + kind.length + note.length + 5),
+      end,
+      0,
+      noteText,
+      TextSelection.collapsed(offset: end + noteText.length),
     );
     scheduleSave();
   }
 
   void insertTableOfContents() {
-    final lines = quillController.document.toPlainText().split('\n');
-    final headings = lines
-        .where((line) => line.trimLeft().startsWith('#'))
-        .map((line) => line.replaceFirst(RegExp(r'^\s*#+\s*'), '').trim())
-        .where((line) => line.isNotEmpty)
-        .toList();
+    final headings = <String>[];
+
+    // Quill-এর আসল Heading 1/2/3 ফরম্যাট থেকে শিরোনাম সংগ্রহ।
+    for (final operation in quillController.document.toDelta().toJson()) {
+      if (operation is! Map) continue;
+      final inserted = operation['insert'];
+      final attributes = operation['attributes'];
+      if (inserted is! String || attributes is! Map) continue;
+      if (attributes['header'] == null) continue;
+
+      headings.addAll(
+        inserted
+            .split('\n')
+            .map((line) => line.trim())
+            .where((line) => line.isNotEmpty),
+      );
+    }
+
+    // পুরোনো Markdown-ধাঁচের # Heading-ও সমর্থন থাকবে।
     if (headings.isEmpty) {
-      _showMessage('সূচিপত্র তৈরির আগে শিরোনামের শুরুতে # লিখুন।');
+      headings.addAll(
+        quillController.document
+            .toPlainText()
+            .split('\n')
+            .where((line) => line.trimLeft().startsWith('#'))
+            .map((line) =>
+                line.replaceFirst(RegExp(r'^\s*#+\s*'), '').trim())
+            .where((line) => line.isNotEmpty),
+      );
+    }
+
+    if (headings.isEmpty) {
+      _showMessage('সূচিপত্র তৈরির আগে Heading 1/2/3 ব্যবহার করুন।');
       return;
     }
-    insertTextAtSelection('\n\nTable of Contents\n${headings.asMap().entries.map((e) => '${e.key + 1}. ${e.value}').join('\n')}\n');
+
+    final contents = headings
+        .asMap()
+        .entries
+        .map((entry) => '${entry.key + 1}. ${entry.value}')
+        .join('\n');
+    insertTextAtSelection('\n\nTable of Contents\n$contents\n');
+    scheduleSave();
   }
 
   Future<void> insertCaption() async {
@@ -695,50 +752,87 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Insert Caption'),
-        content: TextField(controller: controller, autofocus: true, decoration: const InputDecoration(labelText: 'Caption')),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'Caption'),
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
-          ElevatedButton(onPressed: () => Navigator.pop(dialogContext, controller.text.trim()), child: const Text('Insert')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () =>
+                Navigator.pop(dialogContext, controller.text.trim()),
+            child: const Text('Insert'),
+          ),
         ],
       ),
     );
     controller.dispose();
-    if (caption != null && caption.isNotEmpty && mounted) {
-      insertTextAtSelection('\nFigure: $caption\n');
-    }
+
+    if (caption == null || caption.isEmpty || !mounted) return;
+
+    final plainText = quillController.document.toPlainText();
+    final figureCount =
+        RegExp(r'Figure\s+\d+:').allMatches(plainText).length;
+    insertTextAtSelection('\nFigure ${figureCount + 1}: $caption\n');
+    scheduleSave();
   }
-  
+
   Future<void> addReviewComment() async {
     final selection = quillController.selection;
     final plainText = quillController.document.toPlainText();
-    final selectedStart = selection.start.clamp(0, plainText.length);
-    final selectedEnd = selection.end.clamp(selectedStart, plainText.length);
-    final selectedText = selection.isCollapsed
-        ? ''
-        : plainText.substring(selectedStart, selectedEnd);
+    final start = selection.start.clamp(0, plainText.length) as int;
+    final end = selection.end.clamp(start, plainText.length) as int;
+    final selectedText =
+        selection.isCollapsed ? '' : plainText.substring(start, end);
+
     final controller = TextEditingController();
     final comment = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('New Comment'),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          if (selectedText.isNotEmpty) Text('নির্বাচিত লেখা: $selectedText', maxLines: 3, overflow: TextOverflow.ellipsis),
-          TextField(controller: controller, minLines: 2, maxLines: 5, decoration: const InputDecoration(labelText: 'Comment')),
-        ]),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (selectedText.isNotEmpty)
+              Text(
+                'নির্বাচিত লেখা: $selectedText',
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+            TextField(
+              controller: controller,
+              minLines: 2,
+              maxLines: 5,
+              decoration: const InputDecoration(labelText: 'Comment'),
+            ),
+          ],
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
-          ElevatedButton(onPressed: () => Navigator.pop(dialogContext, controller.text.trim()), child: const Text('Add')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () =>
+                Navigator.pop(dialogContext, controller.text.trim()),
+            child: const Text('Add'),
+          ),
         ],
       ),
     );
     controller.dispose();
+
     if (comment == null || comment.isEmpty || !mounted) return;
+
     writerComments.add({
       'text': comment,
       'selectedText': selectedText,
-      'startOffset': selectedStart,
-      'endOffset': selectedEnd,
-      'resolved': false,
+      'startOffset': start,
+      'endOffset': end,
       'createdAt': DateTime.now().toIso8601String(),
     });
     scheduleSave();
@@ -760,10 +854,44 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
                   itemCount: writerComments.length,
                   itemBuilder: (context, index) {
                     final item = writerComments[index];
+                    final selectedText =
+                        item['selectedText']?.toString() ?? '';
+                    final createdAt =
+                        item['createdAt']?.toString() ?? '';
                     return ListTile(
                       title: Text(item['text']?.toString() ?? ''),
-                      subtitle: Text(item['selectedText']?.toString() ?? ''),
+                      subtitle: Text(
+                        [
+                          if (selectedText.isNotEmpty)
+                            '“$selectedText”',
+                          if (createdAt.isNotEmpty) createdAt,
+                        ].join('\n'),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      onTap: () {
+                        final startValue = item['startOffset'];
+                        final endValue = item['endOffset'];
+                        if (startValue is num && endValue is num) {
+                          final maxOffset =
+                              quillController.document.length - 1;
+                          final start =
+                              startValue.toInt().clamp(0, maxOffset) as int;
+                          final end =
+                              endValue.toInt().clamp(start, maxOffset) as int;
+                          quillController.updateSelection(
+                            TextSelection(
+                              baseOffset: start,
+                              extentOffset: end,
+                            ),
+                            ChangeSource.local,
+                          );
+                          editorFocusNode.requestFocus();
+                        }
+                        Navigator.pop(dialogContext);
+                      },
                       trailing: IconButton(
+                        tooltip: 'Delete comment',
                         icon: const Icon(Icons.delete_outline),
                         onPressed: () {
                           setState(() => writerComments.removeAt(index));
@@ -775,7 +903,12 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
                   },
                 ),
         ),
-        actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Close'))],
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Close'),
+          ),
+        ],
       ),
     );
   }
@@ -783,53 +916,104 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   Future<void> findAndReplace() async {
     final findController = TextEditingController();
     final replaceController = TextEditingController();
-    final replaceAll = await showDialog<bool>(
+
+    final action = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Find and Replace'),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(controller: findController, decoration: const InputDecoration(labelText: 'Find')),
-          TextField(controller: replaceController, decoration: const InputDecoration(labelText: 'Replace with')),
-        ]),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: findController,
+              decoration: const InputDecoration(labelText: 'Find'),
+            ),
+            TextField(
+              controller: replaceController,
+              decoration:
+                  const InputDecoration(labelText: 'Replace with'),
+            ),
+          ],
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Find only')),
-          ElevatedButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Replace All')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, 'find'),
+            child: const Text('Find Next'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, 'replace'),
+            child: const Text('Replace'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext, 'all'),
+            child: const Text('Replace All'),
+          ),
         ],
       ),
     );
+
     final find = findController.text;
     final replacement = replaceController.text;
-    findController.dispose(); replaceController.dispose();
-    if (find.isEmpty || !mounted) return;
-    final plain = quillController.document.toPlainText();
-    if (replaceAll == true) {
-      final offsets = <int>[];
-      var offset = 0;
-      while (true) {
-        final found = plain.indexOf(find, offset);
-        if (found < 0) break;
-        offsets.add(found);
-        offset = found + find.length;
-      }
-      for (final found in offsets.reversed) {
-        quillController.replaceText(
-          found, find.length, replacement,
-          TextSelection.collapsed(offset: found + replacement.length),
-        );
-      }
-      _showMessage('${offsets.length}টি জায়গায় পরিবর্তন হয়েছে।');
-    } else {
-      final found = plain.indexOf(find);
-      if (found < 0) {
-        _showMessage('লেখাটি পাওয়া যায়নি।');
-      } else {
-        quillController.updateSelection(
-          TextSelection(baseOffset: found, extentOffset: found + find.length),
-          ChangeSource.local,
-        );
-        editorFocusNode.requestFocus();
-      }
+    findController.dispose();
+    replaceController.dispose();
+
+    if (action == null || find.isEmpty || !mounted) return;
+
+    final plainText = quillController.document.toPlainText();
+    final matches = <int>[];
+    var searchOffset = 0;
+    while (searchOffset <= plainText.length - find.length) {
+      final found = plainText.indexOf(find, searchOffset);
+      if (found < 0) break;
+      matches.add(found);
+      searchOffset = found + find.length;
     }
+
+    if (matches.isEmpty) {
+      _showMessage('লেখাটি পাওয়া যায়নি।');
+      return;
+    }
+
+    if (action == 'find') {
+      final found = matches.firstWhere(
+        (offset) => offset >= quillController.selection.extentOffset,
+        orElse: () => matches.first,
+      );
+      quillController.updateSelection(
+        TextSelection(
+          baseOffset: found,
+          extentOffset: found + find.length,
+        ),
+        ChangeSource.local,
+      );
+      editorFocusNode.requestFocus();
+      return;
+    }
+
+    if (action == 'replace') {
+      final found = matches.firstWhere(
+        (offset) => offset >= quillController.selection.extentOffset,
+        orElse: () => matches.first,
+      );
+      quillController.replaceText(
+        found,
+        find.length,
+        replacement,
+        TextSelection.collapsed(offset: found + replacement.length),
+      );
+      _showMessage('একটি জায়গায় পরিবর্তন হয়েছে।');
+      return;
+    }
+
+    for (final found in matches.reversed) {
+      quillController.replaceText(
+        found,
+        find.length,
+        replacement,
+        TextSelection.collapsed(offset: found + replacement.length),
+      );
+    }
+    _showMessage('${matches.length}টি জায়গায় পরিবর্তন হয়েছে।');
   }
 
   Future<void> showRevisionHistory() async {
