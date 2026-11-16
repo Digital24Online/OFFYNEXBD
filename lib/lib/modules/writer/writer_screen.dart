@@ -644,6 +644,74 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     insertTextAtSelection('\n\nReferences\n$lines\n');
   }
 
+  Future<void> manageCitationSources() async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, refreshDialog) => AlertDialog(
+          title: const Text('Citation Sources / উদ্ধৃতির উৎস'),
+          content: SizedBox(
+            width: 460,
+            child: writerCitations.isEmpty
+                ? const Text('এখনো কোনো Citation Source যোগ করা হয়নি।')
+                : ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: writerCitations.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemBuilder: (context, index) {
+                      final source = writerCitations[index];
+                      final author = source['author']?.toString() ?? '';
+                      final year = source['year']?.toString() ?? '';
+                      final title = source['title']?.toString() ?? '';
+                      return ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text('$author ($year)'),
+                        subtitle: Text(title),
+                        trailing: IconButton(
+                          tooltip: 'Remove source',
+                          icon: const Icon(Icons.delete_outline),
+                          onPressed: () async {
+                            final confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (confirmContext) => AlertDialog(
+                                title: const Text('Remove citation source?'),
+                                content: const Text(
+                                  'উৎসটি তালিকা ও ভবিষ্যৎ Bibliography থেকে বাদ যাবে। ডকুমেন্টের আগে বসানো citation text মুছবে না।',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(confirmContext, false),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () => Navigator.pop(confirmContext, true),
+                                    child: const Text('Remove'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirmed == true && mounted) {
+                              setState(() => writerCitations.removeAt(index));
+                              scheduleSave();
+                              refreshDialog(() {});
+                            }
+                          },
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Close / বন্ধ'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> insertNote({required bool endnote}) async {
     final controller = TextEditingController();
     final note = await showDialog<String>(
@@ -1232,6 +1300,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   Widget buildReferencesRibbon() => _ribbonPanel([
         _ribbonButton(Icons.format_list_numbered, 'Table of Contents', insertTableOfContents),
         _ribbonButton(Icons.format_quote, 'Citation', insertCitation),
+        _ribbonButton(Icons.library_books_outlined, 'Manage Sources', manageCitationSources),
         _ribbonButton(Icons.menu_book, 'Bibliography', insertBibliography),
         _ribbonButton(Icons.note_add_outlined, 'Footnote', () => insertNote(endnote: false)),
         _ribbonButton(Icons.notes, 'Endnote', () => insertNote(endnote: true)),
