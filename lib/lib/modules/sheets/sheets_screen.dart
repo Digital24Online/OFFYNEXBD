@@ -203,8 +203,8 @@ class _SheetsScreenState extends State<SheetsScreen> {
   Future<void> _removeLastRow() async {
     if (_rowCount <= 1) return;
     final rowNumber = _rowCount;
-    final cellPattern = RegExp('^[A-Z]+${rowNumber}\$');
-    final formulaPattern = RegExp('(?<![A-Z0-9_])[A-Z]+${rowNumber}(?!\\d)');
+    final cellPattern = RegExp('^[A-Z]+$rowNumber\\$');
+    final formulaPattern = RegExp('(?<![A-Z0-9_])[A-Z]+$rowNumber(?!\\d)');
     final hasData = _cells.entries.any((entry) =>
         cellPattern.hasMatch(entry.key.toUpperCase()) && entry.value.isNotEmpty);
     final hasFormulaReference = _cells.values.any((value) =>
@@ -227,8 +227,8 @@ class _SheetsScreenState extends State<SheetsScreen> {
   Future<void> _removeLastColumn() async {
     if (_columnCount <= 1) return;
     final lastColumn = _columnName(_columnCount - 1);
-    final cellPattern = RegExp('^${lastColumn}[1-9]\\d*\$', caseSensitive: false);
-    final formulaPattern = RegExp('(?<![A-Z0-9_])${lastColumn}[1-9]\\d*(?!\\d)', caseSensitive: false);
+    final cellPattern = RegExp('^$lastColumn[1-9]\\d*\\$', caseSensitive: false);
+    final formulaPattern = RegExp('(?<![A-Z0-9_])$lastColumn[1-9]\\d*(?!\\d)', caseSensitive: false);
     final hasData = _cells.entries.any((entry) =>
         cellPattern.hasMatch(entry.key) && entry.value.isNotEmpty);
     final hasFormulaReference = _cells.values.any((value) =>
