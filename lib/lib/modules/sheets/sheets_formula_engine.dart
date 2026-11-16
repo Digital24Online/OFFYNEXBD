@@ -48,7 +48,7 @@ class SheetsFormulaEngine {
     final values = <double>[];
     for (var row = minRow; row <= maxRow; row++) {
       for (var column = minColumn; column <= maxColumn; column++) {
-        final key = '\${_columnName(column)}$row';
+        final key = _columnName(column) + row.toString();
         final raw = cells[key]?.trim() ?? '';
         if (raw.isEmpty) continue;
         final value = _readCell(key, visiting);
