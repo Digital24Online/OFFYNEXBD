@@ -203,7 +203,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
   Future<void> _removeLastRow() async {
     if (_rowCount <= 1) return;
     final rowNumber = _rowCount;
-    final cellPattern = RegExp('^[A-Z]+$rowNumber$');
+    final cellPattern = RegExp('^[A-Z]+$rowNumber\\$');
     final formulaPattern = RegExp('(?<![A-Z0-9_])[A-Z]+$rowNumber(?!\\d)');
     final hasData = _cells.entries.any((entry) =>
         cellPattern.hasMatch(entry.key.toUpperCase()) && entry.value.isNotEmpty);
@@ -227,8 +227,8 @@ class _SheetsScreenState extends State<SheetsScreen> {
   Future<void> _removeLastColumn() async {
     if (_columnCount <= 1) return;
     final lastColumn = _columnName(_columnCount - 1);
-    final cellPattern = RegExp('^' + lastColumn + r'[1-9]\d*$', caseSensitive: false);
-    final formulaPattern = RegExp('(?<![A-Z0-9_])${lastColumn}[1-9]\\d*(?!\\d)', caseSensitive: false);
+    final cellPattern = RegExp('^$lastColumn[1-9]\\d*\\$', caseSensitive: false);
+    final formulaPattern = RegExp('(?<![A-Z0-9_])$lastColumn[1-9]\\d*(?!\\d)', caseSensitive: false);
     final hasData = _cells.entries.any((entry) =>
         cellPattern.hasMatch(entry.key) && entry.value.isNotEmpty);
     final hasFormulaReference = _cells.values.any((value) =>
@@ -279,8 +279,8 @@ class _SheetsScreenState extends State<SheetsScreen> {
         builder: (dialogContext) => AlertDialog(
           title: Text(_t('Workbook Import করবেন?', 'Import workbook?')),
           content: Text(_t(
-            '${sheetName} থেকে ${imported.length}টি সেল বর্তমান শিটের জায়গায় আসবে। বর্তমান শিটের তথ্য বদলে যাবে।',
-            '${imported.length} cells from ${sheetName} will replace the current sheet data.',
+            '$sheetName থেকে ${imported.length}টি সেল বর্তমান শিটের জায়গায় আসবে। বর্তমান শিটের তথ্য বদলে যাবে।',
+            '${imported.length} cells from $sheetName will replace the current sheet data.',
           )),
           actions: [
             TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(_t('বাতিল', 'Cancel'))),
