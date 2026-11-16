@@ -203,8 +203,8 @@ class _SheetsScreenState extends State<SheetsScreen> {
   Future<void> _removeLastRow() async {
     if (_rowCount <= 1) return;
     final rowNumber = _rowCount;
-    final cellPattern = RegExp('^' + escapedLastColumn + r'[1-9]\d*$', caseSensitive: false);
-    final formulaPattern = RegExp('(?<![A-Z0-9_])' + escapedLastColumn + r'[1-9]\d*(?!\d)', caseSensitive: false);
+    final cellPattern = RegExp(r'^[A-Z]+' + rowNumber.toString() + r'$');
+    final formulaPattern = RegExp(r'(?<![A-Z0-9_])[A-Z]+' + rowNumber.toString() + r'(?!\d)');
     final hasData = _cells.entries.any((entry) =>
         cellPattern.hasMatch(entry.key.toUpperCase()) && entry.value.isNotEmpty);
     final hasFormulaReference = _cells.values.any((value) =>
