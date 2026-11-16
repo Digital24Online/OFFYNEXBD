@@ -96,7 +96,9 @@ class _SheetsScreenState extends State<SheetsScreen> {
     if (!raw.startsWith('=')) return double.tryParse(raw);
     final seen = visiting ?? <String>{};
     if (!seen.add(key)) return null;
-    return _evaluateFormula(raw.substring(1), seen);
+    final result = _evaluateFormula(raw.substring(1), seen);
+    seen.remove(key);
+    return result;
   }
 
   double? _evaluateFormula(String formula, Set<String> visiting) {
