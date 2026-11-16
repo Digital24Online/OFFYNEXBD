@@ -666,7 +666,6 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     quillController.replaceText(
       end, 0, '\n\n$kind $number: $note',
       TextSelection.collapsed(offset: end + kind.length + note.length + 5),
-      source: ChangeSource.local,
     );
     scheduleSave();
   }
