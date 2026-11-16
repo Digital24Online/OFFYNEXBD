@@ -336,6 +336,8 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
           ? savedMeta['showPageBorder'] as bool : true;
       captureRevisions = savedMeta['captureRevisions'] is bool
           ? savedMeta['captureRevisions'] as bool : false;
+      focusMode = savedMeta['focusMode'] is bool
+          ? savedMeta['focusMode'] as bool : false;
       final savedComments = savedMeta['comments'];
       if (savedComments is List) {
         writerComments = savedComments
@@ -501,6 +503,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
         'showStatusBar': showStatusBar,
         'showPageBorder': showPageBorder,
         'captureRevisions': captureRevisions,
+        'focusMode': focusMode,
         'comments': writerComments,
         'citations': writerCitations,
         'revisions': writerRevisions,
@@ -707,7 +710,12 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   
   Future<void> addReviewComment() async {
     final selection = quillController.selection;
-    final selectedText = selection.isCollapsed ? '' : quillController.getPlainText();
+    final plainText = quillController.document.toPlainText();
+    final selectedStart = selection.start.clamp(0, plainText.length);
+    final selectedEnd = selection.end.clamp(selectedStart, plainText.length);
+    final selectedText = selection.isCollapsed
+        ? ''
+        : plainText.substring(selectedStart, selectedEnd);
     final controller = TextEditingController();
     final comment = await showDialog<String>(
       context: context,
@@ -728,6 +736,9 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     writerComments.add({
       'text': comment,
       'selectedText': selectedText,
+      'startOffset': selectedStart,
+      'endOffset': selectedEnd,
+      'resolved': false,
       'createdAt': DateTime.now().toIso8601String(),
     });
     scheduleSave();
@@ -952,7 +963,14 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
         FilterChip(label: const Text('Ruler'), selected: showRuler, onSelected: (v) { setState(() => showRuler = v); scheduleSave(); }),
         FilterChip(label: const Text('Page Border'), selected: showPageBorder, onSelected: (v) { setState(() => showPageBorder = v); scheduleSave(); }),
         FilterChip(label: const Text('Status Bar'), selected: showStatusBar, onSelected: (v) { setState(() => showStatusBar = v); scheduleSave(); }),
-        FilterChip(label: const Text('Focus Mode'), selected: focusMode, onSelected: (v) => setState(() => focusMode = v)),
+        FilterChip(
+           label: const Text('Focus Mode'),
+           selected: focusMode,
+           onSelected: (value) {
+             setState(() => focusMode = value);
+             scheduleSave();
+           },
+         ),
       ]);
   
   Widget _ribbonPanel(List<Widget> children) => Container(
@@ -1860,7 +1878,14 @@ Future<void> insertWriterImage() async {
           IconButton(tooltip: 'Select all', onPressed: selectAllText, icon: const Icon(Icons.select_all)),
           IconButton(tooltip: 'Save', onPressed: () => saveDocument(), icon: const Icon(Icons.save_outlined)),
           IconButton(tooltip: 'Clear document', onPressed: clearDocument, icon: const Icon(Icons.delete_outline)),
-          IconButton(tooltip: 'Focus mode', onPressed: () => setState(() => focusMode = !focusMode), icon: const Icon(Icons.center_focus_strong)),
+          IconButton(
+             tooltip: 'Focus mode',
+             onPressed: () {
+               setState(() => focusMode = !focusMode);
+               scheduleSave();
+             },
+             icon: const Icon(Icons.center_focus_strong),
+           ),
         ],
       ),
       body: Column(
