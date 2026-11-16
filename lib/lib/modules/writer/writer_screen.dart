@@ -812,6 +812,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
       } else {
         quillController.updateSelection(
           TextSelection(baseOffset: found, extentOffset: found + find.length),
+          ChangeSource.local,
         );
         editorFocusNode.requestFocus();
       }
@@ -862,6 +863,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
                               TextSelection.collapsed(
                                 offset: restoredDocument.length - 1,
                               ),
+          ChangeSource.local,
                             );
                           } else {
                             // পুরোনো plain-text snapshot সমর্থন।
@@ -971,6 +973,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
 
     quillController.updateSelection(
       TextSelection(baseOffset: 0, extentOffset: endOffset),
+          ChangeSource.local,
     );
     editorFocusNode.requestFocus();
   }
