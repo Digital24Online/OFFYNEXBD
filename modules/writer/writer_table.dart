@@ -6,9 +6,9 @@ import 'package:flutter_quill/flutter_quill.dart';
 /// Custom Quill block for Writer tables.
 /// Keep this type unchanged so previously saved table blocks remain readable.
 class WriterTableBlockEmbed extends CustomBlockEmbed {
-  static const String type = 'offynexbd-writer-table';
+  static const String embedType = 'offynexbd-writer-table';
 
-  const WriterTableBlockEmbed(String value) : super(type, value);
+  const WriterTableBlockEmbed(String value) : super(embedType, value);
 
   factory WriterTableBlockEmbed.fromData(Map<String, dynamic> data) {
     return WriterTableBlockEmbed(jsonEncode(data));
@@ -318,7 +318,7 @@ class WriterTableEmbedBuilder extends EmbedBuilder {
   final WriterTableEditCallback onEdit;
 
   @override
-  String get key => WriterTableBlockEmbed.type;
+  String get key => WriterTableBlockEmbed.embedType;
 
   @override
   Widget build(BuildContext context, EmbedContext embedContext) {
