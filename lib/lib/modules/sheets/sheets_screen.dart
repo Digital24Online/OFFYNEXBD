@@ -203,7 +203,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
   Future<void> _removeLastRow() async {
     if (_rowCount <= 1) return;
     final rowNumber = _rowCount;
-    final cellPattern = RegExp('^[A-Z]+${rowNumber.toString()};
+    final cellPattern = RegExp('^[A-Z]+$rowNumber\\
     final formulaPattern = RegExp(r'(?<![A-Z0-9_])[A-Z]+' + rowNumber.toString() + r'(?!\d)');
     final hasData = _cells.entries.any((entry) =>
         cellPattern.hasMatch(entry.key.toUpperCase()) && entry.value.isNotEmpty);
@@ -266,16 +266,10 @@ class _SheetsScreenState extends State<SheetsScreen> {
         for (final cell in row) {
           if (cell == null || cell.value == null) continue;
           final key = _cellKey(cell.rowIndex, cell.columnIndex);
-          final value = switch (cell.value!) {
-            xlsx.TextCellValue(:final value) => value,
-            xlsx.FormulaCellValue(:final formula) => '=${formula.startsWith('=') ? formula.substring(1) : formula}',
-            xlsx.IntCellValue(:final value) => value.toString(),
-            xlsx.DoubleCellValue(:final value) => value.toString(),
-            xlsx.BoolCellValue(:final value) => value ? 'TRUE' : 'FALSE',
-            xlsx.DateCellValue() => cell.value.toString(),
-            xlsx.TimeCellValue() => cell.value.toString(),
-            xlsx.DateTimeCellValue() => cell.value.toString(),
-          };
+          final dynamic cellValue = cell.value;
+          final String value = cellValue is xlsx.FormulaCellValue
+              ? '=${cellValue.formula.toString().replaceFirst(RegExp(r'^='), '')}'
+              : cellValue.toString();
           if (value.isNotEmpty) imported[key] = value;
         }
       }
@@ -587,7 +581,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
     if (_columnCount <= 1) return;
     final lastColumn = _columnName(_columnCount - 1);
     final cellPattern = RegExp('^' + lastColumn + r'[1-9]\d*$', caseSensitive: false);
-    final formulaPattern = RegExp(r'(?<![A-Z0-9_])' + lastColumn + r'[1-9]\d*(?!\d)', caseSensitive: false);
+    final formulaPattern = RegExp('(?<![A-Z0-9_])${lastColumn}[1-9]\\d*(?!\\d)', caseSensitive: false);
     final hasData = _cells.entries.any((entry) =>
         cellPattern.hasMatch(entry.key) && entry.value.isNotEmpty);
     final hasFormulaReference = _cells.values.any((value) =>
@@ -605,6 +599,119 @@ class _SheetsScreenState extends State<SheetsScreen> {
       }
     });
     await _saveWorkbook();
+  }
+
+  Future<void> _importWorkbook() async {
+    try {
+      final picked = await FilePicker.pickFile(
+        type: FileType.custom,
+        allowedExtensions: ['xlsx'],
+      );
+      if (picked == null) return;
+      final bytes = await picked.readAsBytes();
+      final workbook = xlsx.Excel.decodeBytes(bytes);
+      if (workbook.tables.isEmpty) throw FormatException('Workbook has no worksheets');
+      final sheetName = workbook.getDefaultSheet() ?? workbook.tables.keys.first;
+      final sheet = workbook.tables[sheetName];
+      if (sheet == null) throw FormatException('Worksheet could not be read');
+      final imported = <String, String>{};
+      for (final row in sheet.rows) {
+        for (final cell in row) {
+          if (cell == null || cell.value == null) continue;
+          final key = _cellKey(cell.rowIndex, cell.columnIndex);
+          final value = switch (cell.value!) {
+            xlsx.TextCellValue(:final value) => value,
+            xlsx.FormulaCellValue(:final formula) => '=${formula.startsWith('=') ? formula.substring(1) : formula}',
+            xlsx.IntCellValue(:final value) => value.toString(),
+            xlsx.DoubleCellValue(:final value) => value.toString(),
+            xlsx.BoolCellValue(:final value) => value ? 'TRUE' : 'FALSE',
+            xlsx.DateCellValue() => cell.value.toString(),
+            xlsx.TimeCellValue() => cell.value.toString(),
+            xlsx.DateTimeCellValue() => cell.value.toString(),
+          };
+          if (value.isNotEmpty) imported[key] = value;
+        }
+      }
+      if (!mounted) return;
+      final replace = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(_t('Workbook Import করবেন?', 'Import workbook?')),
+          content: Text(_t(
+            '${sheetName} থেকে ${imported.length}টি সেল বর্তমান শিটের জায়গায় আসবে। বর্তমান শিটের তথ্য বদলে যাবে।',
+            '${imported.length} cells from ${sheetName} will replace the current sheet data.',
+          )),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(_t('বাতিল', 'Cancel'))),
+            FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text(_t('Import', 'Import'))),
+          ],
+        ),
+      );
+      if (replace != true || !mounted) return;
+      setState(() {
+        _cells..clear()..addAll(imported);
+        _rowCount = sheet.maxRows.clamp(1, 1000);
+        _columnCount = sheet.maxColumns.clamp(1, 100);
+        _sheetName = sheetName;
+        _selectedCell = null;
+      });
+      await _saveWorkbook();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t('XLSX Import সফল হয়েছে।', 'XLSX imported successfully.'))),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t('Import করা যায়নি: ', 'Import failed: ') + error.toString())),
+      );
+    }
+  }
+
+  Future<void> _exportWorkbook() async {
+    try {
+      final workbook = xlsx.Excel.createExcel();
+      final defaultName = workbook.getDefaultSheet();
+      final safeName = _sheetName.trim().isEmpty ? 'Sheet1' : _sheetName.trim();
+      if (defaultName != null && defaultName != safeName) workbook.rename(defaultName, safeName);
+      final sheet = workbook[safeName];
+      for (final entry in _cells.entries) {
+        final value = entry.value;
+        final cell = sheet.cell(xlsx.CellIndex.indexByString(entry.key.toUpperCase()));
+        if (value.startsWith('=')) {
+          cell.value = xlsx.FormulaCellValue(value.substring(1));
+        } else {
+          final numeric = double.tryParse(value);
+          if (numeric != null && numeric.isFinite) {
+            cell.value = numeric == numeric.roundToDouble()
+                ? xlsx.IntCellValue(numeric.toInt())
+                : xlsx.DoubleCellValue(numeric);
+          } else if (value.toUpperCase() == 'TRUE' || value.toUpperCase() == 'FALSE') {
+            cell.value = xlsx.BoolCellValue(value.toUpperCase() == 'TRUE');
+          } else {
+            cell.value = xlsx.TextCellValue(value);
+          }
+        }
+      }
+      final bytes = workbook.save();
+      if (bytes == null) throw StateError('XLSX encoding failed');
+      final fileName = '${safeName.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_')}.xlsx';
+      final saved = await FilePicker.saveFile(
+        fileName: fileName,
+        bytes: Uint8List.fromList(bytes),
+        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        dialogTitle: _t('XLSX ফাইল সংরক্ষণ', 'Save XLSX workbook'),
+      );
+      if (saved == null || !mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t('XLSX Export সম্পন্ন হয়েছে।', 'XLSX export completed.'))),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t('Export করা যায়নি: ', 'Export failed: ') + error.toString())),
+      );
+    }
   }
 
   Future<void> _clearSheet() async {
@@ -642,6 +749,16 @@ class _SheetsScreenState extends State<SheetsScreen> {
         title: Text(_t('OFFYNEX শিটস', 'OFFYNEX Sheets')),
         backgroundColor: Colors.white,
         actions: [
+          IconButton(
+            tooltip: _t('XLSX Import', 'Import XLSX'),
+            onPressed: _importWorkbook,
+            icon: const Icon(Icons.file_open_outlined),
+          ),
+          IconButton(
+            tooltip: _t('XLSX Export', 'Export XLSX'),
+            onPressed: _exportWorkbook,
+            icon: const Icon(Icons.file_download_outlined),
+          ),
           IconButton(
             tooltip: _t('শিটের নাম পরিবর্তন', 'Rename sheet'),
             onPressed: _renameSheet,
