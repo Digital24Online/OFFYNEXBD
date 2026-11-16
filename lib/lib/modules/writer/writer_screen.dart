@@ -990,8 +990,8 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
                         }
 
                         final maxOffset = plainText.length;
-                        start = start.clamp(0, maxOffset);
-                        end = end.clamp(start, maxOffset);
+                        start = start.clamp(0, maxOffset).toInt();
+                        end = end.clamp(start, maxOffset).toInt();
                         quillController.updateSelection(
                           TextSelection(baseOffset: start, extentOffset: end),
                           ChangeSource.local,
