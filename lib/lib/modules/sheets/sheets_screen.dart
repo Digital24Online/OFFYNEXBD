@@ -147,8 +147,9 @@ class _SheetsScreenState extends State<SheetsScreen> {
       case 'percent': return '${(numeric * 100).toStringAsFixed(2)}%';
       default:
         return numeric == numeric.roundToDouble()
-            ? numeric.toInt().toString()
+            ? numeric.toStringAsFixed(0)
             : numeric.toString();
+    }
   }
 
   Map<String, dynamic> _styleFor(String key) =>
