@@ -110,6 +110,57 @@ void main() {
     expect(clearedStyles.containsKey('A1'), isFalse);
   });
 
+  testWidgets('Sheets protects populated edge rows and columns',
+      (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({
+      'offynex_sheets_workbook_v1': jsonEncode({
+        'name': 'Sheet1',
+        'rows': 30,
+        'columns': 12,
+        'cells': {'A30': 'Keep row', 'L1': 'Keep column'},
+        'styles': {},
+      }),
+    });
+    await tester.pumpWidget(const OFFYNEXBDApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('শিটস'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('হোম'));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('শেষ Row বাদ'));
+    await tester.tap(find.text('শেষ Row বাদ'));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('শেষ Column বাদ'));
+    await tester.tap(find.text('শেষ Column বাদ'));
+    await tester.pumpAndSettle();
+
+    var prefs = await SharedPreferences.getInstance();
+    var raw = prefs.getString('offynex_sheets_workbook_v1');
+    var workbook = jsonDecode(raw!) as Map<String, dynamic>;
+    expect(workbook['rows'], 30);
+    expect(workbook['columns'], 12);
+    expect((workbook['cells'] as Map<String, dynamic>)['A30'], 'Keep row');
+    expect((workbook['cells'] as Map<String, dynamic>)['L1'], 'Keep column');
+
+    await tester.ensureVisible(find.text('১০টি Row'));
+    await tester.tap(find.text('১০টি Row'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('২টি Column'));
+    await tester.tap(find.text('২টি Column'));
+    await tester.pumpAndSettle();
+
+    prefs = await SharedPreferences.getInstance();
+    raw = prefs.getString('offynex_sheets_workbook_v1');
+    workbook = jsonDecode(raw!) as Map<String, dynamic>;
+    expect(workbook['rows'], 40);
+    expect(workbook['columns'], 14);
+    expect((workbook['cells'] as Map<String, dynamic>)['A30'], 'Keep row');
+    expect((workbook['cells'] as Map<String, dynamic>)['L1'], 'Keep column');
+  });
+
   testWidgets('Sheets cell editing recalculates formulas and persists data',
       (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({});
