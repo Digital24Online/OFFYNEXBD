@@ -167,11 +167,19 @@ class _SheetsScreenState extends State<SheetsScreen> {
   }
 
   Alignment _cellAlignment(String key) {
-    switch (_cellStyles[key]?['align']) {
-      case 'center': return Alignment.center;
-      case 'right': return Alignment.centerRight;
-      default: return Alignment.centerLeft;
-    }
+    final style = _cellStyles[key] ?? const <String, dynamic>{};
+    final horizontal = switch (style['align']) {
+      'center' => 0.0,
+      'right' => 1.0,
+      _ => -1.0,
+    };
+    final vertical = switch (style['verticalAlign']) {
+      'top' => -1.0,
+      'center' => 0.0,
+      'bottom' => 1.0,
+      _ => 0.0,
+    };
+    return Alignment(horizontal, vertical);
   }
 
   TextAlign _cellTextAlign(String key) {
@@ -179,14 +187,6 @@ class _SheetsScreenState extends State<SheetsScreen> {
       case 'center': return TextAlign.center;
       case 'right': return TextAlign.right;
       default: return TextAlign.left;
-    }
-  }
-
-  Alignment _cellVerticalAlignment(String key) {
-    switch (_cellStyles[key]?['verticalAlign']) {
-      case 'top': return Alignment.topLeft;
-      case 'center': return Alignment.centerLeft;
-      default: return Alignment.bottomLeft;
     }
   }
 
@@ -1012,7 +1012,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
         onTap: () => _selectCell(key),
         onLongPress: () => _editCell(row, column),
         child: Container(
-          alignment: wrapText ? _cellVerticalAlignment(key) : _cellAlignment(key),
+          alignment: _cellAlignment(key),
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(
             color: _selectedCell == key
