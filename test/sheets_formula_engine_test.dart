@@ -168,10 +168,10 @@ void main() {
     test('supports nested LOG10 calls inside aggregate functions', () {
       final engine = SheetsFormulaEngine({
         'A1': '=SUM(LOG10(1000),1)',
-        'A2': '=AVERAGE(LOG10(100),2)',
+        'A2': '=AVERAGE(LOG10(100),4)',
       });
       expect(engine.evaluateCell('A1'), 4);
-      expect(engine.evaluateCell('A2'), 2.5);
+      expect(engine.evaluateCell('A2'), 3);
     });
 
     test('matches CEILING and FLOOR negative-number significance rules', () {
