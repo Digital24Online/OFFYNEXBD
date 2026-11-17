@@ -717,6 +717,19 @@ class _SheetsScreenState extends State<SheetsScreen> {
     await _saveWorkbook();
   }
 
+  Future<void> _clearSelectedCellFormats() async {
+    final key = _selectedCell;
+    if (key == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t('আগে একটি Cell নির্বাচন করুন।', 'Select a cell first.'))),
+      );
+      return;
+    }
+    if (!_cellStyles.containsKey(key)) return;
+    setState(() => _cellStyles.remove(key));
+    await _saveWorkbook();
+  }
+
   Future<void> _insertFunction(String function) async {
     final key = _selectedCell;
     if (key == null) {
@@ -820,6 +833,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
           _ribbonCommand('Number Format', Icons.numbers, _chooseNumberFormat),
           _ribbonCommand('Borders', Icons.border_all, _toggleCellBorder),
           _ribbonCommand(_t('সেল মুছুন', 'Clear cell'), Icons.backspace_outlined, _clearSelectedCell),
+          _ribbonCommand(_t('ফরম্যাট মুছুন', 'Clear Formats'), Icons.format_clear, _clearSelectedCellFormats),
           _ribbonCommand(_t('১০টি Row', 'Add 10 rows'), Icons.table_rows, _addRows),
           _ribbonCommand(_t('২টি Column', 'Add 2 columns'), Icons.view_column, _addColumns),
           _ribbonCommand(_t('শেষ Row বাদ', 'Remove last row'), Icons.remove, _removeLastRow),
