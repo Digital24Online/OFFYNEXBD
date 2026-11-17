@@ -30,7 +30,10 @@ class SheetsPdfExportService {
           final style = r < styles.length && c < styles[r].length
               ? styles[r][c]
               : const <String, dynamic>{};
-          final font = style['fontFamily'] == 'serif' ? serif : sans;
+          final hasBangla = _containsBangla(value);
+          final font = !hasBangla
+              ? latin
+              : style['fontFamily'] == 'serif' ? serif : sans;
           final size = ((style['fontSize'] as num?)?.toDouble() ?? 9).clamp(6.0, 24.0).toDouble();
           final color = _color(style['fontColor']?.toString()) ?? PdfColors.black;
           final fill = _color(style['fillColor']?.toString()) ?? PdfColors.white;
@@ -64,7 +67,7 @@ class SheetsPdfExportService {
               overflow: pw.TextOverflow.clip,
               style: pw.TextStyle(
                 font: font,
-                fontFallback: [latin],
+                fontFallback: hasBangla ? [latin] : const [],
                 fontSize: size,
                 color: color,
                 fontWeight: style['bold'] == true ? pw.FontWeight.bold : pw.FontWeight.normal,
@@ -83,14 +86,19 @@ class SheetsPdfExportService {
       header: (context) => pw.Container(
         alignment: pw.Alignment.centerLeft,
         padding: const pw.EdgeInsets.only(bottom: 8),
-        child: pw.Text(sheetName, style: pw.TextStyle(font: sans, fontFallback: [latin], fontSize: 13, fontWeight: pw.FontWeight.bold)),
+        child: pw.Text(sheetName, style: pw.TextStyle(
+          font: _containsBangla(sheetName) ? sans : latin,
+          fontFallback: _containsBangla(sheetName) ? [latin] : const [],
+          fontSize: 13,
+          fontWeight: pw.FontWeight.bold,
+        )),
       ),
       footer: (context) => pw.Container(
         alignment: pw.Alignment.centerRight,
         padding: const pw.EdgeInsets.only(top: 8),
         child: pw.Text(
           'Page ${context.pageNumber} of ${context.pagesCount}',
-          style: pw.TextStyle(font: sans, fontFallback: [latin], fontSize: 8, color: PdfColors.grey700),
+          style: pw.TextStyle(font: latin, fontSize: 8, color: PdfColors.grey700),
         ),
       ),
       build: (context) => [
@@ -102,6 +110,9 @@ class SheetsPdfExportService {
     ));
     return Uint8List.fromList(await document.save());
   }
+
+  static bool _containsBangla(String value) =>
+      RegExp(r'[\u0980-\u09FF]').hasMatch(value);
 
   static PdfColor? _color(String? value) {
     if (value == null || value.isEmpty) return null;

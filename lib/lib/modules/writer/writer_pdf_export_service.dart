@@ -23,15 +23,21 @@ class WriterPdfExportService {
     final serifFont = pw.Font.ttf(serifFontData);
     final latinFont = pw.Font.ttf(latinFontData);
     final widgets = <pw.Widget>[
-      pw.Text(title, style: pw.TextStyle(font: sansFont, fontFallback: [latinFont], fontSize: 18)),
+      pw.Text(title, style: pw.TextStyle(
+        font: _containsBangla(title) ? sansFont : latinFont,
+        fontFallback: _containsBangla(title) ? [latinFont] : const [],
+        fontSize: 18,
+      )),
       pw.SizedBox(height: 14),
     ];
     final spans = <pw.TextSpan>[];
 
-    pw.Font fontFor(Map<String, dynamic> attributes) =>
-        attributes['font']?.toString() == 'serif' ? serifFont : sansFont;
+    pw.Font fontFor(Map<String, dynamic> attributes, String text) {
+      if (!_containsBangla(text)) return latinFont;
+      return attributes['font']?.toString() == 'serif' ? serifFont : sansFont;
+    }
 
-    pw.TextStyle styleFor(Map<String, dynamic> attributes) {
+    pw.TextStyle styleFor(Map<String, dynamic> attributes, String text) {
       final rawSize = double.tryParse(attributes['size']?.toString() ?? '');
       final size = rawSize == null ? 12.0 : (rawSize * 0.75).clamp(5.0, 144.0).toDouble();
       final decoration = attributes['underline'] == true
@@ -40,8 +46,8 @@ class WriterPdfExportService {
               ? pw.TextDecoration.lineThrough
               : null;
       return pw.TextStyle(
-        font: fontFor(attributes),
-        fontFallback: [latinFont],
+        font: fontFor(attributes, text),
+        fontFallback: _containsBangla(text) ? [latinFont] : const [],
         fontSize: size,
         fontWeight: attributes['bold'] == true
             ? pw.FontWeight.bold
@@ -79,7 +85,7 @@ class WriterPdfExportService {
 
     void appendText(String value, Map<String, dynamic> attributes) {
       if (value.isNotEmpty) {
-        spans.add(pw.TextSpan(text: value, style: styleFor(attributes)));
+        spans.add(pw.TextSpan(text: value, style: styleFor(attributes, value)));
       }
     }
 
@@ -155,7 +161,7 @@ class WriterPdfExportService {
     }
     final rawRows = data['rows'];
     if (rawRows is! List || rawRows.isEmpty) {
-      return pw.Text('Table data unavailable', style: pw.TextStyle(font: font));
+      return pw.Text('Table data unavailable', style: pw.TextStyle(font: latinFont));
     }
     final rows = rawRows.map<List<String>>((row) {
       if (row is List) return row.map((cell) => cell?.toString() ?? '').toList();
@@ -183,8 +189,8 @@ class WriterPdfExportService {
                 child: pw.Text(
                   value,
                   style: pw.TextStyle(
-                    font: font,
-                    fontFallback: [latinFont],
+                    font: _containsBangla(value) ? font : latinFont,
+                    fontFallback: _containsBangla(value) ? [latinFont] : const [],
                     fontSize: 9,
                     fontWeight: rowIndex == 0 && data['headerRow'] == true
                         ? pw.FontWeight.bold
@@ -198,6 +204,9 @@ class WriterPdfExportService {
       ),
     );
   }
+
+  static bool _containsBangla(String value) =>
+      RegExp(r'[\u0980-\u09FF]').hasMatch(value);
 
   static PdfColor? _parseIntColor(dynamic value) {
     if (value is! int) return null;

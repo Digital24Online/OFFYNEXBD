@@ -274,3 +274,13 @@
 - User confirmed OFFYNEXBD must support both Unicode Bengali fonts and legacy Bijoy ANSI fonts such as SutonnyMJ.
 - Font system audit: current Writer picker only exposes two generic aliases (`sans-serif`, `serif`); arbitrary TTF/OTF installation, persistent font identities, document-level font metadata, font preview/management and ANSI↔Unicode conversion are not implemented. OFFYNEX Fonts remains a planned module. This is a major required feature, not satisfied by the current two bundled fonts.
 - Next validation: GitHub Actions must verify Analyze, tests, Android APK build and artifact upload after this fix. The full font manager and Bijoy ANSI conversion require a dedicated integrated implementation and licensed/user-supplied font assets; do not bundle proprietary SutonnyMJ without a redistribution licence.
+
+
+## PDF Mixed-Script Font Routing Correction — 2026-11-17
+
+- Build #149 (run ID 44138838447; commit 50af431631612cf7024841dba81238ef29d32ea5) — Analyze passed, but 2 PDF export tests failed because English-only content was routed through the Bengali font and extracted as mojibake.
+- Updated Writer PDF font selection to use the selected Bengali sans/serif face only for text containing Bengali; English-only runs use the bundled Noto Sans Latin font. Bengali-containing runs retain the Latin fallback for unsupported characters.
+- Updated Writer table cells and title routing with the same script-aware rule.
+- Updated Sheets PDF cells, sheet heading and page numbering to select Latin or Bengali fonts according to their text.
+- Added mixed Bengali/English extraction assertions to both Writer and Sheets PDF tests.
+- Status: correction committed; Build verification pending. Do not claim fixed until Analyze, all tests, Android APK build and artifact upload pass.
