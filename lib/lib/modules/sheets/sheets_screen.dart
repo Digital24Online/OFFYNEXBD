@@ -137,7 +137,8 @@ class _SheetsScreenState extends State<SheetsScreen> {
 
   String _displayValue(String key) {
     final raw = _cells[key] ?? '';
-    final numeric = raw.startsWith('=') ? _numericValue(key) : double.tryParse(raw);
+    final parsed = raw.startsWith('=') ? _numericValue(key) : double.tryParse(raw);
+    final numeric = parsed != null && parsed.isFinite ? parsed : null;
     if (raw.startsWith('=') && numeric == null) return '#ERROR';
     if (numeric == null) return raw;
     switch (_cellStyles[key]?['numberFormat']) {
@@ -147,8 +148,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
       default:
         return numeric == numeric.roundToDouble()
             ? numeric.toInt().toString()
-            : numeric.toStringAsFixed(4).replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
-    }
+            : numeric.toString();
   }
 
   Map<String, dynamic> _styleFor(String key) =>
@@ -382,7 +382,11 @@ class _SheetsScreenState extends State<SheetsScreen> {
     if (_rowCount <= 1) return;
     final rowNumber = _rowCount;
     final cellPattern = RegExp(r'^[A-Z]+' + rowNumber.toString() + r'$');
-    final formulaPattern = RegExp(r'(?<![A-Z0-9_])[A-Z]+' + rowNumber.toString() + r'(?!\d)');
+    final formulaPattern = RegExp(
+      r'(?<![A-Z0-9_])[A-Z]+' +
+          rowNumber.toString() +
+          r'(?!\\d)(?!\\s*\\()',
+    );
     final hasData = _cells.entries.any((entry) =>
         cellPattern.hasMatch(entry.key.toUpperCase()) && entry.value.isNotEmpty);
     final hasFormatting = _cellStyles.keys.any((key) => cellPattern.hasMatch(key.toUpperCase()));

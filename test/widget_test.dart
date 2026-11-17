@@ -213,6 +213,53 @@ void main() {
     expect(cells['A2'], '=A1*2');
   });
 
+  testWidgets('Sheets row removal does not mistake LOG10 for a cell reference',
+      (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({
+      'offynex_sheets_workbook_v1': jsonEncode({
+        'name': 'Sheet1',
+        'rows': 10,
+        'columns': 12,
+        'cells': {'B1': '=LOG10(1000)'},
+        'styles': {},
+      }),
+    });
+    await tester.pumpWidget(const OFFYNEXBDApp());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('শিটস'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('হোম'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('শেষ Row বাদ'));
+    await tester.tap(find.text('শেষ Row বাদ'));
+    await tester.pumpAndSettle();
+
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('offynex_sheets_workbook_v1');
+    final workbook = jsonDecode(raw!) as Map<String, dynamic>;
+    expect(workbook['rows'], 9);
+    expect((workbook['cells'] as Map<String, dynamic>)['B1'], '=LOG10(1000)');
+  });
+
+  testWidgets('Sheets general number display preserves calculated precision',
+      (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({
+      'offynex_sheets_workbook_v1': jsonEncode({
+        'name': 'Sheet1',
+        'rows': 30,
+        'columns': 12,
+        'cells': {'A1': '=1/3'},
+        'styles': {},
+      }),
+    });
+    await tester.pumpWidget(const OFFYNEXBDApp());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('শিটস'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('0.3333333333333333'), findsOneWidget);
+  });
+
   testWidgets('Sheets vertical alignment works without Wrap Text',
       (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({});

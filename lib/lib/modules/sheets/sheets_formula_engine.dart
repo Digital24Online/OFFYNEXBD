@@ -13,7 +13,10 @@ class SheetsFormulaEngine {
     if (!_isCellReference(key)) return null;
     final raw = cells[key]?.trim() ?? '';
     if (raw.isEmpty) return 0;
-    if (!raw.startsWith('=')) return double.tryParse(raw);
+    if (!raw.startsWith('=')) {
+      final number = double.tryParse(raw);
+      return number != null && number.isFinite ? number : null;
+    }
 
     final active = visiting ?? <String>{};
     if (!active.add(key)) return null;
@@ -246,8 +249,10 @@ class _FormulaParser {
           // functions, just like blank/text cells inside a referenced range.
           final reference = _take();
           final raw = engine.cells[reference]?.trim() ?? '';
+          final parsedNumber = double.tryParse(raw);
           if (raw.isNotEmpty &&
-              (raw.startsWith('=') || double.tryParse(raw) != null)) {
+              (raw.startsWith('=') ||
+                  (parsedNumber != null && parsedNumber.isFinite))) {
             final value = engine._readCell(reference, visiting);
             if (value == null) {
               throw const FormatException('Invalid or circular cell reference');

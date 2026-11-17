@@ -154,6 +154,24 @@ void main() {
       expect(rangeEngine.evaluateCell('B4'), 3);
     });
 
+    test('treats non-finite cell text as text, not numeric data', () {
+      final engine = SheetsFormulaEngine({
+        'A1': 'NaN',
+        'A2': 'Infinity',
+        'B1': '=COUNT(A1,A2)',
+        'B2': '=SUM(A1,A2)',
+        'B3': '=A1+1',
+        'C1': '',
+        'C2': '=C1+1',
+      });
+      expect(engine.evaluateCell('A1'), isNull);
+      expect(engine.evaluateCell('A2'), isNull);
+      expect(engine.evaluateCell('B1'), 0);
+      expect(engine.evaluateCell('B2'), 0);
+      expect(engine.evaluateCell('B3'), isNull);
+      expect(engine.evaluateCell('C2'), 1);
+    });
+
     test('matches spreadsheet MOD sign rules for positive and negative divisors', () {
       final engine = SheetsFormulaEngine({
         'A1': '=MOD(-3,2)',
