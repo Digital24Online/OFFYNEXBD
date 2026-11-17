@@ -466,6 +466,14 @@ class _SheetsScreenState extends State<SheetsScreen> {
             if (importedStyle.isItalic) style['italic'] = true;
             if (importedStyle.underline != xlsx.Underline.None) style['underline'] = true;
             if (importedStyle.fontSize != null) style['fontSize'] = importedStyle.fontSize;
+            final formatCode = importedStyle.numberFormat.formatCode;
+            if (formatCode.contains('%')) {
+              style['numberFormat'] = 'percent';
+            } else if (formatCode.contains('৳') || formatCode.contains(r'\$')) {
+              style['numberFormat'] = 'currency';
+            } else if (formatCode.contains('0.00')) {
+              style['numberFormat'] = 'number';
+            }
             final fontHex = importedStyle.fontColor.colorHex6;
             if (fontHex != '000000') style['fontColor'] = fontHex;
             final fillHex = importedStyle.backgroundColor.colorHex;
@@ -561,9 +569,9 @@ class _SheetsScreenState extends State<SheetsScreen> {
             _ => xlsx.HorizontalAlign.Left,
           };
           final format = switch (style['numberFormat']) {
-            'number' => xlsx.CustomNumericNumFormat('#,##0.00'),
-            'currency' => xlsx.CustomNumericNumFormat('৳#,##0.00'),
-            'percent' => xlsx.CustomNumericNumFormat('0.00%'),
+            'number' => xlsx.CustomNumericNumFormat(formatCode: '#,##0.00'),
+            'currency' => xlsx.CustomNumericNumFormat(formatCode: '৳#,##0.00'),
+            'percent' => xlsx.CustomNumericNumFormat(formatCode: '0.00%'),
             _ => xlsx.NumFormat.standard_0,
           };
           final fill = style['fillColor'] as String?;
