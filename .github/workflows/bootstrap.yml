@@ -40,6 +40,12 @@ jobs:
             flutter create --platforms=android,ios,windows,macos --org com.offynexbd --project-name offynexbd .
           fi
 
+      - name: Prepare Bengali PDF font
+        run: |
+          mkdir -p assets/fonts
+          curl --fail --location --retry 3 --output assets/fonts/NotoSansBengali.ttf 'https://raw.githubusercontent.com/google/fonts/main/ofl/notosansbengali/NotoSansBengali%5Bwdth,wght%5D.ttf'
+          test -s assets/fonts/NotoSansBengali.ttf
+
       - name: Get Dependencies
         run: flutter pub get
 
