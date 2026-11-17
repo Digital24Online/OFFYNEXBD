@@ -24,6 +24,8 @@ dependencies:
   file_picker: ^13.3.3
   excel_community: ^2.6.2
   path_provider: ^2.1.5
+  pdf: ^3.11.3
+  printing: ^5.14.2
 
 dev_dependencies:
   flutter_test:
@@ -35,4 +37,5 @@ flutter:
 
   assets:
     - assets/branding/offynexbd_logo.svg
+    - assets/fonts/NotoSansBengali.ttf
     
