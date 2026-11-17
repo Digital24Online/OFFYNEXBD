@@ -88,7 +88,7 @@ class SheetsCsvCodec {
           value.contains('"') ||
           value.contains('\r') ||
           value.contains('\n')) {
-        return '"' + value.replaceAll('"', '""') + '"';
+        return '"${value.replaceAll('"', '""')}"';
       }
       return value;
     }
