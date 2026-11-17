@@ -319,38 +319,18 @@ class _SheetsScreenState extends State<SheetsScreen> {
 
   Future<void> _editCell(int row, int column) async {
     final key = _cellKey(row, column);
-    final controller = TextEditingController(text: _cells[key] ?? '');
     final result = await showDialog<String>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text('${_t('সেল সম্পাদনা', 'Edit cell')} — $key'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          minLines: 1,
-          maxLines: 4,
-          decoration: InputDecoration(
-            labelText: _t('মান অথবা Formula', 'Value or formula'),
-            hintText: '=SUM(A1:A5)',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text(_t('বাতিল', 'Cancel')),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, ''),
-            child: Text(_t('মুছুন', 'Clear')),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, controller.text),
-            child: Text(_t('সংরক্ষণ', 'Save')),
-          ),
-        ],
+      builder: (_) => _CellEditDialog(
+        cellKey: key,
+        initialValue: _cells[key] ?? '',
+        title: _t('সেল সম্পাদনা', 'Edit cell'),
+        valueLabel: _t('মান অথবা Formula', 'Value or formula'),
+        cancelLabel: _t('বাতিল', 'Cancel'),
+        clearLabel: _t('মুছুন', 'Clear'),
+        saveLabel: _t('সংরক্ষণ', 'Save'),
       ),
     );
-    controller.dispose();
     if (result == null || !mounted) return;
     if (result.trim().isEmpty) {
       _cells.remove(key);
@@ -1141,4 +1121,73 @@ class _SheetsScreenState extends State<SheetsScreen> {
     );
   }
 
+}\n
+class _CellEditDialog extends StatefulWidget {
+  const _CellEditDialog({
+    required this.cellKey,
+    required this.initialValue,
+    required this.title,
+    required this.valueLabel,
+    required this.cancelLabel,
+    required this.clearLabel,
+    required this.saveLabel,
+  });
+
+  final String cellKey;
+  final String initialValue;
+  final String title;
+  final String valueLabel;
+  final String cancelLabel;
+  final String clearLabel;
+  final String saveLabel;
+
+  @override
+  State<_CellEditDialog> createState() => _CellEditDialogState();
+}
+
+class _CellEditDialogState extends State<_CellEditDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialValue);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('${widget.title} — ${widget.cellKey}'),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        minLines: 1,
+        maxLines: 4,
+        decoration: InputDecoration(
+          labelText: widget.valueLabel,
+          hintText: '=SUM(A1:A5)',
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(widget.cancelLabel),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, ''),
+          child: Text(widget.clearLabel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _controller.text),
+          child: Text(widget.saveLabel),
+        ),
+      ],
+    );
+  }
 }
