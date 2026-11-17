@@ -72,6 +72,30 @@ void main() {
       expect(engine.evaluateCell('B1'), 30);
     });
 
+    test('propagates formula errors from cells inside aggregate ranges', () {
+      final engine = SheetsFormulaEngine({
+        'A1': '10',
+        'A2': '=1/0',
+        'A3': '20',
+        'B1': '=SUM(A1:A3)',
+        'B2': '=AVERAGE(A1:A3)',
+        'B3': '=MIN(A1:A3)',
+      });
+      expect(engine.evaluateCell('B1'), isNull);
+      expect(engine.evaluateCell('B2'), isNull);
+      expect(engine.evaluateCell('B3'), isNull);
+    });
+
+    test('continues to ignore text values inside aggregate ranges', () {
+      final engine = SheetsFormulaEngine({
+        'A1': '10',
+        'A2': 'not a number',
+        'A3': '20',
+        'B1': '=SUM(A1:A3)',
+      });
+      expect(engine.evaluateCell('B1'), 30);
+    });
+
     test('detects circular references and division by zero', () {
       final engine = SheetsFormulaEngine({
         'A1': '=A2+1', 'A2': '=A1+1', 'B1': '=5/0',
