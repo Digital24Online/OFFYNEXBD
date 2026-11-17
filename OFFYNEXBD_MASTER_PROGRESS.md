@@ -116,12 +116,14 @@
 - [x] Added a widget test that scrolls to row 1000 and verifies that the distant cell is built on demand.
 - [x] Build #108 (run ID 44106861497; commit e6b11b28d059a953a3682c350beafbee4268cdcf) — Analyze, Tests, Android APK build and APK upload all SUCCESS.
 - [x] APK artifact: OFFYNEXBD-Android-APK (30,627,520 bytes; available until 2026-11-24).
-- [ ] Latest cell-alignment correction and its widget test are committed but awaiting the next Android workflow result.
+- [ ] Latest cell-alignment correction and expanded Sheets widget tests are committed; Build #112 is awaiting Analyze, Tests, Android APK build and upload.
 
 ### Latest Sheets Alignment Correction — 2026-11-17
 - Commit `53ac055872c032547553066218221f8d3851dc01`: cell horizontal and vertical alignment are now combined, so Top/Middle/Bottom alignment works even when Wrap Text is off.
 - Commit `a33b39a0ae31bf4c81f260f60f6ccae42e3e59f0`: widget test added for vertical alignment without Wrap Text.
-- Latest build must pass Analyze, Tests, Android APK build and APK upload before this correction is considered verified.
+- Commit `39c4a3a210d7514907ad1ddd599323210495cc93`: widget test added for cell editing, formula recalculation and save/reload persistence.
+- Commit `a1c12bcaea3b5395bc4a17fa0f898a85ab97fabb`: widget test added to verify populated edge rows/columns are protected and add-row/add-column operations preserve existing data.
+- Latest Build #112 (run ID 44113043865) includes all the above tests and must pass Analyze, Tests, Android APK build and APK upload before these changes are considered verified.
 
 ## Next Development Tasks
 1. Verify the latest cell-alignment correction with GitHub Actions Analyze, Tests and Android APK build/upload.
