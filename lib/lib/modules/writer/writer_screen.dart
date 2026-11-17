@@ -1350,10 +1350,9 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
             PopupMenuItem(value: 0xFFEAF7EA, child: Text('Light Green')),
             PopupMenuItem(value: 0xFFFFF9DB, child: Text('Light Yellow')),
           ],
-          child: OutlinedButton.icon(
-            onPressed: null,
-            icon: const Icon(Icons.palette_outlined, size: 18),
-            label: const Text('Page Color'),
+          child: const Chip(
+            avatar: Icon(Icons.palette_outlined, size: 18),
+            label: Text('Page Color'),
           ),
         ),
         FilterChip(
