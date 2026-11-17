@@ -1,10 +1,10 @@
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offynexbd/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   SharedPreferences.setMockInitialValues({});
+
   testWidgets('OFFYNEXBD home screen loads', (WidgetTester tester) async {
     await tester.pumpWidget(const OFFYNEXBDApp());
     await tester.pumpAndSettle();
@@ -14,8 +14,6 @@ void main() {
     expect(find.text('রাইটার'), findsOneWidget);
     expect(find.text('শিটস'), findsOneWidget);
   });
-}
-
 
   testWidgets('Sheets displays the desktop-style Ribbon and formula bar',
       (WidgetTester tester) async {
@@ -42,3 +40,4 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Gridlines'), findsOneWidget);
   });
+}
