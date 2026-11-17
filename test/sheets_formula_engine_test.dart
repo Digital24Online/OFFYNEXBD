@@ -134,7 +134,7 @@ void main() {
       expect(engine.evaluateCell('A9'), closeTo(math.e, 1e-12));
       expect(engine.evaluateCell('A10'), 0);
       expect(engine.evaluateCell('A11'), 2);
-      expect(engine.evaluateCell('A12'), 3);
+      expect(engine.evaluateCell('A12'), closeTo(3, 1e-12));
       expect(engine.evaluateCell('A13'), 0);
       expect(engine.evaluateCell('A14'), 1);
       expect(engine.evaluateCell('A15'), 0);

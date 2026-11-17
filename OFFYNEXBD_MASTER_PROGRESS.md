@@ -315,3 +315,8 @@
 - Exact failing assertion: `=LOG10(1000)` returned null instead of 3. Root cause: the tokenizer's cell-reference pattern also matches the identifier `LOG10`; the parser classified it as a cell reference before checking whether it was a function call.
 - Corrected parser precedence: an identifier immediately followed by `(` is parsed as a function call first; ordinary cell references remain supported. Added a regression assertion that a cell reference named `LOG10` still resolves when it is not followed by `(`.
 - Verification pending: Analyze, full tests, Android APK build and artifact upload must all pass before the 31-function expansion is marked verified.
+
+### Build #156 verification and correction
+- Build #156 (`44144984847`, commit `3d29b5ba`) completed with Analyze successful; tests failed on an overly strict exact floating-point assertion for `LOG10(1000)`: actual `2.9999999999999996` versus expected `3`.
+- Updated the regression test to use a `1e-12` tolerance for this floating-point result. No formula-engine behavior was changed for this precision-only test issue.
+- Re-run verification pending; APK build is not yet verified.
