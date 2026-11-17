@@ -154,6 +154,17 @@ void main() {
       expect(rangeEngine.evaluateCell('B4'), 3);
     });
 
+    test('parses scientific notation in formula numbers', () {
+      final engine = SheetsFormulaEngine({
+        'A1': '=1E3+2.5e-1',
+        'A2': '=1.25E-2*1000',
+        'A3': '=1e+2',
+      });
+      expect(engine.evaluateCell('A1'), 1000.25);
+      expect(engine.evaluateCell('A2'), 12.5);
+      expect(engine.evaluateCell('A3'), 100);
+    });
+
     test('supports nested LOG10 calls inside aggregate functions', () {
       final engine = SheetsFormulaEngine({
         'A1': '=SUM(LOG10(1000),1)',
