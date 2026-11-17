@@ -468,8 +468,8 @@ class _SheetsScreenState extends State<SheetsScreen> {
         builder: (dialogContext) => AlertDialog(
           title: Text(_t('CSV Import করবেন?', 'Import CSV?')),
           content: Text(_t(
-            '${rows.length}টি Row ও ${columns}টি Column বর্তমান শিটের জায়গা নেবে। CSV-তে Cell formatting থাকে না; বর্তমান তথ্য ও Formatting বদলে যাবে.',
-            '${rows.length} rows and ${columns} columns will replace the current sheet. CSV does not contain cell formatting; current data and formatting will be replaced.',
+            '${rows.length}টি Row ও $columnsটি Column বর্তমান শিটের জায়গা নেবে। CSV-তে Cell formatting থাকে না; বর্তমান তথ্য ও Formatting বদলে যাবে.',
+            '${rows.length} rows and $columns columns will replace the current sheet. CSV does not contain cell formatting; current data and formatting will be replaced.',
           )),
           actions: [
             TextButton(
