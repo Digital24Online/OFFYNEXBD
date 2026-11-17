@@ -301,6 +301,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   double marginBottom = 1.0;
   double marginLeft = 1.0;
   double marginRight = 1.0;
+  int pageBackgroundColorValue = 0xFFFFFFFF;
 
   // Writer-এর অতিরিক্ত নথি, রিভিউ ও ভিউ সেটিংস।
   double zoomLevel = 1.0;
@@ -366,6 +367,10 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
       final savedPageSize = savedLayout['pageSize']?.toString();
       final savedOrientation = savedLayout['orientation']?.toString();
       final savedPreset = savedLayout['marginPreset']?.toString();
+      final savedPageColor = savedLayout['pageBackgroundColor'];
+      if (savedPageColor is int && savedPageColor >= 0 && savedPageColor <= 0xFFFFFFFF) {
+        pageBackgroundColorValue = savedPageColor;
+      }
 
       if (['A4', 'A5', 'Letter', 'Legal'].contains(savedPageSize)) {
         pageSize = savedPageSize!;
@@ -1333,6 +1338,40 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
         _ribbonButton(Icons.close, 'Close', () => Navigator.maybePop(context)),
       ]);
 
+  Widget buildDesignRibbon() => _ribbonPanel([
+        PopupMenuButton<int>(
+          tooltip: 'Page Color',
+          onSelected: (value) => _saveLayoutChange(() => pageBackgroundColorValue = value),
+          itemBuilder: (context) => const [
+            PopupMenuItem(value: 0xFFFFFFFF, child: Text('White')),
+            PopupMenuItem(value: 0xFFFFF8E7, child: Text('Ivory')),
+            PopupMenuItem(value: 0xFFEAF4FF, child: Text('Light Blue')),
+            PopupMenuItem(value: 0xFFF1F3F5, child: Text('Light Gray')),
+            PopupMenuItem(value: 0xFFEAF7EA, child: Text('Light Green')),
+            PopupMenuItem(value: 0xFFFFF9DB, child: Text('Light Yellow')),
+          ],
+          child: OutlinedButton.icon(
+            onPressed: null,
+            icon: const Icon(Icons.palette_outlined, size: 18),
+            label: const Text('Page Color'),
+          ),
+        ),
+        FilterChip(
+          label: const Text('Page Border'),
+          selected: showPageBorder,
+          onSelected: (value) {
+            setState(() => showPageBorder = value);
+            scheduleSave();
+          },
+        ),
+        _ribbonButton(Icons.restart_alt, 'Reset Design', () {
+          _saveLayoutChange(() {
+            pageBackgroundColorValue = 0xFFFFFFFF;
+            showPageBorder = true;
+          });
+        }),
+      ]);
+
   Widget buildReferencesRibbon() => _ribbonPanel([
         _ribbonButton(Icons.format_list_numbered, 'Table of Contents', insertTableOfContents),
         _ribbonButton(Icons.format_quote, 'Citation', insertCitation),
@@ -1444,6 +1483,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     'File',
     'Home',
     'Insert',
+    'Design',
     'Layout',
     'References',
     'Review',
@@ -1704,6 +1744,7 @@ Future<void> showCustomFontSizeDialog() async {
       'bottom': marginBottom,
       'left': marginLeft,
       'right': marginRight,
+      'pageBackgroundColor': pageBackgroundColorValue,
     };
   }
 
@@ -2354,12 +2395,14 @@ Future<void> insertWriterImage() async {
               ] else if (selectedRibbonTab == 2) ...[
                 buildInsertRibbon(),
               ] else if (selectedRibbonTab == 3) ...[
-                buildLayoutRibbon(),
+                buildDesignRibbon(),
               ] else if (selectedRibbonTab == 4) ...[
-                buildReferencesRibbon(),
+                buildLayoutRibbon(),
               ] else if (selectedRibbonTab == 5) ...[
-                buildReviewRibbon(),
+                buildReferencesRibbon(),
               ] else if (selectedRibbonTab == 6) ...[
+                buildReviewRibbon(),
+              ] else if (selectedRibbonTab == 7) ...[
                 buildViewRibbon(),
               ] else ...[
                 const Padding(
@@ -2398,7 +2441,7 @@ Future<void> insertWriterImage() async {
                       marginBottom * 96 * scale,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Color(pageBackgroundColorValue),
                       border: showPageBorder ? Border.all(color: const Color(0xFFD9E0EA)) : null,
                       borderRadius: BorderRadius.circular(4),
                       boxShadow: [
