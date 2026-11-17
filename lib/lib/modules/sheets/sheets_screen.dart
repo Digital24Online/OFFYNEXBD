@@ -171,7 +171,10 @@ class _SheetsScreenState extends State<SheetsScreen> {
     } else {
       _cells[key] = result.trim();
     }
-    setState(() => _selectedCell = key);
+    setState(() {
+      _selectedCell = key;
+      _formulaBarController.text = _cells[key] ?? '';
+    });
     await _saveWorkbook();
   }
 
@@ -224,6 +227,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
       _rowCount--;
       if (_selectedCell != null && cellPattern.hasMatch(_selectedCell!)) {
         _selectedCell = null;
+        _formulaBarController.clear();
       }
     });
     await _saveWorkbook();
@@ -300,6 +304,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
         _columnCount = sheet.maxColumns.clamp(1, 100);
         _sheetName = sheetName;
         _selectedCell = null;
+        _formulaBarController.clear();
       });
       await _saveWorkbook();
       if (!mounted) return;
@@ -376,6 +381,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
     setState(() {
       _cells.clear();
       _selectedCell = null;
+      _formulaBarController.clear();
     });
     await _saveWorkbook();
   }
