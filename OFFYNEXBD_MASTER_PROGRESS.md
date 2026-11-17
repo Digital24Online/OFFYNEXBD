@@ -307,3 +307,11 @@
 - Exact failing assertion: `LARGE(1,3,5,7,2)` returned null instead of 5. Root cause: the parser correctly collects multiple data values plus the final rank, but the implementation incorrectly validated LARGE/SMALL as requiring exactly two flattened values.
 - Corrected validation to require at least two values (one or more data values plus rank), preserving rank/domain validation. Added coverage for both LARGE and SMALL with multi-value arguments and cell ranges.
 - Analyze, the full test suite, Android APK build and artifact upload remain pending; do not mark the formula expansion verified until all pass.
+
+
+## Sheets Formula Engine — Build #154 Failure Analysis and LOG10 Parser Correction — 2026-11-18
+
+- Build #154 (run ID `44143652589`, commit `3b066c02522c0c5f790c2e875ba534c307627425`) passed Flutter Analyze but failed one formula-engine test; the remaining tests passed, including Bengali PDF shaping and XLSX round-trip tests. Android APK build/upload were skipped after the test failure.
+- Exact failing assertion: `=LOG10(1000)` returned null instead of 3. Root cause: the tokenizer's cell-reference pattern also matches the identifier `LOG10`; the parser classified it as a cell reference before checking whether it was a function call.
+- Corrected parser precedence: an identifier immediately followed by `(` is parsed as a function call first; ordinary cell references remain supported. Added a regression assertion that a cell reference named `LOG10` still resolves when it is not followed by `(`.
+- Verification pending: Analyze, full tests, Android APK build and artifact upload must all pass before the 31-function expansion is marked verified.

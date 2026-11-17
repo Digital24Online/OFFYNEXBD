@@ -194,6 +194,175 @@ class _FormulaParser {
     final token = _take();
     final number = double.tryParse(token);
     if (number != null) return number;
+    // Function names can resemble cell references (for example LOG10).
+    // Prefer a function call when the identifier is immediately followed by '('.
+    if (RegExp(r'^[A-Z_][A-Z0-9_]*
+    throw const FormatException('Invalid formula value');
+  }
+
+  double _parseFunction(String name) {
+    const supported = {
+      'SUM', 'AVERAGE', 'COUNT', 'MIN', 'MAX', 'PRODUCT',
+      'ABS', 'ROUND', 'ROUNDUP', 'ROUNDDOWN', 'SQRT', 'POWER',
+      'MOD', 'INT', 'SIGN', 'MEDIAN', 'LARGE', 'SMALL',
+      'CEILING', 'FLOOR', 'PI', 'EXP', 'LN', 'LOG', 'LOG10',
+      'SIN', 'COS', 'TAN', 'ASIN', 'ACOS', 'ATAN',
+    };
+    if (!supported.contains(name)) {
+      throw FormatException('Unsupported function: $name');
+    }
+    _expect('(');
+    final values = <double>[];
+    if (!_accept(')')) {
+      while (true) {
+        if (current != null &&
+            SheetsFormulaEngine._isCellReference(current!) &&
+            position + 1 < tokens.length &&
+            tokens[position + 1] == ':') {
+          final start = _take();
+          _expect(':');
+          final end = _take();
+          if (!SheetsFormulaEngine._isCellReference(end)) {
+            throw const FormatException('Invalid range end');
+          }
+          values.addAll(engine._readRange(start, end, visiting));
+        } else {
+          values.add(_parseAdditive());
+        }
+        if (_accept(')')) break;
+        _expect(',');
+      }
+    }
+
+    if (name == 'PI') {
+      _expectNoExtraArguments(name, values, 0);
+      return math.pi;
+    }
+    if (name == 'COUNT') return values.length.toDouble();
+    if (name == 'SUM') return values.fold<double>(0, (a, b) => a + b);
+    if (name == 'PRODUCT') {
+      return values.isEmpty ? 0 : values.fold<double>(1, (a, b) => a * b);
+    }
+    if (values.isEmpty) throw const FormatException('No numeric values');
+
+    switch (name) {
+      case 'AVERAGE':
+        return values.reduce((a, b) => a + b) / values.length;
+      case 'MIN':
+        return values.reduce((a, b) => math.min(a, b).toDouble());
+      case 'MAX':
+        return values.reduce((a, b) => math.max(a, b).toDouble());
+      case 'ABS':
+        _expectNoExtraArguments(name, values, 1);
+        return values.first.abs();
+      case 'ROUND':
+        _expectNoExtraArguments(name, values, 2);
+        final factor = math.pow(10, values[1]).toDouble();
+        if (!factor.isFinite || factor == 0) throw const FormatException('Invalid ROUND precision');
+        return (values[0] * factor).roundToDouble() / factor;
+      case 'ROUNDUP':
+      case 'ROUNDDOWN':
+        _expectNoExtraArguments(name, values, 2);
+        final factor = math.pow(10, values[1]).toDouble();
+        if (!factor.isFinite || factor == 0) throw const FormatException('Invalid rounding precision');
+        final scaled = values[0] * factor;
+        if (!scaled.isFinite) throw const FormatException('Rounding overflow');
+        final rounded = name == 'ROUNDUP'
+            ? (scaled.isNegative ? scaled.floorToDouble() : scaled.ceilToDouble())
+            : scaled.truncateToDouble();
+        return rounded / factor;
+      case 'MEDIAN':
+        final sorted = [...values]..sort();
+        final middle = sorted.length ~/ 2;
+        return sorted.length.isOdd ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+      case 'LARGE':
+      case 'SMALL':
+        _expectAtLeastArguments(name, values, 2);
+        final rank = values.last;
+        final candidates = values.sublist(0, values.length - 1);
+        if (rank < 1 || rank > candidates.length || rank != rank.roundToDouble()) {
+          throw const FormatException('Invalid rank');
+        }
+        final sorted = [...candidates]..sort();
+        return name == 'LARGE' ? sorted[sorted.length - rank.toInt()] : sorted[rank.toInt() - 1];
+      case 'CEILING':
+      case 'FLOOR':
+        _expectNoExtraArguments(name, values, 2);
+        if (values[1] == 0) throw const FormatException('Significance cannot be zero');
+        final quotient = values[0] / values[1];
+        return (name == 'CEILING' ? quotient.ceilToDouble() : quotient.floorToDouble()) * values[1];
+      case 'SQRT':
+        _expectNoExtraArguments(name, values, 1);
+        if (values.first < 0) throw const FormatException('SQRT domain error');
+        return math.sqrt(values.first);
+      case 'POWER':
+        _expectNoExtraArguments(name, values, 2);
+        return math.pow(values[0], values[1]).toDouble();
+      case 'MOD':
+        _expectNoExtraArguments(name, values, 2);
+        if (values[1] == 0) throw const FormatException('Division by zero');
+        return values[0] % values[1];
+      case 'INT':
+        _expectNoExtraArguments(name, values, 1);
+        return values.first.floorToDouble();
+      case 'SIGN':
+        _expectNoExtraArguments(name, values, 1);
+        return values.first.sign.toDouble();
+      case 'EXP':
+        _expectNoExtraArguments(name, values, 1);
+        return math.exp(values.first);
+      case 'LN':
+        _expectNoExtraArguments(name, values, 1);
+        if (values.first <= 0) throw const FormatException('LN domain error');
+        return math.log(values.first);
+      case 'LOG':
+        if (values.isEmpty || values.length > 2 || values.first <= 0) throw const FormatException('Invalid LOG arguments');
+        final base = values.length == 2 ? values[1] : 10.0;
+        if (base <= 0 || base == 1) throw const FormatException('Invalid LOG base');
+        return math.log(values.first) / math.log(base);
+      case 'LOG10':
+        _expectNoExtraArguments(name, values, 1);
+        if (values.first <= 0) throw const FormatException('LOG10 domain error');
+        return math.log(values.first) / math.ln10;
+      case 'SIN':
+        _expectNoExtraArguments(name, values, 1);
+        return math.sin(values.first);
+      case 'COS':
+        _expectNoExtraArguments(name, values, 1);
+        return math.cos(values.first);
+      case 'TAN':
+        _expectNoExtraArguments(name, values, 1);
+        return math.tan(values.first);
+      case 'ASIN':
+        _expectNoExtraArguments(name, values, 1);
+        if (values.first.abs() > 1) throw const FormatException('ASIN domain error');
+        return math.asin(values.first);
+      case 'ACOS':
+        _expectNoExtraArguments(name, values, 1);
+        if (values.first.abs() > 1) throw const FormatException('ACOS domain error');
+        return math.acos(values.first);
+      case 'ATAN':
+        _expectNoExtraArguments(name, values, 1);
+        return math.atan(values.first);
+    }
+    throw const FormatException('Unsupported function');
+  }
+
+  void _expectNoExtraArguments(String name, List<double> values, int count) {
+    if (values.length != count) {
+      throw FormatException('$name expects $count argument(s)');
+    }
+  }
+
+  void _expectAtLeastArguments(String name, List<double> values, int count) {
+    if (values.length < count) {
+      throw FormatException('$name expects at least $count arguments');
+    }
+  }
+}
+).hasMatch(token) && current == '(') {
+      return _parseFunction(token);
+    }
     if (SheetsFormulaEngine._isCellReference(token)) {
       final value = engine._readCell(token, visiting);
       if (value == null) {
@@ -201,7 +370,171 @@ class _FormulaParser {
       }
       return value;
     }
-    if (RegExp(r'^[A-Z_][A-Z0-9_]*$').hasMatch(token)) {
+    if (RegExp(r'^[A-Z_][A-Z0-9_]*
+    throw const FormatException('Invalid formula value');
+  }
+
+  double _parseFunction(String name) {
+    const supported = {
+      'SUM', 'AVERAGE', 'COUNT', 'MIN', 'MAX', 'PRODUCT',
+      'ABS', 'ROUND', 'ROUNDUP', 'ROUNDDOWN', 'SQRT', 'POWER',
+      'MOD', 'INT', 'SIGN', 'MEDIAN', 'LARGE', 'SMALL',
+      'CEILING', 'FLOOR', 'PI', 'EXP', 'LN', 'LOG', 'LOG10',
+      'SIN', 'COS', 'TAN', 'ASIN', 'ACOS', 'ATAN',
+    };
+    if (!supported.contains(name)) {
+      throw FormatException('Unsupported function: $name');
+    }
+    _expect('(');
+    final values = <double>[];
+    if (!_accept(')')) {
+      while (true) {
+        if (current != null &&
+            SheetsFormulaEngine._isCellReference(current!) &&
+            position + 1 < tokens.length &&
+            tokens[position + 1] == ':') {
+          final start = _take();
+          _expect(':');
+          final end = _take();
+          if (!SheetsFormulaEngine._isCellReference(end)) {
+            throw const FormatException('Invalid range end');
+          }
+          values.addAll(engine._readRange(start, end, visiting));
+        } else {
+          values.add(_parseAdditive());
+        }
+        if (_accept(')')) break;
+        _expect(',');
+      }
+    }
+
+    if (name == 'PI') {
+      _expectNoExtraArguments(name, values, 0);
+      return math.pi;
+    }
+    if (name == 'COUNT') return values.length.toDouble();
+    if (name == 'SUM') return values.fold<double>(0, (a, b) => a + b);
+    if (name == 'PRODUCT') {
+      return values.isEmpty ? 0 : values.fold<double>(1, (a, b) => a * b);
+    }
+    if (values.isEmpty) throw const FormatException('No numeric values');
+
+    switch (name) {
+      case 'AVERAGE':
+        return values.reduce((a, b) => a + b) / values.length;
+      case 'MIN':
+        return values.reduce((a, b) => math.min(a, b).toDouble());
+      case 'MAX':
+        return values.reduce((a, b) => math.max(a, b).toDouble());
+      case 'ABS':
+        _expectNoExtraArguments(name, values, 1);
+        return values.first.abs();
+      case 'ROUND':
+        _expectNoExtraArguments(name, values, 2);
+        final factor = math.pow(10, values[1]).toDouble();
+        if (!factor.isFinite || factor == 0) throw const FormatException('Invalid ROUND precision');
+        return (values[0] * factor).roundToDouble() / factor;
+      case 'ROUNDUP':
+      case 'ROUNDDOWN':
+        _expectNoExtraArguments(name, values, 2);
+        final factor = math.pow(10, values[1]).toDouble();
+        if (!factor.isFinite || factor == 0) throw const FormatException('Invalid rounding precision');
+        final scaled = values[0] * factor;
+        if (!scaled.isFinite) throw const FormatException('Rounding overflow');
+        final rounded = name == 'ROUNDUP'
+            ? (scaled.isNegative ? scaled.floorToDouble() : scaled.ceilToDouble())
+            : scaled.truncateToDouble();
+        return rounded / factor;
+      case 'MEDIAN':
+        final sorted = [...values]..sort();
+        final middle = sorted.length ~/ 2;
+        return sorted.length.isOdd ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+      case 'LARGE':
+      case 'SMALL':
+        _expectAtLeastArguments(name, values, 2);
+        final rank = values.last;
+        final candidates = values.sublist(0, values.length - 1);
+        if (rank < 1 || rank > candidates.length || rank != rank.roundToDouble()) {
+          throw const FormatException('Invalid rank');
+        }
+        final sorted = [...candidates]..sort();
+        return name == 'LARGE' ? sorted[sorted.length - rank.toInt()] : sorted[rank.toInt() - 1];
+      case 'CEILING':
+      case 'FLOOR':
+        _expectNoExtraArguments(name, values, 2);
+        if (values[1] == 0) throw const FormatException('Significance cannot be zero');
+        final quotient = values[0] / values[1];
+        return (name == 'CEILING' ? quotient.ceilToDouble() : quotient.floorToDouble()) * values[1];
+      case 'SQRT':
+        _expectNoExtraArguments(name, values, 1);
+        if (values.first < 0) throw const FormatException('SQRT domain error');
+        return math.sqrt(values.first);
+      case 'POWER':
+        _expectNoExtraArguments(name, values, 2);
+        return math.pow(values[0], values[1]).toDouble();
+      case 'MOD':
+        _expectNoExtraArguments(name, values, 2);
+        if (values[1] == 0) throw const FormatException('Division by zero');
+        return values[0] % values[1];
+      case 'INT':
+        _expectNoExtraArguments(name, values, 1);
+        return values.first.floorToDouble();
+      case 'SIGN':
+        _expectNoExtraArguments(name, values, 1);
+        return values.first.sign.toDouble();
+      case 'EXP':
+        _expectNoExtraArguments(name, values, 1);
+        return math.exp(values.first);
+      case 'LN':
+        _expectNoExtraArguments(name, values, 1);
+        if (values.first <= 0) throw const FormatException('LN domain error');
+        return math.log(values.first);
+      case 'LOG':
+        if (values.isEmpty || values.length > 2 || values.first <= 0) throw const FormatException('Invalid LOG arguments');
+        final base = values.length == 2 ? values[1] : 10.0;
+        if (base <= 0 || base == 1) throw const FormatException('Invalid LOG base');
+        return math.log(values.first) / math.log(base);
+      case 'LOG10':
+        _expectNoExtraArguments(name, values, 1);
+        if (values.first <= 0) throw const FormatException('LOG10 domain error');
+        return math.log(values.first) / math.ln10;
+      case 'SIN':
+        _expectNoExtraArguments(name, values, 1);
+        return math.sin(values.first);
+      case 'COS':
+        _expectNoExtraArguments(name, values, 1);
+        return math.cos(values.first);
+      case 'TAN':
+        _expectNoExtraArguments(name, values, 1);
+        return math.tan(values.first);
+      case 'ASIN':
+        _expectNoExtraArguments(name, values, 1);
+        if (values.first.abs() > 1) throw const FormatException('ASIN domain error');
+        return math.asin(values.first);
+      case 'ACOS':
+        _expectNoExtraArguments(name, values, 1);
+        if (values.first.abs() > 1) throw const FormatException('ACOS domain error');
+        return math.acos(values.first);
+      case 'ATAN':
+        _expectNoExtraArguments(name, values, 1);
+        return math.atan(values.first);
+    }
+    throw const FormatException('Unsupported function');
+  }
+
+  void _expectNoExtraArguments(String name, List<double> values, int count) {
+    if (values.length != count) {
+      throw FormatException('$name expects $count argument(s)');
+    }
+  }
+
+  void _expectAtLeastArguments(String name, List<double> values, int count) {
+    if (values.length < count) {
+      throw FormatException('$name expects at least $count arguments');
+    }
+  }
+}
+).hasMatch(token)) {
       return _parseFunction(token);
     }
     throw const FormatException('Invalid formula value');

@@ -120,6 +120,7 @@ void main() {
         'A7': '=FLOOR(4.8,1)', 'A8': '=PI()', 'A9': '=EXP(1)',
         'A10': '=LN(1)', 'A11': '=LOG(100)', 'A12': '=LOG10(1000)',
         'A13': '=SIN(0)', 'A14': '=COS(0)', 'A15': '=TAN(0)',
+        'LOG10': '42', 'A19': '=LOG10',
         'A16': '=ASIN(0)', 'A17': '=ACOS(1)', 'A18': '=ATAN(0)',
       });
       expect(engine.evaluateCell('A1'), 4);
@@ -140,6 +141,7 @@ void main() {
       expect(engine.evaluateCell('A16'), 0);
       expect(engine.evaluateCell('A17'), 0);
       expect(engine.evaluateCell('A18'), 0);
+      expect(engine.evaluateCell('A19'), 42);
 
       final rangeEngine = SheetsFormulaEngine({
         'A1': '1', 'A2': '3', 'A3': '5', 'A4': '7',
