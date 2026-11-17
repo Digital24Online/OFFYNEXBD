@@ -45,6 +45,8 @@ jobs:
           mkdir -p assets/fonts
           curl --fail --location --retry 3 --output assets/fonts/NotoSansBengali.ttf 'https://raw.githubusercontent.com/google/fonts/main/ofl/notosansbengali/NotoSansBengali%5Bwdth,wght%5D.ttf'
           test -s assets/fonts/NotoSansBengali.ttf
+          curl --fail --location --retry 3 --output assets/fonts/OFL.txt 'https://raw.githubusercontent.com/google/fonts/main/ofl/notosansbengali/OFL.txt'
+          test -s assets/fonts/OFL.txt
 
       - name: Get Dependencies
         run: flutter pub get
