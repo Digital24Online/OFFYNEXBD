@@ -52,6 +52,9 @@ void main() {
     await tester.tap(find.text('শিটস'));
     await tester.pumpAndSettle();
 
+    await tester.tap(find.text('হোম'));
+    await tester.pumpAndSettle();
+
     await tester.tap(find.byKey(const ValueKey('sheet-cell-A1')));
     await tester.pumpAndSettle();
 
