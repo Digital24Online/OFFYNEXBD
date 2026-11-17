@@ -150,10 +150,10 @@ class _FormulaParser {
   }
 
   double _parseMultiplicative() {
-    var value = _parsePower();
+    var value = _parseUnary();
     while (current == '*' || current == '/') {
       final operator = _take();
-      final right = _parsePower();
+      final right = _parseUnary();
       if (operator == '/' && right == 0) {
         throw const FormatException('Division by zero');
       }
@@ -162,16 +162,18 @@ class _FormulaParser {
     return value;
   }
 
-  double _parsePower() {
-    var value = _parseUnary();
-    if (_accept('^')) value = math.pow(value, _parsePower()).toDouble();
-    return value;
-  }
-
+  // Exponentiation binds more tightly than unary signs, as in Excel:
+  // -2^2 is -4, while (-2)^2 is 4.
   double _parseUnary() {
     if (_accept('+')) return _parseUnary();
     if (_accept('-')) return -_parseUnary();
-    return _parsePrimary();
+    return _parsePower();
+  }
+
+  double _parsePower() {
+    final value = _parsePrimary();
+    if (_accept('^')) return math.pow(value, _parseUnary()).toDouble();
+    return value;
   }
 
   double _parsePrimary() {
@@ -197,7 +199,10 @@ class _FormulaParser {
   }
 
   double _parseFunction(String name) {
-    const supported = {'SUM', 'AVERAGE', 'COUNT', 'MIN', 'MAX'};
+    const supported = {
+      'SUM', 'AVERAGE', 'COUNT', 'MIN', 'MAX', 'PRODUCT',
+      'ABS', 'ROUND', 'SQRT', 'POWER', 'MOD', 'INT', 'SIGN',
+    };
     if (!supported.contains(name)) {
       throw FormatException('Unsupported function: $name');
     }
@@ -223,17 +228,55 @@ class _FormulaParser {
         _expect(',');
       }
     }
+
     if (name == 'COUNT') return values.length.toDouble();
-    if (values.isEmpty) {
-      if (name == 'SUM') return 0;
-      throw const FormatException('No numeric values');
+    if (name == 'SUM') return values.fold<double>(0, (a, b) => a + b);
+    if (name == 'PRODUCT') {
+      return values.isEmpty ? 0 : values.fold<double>(1, (a, b) => a * b);
     }
+    if (values.isEmpty) throw const FormatException('No numeric values');
+
     switch (name) {
-      case 'SUM': return values.fold<double>(0, (a, b) => a + b);
-      case 'AVERAGE': return values.reduce((a, b) => a + b) / values.length;
-      case 'MIN': return values.reduce((a, b) => math.min(a, b).toDouble());
-      case 'MAX': return values.reduce((a, b) => math.max(a, b).toDouble());
+      case 'AVERAGE':
+        return values.reduce((a, b) => a + b) / values.length;
+      case 'MIN':
+        return values.reduce((a, b) => math.min(a, b).toDouble());
+      case 'MAX':
+        return values.reduce((a, b) => math.max(a, b).toDouble());
+      case 'ABS':
+        _expectNoExtraArguments(name, values, 1);
+        return values.first.abs();
+      case 'ROUND':
+        _expectNoExtraArguments(name, values, 2);
+        final factor = math.pow(10, values[1]).toDouble();
+        if (!factor.isFinite || factor == 0) {
+          throw const FormatException('Invalid ROUND precision');
+        }
+        return (values[0] * factor).roundToDouble() / factor;
+      case 'SQRT':
+        _expectNoExtraArguments(name, values, 1);
+        if (values.first < 0) throw const FormatException('SQRT domain error');
+        return math.sqrt(values.first);
+      case 'POWER':
+        _expectNoExtraArguments(name, values, 2);
+        return math.pow(values[0], values[1]).toDouble();
+      case 'MOD':
+        _expectNoExtraArguments(name, values, 2);
+        if (values[1] == 0) throw const FormatException('Division by zero');
+        return values[0] % values[1];
+      case 'INT':
+        _expectNoExtraArguments(name, values, 1);
+        return values.first.floorToDouble();
+      case 'SIGN':
+        _expectNoExtraArguments(name, values, 1);
+        return values.first.sign.toDouble();
     }
     throw const FormatException('Unsupported function');
+  }
+
+  void _expectNoExtraArguments(String name, List<double> values, int count) {
+    if (values.length != count) {
+      throw FormatException('$name expects $count argument(s)');
+    }
   }
 }
