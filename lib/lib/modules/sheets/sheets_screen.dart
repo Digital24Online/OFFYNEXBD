@@ -388,9 +388,10 @@ class _SheetsScreenState extends State<SheetsScreen> {
     final formulaPattern = RegExp(r'(?<![A-Z0-9_])[A-Z]+' + rowNumber.toString() + r'(?!\d)');
     final hasData = _cells.entries.any((entry) =>
         cellPattern.hasMatch(entry.key.toUpperCase()) && entry.value.isNotEmpty);
+    final hasFormatting = _cellStyles.keys.any((key) => cellPattern.hasMatch(key.toUpperCase()));
     final hasFormulaReference = _cells.values.any((value) =>
         value.startsWith('=') && formulaPattern.hasMatch(value.toUpperCase()));
-    if (hasData || hasFormulaReference) {
+    if (hasData || hasFormatting || hasFormulaReference) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_t('শেষ Row-তে তথ্য বা Formula reference আছে। আগে তা সরান।', 'The last row has data or formula references. Clear them first.'))),
       );
@@ -413,9 +414,10 @@ class _SheetsScreenState extends State<SheetsScreen> {
     final formulaPattern = RegExp('(?<![A-Z0-9_])${RegExp.escape(lastColumn)}[1-9]\\d*(?!\\d)', caseSensitive: false);
     final hasData = _cells.entries.any((entry) =>
         cellPattern.hasMatch(entry.key) && entry.value.isNotEmpty);
+    final hasFormatting = _cellStyles.keys.any((key) => cellPattern.hasMatch(key));
     final hasFormulaReference = _cells.values.any((value) =>
         value.startsWith('=') && formulaPattern.hasMatch(value));
-    if (hasData || hasFormulaReference) {
+    if (hasData || hasFormatting || hasFormulaReference) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_t('শেষ Column-তে তথ্য বা Formula reference আছে। আগে তা সরান।', 'The last column has data or formula references. Clear them first.'))),
       );
@@ -445,15 +447,42 @@ class _SheetsScreenState extends State<SheetsScreen> {
       final sheet = workbook.tables[sheetName];
       if (sheet == null) throw FormatException('Worksheet could not be read');
       final imported = <String, String>{};
+      final importedStyles = <String, Map<String, dynamic>>{};
       for (final row in sheet.rows) {
         for (final cell in row) {
-          if (cell == null || cell.value == null) continue;
+          if (cell == null) continue;
           final key = _cellKey(cell.rowIndex, cell.columnIndex);
-          final dynamic cellValue = cell.value;
-          final String value = cellValue is xlsx.FormulaCellValue
-              ? '=${cellValue.formula.toString().replaceFirst(RegExp(r'^='), '')}'
-              : cellValue.toString();
-          if (value.isNotEmpty) imported[key] = value;
+          if (cell.value != null) {
+            final dynamic cellValue = cell.value;
+            final String value = cellValue is xlsx.FormulaCellValue
+                ? '=${cellValue.formula.toString().replaceFirst(RegExp(r'^='), '')}'
+                : cellValue.toString();
+            if (value.isNotEmpty) imported[key] = value;
+          }
+          final importedStyle = cell.cellStyle;
+          if (importedStyle != null) {
+            final style = <String, dynamic>{};
+            if (importedStyle.isBold) style['bold'] = true;
+            if (importedStyle.isItalic) style['italic'] = true;
+            if (importedStyle.underline != xlsx.Underline.None) style['underline'] = true;
+            if (importedStyle.fontSize != null) style['fontSize'] = importedStyle.fontSize;
+            final fontHex = importedStyle.fontColor.colorHex6;
+            if (fontHex != '000000') style['fontColor'] = fontHex;
+            final fillHex = importedStyle.backgroundColor.colorHex;
+            if (fillHex != 'none') style['fillColor'] = importedStyle.backgroundColor.colorHex6;
+            switch (importedStyle.horizontalAlignment) {
+              case xlsx.HorizontalAlign.Center: style['align'] = 'center';
+              case xlsx.HorizontalAlign.Right: style['align'] = 'right';
+              default: style['align'] = 'left';
+            }
+            if (importedStyle.leftBorder.borderStyle != null ||
+                importedStyle.rightBorder.borderStyle != null ||
+                importedStyle.topBorder.borderStyle != null ||
+                importedStyle.bottomBorder.borderStyle != null) {
+              style['border'] = true;
+            }
+            if (style.isNotEmpty) importedStyles[key] = style;
+          }
         }
       }
       if (!mounted) return;
@@ -474,7 +503,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
       if (replace != true || !mounted) return;
       setState(() {
         _cells..clear()..addAll(imported);
-        _cellStyles.clear();
+        _cellStyles..clear()..addAll(importedStyles);
         _rowCount = sheet.maxRows.clamp(1, 1000);
         _columnCount = sheet.maxColumns.clamp(1, 100);
         _sheetName = sheetName;
@@ -501,9 +530,9 @@ class _SheetsScreenState extends State<SheetsScreen> {
       final safeName = _sheetName.trim().isEmpty ? 'Sheet1' : _sheetName.trim();
       if (defaultName != null && defaultName != safeName) workbook.rename(defaultName, safeName);
       final sheet = workbook[safeName];
-      for (final entry in _cells.entries) {
-        final value = entry.value;
-        final cell = sheet.cell(xlsx.CellIndex.indexByString(entry.key.toUpperCase()));
+      for (final key in {..._cells.keys, ..._cellStyles.keys}) {
+        final value = _cells[key] ?? '';
+        final cell = sheet.cell(xlsx.CellIndex.indexByString(key.toUpperCase()));
         if (value.startsWith('=')) {
           cell.value = xlsx.FormulaCellValue(value.substring(1));
         } else {
@@ -518,7 +547,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
             cell.value = xlsx.TextCellValue(value);
           }
         }
-        final style = _cellStyles[entry.key];
+        final style = _cellStyles[key];
         if (style != null && style.isNotEmpty) {
           final alignment = switch (style['align']) {
             'center' => xlsx.HorizontalAlign.Center,
@@ -933,6 +962,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
                                         SizedBox(
                                           width: 104 * _zoom,
                                           child: InkWell(
+                                            key: ValueKey('sheet-cell-${_cellKey(row, column)}'),
                                             onTap: () => _selectCell(_cellKey(row, column)),
                                             onLongPress: () => _editCell(row, column),
                                             child: Container(
