@@ -2535,51 +2535,81 @@ Future<void> insertWriterImage() async {
                 final scale = (baseScale * zoomLevel).clamp(0.15, 2.0).toDouble();
                 final displayWidth = page.width * scale;
                 final displayHeight = page.height * scale;
+                final plainText = quillController.document.toPlainText();
+                final textPainter = TextPainter(
+                  text: TextSpan(
+                    text: plainText,
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                  textDirection: Directionality.of(context),
+                )..layout(
+                    maxWidth: math.max(
+                      1,
+                      page.width - (marginLeft + marginRight) * 96,
+                    ),
+                  );
+                final pageContentHeight = math.max(
+                  1,
+                  page.height - (marginTop + marginBottom) * 96,
+                );
+                final estimatedPageCount = math.max(
+                  1,
+                  (textPainter.height / pageContentHeight).ceil(),
+                );
+                final documentCanvasHeight =
+                    displayHeight * estimatedPageCount;
 
                 return SingleChildScrollView(
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: SizedBox(
                       width: math.max(availableWidth, displayWidth),
-                      height: displayHeight + 24,
+                      height: documentCanvasHeight + 24,
                       child: Center(
                         child: Container(
-                    width: displayWidth,
-                    height: displayHeight,
-                    margin: const EdgeInsets.symmetric(vertical: 12),
-                    padding: EdgeInsets.fromLTRB(
-                      marginLeft * 96 * scale,
-                      marginTop * 96 * scale,
-                      marginRight * 96 * scale,
-                      marginBottom * 96 * scale,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Color(pageBackgroundColorValue),
-                      border: showPageBorder ? Border.all(color: const Color(0xFFD9E0EA)) : null,
-                      borderRadius: BorderRadius.circular(4),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.07),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: QuillEditor.basic(
-                      controller: quillController,
-                      focusNode: editorFocusNode,
-                      config: QuillEditorConfig(
-                        expands: true,
-                        padding: EdgeInsets.zero,
-                        placeholder: 'এখানে আপনার লেখা শুরু করুন...',
-                        embedBuilders: [
-                          WriterTableEmbedBuilder(
-                            onEdit: editWriterTable,
+                          width: displayWidth,
+                          height: documentCanvasHeight,
+                          margin: const EdgeInsets.symmetric(vertical: 12),
+                          child: Stack(
+                            children: [
+                              Positioned.fill(
+                                child: CustomPaint(
+                                  painter: _WriterPagesPainter(
+                                    pageWidth: displayWidth,
+                                    pageHeight: displayHeight,
+                                    pageCount: estimatedPageCount,
+                                    pageColor: Color(pageBackgroundColorValue),
+                                    showBorder: showPageBorder,
+                                  ),
+                                ),
+                              ),
+                              Positioned.fill(
+                                child: Padding(
+                                  padding: EdgeInsets.fromLTRB(
+                                    marginLeft * 96 * scale,
+                                    marginTop * 96 * scale,
+                                    marginRight * 96 * scale,
+                                    marginBottom * 96 * scale,
+                                  ),
+                                  child: QuillEditor.basic(
+                                    controller: quillController,
+                                    focusNode: editorFocusNode,
+                                    config: QuillEditorConfig(
+                                      expands: true,
+                                      padding: EdgeInsets.zero,
+                                      placeholder: 'এখানে আপনার লেখা শুরু করুন...',
+                                      embedBuilders: [
+                                        WriterTableEmbedBuilder(
+                                          onEdit: editWriterTable,
+                                        ),
+                                        WriterImageEmbedBuilder(),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          WriterImageEmbedBuilder(),
-                        ],
-                      ),
-                    ),
                         ),
                       ),
                     ),
@@ -2629,6 +2659,57 @@ Future<void> insertWriterImage() async {
 }
 
     
+class _WriterPagesPainter extends CustomPainter {
+  final double pageWidth;
+  final double pageHeight;
+  final int pageCount;
+  final Color pageColor;
+  final bool showBorder;
+
+  const _WriterPagesPainter({
+    required this.pageWidth,
+    required this.pageHeight,
+    required this.pageCount,
+    required this.pageColor,
+    required this.showBorder,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final fill = Paint()
+      ..color = pageColor
+      ..style = PaintingStyle.fill;
+    final border = Paint()
+      ..color = const Color(0xFFD9E0EA)
+      ..strokeWidth = 1
+      ..style = PaintingStyle.stroke;
+
+    for (var index = 0; index < pageCount; index++) {
+      final rect = Rect.fromLTWH(
+        0,
+        index * pageHeight,
+        pageWidth,
+        pageHeight,
+      );
+      final path = Path()..addRect(rect);
+      canvas.drawShadow(path, const Color(0x33000000), 3, true);
+      canvas.drawRect(rect, fill);
+      if (showBorder) {
+        canvas.drawRect(rect, border);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _WriterPagesPainter oldDelegate) {
+    return pageWidth != oldDelegate.pageWidth ||
+        pageHeight != oldDelegate.pageHeight ||
+        pageCount != oldDelegate.pageCount ||
+        pageColor != oldDelegate.pageColor ||
+        showBorder != oldDelegate.showBorder;
+  }
+}
+
 class _WriterPrintPreviewScreen extends StatelessWidget {
   final String fileName;
   final PdfPageFormat initialPageFormat;
