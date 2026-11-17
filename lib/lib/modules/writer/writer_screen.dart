@@ -1786,8 +1786,8 @@ Future<void> showCustomFontSizeDialog() async {
   Future<Uint8List> _buildWriterPdf(PdfPageFormat format) async {
     final fontData = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
     final bengaliFont = pw.Font.ttf(fontData);
-    final plainText = quillController.document.toPlainText().replaceAll('\\r', '');
-    final paragraphs = plainText.split('\\n');
+    final plainText = quillController.document.toPlainText().replaceAll('\r', '');
+    final paragraphs = plainText.split('\n');
     final pdf = pw.Document();
 
     pdf.addPage(
