@@ -8,7 +8,7 @@ OFFYNEX Sheets is an offline-first, single-worksheet spreadsheet workspace with 
 - Local workbook autosave and reload using SharedPreferences.
 - Row and column growth; populated edge rows/columns are protected from removal.
 - Cell formatting: bold, italic, underline, font size, font color, fill, horizontal/vertical alignment, wrapping, borders and basic number formats.
-- XLSX import/export for the active worksheet, including a supported subset of cell values, formulas and formatting.
+- XLSX import/export for the active worksheet, including a supported subset of cell values, formulas and formatting. Import explicitly lets users choose one worksheet from a multi-sheet file; other worksheets remain in the original XLSX and are not silently merged or discarded. Worksheets larger than the supported 1,000 × 100 grid are rejected before replacing saved data.
 - A4 landscape PDF export and print pipeline with Bengali OpenType shaping, English/Unicode fallback, supported cell styles, gridline visibility and page numbering.
 - Formula engine with 31 functions:
   `SUM, AVERAGE, COUNT, MIN, MAX, PRODUCT, ABS, ROUND, ROUNDUP, ROUNDDOWN, SQRT, POWER, MOD, INT, SIGN, MEDIAN, LARGE, SMALL, CEILING, FLOOR, PI, EXP, LN, LOG, LOG10, SIN, COS, TAN, ASIN, ACOS, ATAN`.

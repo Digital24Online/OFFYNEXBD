@@ -10,6 +10,7 @@ import 'package:printing/printing.dart';
 import 'sheets_pdf_export_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'sheets_formula_engine.dart';
+import 'sheets_workbook_limits.dart';
 
 const String _sheetStorageKey = 'offynex_sheets_workbook_v1';
 
@@ -445,9 +446,57 @@ class _SheetsScreenState extends State<SheetsScreen> {
       final bytes = await picked.readAsBytes();
       final workbook = xlsx.Excel.decodeBytes(bytes);
       if (workbook.tables.isEmpty) throw FormatException('Workbook has no worksheets');
-      final sheetName = workbook.getDefaultSheet() ?? workbook.tables.keys.first;
+      final sheetNames = workbook.tables.keys.toList(growable: false);
+      final defaultSheetName = workbook.getDefaultSheet() ?? sheetNames.first;
+      var sheetName = defaultSheetName;
+      if (sheetNames.length > 1) {
+        String selectedSheet = defaultSheetName;
+        final chosenSheet = await showDialog<String>(
+          context: context,
+          builder: (dialogContext) => StatefulBuilder(
+            builder: (dialogContext, setDialogState) => AlertDialog(
+              title: Text(_t('কোন Worksheet Import করবেন?', 'Choose a worksheet to import')),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(_t(
+                    'এই সংস্করণে একবারে একটি Worksheet Import করা যায়। অন্য Worksheet-গুলো অপরিবর্তিত XLSX ফাইলে থাকবে।',
+                    'This version imports one worksheet at a time. Other worksheets remain in the original XLSX file.',
+                  )),
+                  const SizedBox(height: 12),
+                  DropdownButton<String>(
+                    isExpanded: true,
+                    value: selectedSheet,
+                    items: [
+                      for (final name in sheetNames)
+                        DropdownMenuItem<String>(value: name, child: Text(name)),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) setDialogState(() => selectedSheet = value);
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: Text(_t('বাতিল', 'Cancel')),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(dialogContext, selectedSheet),
+                  child: Text(_t('পরবর্তী', 'Continue')),
+                ),
+              ],
+            ),
+          ),
+        );
+        if (chosenSheet == null || !mounted) return;
+        sheetName = chosenSheet;
+      }
       final sheet = workbook.tables[sheetName];
       if (sheet == null) throw FormatException('Worksheet could not be read');
+      SheetsWorkbookLimits.validate(sheet.maxRows, sheet.maxColumns);
       final imported = <String, String>{};
       final importedStyles = <String, Map<String, dynamic>>{};
       for (final row in sheet.rows) {
@@ -526,7 +575,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
           title: Text(_t('Workbook Import করবেন?', 'Import workbook?')),
           content: Text(_t(
             '$sheetName থেকে ${imported.length}টি সেল বর্তমান শিটের জায়গায় আসবে। বর্তমান শিটের তথ্য বদলে যাবে।',
-            '${imported.length} cells from $sheetName will replace the current sheet data.',
+            '${imported.length} cells from $sheetName will replace the current sheet data. Only this worksheet is imported; other workbook sheets are not added to OFFYNEX Sheets.',
           )),
           actions: [
             TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(_t('বাতিল', 'Cancel'))),
