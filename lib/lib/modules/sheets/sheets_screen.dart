@@ -474,10 +474,14 @@ class _SheetsScreenState extends State<SheetsScreen> {
             } else if (formatCode.contains('0.00')) {
               style['numberFormat'] = 'number';
             }
-            final fontHex = importedStyle.fontColor.colorHex6;
-            if (fontHex != '000000') style['fontColor'] = fontHex;
+            final fontHex = importedStyle.fontColor.colorHex;
+            if (fontHex != 'none' && fontHex.toUpperCase() != 'FF000000') {
+              style['fontColor'] = fontHex.length == 8 ? fontHex.substring(2) : fontHex;
+            }
             final fillHex = importedStyle.backgroundColor.colorHex;
-            if (fillHex != 'none') style['fillColor'] = importedStyle.backgroundColor.colorHex6;
+            if (fillHex != 'none') {
+              style['fillColor'] = fillHex.length == 8 ? fillHex.substring(2) : fillHex;
+            }
             switch (importedStyle.horizontalAlignment) {
               case xlsx.HorizontalAlign.Center:
                 style['align'] = 'center';
