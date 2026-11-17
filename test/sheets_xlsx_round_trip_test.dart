@@ -1,4 +1,4 @@
-import 'package:excel_community/excel.dart' as xlsx;
+import 'package:excel_community/excel_community.dart' as xlsx;
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
