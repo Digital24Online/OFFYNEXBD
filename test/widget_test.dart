@@ -99,7 +99,7 @@ void main() {
     expect((updatedStyles['A1'] as Map<String, dynamic>)['verticalAlign'], 'top');
 
     await tester.ensureVisible(find.text('ফরম্যাট মুছুন'));
-    await tester.tap(find.text('Clear Formats'));
+    await tester.tap(find.text('ফরম্যাট মুছুন'));
     await tester.pumpAndSettle();
 
     final clearedRaw = prefs.getString('offynex_sheets_workbook_v1');
