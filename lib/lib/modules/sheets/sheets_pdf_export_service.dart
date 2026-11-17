@@ -68,7 +68,7 @@ class SheetsPdfExportService {
         alignment: pw.Alignment.centerRight,
         padding: const pw.EdgeInsets.only(top: 8),
         child: pw.Text(
-          'Page ' + context.pageNumber.toString() + ' of ' + context.pagesCount.toString(),
+          'Page ${context.pageNumber} of ${context.pagesCount}',
           style: pw.TextStyle(font: sans, fontSize: 8, color: PdfColors.grey700),
         ),
       ),

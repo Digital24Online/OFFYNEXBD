@@ -149,7 +149,6 @@
 ### Full Repository Audit — Current Reality
 - [x] Separate repository exists: `Digital24Online/OFFYNEXBD`, branch `main`.
 - [x] Ten module names are visible on Home Screen.
-- [x] Writer and Sheets have working implementation foundations.
 - [ ] Slides, PDF, Fonts, AI, Cloud, Forms, Scan and Database remain incomplete; Home Screen currently shows a “coming soon” message for these modules.
 - [ ] Writer continuous-page canvas is preliminary visual pagination; true rich-content page flow and full Word parity remain incomplete.
 - [ ] Writer PDF generation currently needs rich formatting, image, table, header/footer and note preservation verification.
@@ -184,6 +183,7 @@
 - [ ] Preserve source PDF unchanged; conversion creates a separate document.
 - [ ] Add automated tests for text extraction, page order, Bangla/English OCR integration boundary, image/table handling, malformed/encrypted PDFs and DOCX round-trip.
 - Status: **Initial workflow implemented; full production parity remains incomplete.** Multi-page, scanned-PDF OCR reliability, password handling, layout fidelity and full round-trip tests remain pending.
+
 
 ## Integrated PDF-to-Writer Conversion Batch — 2026-11-17
 
@@ -228,3 +228,10 @@
 - Existing workbook data, local autosave and XLSX import/export code are retained.
 - Added an automated test for Bengali PDF font embedding and styled cell output.
 - Analyze, automated tests, Android APK and visual print verification are pending; exact Bengali complex-glyph shaping must be checked on rendered output before claiming perfect visual fidelity.
+
+## Build #142 Error Investigation — 2026-11-17
+
+- Build #142 (run ID 44131903430; commit `998841ddb42696ad7a552da7927aaa220ffa1fd8`) failed at **Analyze Project**.
+- Exact analyzer findings: two `prefer_interpolation_to_compose_strings` infos at `sheets_pdf_export_service.dart:71:11` and `:71:53`; workflow treats analyzer infos as a failing exit.
+- Dependencies and font downloads succeeded; tests and Android build were skipped because Analyze failed.
+- Corrected the page-number expression to Dart string interpolation. The next GitHub Actions run must still verify Analyze, tests, APK build and upload before this Sheets PDF/Print batch is marked successful.
