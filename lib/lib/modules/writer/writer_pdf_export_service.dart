@@ -31,7 +31,7 @@ class WriterPdfExportService {
 
     pw.TextStyle styleFor(Map<String, dynamic> attributes) {
       final rawSize = double.tryParse(attributes['size']?.toString() ?? '');
-      final size = rawSize == null ? 12.0 : (rawSize * 0.75).clamp(5.0, 144.0);
+      final size = rawSize == null ? 12.0 : (rawSize * 0.75).clamp(5.0, 144.0).toDouble();
       final decoration = attributes['underline'] == true
           ? pw.TextDecoration.underline
           : attributes['strike'] == true
@@ -159,7 +159,7 @@ class WriterPdfExportService {
     final columns = rows.fold<int>(
       1, (maximum, row) => row.length > maximum ? row.length : maximum,
     );
-    final borderColor = _parseIntColor(data['borderColor']) ?? PdfColors.grey700;
+    final borderColor = _parseIntColor(data['borderColor']) ?? PdfColors.grey;
     final backgroundColor =
         _parseIntColor(data['backgroundColor']) ?? PdfColors.white;
     return pw.Padding(
