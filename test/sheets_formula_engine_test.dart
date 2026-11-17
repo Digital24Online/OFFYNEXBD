@@ -165,6 +165,54 @@ void main() {
       expect(engine.evaluateCell('A3'), 100);
     });
 
+    test('covers empty aggregates, domains, overflow and range limits', () {
+      final engine = SheetsFormulaEngine({
+        'A1': '=SUM()',
+        'A2': '=COUNT()',
+        'A3': '=PRODUCT()',
+        'A4': '=MIN()',
+        'A5': '=MAX()',
+        'A6': '=AVERAGE()',
+        'A7': '=MEDIAN()',
+        'A8': '=LARGE(1)',
+        'A9': '=SQRT(-1)',
+        'A10': '=POWER(-2,0.5)',
+        'A11': '=POWER(0,-1)',
+        'A12': '=MOD(1,0)',
+        'A13': '=LOG(-1)',
+        'A14': '=LOG(10,0)',
+        'A15': '=LOG10(0)',
+        'A16': '=ACOS(1.01)',
+        'A17': '=ROUND(1,1.5)',
+        'A18': '=CEILING(1,0)',
+        'A19': '=FLOOR(1,0)',
+        'A20': '=ABS(1,2)',
+        'A21': '=EXP(1000)',
+        'A22': '=SUM(A1:ZZ1000)',
+        'A23': '=sum(1,2)',
+        'A24': '=a1+2',
+        'A25': '=MEDIAN(1,3,5)',
+        'A26': '=LARGE(1,3,5,1)',
+        'A27': '=SMALL(1,3,5,3)',
+        'A28': '=LOG(8,2)',
+      });
+
+      expect(engine.evaluateCell('A1'), 0);
+      expect(engine.evaluateCell('A2'), 0);
+      expect(engine.evaluateCell('A3'), 0);
+      expect(engine.evaluateCell('A4'), 0);
+      expect(engine.evaluateCell('A5'), 0);
+      for (var row = 6; row <= 22; row++) {
+        expect(engine.evaluateCell('A$row'), isNull, reason: 'A$row should reject invalid input');
+      }
+      expect(engine.evaluateCell('A23'), 3);
+      expect(engine.evaluateCell('A24'), 2);
+      expect(engine.evaluateCell('A25'), 3);
+      expect(engine.evaluateCell('A26'), 5);
+      expect(engine.evaluateCell('A27'), 5);
+      expect(engine.evaluateCell('A28'), closeTo(3, 1e-12));
+    });
+
     test('supports nested LOG10 calls inside aggregate functions', () {
       final engine = SheetsFormulaEngine({
         'A1': '=SUM(LOG10(1000),1)',
