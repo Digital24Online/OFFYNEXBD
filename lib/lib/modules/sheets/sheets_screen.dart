@@ -471,9 +471,15 @@ class _SheetsScreenState extends State<SheetsScreen> {
             final fillHex = importedStyle.backgroundColor.colorHex;
             if (fillHex != 'none') style['fillColor'] = importedStyle.backgroundColor.colorHex6;
             switch (importedStyle.horizontalAlignment) {
-              case xlsx.HorizontalAlign.Center: style['align'] = 'center';
-              case xlsx.HorizontalAlign.Right: style['align'] = 'right';
-              default: style['align'] = 'left';
+              case xlsx.HorizontalAlign.Center:
+                style['align'] = 'center';
+                break;
+              case xlsx.HorizontalAlign.Right:
+                style['align'] = 'right';
+                break;
+              default:
+                style['align'] = 'left';
+                break;
             }
             if (importedStyle.leftBorder.borderStyle != null ||
                 importedStyle.rightBorder.borderStyle != null ||
