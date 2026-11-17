@@ -162,3 +162,12 @@
 - Work across related modules in cohesive integrated batches; do not treat placeholder module tiles as completed modules.
 - Preserve existing Writer Delta/table/image/autosave/layout/review data and Sheets formulas/workbook data.
 - Run Analyze, automated tests and Android release build after each stable integrated batch; record only verified results here.
+
+
+### Cross-platform Brand Consistency Batch — 2026-11-17
+- [x] Android launcher display label standardized to OFFYNEXBD.
+- [x] iPhone app display name and bundle name standardized to OFFYNEXBD.
+- [x] macOS app bundle display name standardized to OFFYNEXBD.
+- [x] Windows file description, internal name and product name standardized to OFFYNEXBD.
+- [x] Home Screen widget test now checks the approved brand tagline.
+- [ ] Build and tests for this batch are pending GitHub Actions verification.

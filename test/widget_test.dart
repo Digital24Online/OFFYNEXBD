@@ -14,6 +14,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('OFFYNEXBD'), findsWidgets);
+    expect(find.text('OFFYNEXBD  •  The Future of Office Productivity'), findsOneWidget);
     expect(find.text('আপনার অ্যাপস'), findsOneWidget);
     expect(find.text('রাইটার'), findsOneWidget);
     expect(find.text('শিটস'), findsOneWidget);
