@@ -70,6 +70,11 @@ void main() {
     expect(find.text('Top Align'), findsOneWidget);
     expect(find.text('Middle Align'), findsOneWidget);
     expect(find.text('Bottom Align'), findsOneWidget);
+    expect(find.text('Clear Formats'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField).first, 'Keep me');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
 
     await tester.tap(find.text('Bold'));
     await tester.pumpAndSettle();
@@ -93,6 +98,17 @@ void main() {
     final updatedStyles = updatedWorkbook['styles'] as Map<String, dynamic>;
     expect((updatedStyles['A1'] as Map<String, dynamic>)['wrapText'], isTrue);
     expect((updatedStyles['A1'] as Map<String, dynamic>)['verticalAlign'], 'top');
+
+    await tester.ensureVisible(find.text('Clear Formats'));
+    await tester.tap(find.text('Clear Formats'));
+    await tester.pumpAndSettle();
+
+    final clearedRaw = prefs.getString('offynex_sheets_workbook_v1');
+    final clearedWorkbook = jsonDecode(clearedRaw!) as Map<String, dynamic>;
+    final clearedCells = clearedWorkbook['cells'] as Map<String, dynamic>;
+    final clearedStyles = clearedWorkbook['styles'] as Map<String, dynamic>;
+    expect(clearedCells['A1'], 'Keep me');
+    expect(clearedStyles.containsKey('A1'), isFalse);
   });
 
 }
