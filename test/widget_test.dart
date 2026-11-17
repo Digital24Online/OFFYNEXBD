@@ -21,6 +21,16 @@ void main() {
     expect(find.text('পিডিএফ'), findsOneWidget);
   });
 
+  testWidgets('PDF tile opens the PDF-to-Document workspace', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(const OFFYNEXBDApp());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('পিডিএফ'));
+    await tester.pumpAndSettle();
+    expect(find.text('PDF থেকে Document'), findsOneWidget);
+    expect(find.text('PDF নির্বাচন করুন'), findsOneWidget);
+  });
+
   testWidgets('Sheets displays the desktop-style Ribbon and formula bar',
       (WidgetTester tester) async {
     await tester.pumpWidget(const OFFYNEXBDApp());
