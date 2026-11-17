@@ -87,8 +87,9 @@ class WriterPdfExportService {
           ? Map<String, dynamic>.from(rawAttributes)
           : <String, dynamic>{};
       if (insert is String) {
-        final pieces = insert.replaceAll('\\r\\n', '\\n')
-            .replaceAll('\\r', '\\n').split('\\n');
+        final pieces = insert
+            .replaceAll(String.fromCharCode(13), '')
+            .split(String.fromCharCode(10));
         for (var i = 0; i < pieces.length; i++) {
           appendText(pieces[i], attributes);
           if (i < pieces.length - 1) flushParagraph(attributes);
