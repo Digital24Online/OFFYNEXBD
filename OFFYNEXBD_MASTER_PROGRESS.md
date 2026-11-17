@@ -293,3 +293,9 @@
 - Added ribbon access and argument examples for the new functions; PI inserts directly as `=PI()` because it takes no arguments.
 - Added automated tests for valid calculations, invalid ranks, invalid math domains and wrong argument counts.
 - This batch is pending GitHub Actions Analyze, complete tests, Android release APK and artifact upload. Formula compatibility remains partial; logical, text, date/time, lookup, conditional aggregate and array/dynamic functions are not yet implemented.
+
+
+### CI error correction — 2026-11-17
+- Build #151 failed at Analyze Project, not in formula tests: lint prefer_is_empty at sheets_formula_engine.dart LOG argument validation.
+- Corrected the empty-list check to values.isEmpty; the full LOG argument/domain validation remains intact.
+- Build #152 was started before this lint correction and must not be treated as verification of the corrected code. A new integrated validation run is required.

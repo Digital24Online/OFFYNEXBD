@@ -323,7 +323,7 @@ class _FormulaParser {
         if (values.first <= 0) throw const FormatException('LN domain error');
         return math.log(values.first);
       case 'LOG':
-        if (values.length < 1 || values.length > 2 || values.first <= 0) throw const FormatException('Invalid LOG arguments');
+        if (values.isEmpty || values.length > 2 || values.first <= 0) throw const FormatException('Invalid LOG arguments');
         final base = values.length == 2 ? values[1] : 10.0;
         if (base <= 0 || base == 1) throw const FormatException('Invalid LOG base');
         return math.log(values.first) / math.log(base);
