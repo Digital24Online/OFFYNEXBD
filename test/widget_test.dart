@@ -29,6 +29,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('PDF থেকে Document'), findsOneWidget);
     expect(find.text('PDF নির্বাচন করুন'), findsOneWidget);
+    expect(find.text('ছবি থেকে Document'), findsOneWidget);
   });
 
   testWidgets('Sheets displays the desktop-style Ribbon and formula bar',

@@ -175,7 +175,7 @@
 ## Required Feature Added — PDF to Editable Document — 2026-11-17
 
 - [x] Product requirement confirmed: users must be able to convert an existing PDF into an editable Writer document.
-- [ ] Add an explicit **PDF to Document / PDF to DOCX** workflow in OFFYNEX PDF, with the resulting editable document opened in OFFYNEX Writer.
+- [x] Add an explicit **PDF to Document / PDF to DOCX** workflow in OFFYNEX PDF, with the resulting editable document opened in OFFYNEX Writer.
 - [ ] Text-based PDF extraction must preserve reading order, paragraphs, page breaks and supported formatting as accurately as possible.
 - [ ] Extract images and tables where technically possible; retain page structure and provide a clear conversion-quality notice when exact layout reconstruction is not possible.
 - [ ] Scanned/image-only PDFs must use OCR, with Bangla and English language support; users must be able to review and correct recognized text.
@@ -183,7 +183,7 @@
 - [ ] Handle multi-page PDFs, mixed text/image pages, selectable output pages, progress/cancellation, password-protected PDFs (request password securely; never log it), and conversion errors.
 - [ ] Preserve source PDF unchanged; conversion creates a separate document.
 - [ ] Add automated tests for text extraction, page order, Bangla/English OCR integration boundary, image/table handling, malformed/encrypted PDFs and DOCX round-trip.
-- Status: **Required/planned; not implemented or verified yet.** Do not show this feature as complete until the conversion workflow and tests pass.
+- Status: **Initial workflow implemented; full production parity remains incomplete.** Multi-page, scanned-PDF OCR reliability, password handling, layout fidelity and full round-trip tests remain pending.
 
 ## Integrated PDF-to-Writer Conversion Batch — 2026-11-17
 
