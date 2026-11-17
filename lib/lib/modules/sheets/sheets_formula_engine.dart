@@ -54,7 +54,16 @@ class SheetsFormulaEngine {
         final raw = cells[key]?.trim() ?? '';
         if (raw.isEmpty) continue;
         final value = _readCell(key, visiting);
-        if (value != null) values.add(value);
+        if (value == null) {
+          // Spreadsheet aggregate functions must not silently ignore formula
+          // errors or circular references inside a referenced range.
+          if (raw.startsWith('=')) {
+            throw const FormatException('Invalid or circular formula in range');
+          }
+          // Text cells are ignored by numeric aggregate functions.
+          continue;
+        }
+        values.add(value);
       }
     }
     return values;
