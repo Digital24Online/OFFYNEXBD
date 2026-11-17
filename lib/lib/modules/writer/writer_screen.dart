@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'dart:math' as math;
 
 import 'package:material_ui/material_ui.dart';
@@ -7,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter/services.dart';
 import 'writer_table.dart';
+import 'writer_pdf_export_service.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -331,6 +333,10 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
 
     final savedMeta = widget.document['writerMeta'];
     if (savedMeta is Map) {
+      final savedFontFamily = savedMeta['fontFamily']?.toString();
+      if (['sans-serif', 'serif'].contains(savedFontFamily)) {
+        selectedFontFamily = savedFontFamily!;
+      }
       zoomLevel = (savedMeta['zoom'] is num)
           ? (savedMeta['zoom'] as num).toDouble().clamp(0.6, 1.5).toDouble()
           : 1.0;
@@ -512,6 +518,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
 
   Map<String, dynamic> _writerMetaToJson() => {
         'zoom': zoomLevel,
+        'fontFamily': selectedFontFamily,
         'viewFit': viewFit,
         'showRuler': showRuler,
         'showStatusBar': showStatusBar,
@@ -1595,9 +1602,8 @@ Future<void> showCustomFontSizeDialog() async {
 
   Widget buildHomeRibbon() {
   const fontFamilies = <String, String>{
-    'Sans Serif': 'sans-serif',
-    'Serif': 'serif',
-    'Monospace': 'monospace',
+    'Noto Sans Bengali': 'sans-serif',
+    'Noto Serif Bengali': 'serif',
   };
 
   const fontSizes = [
@@ -1783,43 +1789,24 @@ Future<void> showCustomFontSizeDialog() async {
   }
 
   Future<Uint8List> _buildWriterPdf(PdfPageFormat format) async {
-    final fontData = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
-    final bengaliFont = pw.Font.ttf(fontData);
-    final plainText = quillController.document.toPlainText().replaceAll('\r', '');
-    final paragraphs = plainText.split('\n');
-    final pdf = pw.Document();
-
-    pdf.addPage(
-      pw.MultiPage(
-        pageFormat: format,
-        margin: pw.EdgeInsets.fromLTRB(
-          marginLeft * 72,
-          marginTop * 72,
-          marginRight * 72,
-          marginBottom * 72,
-        ),
-        theme: pw.ThemeData.withFont(base: bengaliFont),
-        build: (context) => [
-          pw.Text(
-            titleController.text.trim().isEmpty
-                ? 'Untitled Document'
-                : titleController.text.trim(),
-            style: pw.TextStyle(font: bengaliFont, fontSize: 18),
-          ),
-          pw.SizedBox(height: 16),
-          ...paragraphs.map((paragraph) => paragraph.isEmpty
-              ? pw.SizedBox(height: 8)
-              : pw.Padding(
-                  padding: const pw.EdgeInsets.only(bottom: 5),
-                  child: pw.Text(
-                    paragraph,
-                    style: pw.TextStyle(font: bengaliFont, fontSize: 11),
-                  ),
-                )),
-        ],
-      ),
+    final sansFontData = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
+    final serifFontData = await rootBundle.load('assets/fonts/NotoSerifBengali.ttf');
+    final delta = quillController.document.toDelta().toJson()
+        .map((item) => Map<String, dynamic>.from(item as Map))
+        .toList();
+    return WriterPdfExportService.build(
+      title: titleController.text.trim().isEmpty
+          ? 'Untitled Document'
+          : titleController.text.trim(),
+      delta: delta,
+      sansFontData: sansFontData,
+      serifFontData: serifFontData,
+      pageFormat: format,
+      marginTop: marginTop * 72,
+      marginBottom: marginBottom * 72,
+      marginLeft: marginLeft * 72,
+      marginRight: marginRight * 72,
     );
-    return pdf.save();
   }
 
   Future<void> openPrintPreview() async {

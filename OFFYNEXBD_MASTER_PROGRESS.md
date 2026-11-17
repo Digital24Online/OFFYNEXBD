@@ -207,3 +207,14 @@
 - Added supported-image-extension validation test.
 - OCR native support remains unverified on iOS; Windows OCR is explicitly reported unsupported rather than falsely showing success. OCR quality depends on image clarity, angle, lighting and text size; the extracted document is text-first and does not preserve the original photo layout.
 - Build and test status must be checked before marking this feature complete.
+
+
+## Writer Bengali Font and PDF Preservation Batch — 2026-11-17
+
+- Repaired the malformed image-to-document service source from its last known good PDF conversion implementation, then restored the Bengali/English OCR image workflow with correct filename validation and temporary-file cleanup.
+- Replaced the Writer plain-text PDF export with a Quill Delta-based PDF export service. It embeds bundled Noto Sans Bengali and Noto Serif Bengali fonts and maps supported bold, italic, underline/strike, font size, text color, paragraph alignment, images and Writer table blocks into the generated PDF.
+- Writer Save PDF/Print Preview/Print continue to use the same PDF generation callback, so the embedded-font output is passed to the printer pipeline.
+- Added the Noto Serif Bengali asset to the app bundle and CI font provisioning; Writer font choices now identify the actual bundled Bengali fonts.
+- Added a PDF export test for embedded font resources and supported rich-text formatting.
+- Important validation limit: embedding fonts prevents external font substitution, but the PDF package's complex-script shaping and exact visual equivalence for every Bengali conjunct/ligature must still be checked with rendered PDFs on Android and desktop. No claim of perfect glyph-shape preservation is made until that visual test passes. Arbitrary user-installed fonts are not yet supported; only the bundled Bengali fonts are selectable.
+- Status: source repair and implementation committed; CI analysis, automated tests, Android APK and real Bengali print/PDF visual verification pending.

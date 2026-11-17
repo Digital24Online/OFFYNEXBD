@@ -101,7 +101,7 @@ class PdfToDocumentService {
 
 
   static bool isSupportedImageName(String name) =>
-      RegExp(r'\.(png|jpe?g|webp|bmp|tif?f)
+      RegExp(r'\\.(png|jpe?g|webp|bmp|tif?f)
       delta.every((op) => op['insert'] is String && (op['insert'] as String).trim().isEmpty);
 
   static Future<String> _ocrImages(List<dynamic> images) async {
@@ -181,11 +181,7 @@ class PdfToDocumentService {
             final cellBuffer = StringBuffer();
             for (final dynamic node in (cell.children as Iterable?) ?? const []) {
               if (node.runtimeType.toString().contains('DocxParagraph')) {
-                for (final dynamic textNode in (node.children as Iterable?) ?? const []) {
-                  if (textNode.runtimeType.toString().contains('DocxText')) {
-                    cellBuffer.write(textNode.content?.toString() ?? '');
-                  }
-                }
+                cellBuffer.write(paragraph(node));
               } else if (node.runtimeType.toString().contains('DocxText')) {
                 cellBuffer.write(node.content?.toString() ?? '');
               }
@@ -220,18 +216,23 @@ class PdfToDocumentService {
     required String sourceName,
   }) async {
     if (imageBytes.isEmpty || !isSupportedImageName(sourceName)) {
-      throw const FormatException('সমর্থিত ছবি নির্বাচন করুন: JPG, JPEG, PNG, WEBP, BMP বা TIFF।');
+      throw const FormatException(
+        'সমর্থিত ছবি নির্বাচন করুন: JPG, JPEG, PNG, WEBP, BMP বা TIFF।',
+      );
     }
     if (imageBytes.length > 30 * 1024 * 1024) {
       throw const FormatException('ছবির সর্বোচ্চ সাইজ ৩০ MB।');
     }
     if (Platform.isWindows) {
-      throw const UnsupportedError('Windows সংস্করণে OCR ইঞ্জিন এখনো যুক্ত হয়নি।');
+      throw const UnsupportedError(
+        'এই Windows সংস্করণে OCR ইঞ্জিন এখনো যুক্ত হয়নি।',
+      );
     }
+
     final temp = await getTemporaryDirectory();
     final extension = sourceName.split('.').last.toLowerCase();
     final imageFile = File(
-      '\${temp.path}/offynex_image_ocr_\${DateTime.now().microsecondsSinceEpoch}.$extension',
+      '${temp.path}/offynex_image_ocr_${DateTime.now().microsecondsSinceEpoch}.$extension',
     );
     await imageFile.writeAsBytes(imageBytes, flush: true);
     String recognized;
@@ -248,19 +249,27 @@ class PdfToDocumentService {
       if (await imageFile.exists()) await imageFile.delete();
     }
     if (recognized.trim().isEmpty) {
-      throw const FormatException('ছবি থেকে কোনো লেখা শনাক্ত হয়নি। পরিষ্কার ও সোজা ছবি ব্যবহার করুন।');
+      throw const FormatException(
+        'ছবি থেকে কোনো লেখা শনাক্ত হয়নি। পরিষ্কার ও সোজা ছবি ব্যবহার করুন।',
+      );
     }
+
     final fontData = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
     final font = pw.Font.ttf(fontData);
     final intermediatePdf = pw.Document();
-    intermediatePdf.addPage(pw.MultiPage(
-      theme: pw.ThemeData.withFont(base: font),
-      build: (_) => [
-        pw.Text(recognized.trim(), style: pw.TextStyle(font: font, fontSize: 11)),
-      ],
-    ));
+    intermediatePdf.addPage(
+      pw.MultiPage(
+        theme: pw.ThemeData.withFont(base: font),
+        build: (_) => [
+          pw.Text(
+            recognized.trim(),
+            style: pw.TextStyle(font: font, fontSize: 11),
+          ),
+        ],
+      ),
+    );
     final pdfBytes = Uint8List.fromList(await intermediatePdf.save());
-    final title = sourceName.replaceFirst(RegExp(r'\.[^.]+
+    final title = sourceName.replaceFirst(RegExp(r'\\.[^.]+
       delta.every((op) => op['insert'] is String && (op['insert'] as String).trim().isEmpty);
 
   static Future<String> _ocrImages(List<dynamic> images) async {
@@ -340,11 +349,7 @@ class PdfToDocumentService {
             final cellBuffer = StringBuffer();
             for (final dynamic node in (cell.children as Iterable?) ?? const []) {
               if (node.runtimeType.toString().contains('DocxParagraph')) {
-                for (final dynamic textNode in (node.children as Iterable?) ?? const []) {
-                  if (textNode.runtimeType.toString().contains('DocxText')) {
-                    cellBuffer.write(textNode.content?.toString() ?? '');
-                  }
-                }
+                cellBuffer.write(paragraph(node));
               } else if (node.runtimeType.toString().contains('DocxText')) {
                 cellBuffer.write(node.content?.toString() ?? '');
               }
@@ -374,7 +379,7 @@ class PdfToDocumentService {
 ), '');
     final converted = await convert(
       pdfBytes,
-      sourceName: '\${title.isEmpty ? 'Image Document' : title}.pdf',
+      sourceName: '${title.isEmpty ? 'Image Document' : title}.pdf',
       runOcr: false,
     );
     return PdfConversionResult(
@@ -467,11 +472,7 @@ class PdfToDocumentService {
             final cellBuffer = StringBuffer();
             for (final dynamic node in (cell.children as Iterable?) ?? const []) {
               if (node.runtimeType.toString().contains('DocxParagraph')) {
-                for (final dynamic textNode in (node.children as Iterable?) ?? const []) {
-                  if (textNode.runtimeType.toString().contains('DocxText')) {
-                    cellBuffer.write(textNode.content?.toString() ?? '');
-                  }
-                }
+                cellBuffer.write(paragraph(node));
               } else if (node.runtimeType.toString().contains('DocxText')) {
                 cellBuffer.write(node.content?.toString() ?? '');
               }
