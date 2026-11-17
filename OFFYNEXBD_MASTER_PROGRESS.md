@@ -185,3 +185,14 @@
 - [ ] Add automated tests for text extraction, page order, Bangla/English OCR integration boundary, image/table handling, malformed/encrypted PDFs and DOCX round-trip.
 - Status: **Required/planned; not implemented or verified yet.** Do not show this feature as complete until the conversion workflow and tests pass.
 
+## Integrated PDF-to-Writer Conversion Batch — 2026-11-17
+
+- Added a real PDF module route from the Home Screen.
+- Uses the MIT-licensed docx_creator PDF reader to parse PDF text, formatting, images, and detected tables, and to generate editable DOCX.
+- Saves a separate native Writer document; the source PDF remains unchanged.
+- Maps paragraphs, basic bold/italic/underline/font styling, extracted images, and detected tables into Writer-compatible Quill content.
+- Adds Bengali + English Tesseract OCR for scanned/image-only PDFs when embedded page images are extractable. CI provisions ben/eng trained data.
+- Adds PDF size/type validation, conversion progress, warnings, DOCX Save As, and Open in Writer.
+- Adds automated helper tests and a Home Screen PDF-route test.
+- Known limitations: complex multi-column positioning may shift; table detection is beta; password-protected PDFs are not supported yet; scanned PDFs whose page image cannot be extracted need a PDF renderer fallback; OCR native packaging/platform support still needs validation on iOS and Windows.
+- Status remains pending until Analyze, tests, Android release build, and a real scanned Bangla/English PDF test pass.

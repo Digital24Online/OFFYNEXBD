@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'lib/modules/writer/writer_screen.dart';
 import 'lib/modules/sheets/sheets_screen.dart';
+import 'lib/modules/pdf/pdf_to_document_screen.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_localizations/flutter_localizations.dart'
     hide GlobalMaterialLocalizations, GlobalCupertinoLocalizations;
@@ -158,6 +159,11 @@ void openModule(OfficeModule module) {
         builder: (context) => const WriterScreen(),
       ),
     );
+    return;
+  }
+
+  if (module.name == 'PDF') {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => PdfToDocumentScreen(isBangla: isBangla)));
     return;
   }
 

@@ -26,6 +26,8 @@ dependencies:
   path_provider: ^2.1.5
   pdf: ^3.11.3
   printing: ^5.14.2
+  docx_creator: ^1.2.3
+  tesseract_ocr: ^0.6.0
 
 dev_dependencies:
   flutter_test:
@@ -38,4 +40,6 @@ flutter:
   assets:
     - assets/branding/offynexbd_logo.svg
     - assets/fonts/NotoSansBengali.ttf
+    - assets/tessdata_config.json
+    - assets/tessdata/
     

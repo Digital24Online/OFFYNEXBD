@@ -18,6 +18,7 @@ void main() {
     expect(find.text('আপনার অ্যাপস'), findsOneWidget);
     expect(find.text('রাইটার'), findsOneWidget);
     expect(find.text('শিটস'), findsOneWidget);
+    expect(find.text('পিডিএফ'), findsOneWidget);
   });
 
   testWidgets('Sheets displays the desktop-style Ribbon and formula bar',

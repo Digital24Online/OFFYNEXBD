@@ -10,6 +10,8 @@ on:
       - 'lib/**'
       - 'modules/**'
       - 'test/**'
+      - 'pubspec.yaml'
+      - 'assets/**'
       - '.github/workflows/bootstrap.yml'
 
 permissions:
@@ -47,6 +49,11 @@ jobs:
           test -s assets/fonts/NotoSansBengali.ttf
           curl --fail --location --retry 3 --output assets/fonts/OFL.txt 'https://raw.githubusercontent.com/google/fonts/main/ofl/notosansbengali/OFL.txt'
           test -s assets/fonts/OFL.txt
+          mkdir -p assets/tessdata
+          curl --fail --location --retry 3 --output assets/tessdata/ben.traineddata 'https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/main/ben.traineddata'
+          test -s assets/tessdata/ben.traineddata
+          curl --fail --location --retry 3 --output assets/tessdata/eng.traineddata 'https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/main/eng.traineddata'
+          test -s assets/tessdata/eng.traineddata
 
       - name: Get Dependencies
         run: flutter pub get
