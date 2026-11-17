@@ -70,16 +70,29 @@ jobs:
         run: |
           set -euo pipefail
           NDK_VERSION="28.2.13676358"
-          SDKMANAGER="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/cmdline-tools" -type f -name sdkmanager 2>/dev/null | head -n 1)"
+          ANDROID_SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          if [ -z "$ANDROID_SDK" ]; then
+            echo "Android SDK path not found"
+            exit 1
+          fi
+          SDKMANAGER="$(find "$ANDROID_SDK/cmdline-tools" -type f -name sdkmanager 2>/dev/null | head -n 1)"
           if [ -z "$SDKMANAGER" ]; then
             echo "Android sdkmanager not found"
             exit 1
           fi
-          NDK_DIR="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/ndk/$NDK_VERSION"
+          NDK_DIR="$ANDROID_SDK/ndk/$NDK_VERSION"
           for attempt in 1 2 3; do
             echo "NDK install attempt $attempt/3"
             rm -rf "$NDK_DIR"
-            yes | "$SDKMANAGER" --install "ndk;$NDK_VERSION" && break
+            set +o pipefail
+            if yes | "$SDKMANAGER" --install "ndk;$NDK_VERSION"; then
+              set -o pipefail
+              if [ -d "$NDK_DIR" ]; then
+                break
+              fi
+            else
+              set -o pipefail
+            fi
             if [ "$attempt" -eq 3 ]; then
               echo "NDK installation failed after 3 attempts"
               exit 1
