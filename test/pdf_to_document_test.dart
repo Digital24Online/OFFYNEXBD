@@ -34,6 +34,13 @@ void main() {
       expect(converted.docxBytes, isNotEmpty);
     });
 
+    test('accepts supported image extensions without case sensitivity', () {
+      expect(PdfToDocumentService.isSupportedImageName('scan.JPG'), isTrue);
+      expect(PdfToDocumentService.isSupportedImageName('paper.png'), isTrue);
+      expect(PdfToDocumentService.isSupportedImageName('photo.webp'), isTrue);
+      expect(PdfToDocumentService.isSupportedImageName('file.pdf'), isFalse);
+      expect(PdfToDocumentService.isSupportedImageName('file.txt'), isFalse);
+    });
     test('creates an empty editable paragraph for empty input', () {
       expect(PdfToDocumentService.plainTextToDelta('').single['insert'], '\n');
     });

@@ -196,3 +196,14 @@
 - Adds automated helper tests and a Home Screen PDF-route test.
 - Known limitations: complex multi-column positioning may shift; table detection is beta; password-protected PDFs are not supported yet; scanned PDFs whose page image cannot be extracted need a PDF renderer fallback; OCR native packaging/platform support still needs validation on iOS and Windows.
 - Status remains pending until Analyze, tests, Android release build, and a real scanned Bangla/English PDF test pass.
+
+
+## Integrated Image-to-Document Batch — 2026-11-17
+
+- Added an explicit Image to Document action beside PDF conversion in the PDF workspace.
+- Supports JPG, JPEG, PNG, WEBP, BMP and TIFF file selection (30 MB limit).
+- Runs Bengali + English Tesseract OCR on the selected image, then creates a multi-page intermediate PDF using the bundled Noto Sans Bengali font and exports editable DOCX through the same PDF-to-DOCX pipeline.
+- Saves a separate native Writer document and offers Open in Writer / Save DOCX; source image remains unchanged.
+- Added supported-image-extension validation test.
+- OCR native support remains unverified on iOS; Windows OCR is explicitly reported unsupported rather than falsely showing success. OCR quality depends on image clarity, angle, lighting and text size; the extracted document is text-first and does not preserve the original photo layout.
+- Build and test status must be checked before marking this feature complete.

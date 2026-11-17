@@ -17,6 +17,7 @@ class PdfToDocumentScreen extends StatefulWidget {
 class _PdfToDocumentScreenState extends State<PdfToDocumentScreen> {
   PdfConversionResult? result;
   String? sourceName;
+  String sourceKind = 'pdf_import';
   String? error;
   bool busy = false;
 
@@ -49,7 +50,48 @@ class _PdfToDocumentScreenState extends State<PdfToDocumentScreen> {
       documents.add(record);
       await storeDocuments(documents);
       if (!mounted) return;
-      setState(() { sourceName = file.name; result = converted; busy = false; });
+      setState(() { sourceName = file.name; sourceKind = 'pdf_import'; result = converted; busy = false; });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { error = e.toString().replaceFirst('Exception: ', ''); busy = false; });
+    }
+  }
+
+
+  Future<void> _convertImage() async {
+    if (busy) return;
+    setState(() { busy = true; error = null; result = null; });
+    try {
+      final file = await FilePicker.pickFile(
+        type: FileType.custom,
+        allowedExtensions: const ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'tif', 'tiff'],
+      );
+      if (!mounted) return;
+      if (file == null) { setState(() => busy = false); return; }
+      final length = file.lengthSync() ?? await file.length();
+      if (length == null || length == 0) throw const FormatException('ছবির ফাইলটি খালি।');
+      if (length > 30 * 1024 * 1024) throw const FormatException('ছবির সর্বোচ্চ সাইজ ৩০ MB।');
+      final Uint8List bytes = await file.readAsBytes();
+      final converted = await PdfToDocumentService.convertImage(bytes, sourceName: file.name);
+      final record = <String, dynamic>{
+        'id': DateTime.now().microsecondsSinceEpoch.toString(),
+        'title': converted.title,
+        'content': converted.writerDelta,
+        'updated': DateTime.now().toIso8601String(),
+        'source': 'image_import',
+        'sourceImageName': file.name,
+        'conversion': {'pageCount': converted.pageCount, 'imageCount': 1, 'ocrUsed': true},
+      };
+      final documents = await loadDocuments();
+      documents.add(record);
+      await storeDocuments(documents);
+      if (!mounted) return;
+      setState(() {
+        sourceName = file.name;
+        sourceKind = 'image_import';
+        result = converted;
+        busy = false;
+      });
     } catch (e) {
       if (!mounted) return;
       setState(() { error = e.toString().replaceFirst('Exception: ', ''); busy = false; });
@@ -86,7 +128,7 @@ class _PdfToDocumentScreenState extends State<PdfToDocumentScreen> {
     if (value == null) return;
     final docs = await loadDocuments();
     final doc = docs.lastWhere(
-      (item) => item['source'] == 'pdf_import' && item['sourcePdfName'] == sourceName,
+      (item) => item['source'] == sourceKind && (item['sourcePdfName'] == sourceName || item['sourceImageName'] == sourceName),
       orElse: () => <String, dynamic>{
         'id': DateTime.now().microsecondsSinceEpoch.toString(),
         'title': value.title, 'content': value.writerDelta,
@@ -119,11 +161,18 @@ class _PdfToDocumentScreenState extends State<PdfToDocumentScreen> {
                   ? 'স্ক্যান করা PDF হলে বাংলা ও ইংরেজি OCR চেষ্টা করা হবে।'
                   : 'Bengali and English OCR is attempted for scanned PDFs.'),
               const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: busy ? null : _convert,
-                icon: const Icon(Icons.upload_file),
-                label: Text(bn ? 'PDF নির্বাচন করুন' : 'Choose PDF'),
-              ),
+              Wrap(spacing: 10, runSpacing: 10, children: [
+                FilledButton.icon(
+                  onPressed: busy ? null : _convert,
+                  icon: const Icon(Icons.picture_as_pdf),
+                  label: Text(bn ? 'PDF নির্বাচন করুন' : 'Choose PDF'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: busy ? null : _convertImage,
+                  icon: const Icon(Icons.image_search),
+                  label: Text(bn ? 'ছবি থেকে Document' : 'Image to Document'),
+                ),
+              ]),
             ]),
           )),
           if (busy) const Padding(
