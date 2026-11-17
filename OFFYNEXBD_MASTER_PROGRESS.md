@@ -320,3 +320,16 @@
 - Build #156 (`44144984847`, commit `3d29b5ba`) completed with Analyze successful; tests failed on an overly strict exact floating-point assertion for `LOG10(1000)`: actual `2.9999999999999996` versus expected `3`.
 - Updated the regression test to use a `1e-12` tolerance for this floating-point result. No formula-engine behavior was changed for this precision-only test issue.
 - Re-run verification pending; APK build is not yet verified.
+
+
+## Sheets Formula Engine — Build #157 Verified — 2026-11-17
+
+- [x] Build #157 (run ID `44145977349`, commit `0ca238de5612640932307661169b50ee5ee890f1`) completed with SUCCESS.
+- [x] Flutter Analyze — SUCCESS.
+- [x] Automated Tests — SUCCESS, including the LOG10 floating-point tolerance regression test.
+- [x] Android APK build — SUCCESS.
+- [x] Signing-file cleanup, generated-source save and APK upload — SUCCESS.
+- [x] Artifact: `OFFYNEXBD-Android-APK`, 49,983,747 bytes; available until 2026-11-24T18:22:27Z.
+- [x] The 31-function formula-engine batch and LOG10 parser regression are now CI-verified. This does not imply full Excel formula compatibility; the remaining function families and edge cases listed in the project audit are still pending.
+- Run URL: https://github.com/Digital24Online/OFFYNEXBD/actions/runs/44145977349
+- Artifact download: https://api.github.com/repos/Digital24Online/OFFYNEXBD/actions/artifacts/14355609677/zip
