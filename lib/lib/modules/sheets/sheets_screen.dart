@@ -642,7 +642,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
     var lastRow = 0;
     var lastColumn = 0;
     for (final key in {..._cells.keys, ..._cellStyles.keys}) {
-      final match = RegExp(r'^([A-Z]+)([1-9]\\d*)
+      final match = RegExp(r'^([A-Z]+)([1-9]\d*)
     final confirm = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
