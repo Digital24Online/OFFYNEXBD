@@ -738,7 +738,23 @@ class _SheetsScreenState extends State<SheetsScreen> {
       );
       return;
     }
-    final controller = TextEditingController(text: 'A1:A5');
+    const examples = <String, String>{
+      'SUM': 'A1:A5',
+      'AVERAGE': 'A1:A5',
+      'COUNT': 'A1:A5',
+      'MIN': 'A1:A5',
+      'MAX': 'A1:A5',
+      'PRODUCT': 'A1:A5',
+      'ABS': 'A1',
+      'ROUND': 'A1,2',
+      'SQRT': 'A1',
+      'POWER': 'A1,2',
+      'MOD': 'A1,2',
+      'INT': 'A1',
+      'SIGN': 'A1',
+    };
+    final example = examples[function] ?? 'A1';
+    final controller = TextEditingController(text: example);
     final range = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -747,8 +763,8 @@ class _SheetsScreenState extends State<SheetsScreen> {
           controller: controller,
           autofocus: true,
           decoration: InputDecoration(
-            labelText: _t('Cell বা Range', 'Cell or range'),
-            hintText: 'A1:A5',
+            labelText: _t('Argument / Cell / Range', 'Arguments, cells or ranges'),
+            hintText: example,
           ),
         ),
         actions: [
@@ -848,7 +864,10 @@ class _SheetsScreenState extends State<SheetsScreen> {
         ]);
         break;
       case 3:
-        for (final function in ['SUM', 'AVERAGE', 'COUNT', 'MIN', 'MAX']) {
+        for (final function in [
+          'SUM', 'AVERAGE', 'COUNT', 'MIN', 'MAX', 'PRODUCT',
+          'ABS', 'ROUND', 'SQRT', 'POWER', 'MOD', 'INT', 'SIGN',
+        ]) {
           commands.add(_ribbonCommand(function, Icons.functions, () => _insertFunction(function)));
         }
         break;
