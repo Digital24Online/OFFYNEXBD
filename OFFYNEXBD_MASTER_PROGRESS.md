@@ -265,3 +265,12 @@
 - Corrective integrated batch: provision a real Google Noto Sans variable TrueType font as `assets/fonts/NotoSans.ttf`; use it as the Unicode Latin/symbol fallback in Writer title, rich-text spans, tables and Sheets cells/header/footer; pass the font data through both export services and their production callers; update PDF tests to load the same fallback asset.
 - Bengali primary faces (Noto Sans Bengali and Noto Serif Bengali), existing styles, workbook data and Writer content remain unchanged.
 - Verification pending: the next GitHub Actions run must pass Analyze, all tests, Android APK build and artifact upload. Device/printer visual inspection remains a separate acceptance step.
+
+
+## Build #148 Failure and PDF Fallback Scope Check — 2026-11-17
+
+- Build #148 (run ID 44138032704) failed during Flutter Analyze at `writer_pdf_export_service.dart:186:36`: `latinFont` was referenced inside the Writer table renderer without being passed into that helper.
+- Corrected the helper signature and call site so the already-loaded Noto Sans Unicode fallback is passed into Writer table-cell styles. This retains Noto Sans Bengali/Serif Bengali as primary faces and uses the bundled Noto Sans font only for missing Latin/Unicode glyphs.
+- User confirmed OFFYNEXBD must support both Unicode Bengali fonts and legacy Bijoy ANSI fonts such as SutonnyMJ.
+- Font system audit: current Writer picker only exposes two generic aliases (`sans-serif`, `serif`); arbitrary TTF/OTF installation, persistent font identities, document-level font metadata, font preview/management and ANSI↔Unicode conversion are not implemented. OFFYNEX Fonts remains a planned module. This is a major required feature, not satisfied by the current two bundled fonts.
+- Next validation: GitHub Actions must verify Analyze, tests, Android APK build and artifact upload after this fix. The full font manager and Bijoy ANSI conversion require a dedicated integrated implementation and licensed/user-supplied font assets; do not bundle proprietary SutonnyMJ without a redistribution licence.

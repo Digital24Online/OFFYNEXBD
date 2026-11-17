@@ -122,6 +122,7 @@ class WriterPdfExportService {
           widgets.add(_tableWidget(
             insert['offynexbd-writer-table']?.toString() ?? '{}',
             sansFont,
+            latinFont,
           ));
         }
       }
@@ -142,7 +143,7 @@ class WriterPdfExportService {
     return Uint8List.fromList(await document.save());
   }
 
-  static pw.Widget _tableWidget(String raw, pw.Font font) {
+  static pw.Widget _tableWidget(String raw, pw.Font font, pw.Font latinFont) {
     Map<String, dynamic> data;
     try {
       final decoded = jsonDecode(raw);
