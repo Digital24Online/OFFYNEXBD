@@ -1,9 +1,9 @@
 import 'dart:typed_data';
 
 import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
+import 'package:bangla_pdf/widgets.dart' as pw;
 
-/// Generates printable Sheets output with bundled Bengali fonts embedded.
+/// Generates printable Sheets output with OpenType-shaped Bengali text.
 class SheetsPdfExportService {
   static Future<Uint8List> build({
     required String sheetName,
@@ -11,6 +11,7 @@ class SheetsPdfExportService {
     required List<List<Map<String, dynamic>>> styles,
     required ByteData sansFontData,
     required ByteData serifFontData,
+    required bool showGridlines,
     PdfPageFormat pageFormat = PdfPageFormat.a4,
   }) async {
     if (values.isEmpty || values.every((row) => row.every((cell) => cell.isEmpty))) {
@@ -31,17 +32,34 @@ class SheetsPdfExportService {
           final size = ((style['fontSize'] as num?)?.toDouble() ?? 9).clamp(6.0, 24.0).toDouble();
           final color = _color(style['fontColor']?.toString()) ?? PdfColors.black;
           final fill = _color(style['fillColor']?.toString()) ?? PdfColors.white;
-          final alignment = switch (style['align']) {
-            'center' => pw.TextAlign.center,
-            'right' => pw.TextAlign.right,
-            _ => pw.TextAlign.left,
+          final horizontal = switch (style['align']) {
+            'center' => 0.0,
+            'right' => 1.0,
+            _ => -1.0,
           };
+          final vertical = switch (style['verticalAlign']) {
+            'top' => -1.0,
+            'bottom' => 1.0,
+            _ => 0.0,
+          };
+          final border = style['border'] == true
+              ? pw.Border.all(color: PdfColors.blueGrey700, width: 1.2)
+              : showGridlines
+                  ? pw.Border.all(color: PdfColors.grey600, width: 0.45)
+                  : null;
           return pw.Container(
-            color: fill,
+            alignment: pw.Alignment(horizontal, vertical),
+            decoration: pw.BoxDecoration(color: fill, border: border),
             padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 4),
             child: pw.Text(
               value,
-              textAlign: alignment,
+              textAlign: switch (style['align']) {
+                'center' => pw.TextAlign.center,
+                'right' => pw.TextAlign.right,
+                _ => pw.TextAlign.left,
+              },
+              maxLines: style['wrapText'] == true ? 3 : 1,
+              overflow: pw.TextOverflow.ellipsis,
               style: pw.TextStyle(
                 font: font,
                 fontSize: size,
@@ -74,7 +92,6 @@ class SheetsPdfExportService {
       ),
       build: (context) => [
         pw.Table(
-          border: pw.TableBorder.all(color: PdfColors.grey600, width: 0.45),
           columnWidths: {for (var i = 0; i < columnCount; i++) i: const pw.FlexColumnWidth(1)},
           children: rows,
         ),

@@ -235,3 +235,14 @@
 - Exact analyzer findings: two `prefer_interpolation_to_compose_strings` infos at `sheets_pdf_export_service.dart:71:11` and `:71:53`; workflow treats analyzer infos as a failing exit.
 - Dependencies and font downloads succeeded; tests and Android build were skipped because Analyze failed.
 - Corrected the page-number expression to Dart string interpolation. The next GitHub Actions run must still verify Analyze, tests, APK build and upload before this Sheets PDF/Print batch is marked successful.
+
+
+## Integrated Bengali PDF Shaping and Sheets Print Fidelity Batch — 2026-11-17
+
+- Build #143 (run ID `44133425598`, commit `53102cbf7f48d8c528ab233372d080457f570374`) was verified SUCCESS: Analyze, Tests, Android APK build, signing cleanup, generated-source save and APK upload all passed. APK artifact size: 47,931,757 bytes; expiry: 2026-11-24T17:14:05Z.
+- Source audit found that the previous PDF implementation embedded Bengali fonts but used the base `pdf` text widgets without OpenType GSUB/GPOS shaping; embedding alone was not sufficient to guarantee Bengali conjuncts, reph and vowel-sign placement.
+- Migrated Writer and Sheets PDF widget imports to `bangla_pdf` 1.9.2, which performs Unicode Bengali OpenType shaping and retains a Unicode text layer. The package reports HarfBuzz differential tests for Noto Sans Bengali and Noto Serif Bengali and supports Android, iOS, Windows, macOS and web.
+- Updated the `pdf` dependency to 3.13.1 to meet the shaping package's dependency requirements.
+- Expanded Sheets PDF rendering to respect the workbook's gridline visibility, individual cell borders, wrap/ellipsis behavior and vertical alignment, in addition to existing font, color, fill and horizontal alignment.
+- Expanded Writer and Sheets PDF tests with complex Bengali conjunct/reph/matra samples and PDF text extraction checks.
+- Current batch status: source changes prepared; GitHub Analyze, automated tests and Android APK verification are pending. Visual print inspection on actual Android/printer devices remains a separate final acceptance check; no claim is made about every third-party font or printer.

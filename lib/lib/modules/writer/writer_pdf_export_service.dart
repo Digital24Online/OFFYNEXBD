@@ -3,9 +3,9 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
+import 'package:bangla_pdf/widgets.dart' as pw;
 
-/// Builds Writer print/PDF output with embedded Bengali TrueType fonts.
+/// Builds Writer print/PDF output with HarfBuzz-compatible OpenType Bengali shaping.
 class WriterPdfExportService {
   static Future<Uint8List> build({
     required String title,

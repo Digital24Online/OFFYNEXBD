@@ -655,7 +655,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
     final styles = List<List<Map<String, dynamic>>>.generate(rows, (row) => List<Map<String, dynamic>>.generate(columns, (column) => _styleFor(_cellKey(row, column))));
     final sans = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
     final serif = await rootBundle.load('assets/fonts/NotoSerifBengali.ttf');
-    return SheetsPdfExportService.build(sheetName: _sheetName, values: values, styles: styles, sansFontData: sans, serifFontData: serif, pageFormat: PdfPageFormat.a4.landscape);
+    return SheetsPdfExportService.build(sheetName: _sheetName, values: values, styles: styles, sansFontData: sans, serifFontData: serif, showGridlines: _showGridlines, pageFormat: PdfPageFormat.a4.landscape);
   }
 
   Future<void> _exportPdf() async {
