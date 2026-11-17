@@ -23,6 +23,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
   static const int _initialColumns = 12;
 
   final Map<String, String> _cells = {};
+  final Map<String, Map<String, dynamic>> _cellStyles = {};
   final ScrollController _horizontalController = ScrollController();
   final ScrollController _verticalController = ScrollController();
   bool _loading = true;
@@ -73,6 +74,14 @@ class _SheetsScreenState extends State<SheetsScreen> {
             (key, value) => MapEntry(key.toString(), value.toString()),
           ));
         }
+        final storedStyles = data['styles'];
+        if (storedStyles is Map) {
+          for (final entry in storedStyles.entries) {
+            if (entry.value is Map) {
+              _cellStyles[entry.key.toString()] = Map<String, dynamic>.from(entry.value as Map);
+            }
+          }
+        }
         _sheetName = data['name']?.toString() ?? 'Sheet1';
         _rowCount = (data['rows'] as num?)?.toInt() ?? _initialRows;
         _columnCount = (data['columns'] as num?)?.toInt() ?? _initialColumns;
@@ -94,6 +103,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
       'rows': _rowCount,
       'columns': _columnCount,
       'cells': Map<String, String>.from(_cells),
+      'styles': _cellStyles,
       'updatedAt': DateTime.now().toIso8601String(),
     });
     if (mounted) setState(() => _saved = false);
@@ -122,13 +132,176 @@ class _SheetsScreenState extends State<SheetsScreen> {
   }
 
   String _displayValue(String key) {
-    final value = _cells[key] ?? '';
-    if (!value.startsWith('=')) return value;
-    final result = _numericValue(key);
-    if (result == null) return '#ERROR';
-    return result == result.roundToDouble()
-        ? result.toInt().toString()
-        : result.toStringAsFixed(4).replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
+    final raw = _cells[key] ?? '';
+    final numeric = raw.startsWith('=') ? _numericValue(key) : double.tryParse(raw);
+    if (raw.startsWith('=') && numeric == null) return '#ERROR';
+    if (numeric == null) return raw;
+    switch (_cellStyles[key]?['numberFormat']) {
+      case 'number': return numeric.toStringAsFixed(2);
+      case 'currency': return '৳${numeric.toStringAsFixed(2)}';
+      case 'percent': return '${(numeric * 100).toStringAsFixed(2)}%';
+      default:
+        return numeric == numeric.roundToDouble()
+            ? numeric.toInt().toString()
+            : numeric.toStringAsFixed(4).replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
+    }
+  }
+
+  Map<String, dynamic> _styleFor(String key) =>
+      Map<String, dynamic>.from(_cellStyles[key] ?? const {});
+
+  Color _colorFromHex(String? hex, Color fallback) {
+    if (hex == null || !RegExp(r'^[0-9A-Fa-f]{6}$').hasMatch(hex)) return fallback;
+    return Color(int.parse('FF$hex', radix: 16));
+  }
+
+  TextStyle _cellTextStyle(String key) {
+    final style = _cellStyles[key] ?? const <String, dynamic>{};
+    return TextStyle(
+      fontSize: ((style['fontSize'] as num?)?.toDouble() ?? 13) * _zoom,
+      fontWeight: style['bold'] == true ? FontWeight.bold : FontWeight.normal,
+      fontStyle: style['italic'] == true ? FontStyle.italic : FontStyle.normal,
+      decoration: style['underline'] == true ? TextDecoration.underline : TextDecoration.none,
+      color: _colorFromHex(style['fontColor'] as String?, Colors.black87),
+    );
+  }
+
+  Alignment _cellAlignment(String key) {
+    switch (_cellStyles[key]?['align']) {
+      case 'center': return Alignment.center;
+      case 'right': return Alignment.centerRight;
+      default: return Alignment.centerLeft;
+    }
+  }
+
+  TextAlign _cellTextAlign(String key) {
+    switch (_cellStyles[key]?['align']) {
+      case 'center': return TextAlign.center;
+      case 'right': return TextAlign.right;
+      default: return TextAlign.left;
+    }
+  }
+
+  Future<void> _applyCellStyle(String property, dynamic value) async {
+    final key = _selectedCell;
+    if (key == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t('আগে একটি Cell নির্বাচন করুন।', 'Select a cell first.'))),
+      );
+      return;
+    }
+    setState(() {
+      final style = _styleFor(key);
+      if (value == null) {
+        style.remove(property);
+      } else {
+        style[property] = value;
+      }
+      if (style.isEmpty) {
+        _cellStyles.remove(key);
+      } else {
+        _cellStyles[key] = style;
+      }
+    });
+    await _saveWorkbook();
+  }
+
+  Future<void> _toggleCellStyle(String property) async {
+    final key = _selectedCell;
+    if (key == null) {
+      await _applyCellStyle(property, true);
+      return;
+    }
+    await _applyCellStyle(property, _cellStyles[key]?[property] != true);
+  }
+
+  Future<void> _chooseFontSize() async {
+    const sizes = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 36];
+    final selected = await showDialog<int>(
+      context: context,
+      builder: (dialogContext) => SimpleDialog(
+        title: Text(_t('Font Size', 'Font Size')),
+        children: [
+          for (final size in sizes)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(dialogContext, size),
+              child: Text('$size pt'),
+            ),
+        ],
+      ),
+    );
+    if (selected != null) await _applyCellStyle('fontSize', selected);
+  }
+
+  Future<void> _chooseCellColor({required bool background}) async {
+    const colors = [
+      '000000', '434343', '666666', '999999', 'D9EAD3', 'B6D7A8',
+      '6AA84F', '38761D', 'CFE2F3', '9FC5E8', '3D85C6', '0B5394',
+      'FCE5CD', 'F9CB9C', 'F6B26B', 'E69138', 'F4CCCC', 'EA9999',
+      'E06666', 'CC0000', 'D9D2E9', 'B4A7D6', '8E7CC3', '674EA7', 'FFFFFF',
+    ];
+    final selected = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(background ? _t('Fill Color', 'Fill Color') : _t('Font Color', 'Font Color')),
+        content: SizedBox(
+          width: 280,
+          child: Wrap(
+            spacing: 9,
+            runSpacing: 9,
+            children: [
+              for (final hex in colors)
+                InkWell(
+                  onTap: () => Navigator.pop(dialogContext, hex),
+                  child: Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: _colorFromHex(hex, Colors.white),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.black26),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, ''), child: Text(_t('রং সরান', 'Clear color'))),
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(_t('বাতিল', 'Cancel'))),
+        ],
+      ),
+    );
+    if (selected == null) return;
+    await _applyCellStyle(background ? 'fillColor' : 'fontColor', selected.isEmpty ? null : selected);
+  }
+
+  Future<void> _chooseNumberFormat() async {
+    const formats = {
+      'general': 'General',
+      'number': 'Number (2 decimals)',
+      'currency': 'Currency (৳)',
+      'percent': 'Percentage',
+    };
+    final selected = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => SimpleDialog(
+        title: Text(_t('Number Format', 'Number Format')),
+        children: [
+          for (final entry in formats.entries)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(dialogContext, entry.key),
+              child: Text(entry.value),
+            ),
+        ],
+      ),
+    );
+    if (selected != null) await _applyCellStyle('numberFormat', selected);
+  }
+
+  Future<void> _toggleCellBorder() async {
+    final key = _selectedCell;
+    await _applyCellStyle('border', key == null || _cellStyles[key]?['border'] != true);
   }
 
   Future<void> _editCell(int row, int column) async {
@@ -301,6 +474,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
       if (replace != true || !mounted) return;
       setState(() {
         _cells..clear()..addAll(imported);
+        _cellStyles.clear();
         _rowCount = sheet.maxRows.clamp(1, 1000);
         _columnCount = sheet.maxColumns.clamp(1, 100);
         _sheetName = sheetName;
@@ -344,6 +518,37 @@ class _SheetsScreenState extends State<SheetsScreen> {
             cell.value = xlsx.TextCellValue(value);
           }
         }
+        final style = _cellStyles[entry.key];
+        if (style != null && style.isNotEmpty) {
+          final alignment = switch (style['align']) {
+            'center' => xlsx.HorizontalAlign.Center,
+            'right' => xlsx.HorizontalAlign.Right,
+            _ => xlsx.HorizontalAlign.Left,
+          };
+          final format = switch (style['numberFormat']) {
+            'number' => xlsx.CustomNumericNumFormat('#,##0.00'),
+            'currency' => xlsx.CustomNumericNumFormat('৳#,##0.00'),
+            'percent' => xlsx.CustomNumericNumFormat('0.00%'),
+            _ => xlsx.NumFormat.standard_0,
+          };
+          final fill = style['fillColor'] as String?;
+          final font = style['fontColor'] as String?;
+          final hasBorder = style['border'] == true;
+          cell.cellStyle = xlsx.CellStyle(
+            bold: style['bold'] == true,
+            italic: style['italic'] == true,
+            underline: style['underline'] == true ? xlsx.Underline.Single : xlsx.Underline.None,
+            fontSize: (style['fontSize'] as num?)?.toInt(),
+            fontColorHex: font == null ? xlsx.ExcelColor.black : xlsx.ExcelColor.fromHexString('#$font'),
+            backgroundColorHex: fill == null ? xlsx.ExcelColor.none : xlsx.ExcelColor.fromHexString('#$fill'),
+            horizontalAlign: alignment,
+            numberFormat: format,
+            leftBorder: hasBorder ? xlsx.Border(borderStyle: xlsx.BorderStyle.Thin) : null,
+            rightBorder: hasBorder ? xlsx.Border(borderStyle: xlsx.BorderStyle.Thin) : null,
+            topBorder: hasBorder ? xlsx.Border(borderStyle: xlsx.BorderStyle.Thin) : null,
+            bottomBorder: hasBorder ? xlsx.Border(borderStyle: xlsx.BorderStyle.Thin) : null,
+          );
+        }
       }
       final bytes = workbook.save();
       if (bytes == null) throw StateError('XLSX encoding failed');
@@ -381,6 +586,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
     if (confirm != true || !mounted) return;
     setState(() {
       _cells.clear();
+      _cellStyles.clear();
       _selectedCell = null;
       _formulaBarController.clear();
     });
@@ -516,6 +722,17 @@ class _SheetsScreenState extends State<SheetsScreen> {
             }
             _editCell(row, column - 1);
           }),
+          _ribbonCommand('Bold', Icons.format_bold, () => _toggleCellStyle('bold')),
+          _ribbonCommand('Italic', Icons.format_italic, () => _toggleCellStyle('italic')),
+          _ribbonCommand('Underline', Icons.format_underline, () => _toggleCellStyle('underline')),
+          _ribbonCommand('Font Size', Icons.format_size, _chooseFontSize),
+          _ribbonCommand('Font Color', Icons.format_color_text, () => _chooseCellColor(background: false)),
+          _ribbonCommand('Fill Color', Icons.format_color_fill, () => _chooseCellColor(background: true)),
+          _ribbonCommand('Align Left', Icons.format_align_left, () => _applyCellStyle('align', 'left')),
+          _ribbonCommand('Center', Icons.format_align_center, () => _applyCellStyle('align', 'center')),
+          _ribbonCommand('Align Right', Icons.format_align_right, () => _applyCellStyle('align', 'right')),
+          _ribbonCommand('Number Format', Icons.numbers, _chooseNumberFormat),
+          _ribbonCommand('Borders', Icons.border_all, _toggleCellBorder),
           _ribbonCommand(_t('সেল মুছুন', 'Clear cell'), Icons.backspace_outlined, _clearSelectedCell),
           _ribbonCommand(_t('১০টি Row', 'Add 10 rows'), Icons.table_rows, _addRows),
           _ribbonCommand(_t('২টি Column', 'Add 2 columns'), Icons.view_column, _addColumns),
@@ -719,19 +936,24 @@ class _SheetsScreenState extends State<SheetsScreen> {
                                             onTap: () => _selectCell(_cellKey(row, column)),
                                             onLongPress: () => _editCell(row, column),
                                             child: Container(
-                                              alignment: Alignment.centerLeft,
+                                              alignment: _cellAlignment(_cellKey(row, column)),
                                               padding: const EdgeInsets.symmetric(horizontal: 8),
                                               decoration: BoxDecoration(
-                                                color: _selectedCell == _cellKey(row, column) ? const Color(0xFFDCEBFF) : Colors.white,
-                                                border: _showGridlines
-                                                    ? Border.all(color: const Color(0xFFE1E6ED), width: 0.5)
-                                                    : Border.all(color: Colors.transparent, width: 0.5),
+                                                color: _selectedCell == _cellKey(row, column)
+                                                    ? const Color(0xFFDCEBFF)
+                                                    : _colorFromHex(_cellStyles[_cellKey(row, column)]?['fillColor'] as String?, Colors.white),
+                                                border: _cellStyles[_cellKey(row, column)]?['border'] == true
+                                                    ? Border.all(color: const Color(0xFF596579), width: 1.2)
+                                                    : _showGridlines
+                                                        ? Border.all(color: const Color(0xFFE1E6ED), width: 0.5)
+                                                        : Border.all(color: Colors.transparent, width: 0.5),
                                               ),
                                               child: Text(
                                                 _displayValue(_cellKey(row, column)),
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
-                                                style: TextStyle(fontSize: 13 * _zoom),
+                                                textAlign: _cellTextAlign(_cellKey(row, column)),
+                                                style: _cellTextStyle(_cellKey(row, column)),
                                               ),
                                             ),
                                           ),
