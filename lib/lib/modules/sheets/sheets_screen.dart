@@ -974,6 +974,117 @@ class _SheetsScreenState extends State<SheetsScreen> {
     );
   }
 
+  double get _gridWidth => 42 + (_columnCount * 104 * _zoom) + 8;
+
+  Widget _buildGridHeader() {
+    return Container(
+      height: 38 * _zoom,
+      color: const Color(0xFFE5ECF5),
+      child: Row(children: [
+        SizedBox(
+          width: 42,
+          child: Center(child: Text('#', style: const TextStyle(fontWeight: FontWeight.bold))),
+        ),
+        for (var column = 0; column < _columnCount; column++)
+          Container(
+            width: 104 * _zoom,
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(
+              border: Border(left: BorderSide(color: Color(0xFFD8E0EA), width: 0.5)),
+            ),
+            child: Text(
+              _columnName(column),
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+      ]),
+    );
+  }
+
+  Widget _buildGridCell(int row, int column) {
+    final key = _cellKey(row, column);
+    final style = _cellStyles[key] ?? const <String, dynamic>{};
+    final wrapText = style['wrapText'] == true;
+    return SizedBox(
+      width: 104 * _zoom,
+      child: InkWell(
+        key: ValueKey('sheet-cell-$key'),
+        onTap: () => _selectCell(key),
+        onLongPress: () => _editCell(row, column),
+        child: Container(
+          alignment: wrapText ? _cellVerticalAlignment(key) : _cellAlignment(key),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: _selectedCell == key
+                ? const Color(0xFFDCEBFF)
+                : _colorFromHex(style['fillColor'] as String?, Colors.white),
+            border: style['border'] == true
+                ? Border.all(color: const Color(0xFF596579), width: 1.2)
+                : _showGridlines
+                    ? Border.all(color: const Color(0xFFE1E6ED), width: 0.5)
+                    : Border.all(color: Colors.transparent, width: 0.5),
+          ),
+          child: Text(
+            _displayValue(key),
+            maxLines: wrapText ? 3 : 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: _cellTextAlign(key),
+            style: _cellTextStyle(key),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGridRow(int row) {
+    return SizedBox(
+      height: 56 * _zoom,
+      child: Row(children: [
+        SizedBox(
+          width: 42,
+          child: Center(
+            child: Text(
+              '${row + 1}',
+              style: const TextStyle(color: Colors.black54, fontSize: 12),
+            ),
+          ),
+        ),
+        for (var column = 0; column < _columnCount; column++)
+          _buildGridCell(row, column),
+      ]),
+    );
+  }
+
+  Widget _buildGrid() {
+    return Scrollbar(
+      controller: _horizontalController,
+      thumbVisibility: true,
+      child: SingleChildScrollView(
+        controller: _horizontalController,
+        scrollDirection: Axis.horizontal,
+        child: SizedBox(
+          width: _gridWidth,
+          child: Column(children: [
+            _buildGridHeader(),
+            Expanded(
+              child: Scrollbar(
+                controller: _verticalController,
+                thumbVisibility: true,
+                child: ListView.builder(
+                  key: const ValueKey('sheets-grid-vertical'),
+                  controller: _verticalController,
+                  itemCount: _rowCount,
+                  itemExtent: 56 * _zoom,
+                  itemBuilder: (context, row) => _buildGridRow(row),
+                ),
+              ),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1010,88 +1121,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
                         style: const TextStyle(fontSize: 12, color: Colors.black54)),
                   ]),
                 ),
-                Expanded(
-                  child: Scrollbar(
-                    controller: _verticalController,
-                    thumbVisibility: true,
-                    child: SingleChildScrollView(
-                      controller: _verticalController,
-                      child: Scrollbar(
-                        controller: _horizontalController,
-                        thumbVisibility: true,
-                        notificationPredicate: (notification) => notification.depth == 1,
-                        child: SingleChildScrollView(
-                          controller: _horizontalController,
-                          scrollDirection: Axis.horizontal,
-                          child: DataTable(
-                            horizontalMargin: 8,
-                            columnSpacing: 4,
-                            headingRowHeight: 38 * _zoom,
-                            dataRowMinHeight: 42 * _zoom,
-                            dataRowMaxHeight: 120 * _zoom,
-                            headingRowColor: WidgetStateProperty.all(const Color(0xFFE5ECF5)),
-                            columns: [
-                              DataColumn(label: SizedBox(width: 42, child: Center(child: Text('#')))),
-                              for (var column = 0; column < _columnCount; column++)
-                                DataColumn(
-                                  label: SizedBox(
-                                    width: 104 * _zoom,
-                                    child: Center(
-                                      child: Text(_columnName(column), style: const TextStyle(fontWeight: FontWeight.bold)),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                            rows: [
-                              for (var row = 0; row < _rowCount; row++)
-                                DataRow(
-                                  cells: [
-                                    DataCell(SizedBox(width: 42, child: Center(child: Text('${row + 1}', style: const TextStyle(color: Colors.black54))))),
-                                    for (var column = 0; column < _columnCount; column++)
-                                      DataCell(
-                                        SizedBox(
-                                          width: 104 * _zoom,
-                                          child: InkWell(
-                                            key: ValueKey('sheet-cell-${_cellKey(row, column)}'),
-                                            onTap: () => _selectCell(_cellKey(row, column)),
-                                            onLongPress: () => _editCell(row, column),
-                                            child: Container(
-                                              alignment: _cellStyles[_cellKey(row, column)]?['wrapText'] == true
-                                                  ? _cellVerticalAlignment(_cellKey(row, column))
-                                                  : _cellAlignment(_cellKey(row, column)),
-                                              padding: const EdgeInsets.symmetric(horizontal: 8),
-                                              decoration: BoxDecoration(
-                                                color: _selectedCell == _cellKey(row, column)
-                                                    ? const Color(0xFFDCEBFF)
-                                                    : _colorFromHex(_cellStyles[_cellKey(row, column)]?['fillColor'] as String?, Colors.white),
-                                                border: _cellStyles[_cellKey(row, column)]?['border'] == true
-                                                    ? Border.all(color: const Color(0xFF596579), width: 1.2)
-                                                    : _showGridlines
-                                                        ? Border.all(color: const Color(0xFFE1E6ED), width: 0.5)
-                                                        : Border.all(color: Colors.transparent, width: 0.5),
-                                              ),
-                                              child: Text(
-                                                _displayValue(_cellKey(row, column)),
-                                                maxLines: _cellStyles[_cellKey(row, column)]?['wrapText'] == true ? null : 1,
-                                                overflow: _cellStyles[_cellKey(row, column)]?['wrapText'] == true
-                                                    ? TextOverflow.visible
-                                                    : TextOverflow.ellipsis,
-                                                textAlign: _cellTextAlign(_cellKey(row, column)),
-                                                style: _cellTextStyle(_cellKey(row, column)),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+                Expanded(child: _buildGrid()),
                 Container(
                   width: double.infinity,
                   color: Colors.white,
