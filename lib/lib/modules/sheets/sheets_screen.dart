@@ -775,6 +775,24 @@ class _SheetsScreenState extends State<SheetsScreen> {
       'PRODUCT': 'A1:A5',
       'ABS': 'A1',
       'ROUND': 'A1,2',
+      'ROUNDUP': 'A1,2',
+      'ROUNDDOWN': 'A1,2',
+      'LARGE': 'A1:A5,1',
+      'SMALL': 'A1:A5,1',
+      'MEDIAN': 'A1:A5',
+      'CEILING': 'A1,1',
+      'FLOOR': 'A1,1',
+      'PI': '',
+      'EXP': 'A1',
+      'LN': 'A1',
+      'LOG': 'A1',
+      'LOG10': 'A1',
+      'SIN': 'A1',
+      'COS': 'A1',
+      'TAN': 'A1',
+      'ASIN': 'A1',
+      'ACOS': 'A1',
+      'ATAN': 'A1',
       'SQRT': 'A1',
       'POWER': 'A1,2',
       'MOD': 'A1,2',
@@ -895,8 +913,11 @@ class _SheetsScreenState extends State<SheetsScreen> {
         break;
       case 3:
         for (final function in [
-          'SUM', 'AVERAGE', 'COUNT', 'MIN', 'MAX', 'PRODUCT',
-          'ABS', 'ROUND', 'SQRT', 'POWER', 'MOD', 'INT', 'SIGN',
+          'SUM', 'AVERAGE', 'COUNT', 'MIN', 'MAX', 'PRODUCT', 'MEDIAN',
+          'LARGE', 'SMALL', 'ABS', 'ROUND', 'ROUNDUP', 'ROUNDDOWN',
+          'CEILING', 'FLOOR', 'SQRT', 'POWER', 'MOD', 'INT', 'SIGN',
+          'PI', 'EXP', 'LN', 'LOG', 'LOG10', 'SIN', 'COS', 'TAN',
+          'ASIN', 'ACOS', 'ATAN',
         ]) {
           commands.add(_ribbonCommand(function, Icons.functions, () => _insertFunction(function)));
         }
