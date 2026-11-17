@@ -11,6 +11,7 @@ class SheetsPdfExportService {
     required List<List<Map<String, dynamic>>> styles,
     required ByteData sansFontData,
     required ByteData serifFontData,
+    required ByteData latinFontData,
     required bool showGridlines,
     PdfPageFormat pageFormat = PdfPageFormat.a4,
   }) async {
@@ -19,6 +20,7 @@ class SheetsPdfExportService {
     }
     final sans = pw.Font.ttf(sansFontData);
     final serif = pw.Font.ttf(serifFontData);
+    final latin = pw.Font.ttf(latinFontData);
     final columnCount = values.fold<int>(1, (max, row) => row.length > max ? row.length : max);
     final rows = <pw.TableRow>[];
     for (var r = 0; r < values.length; r++) {
@@ -62,7 +64,7 @@ class SheetsPdfExportService {
               overflow: pw.TextOverflow.clip,
               style: pw.TextStyle(
                 font: font,
-                fontFallback: [pw.Font.helvetica()],
+                fontFallback: [latin],
                 fontSize: size,
                 color: color,
                 fontWeight: style['bold'] == true ? pw.FontWeight.bold : pw.FontWeight.normal,
@@ -81,14 +83,14 @@ class SheetsPdfExportService {
       header: (context) => pw.Container(
         alignment: pw.Alignment.centerLeft,
         padding: const pw.EdgeInsets.only(bottom: 8),
-        child: pw.Text(sheetName, style: pw.TextStyle(font: sans, fontFallback: [pw.Font.helvetica()], fontSize: 13, fontWeight: pw.FontWeight.bold)),
+        child: pw.Text(sheetName, style: pw.TextStyle(font: sans, fontFallback: [latin], fontSize: 13, fontWeight: pw.FontWeight.bold)),
       ),
       footer: (context) => pw.Container(
         alignment: pw.Alignment.centerRight,
         padding: const pw.EdgeInsets.only(top: 8),
         child: pw.Text(
           'Page ${context.pageNumber} of ${context.pagesCount}',
-          style: pw.TextStyle(font: sans, fontFallback: [pw.Font.helvetica()], fontSize: 8, color: PdfColors.grey700),
+          style: pw.TextStyle(font: sans, fontFallback: [latin], fontSize: 8, color: PdfColors.grey700),
         ),
       ),
       build: (context) => [

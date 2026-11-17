@@ -10,6 +10,7 @@ void main() {
   test('Sheets PDF shapes Bengali and retains cell formatting and Unicode text', () async {
     final sans = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
     final serif = await rootBundle.load('assets/fonts/NotoSerifBengali.ttf');
+    final latin = await rootBundle.load('assets/fonts/NotoSans.ttf');
     const complexBangla = 'ক্ষ্ম ঙ্ক্ষ ত্ত্ব কর্ম ধর্ম প্রয়োজন কি কোথায়';
     const englishText = 'English mixed text — Office 365';
     final bytes = await SheetsPdfExportService.build(
@@ -36,6 +37,7 @@ void main() {
       ],
       sansFontData: sans,
       serifFontData: serif,
+      latinFontData: latin,
       showGridlines: true,
       pageFormat: PdfPageFormat.a4.landscape,
     );

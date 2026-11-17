@@ -256,3 +256,12 @@
 - Root cause: the embedded Noto Sans Bengali / Noto Serif Bengali fonts do not cover every Latin/Unicode symbol; a Bengali font alone is not a complete fallback chain. The PDF package documentation explicitly requires fallback fonts for characters not covered by Bengali faces.
 - Corrective batch: add Helvetica as a Latin/symbol fallback to Writer title, rich-text spans and table cells, and to Sheets cells/header/footer. Keep Noto Bengali as the primary font for Bengali shaping. Expand Writer and Sheets tests to assert mixed Bengali/English round-trip and a regression check against the mojibake string.
 - Current verification status: changes committed; a new GitHub Actions run must pass Analyze, all tests and Android APK build/upload. Actual Android printer/viewer visual inspection remains pending.
+
+
+## Build #147 Failure Analysis and Unicode Latin Fallback Correction — 2026-11-17
+
+- Build #147 (run ID `44137173358`, commit `29b04f2b1a95d800fb142437f409cdfa7439ef46`) passed Flutter Analyze but failed 2 PDF tests (24 passed, 2 failed); Android APK build was skipped.
+- Both Writer and Sheets extracted English text as Bengali-looking mojibake. The prior Helvetica fallback was not a safe Unicode fallback; the PDF runtime warned that Helvetica has no Unicode support.
+- Corrective integrated batch: provision a real Google Noto Sans variable TrueType font as `assets/fonts/NotoSans.ttf`; use it as the Unicode Latin/symbol fallback in Writer title, rich-text spans, tables and Sheets cells/header/footer; pass the font data through both export services and their production callers; update PDF tests to load the same fallback asset.
+- Bengali primary faces (Noto Sans Bengali and Noto Serif Bengali), existing styles, workbook data and Writer content remain unchanged.
+- Verification pending: the next GitHub Actions run must pass Analyze, all tests, Android APK build and artifact upload. Device/printer visual inspection remains a separate acceptance step.

@@ -41,5 +41,6 @@ flutter:
     - assets/branding/offynexbd_logo.svg
     - assets/fonts/NotoSansBengali.ttf
     - assets/fonts/NotoSerifBengali.ttf
+    - assets/fonts/NotoSans.ttf
     - assets/tessdata_config.json
     - assets/tessdata/

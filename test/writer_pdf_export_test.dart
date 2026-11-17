@@ -10,6 +10,7 @@ void main() {
   test('Writer PDF shapes Bengali and preserves styled Unicode text', () async {
     final sans = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
     final serif = await rootBundle.load('assets/fonts/NotoSerifBengali.ttf');
+    final latin = await rootBundle.load('assets/fonts/NotoSans.ttf');
     const complexBangla = 'ক্ষ্ম ঙ্ক্ষ ত্ত্ব কর্ম ধর্ম প্রয়োজন কি কোথায়';
     const englishText = 'English mixed text — Office 365';
     final bytes = await WriterPdfExportService.build(
@@ -22,6 +23,7 @@ void main() {
       ],
       sansFontData: sans,
       serifFontData: serif,
+      latinFontData: latin,
       pageFormat: PdfPageFormat.a4,
       marginTop: 54, marginBottom: 54, marginLeft: 54, marginRight: 54,
     );

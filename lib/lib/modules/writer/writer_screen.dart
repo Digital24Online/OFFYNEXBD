@@ -1789,6 +1789,7 @@ Future<void> showCustomFontSizeDialog() async {
   Future<Uint8List> _buildWriterPdf(PdfPageFormat format) async {
     final sansFontData = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
     final serifFontData = await rootBundle.load('assets/fonts/NotoSerifBengali.ttf');
+    final latinFontData = await rootBundle.load('assets/fonts/NotoSans.ttf');
     final delta = quillController.document.toDelta().toJson()
         .map((item) => Map<String, dynamic>.from(item as Map))
         .toList();
@@ -1799,6 +1800,7 @@ Future<void> showCustomFontSizeDialog() async {
       delta: delta,
       sansFontData: sansFontData,
       serifFontData: serifFontData,
+      latinFontData: latinFontData,
       pageFormat: format,
       marginTop: marginTop * 72,
       marginBottom: marginBottom * 72,

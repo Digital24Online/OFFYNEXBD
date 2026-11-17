@@ -49,6 +49,8 @@ jobs:
           test -s assets/fonts/NotoSansBengali.ttf
           curl --fail --location --retry 3 --output assets/fonts/NotoSerifBengali.ttf 'https://raw.githubusercontent.com/google/fonts/main/ofl/notoserifbengali/NotoSerifBengali%5Bwdth%2Cwght%5D.ttf'
           test -s assets/fonts/NotoSerifBengali.ttf
+          curl --fail --location --retry 3 --output assets/fonts/NotoSans.ttf 'https://raw.githubusercontent.com/google/fonts/main/ofl/notosans/NotoSans%5Bwdth%2Cwght%5D.ttf'
+          test -s assets/fonts/NotoSans.ttf
           curl --fail --location --retry 3 --output assets/fonts/OFL.txt 'https://raw.githubusercontent.com/google/fonts/main/ofl/notosansbengali/OFL.txt'
           test -s assets/fonts/OFL.txt
           mkdir -p assets/tessdata
