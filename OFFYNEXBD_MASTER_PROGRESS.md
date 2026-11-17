@@ -369,3 +369,18 @@
 - [x] Artifact download: https://api.github.com/repos/Digital24Online/OFFYNEXBD/actions/artifacts/14358866885/zip
 - [x] Build #167 adds only further formula edge-case tests; the application source is unchanged from Build #166. Build #167 Analyze and all Tests also passed. Its redundant APK step was still running at this checkpoint.
 - [x] Therefore the current application source has a verified successful Android APK build; Build #167's additional test-only commit remains under final workflow confirmation.
+
+## OFFYNEX Sheets — XLSX Import Safeguards Verified — 2026-11-18
+
+- [x] Multi-worksheet XLSX imports now explicitly let the user select one worksheet.
+- [x] The import flow clearly states that only the selected worksheet is imported; other worksheets remain in the original XLSX and are not silently merged or discarded.
+- [x] Added a pre-import workbook-size guard: worksheets exceeding 1,000 rows or 100 columns are rejected before the current workbook is replaced.
+- [x] Added automated boundary, over-limit and invalid-dimension tests.
+- [x] Build #170 (run ID 44156020614; commit `be700e6fed9639798297f6aa957b00c4c4cef3d6`) completed SUCCESS.
+- [x] Flutter Analyze — SUCCESS.
+- [x] Full automated test suite — SUCCESS.
+- [x] Android APK build, signing-file cleanup, generated-source save and APK upload — SUCCESS.
+- [x] Artifact: `OFFYNEXBD-Android-APK`, 50,005,546 bytes; available until 2026-11-24T19:20:57Z.
+- Run URL: https://github.com/Digital24Online/OFFYNEXBD/actions/runs/44156020614
+- Artifact download: https://api.github.com/repos/Digital24Online/OFFYNEXBD/actions/artifacts/14360978705/zip
+- [ ] Remaining Sheets features are not complete: multi-sheet workbook management, charts, sorting/filtering, pivot tables, data validation, conditional formatting, ODS/CSV import/export, advanced print-preview controls, larger-workbook performance and physical Android/printer visual verification.
