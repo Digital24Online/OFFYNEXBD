@@ -1,4 +1,5 @@
 name: OFFYNEXBD Flutter Setup
+# CI validates the Flutter source, widget tests, and release APK.
 
 on:
   workflow_dispatch:
