@@ -289,7 +289,7 @@
 ## OFFYNEX Sheets Formula Engine Expansion — 2026-11-17
 
 - Source audit confirmed the current Sheets module has a working cell grid, local autosave, XLSX import/export, basic formatting, PDF/print entry points and a limited formula parser; this is not Excel parity.
-- Expanded the formula engine from 13 to 30 supported functions: added MEDIAN, LARGE, SMALL, ROUNDUP, ROUNDDOWN, CEILING, FLOOR, PI, EXP, LN, LOG, LOG10, SIN, COS, TAN, ASIN, ACOS and ATAN.
-- Added ribbon access and argument examples for the new functions.
+- Expanded the formula engine from 13 to 31 supported functions: added MEDIAN, LARGE, SMALL, ROUNDUP, ROUNDDOWN, CEILING, FLOOR, PI, EXP, LN, LOG, LOG10, SIN, COS, TAN, ASIN, ACOS and ATAN.
+- Added ribbon access and argument examples for the new functions; PI inserts directly as `=PI()` because it takes no arguments.
 - Added automated tests for valid calculations, invalid ranks, invalid math domains and wrong argument counts.
 - This batch is pending GitHub Actions Analyze, complete tests, Android release APK and artifact upload. Formula compatibility remains partial; logical, text, date/time, lookup, conditional aggregate and array/dynamic functions are not yet implemented.

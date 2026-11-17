@@ -766,6 +766,14 @@ class _SheetsScreenState extends State<SheetsScreen> {
       );
       return;
     }
+    if (function == 'PI') {
+      setState(() {
+        _cells[key] = '=PI()';
+        _formulaBarController.text = '=PI()';
+      });
+      await _saveWorkbook();
+      return;
+    }
     const examples = <String, String>{
       'SUM': 'A1:A5',
       'AVERAGE': 'A1:A5',
