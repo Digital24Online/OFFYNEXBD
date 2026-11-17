@@ -8,6 +8,7 @@ on:
     paths:
       - 'lib/**'
       - 'modules/**'
+      - 'test/**'
       - '.github/workflows/bootstrap.yml'
 
 permissions:
