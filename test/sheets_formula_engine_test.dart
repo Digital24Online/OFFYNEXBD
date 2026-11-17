@@ -43,6 +43,35 @@ void main() {
       expect(engine.evaluateCell('B1'), 17);
     });
 
+    test('supports common numeric functions and Excel unary precedence', () {
+      final engine = SheetsFormulaEngine({
+        'A1': '=-2^2',
+        'A2': '=(-2)^2',
+        'A3': '=ABS(-8)',
+        'A4': '=ROUND(12.345,2)',
+        'A5': '=SQRT(81)',
+        'A6': '=POWER(2,5)',
+        'A7': '=MOD(17,5)',
+        'A8': '=INT(-2.3)',
+        'A9': '=SIGN(-12)',
+        'A10': '=PRODUCT(2,3,4)',
+        'A11': '5',
+        'A12': '6',
+        'B1': '=PRODUCT(A11:A12)',
+      });
+      expect(engine.evaluateCell('A1'), -4);
+      expect(engine.evaluateCell('A2'), 4);
+      expect(engine.evaluateCell('A3'), 8);
+      expect(engine.evaluateCell('A4'), 12.35);
+      expect(engine.evaluateCell('A5'), 9);
+      expect(engine.evaluateCell('A6'), 32);
+      expect(engine.evaluateCell('A7'), 2);
+      expect(engine.evaluateCell('A8'), -3);
+      expect(engine.evaluateCell('A9'), -1);
+      expect(engine.evaluateCell('A10'), 24);
+      expect(engine.evaluateCell('B1'), 30);
+    });
+
     test('detects circular references and division by zero', () {
       final engine = SheetsFormulaEngine({
         'A1': '=A2+1', 'A2': '=A1+1', 'B1': '=5/0',
