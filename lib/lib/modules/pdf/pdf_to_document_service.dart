@@ -177,7 +177,11 @@ class PdfToDocumentService {
             final cellBuffer = StringBuffer();
             for (final dynamic node in (cell.children as Iterable?) ?? const []) {
               if (node.runtimeType.toString().contains('DocxParagraph')) {
-                cellBuffer.write(paragraph(node));
+                for (final dynamic textNode in (node.children as Iterable?) ?? const []) {
+                  if (textNode.runtimeType.toString().contains('DocxText')) {
+                    cellBuffer.write(textNode.content?.toString() ?? '');
+                  }
+                }
               } else if (node.runtimeType.toString().contains('DocxText')) {
                 cellBuffer.write(node.content?.toString() ?? '');
               }
