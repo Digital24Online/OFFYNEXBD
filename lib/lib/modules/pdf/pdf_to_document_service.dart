@@ -114,7 +114,7 @@ class PdfToDocumentService {
       throw const FormatException('ছবির সর্বোচ্চ সাইজ ৩০ MB।');
     }
     if (Platform.isWindows) {
-      throw const UnsupportedError(
+      throw UnsupportedError(
         'এই Windows সংস্করণে OCR ইঞ্জিন এখনো যুক্ত হয়নি।',
       );
     }
