@@ -205,8 +205,6 @@ class PdfToDocumentService {
     dynamic elements,
   ) async {
     final delta = <Map<String, dynamic>>[];
-    final support = await getApplicationSupportDirectory();
-    final imageDir = Directory('${support.path}/offynexbd_images');
     void addText(String value, [Map<String, dynamic>? attrs]) {
       if (value.isEmpty) return;
       delta.add(<String, dynamic>{
@@ -241,6 +239,8 @@ class PdfToDocumentService {
       } else if (type.contains('DocxImage')) {
         final imageBytes = Uint8List.fromList(List<int>.from(element.bytes as List));
         if (imageBytes.isNotEmpty) {
+          final support = await getApplicationSupportDirectory();
+          final imageDir = Directory('${support.path}/offynexbd_images');
           await imageDir.create(recursive: true);
           final path = '${imageDir.path}/offynex_pdf_${DateTime.now().microsecondsSinceEpoch}.png';
           await File(path).writeAsBytes(imageBytes, flush: true);
