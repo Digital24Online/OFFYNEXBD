@@ -182,6 +182,14 @@ class _SheetsScreenState extends State<SheetsScreen> {
     }
   }
 
+  Alignment _cellVerticalAlignment(String key) {
+    switch (_cellStyles[key]?['verticalAlign']) {
+      case 'top': return Alignment.topLeft;
+      case 'center': return Alignment.centerLeft;
+      default: return Alignment.bottomLeft;
+    }
+  }
+
   Future<void> _applyCellStyle(String property, dynamic value) async {
     final key = _selectedCell;
     if (key == null) {
@@ -302,6 +310,11 @@ class _SheetsScreenState extends State<SheetsScreen> {
   Future<void> _toggleCellBorder() async {
     final key = _selectedCell;
     await _applyCellStyle('border', key == null || _cellStyles[key]?['border'] != true);
+  }
+
+  Future<void> _toggleWrapText() async {
+    final key = _selectedCell;
+    await _applyCellStyle('wrapText', key == null || _cellStyles[key]?['wrapText'] != true);
   }
 
   Future<void> _editCell(int row, int column) async {
@@ -482,6 +495,20 @@ class _SheetsScreenState extends State<SheetsScreen> {
             if (fillHex != 'none') {
               style['fillColor'] = fillHex.length == 8 ? fillHex.substring(2) : fillHex;
             }
+            switch (importedStyle.verticalAlignment) {
+              case xlsx.VerticalAlign.Top:
+                style['verticalAlign'] = 'top';
+                break;
+              case xlsx.VerticalAlign.Center:
+                style['verticalAlign'] = 'center';
+                break;
+              default:
+                style['verticalAlign'] = 'bottom';
+                break;
+            }
+            if (importedStyle.wrap == xlsx.TextWrapping.WrapText) {
+              style['wrapText'] = true;
+            }
             switch (importedStyle.horizontalAlignment) {
               case xlsx.HorizontalAlign.Center:
                 style['align'] = 'center';
@@ -589,6 +616,14 @@ class _SheetsScreenState extends State<SheetsScreen> {
             fontColorHex: font == null ? xlsx.ExcelColor.black : xlsx.ExcelColor.fromHexString('#$font'),
             backgroundColorHex: fill == null ? xlsx.ExcelColor.none : xlsx.ExcelColor.fromHexString('#$fill'),
             horizontalAlign: alignment,
+            verticalAlign: switch (style['verticalAlign']) {
+              'top' => xlsx.VerticalAlign.Top,
+              'center' => xlsx.VerticalAlign.Center,
+              _ => xlsx.VerticalAlign.Bottom,
+            },
+            textWrapping: style['wrapText'] == true
+                ? xlsx.TextWrapping.WrapText
+                : xlsx.TextWrapping.Clip,
             numberFormat: format,
             leftBorder: hasBorder ? xlsx.Border(borderStyle: xlsx.BorderStyle.Thin) : null,
             rightBorder: hasBorder ? xlsx.Border(borderStyle: xlsx.BorderStyle.Thin) : null,
@@ -778,6 +813,10 @@ class _SheetsScreenState extends State<SheetsScreen> {
           _ribbonCommand('Align Left', Icons.format_align_left, () => _applyCellStyle('align', 'left')),
           _ribbonCommand('Center', Icons.format_align_center, () => _applyCellStyle('align', 'center')),
           _ribbonCommand('Align Right', Icons.format_align_right, () => _applyCellStyle('align', 'right')),
+          _ribbonCommand('Wrap Text', Icons.wrap_text, _toggleWrapText),
+          _ribbonCommand('Top Align', Icons.vertical_align_top, () => _applyCellStyle('verticalAlign', 'top')),
+          _ribbonCommand('Middle Align', Icons.vertical_align_center, () => _applyCellStyle('verticalAlign', 'center')),
+          _ribbonCommand('Bottom Align', Icons.vertical_align_bottom, () => _applyCellStyle('verticalAlign', 'bottom')),
           _ribbonCommand('Number Format', Icons.numbers, _chooseNumberFormat),
           _ribbonCommand('Borders', Icons.border_all, _toggleCellBorder),
           _ribbonCommand(_t('সেল মুছুন', 'Clear cell'), Icons.backspace_outlined, _clearSelectedCell),
@@ -956,7 +995,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
                             columnSpacing: 4,
                             headingRowHeight: 38 * _zoom,
                             dataRowMinHeight: 42 * _zoom,
-                            dataRowMaxHeight: 48 * _zoom,
+                            dataRowMaxHeight: 120 * _zoom,
                             headingRowColor: WidgetStateProperty.all(const Color(0xFFE5ECF5)),
                             columns: [
                               DataColumn(label: SizedBox(width: 42, child: Center(child: Text('#')))),
@@ -984,7 +1023,9 @@ class _SheetsScreenState extends State<SheetsScreen> {
                                             onTap: () => _selectCell(_cellKey(row, column)),
                                             onLongPress: () => _editCell(row, column),
                                             child: Container(
-                                              alignment: _cellAlignment(_cellKey(row, column)),
+                                              alignment: _cellStyles[_cellKey(row, column)]?['wrapText'] == true
+                                                  ? _cellVerticalAlignment(_cellKey(row, column))
+                                                  : _cellAlignment(_cellKey(row, column)),
                                               padding: const EdgeInsets.symmetric(horizontal: 8),
                                               decoration: BoxDecoration(
                                                 color: _selectedCell == _cellKey(row, column)
@@ -998,8 +1039,10 @@ class _SheetsScreenState extends State<SheetsScreen> {
                                               ),
                                               child: Text(
                                                 _displayValue(_cellKey(row, column)),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
+                                                maxLines: _cellStyles[_cellKey(row, column)]?['wrapText'] == true ? null : 1,
+                                                overflow: _cellStyles[_cellKey(row, column)]?['wrapText'] == true
+                                                    ? TextOverflow.visible
+                                                    : TextOverflow.ellipsis,
                                                 textAlign: _cellTextAlign(_cellKey(row, column)),
                                                 style: _cellTextStyle(_cellKey(row, column)),
                                               ),
