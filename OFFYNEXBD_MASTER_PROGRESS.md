@@ -104,3 +104,27 @@
 2. Verify every source change with GitHub Actions analysis, tests, and Android build.
 3. Expand document format support and other modules in the planned order.
 4. Maintain this progress file after verified milestones.
+
+
+## Verified Development Checkpoint — 2026-11-17
+
+### OFFYNEX Sheets — Formula Engine and Grid
+- [x] Formula engine aggregate ranges now propagate formula errors and circular references instead of silently skipping them; text values remain ignored by numeric aggregate functions.
+- [x] Formula tests cover SUM, AVERAGE, MIN error propagation and text handling.
+- [x] Replaced eager DataTable rendering with a lazy `ListView.builder` grid; distant rows are created only when scrolled into view.
+- [x] Kept the column header fixed during vertical scrolling and preserved horizontal/vertical scrolling, cell selection, editing, formulas and formatting.
+- [x] Added a widget test that scrolls to row 1000 and verifies that the distant cell is built on demand.
+- [x] Build #108 (run ID 44106861497; commit e6b11b28d059a953a3682c350beafbee4268cdcf) — Analyze, Tests, Android APK build and APK upload all SUCCESS.
+- [x] APK artifact: OFFYNEXBD-Android-APK (30,627,520 bytes; available until 2026-11-24).
+- [ ] Latest cell-alignment correction and its widget test are committed but awaiting the next Android workflow result.
+
+### Latest Sheets Alignment Correction — 2026-11-17
+- Commit `53ac055872c032547553066218221f8d3851dc01`: cell horizontal and vertical alignment are now combined, so Top/Middle/Bottom alignment works even when Wrap Text is off.
+- Commit `a33b39a0ae31bf4c81f260f60f6ccae42e3e59f0`: widget test added for vertical alignment without Wrap Text.
+- Latest build must pass Analyze, Tests, Android APK build and APK upload before this correction is considered verified.
+
+## Next Development Tasks
+1. Verify the latest cell-alignment correction with GitHub Actions Analyze, Tests and Android APK build/upload.
+2. Continue the OFFYNEX Sheets audit and tests for cell editing, formula recalculation, persistence, row/column operations and XLSX import/export. Do not mark Sheets complete until these are verified.
+3. Update this file after each verified milestone.
+4. Continue Writer completion and then the remaining modules in the planned order.
