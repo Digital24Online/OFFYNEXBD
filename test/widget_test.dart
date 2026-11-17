@@ -66,6 +66,10 @@ void main() {
     expect(find.text('Fill Color'), findsOneWidget);
     expect(find.text('Number Format'), findsOneWidget);
     expect(find.text('Borders'), findsOneWidget);
+    expect(find.text('Wrap Text'), findsOneWidget);
+    expect(find.text('Top Align'), findsOneWidget);
+    expect(find.text('Middle Align'), findsOneWidget);
+    expect(find.text('Bottom Align'), findsOneWidget);
 
     await tester.tap(find.text('Bold'));
     await tester.pumpAndSettle();
@@ -76,6 +80,19 @@ void main() {
     final workbook = jsonDecode(raw!) as Map<String, dynamic>;
     final styles = workbook['styles'] as Map<String, dynamic>;
     expect((styles['A1'] as Map<String, dynamic>)['bold'], isTrue);
+
+    await tester.ensureVisible(find.text('Wrap Text'));
+    await tester.tap(find.text('Wrap Text'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Top Align'));
+    await tester.tap(find.text('Top Align'));
+    await tester.pumpAndSettle();
+
+    final updatedRaw = prefs.getString('offynex_sheets_workbook_v1');
+    final updatedWorkbook = jsonDecode(updatedRaw!) as Map<String, dynamic>;
+    final updatedStyles = updatedWorkbook['styles'] as Map<String, dynamic>;
+    expect((updatedStyles['A1'] as Map<String, dynamic>)['wrapText'], isTrue);
+    expect((updatedStyles['A1'] as Map<String, dynamic>)['verticalAlign'], 'top');
   });
 
 }
