@@ -110,6 +110,45 @@ void main() {
     expect(clearedStyles.containsKey('A1'), isFalse);
   });
 
+  testWidgets('Sheets cell editing recalculates formulas and persists data',
+      (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(const OFFYNEXBDApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('শিটস'));
+    await tester.pumpAndSettle();
+
+    await tester.longPress(find.byKey(const ValueKey('sheet-cell-A1')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, '10');
+    await tester.tap(find.text('সংরক্ষণ'));
+    await tester.pumpAndSettle();
+
+    await tester.longPress(find.byKey(const ValueKey('sheet-cell-A2')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, '=A1*2');
+    await tester.tap(find.text('সংরক্ষণ'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('20'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(const OFFYNEXBDApp());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('শিটস'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('20'), findsOneWidget);
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('offynex_sheets_workbook_v1');
+    final workbook = jsonDecode(raw!) as Map<String, dynamic>;
+    final cells = workbook['cells'] as Map<String, dynamic>;
+    expect(cells['A1'], '10');
+    expect(cells['A2'], '=A1*2');
+  });
+
   testWidgets('Sheets vertical alignment works without Wrap Text',
       (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({});
