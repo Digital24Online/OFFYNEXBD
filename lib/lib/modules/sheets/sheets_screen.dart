@@ -1121,7 +1121,8 @@ class _SheetsScreenState extends State<SheetsScreen> {
     );
   }
 
-}\n
+}
+
 class _CellEditDialog extends StatefulWidget {
   const _CellEditDialog({
     required this.cellKey,
