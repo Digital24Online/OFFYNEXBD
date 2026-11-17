@@ -442,8 +442,9 @@ class _SheetsScreenState extends State<SheetsScreen> {
         type: FileType.custom,
         allowedExtensions: ['xlsx'],
       );
-      if (picked == null) return;
+      if (picked == null || !mounted) return;
       final bytes = await picked.readAsBytes();
+      if (!mounted) return;
       final workbook = xlsx.Excel.decodeBytes(bytes);
       if (workbook.tables.isEmpty) throw FormatException('Workbook has no worksheets');
       final sheetNames = workbook.tables.keys.toList(growable: false);

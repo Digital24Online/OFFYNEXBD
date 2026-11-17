@@ -7,7 +7,7 @@ class SheetsWorkbookLimits {
     if (rows > maxRows || columns > maxColumns) {
       throw FormatException(
         'Worksheet size exceeds OFFYNEX Sheets limit '
-        '(${maxRows} rows × ${maxColumns} columns). '
+        '($maxRows rows × $maxColumns columns). '
         'The existing workbook was not changed.',
       );
     }
