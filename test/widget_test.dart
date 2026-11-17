@@ -241,6 +241,34 @@ void main() {
     expect((workbook['cells'] as Map<String, dynamic>)['B1'], '=LOG10(1000)');
   });
 
+  testWidgets('Sheets protects rows referenced by formulas',
+      (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({
+      'offynex_sheets_workbook_v1': jsonEncode({
+        'name': 'Sheet1',
+        'rows': 10,
+        'columns': 12,
+        'cells': {'B1': '=A10'},
+        'styles': {},
+      }),
+    });
+    await tester.pumpWidget(const OFFYNEXBDApp());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('শিটস'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('হোম'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('শেষ Row বাদ'));
+    await tester.tap(find.text('শেষ Row বাদ'));
+    await tester.pumpAndSettle();
+
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('offynex_sheets_workbook_v1');
+    final workbook = jsonDecode(raw!) as Map<String, dynamic>;
+    expect(workbook['rows'], 10);
+    expect((workbook['cells'] as Map<String, dynamic>)['B1'], '=A10');
+  });
+
   testWidgets('Sheets general number display preserves calculated precision',
       (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({

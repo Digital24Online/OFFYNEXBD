@@ -385,7 +385,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
     final formulaPattern = RegExp(
       r'(?<![A-Z0-9_])[A-Z]+' +
           rowNumber.toString() +
-          r'(?!\\d)(?!\\s*\\()',
+          r'(?!\d)(?!\s*\()',
     );
     final hasData = _cells.entries.any((entry) =>
         cellPattern.hasMatch(entry.key.toUpperCase()) && entry.value.isNotEmpty);
