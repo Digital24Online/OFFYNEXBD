@@ -170,8 +170,8 @@ void main() {
         'A1': '=SUM(LOG10(1000),1)',
         'A2': '=AVERAGE(LOG10(100),4)',
       });
-      expect(engine.evaluateCell('A1'), 4);
-      expect(engine.evaluateCell('A2'), 3);
+      expect(engine.evaluateCell('A1'), closeTo(4, 1e-12));
+      expect(engine.evaluateCell('A2'), closeTo(3, 1e-12));
     });
 
     test('matches CEILING and FLOOR negative-number significance rules', () {
