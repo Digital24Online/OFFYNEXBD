@@ -388,7 +388,7 @@ void openModule(OfficeModule module) {
               const SizedBox(height: 25),
               Center(
                 child: Text(
-                  'OFFYNEXBD  •  Work Smart, Be Productive',
+                  'OFFYNEXBD  •  The Future of Office Productivity',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 11,
