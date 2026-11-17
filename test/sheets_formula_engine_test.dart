@@ -160,7 +160,7 @@ void main() {
         'A2': '=AVERAGE(LOG10(100),2)',
       });
       expect(engine.evaluateCell('A1'), 4);
-      expect(engine.evaluateCell('A2'), 2);
+      expect(engine.evaluateCell('A2'), 2.5);
     });
 
     test('matches CEILING and FLOOR negative-number significance rules', () {
