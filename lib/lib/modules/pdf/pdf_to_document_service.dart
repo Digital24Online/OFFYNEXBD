@@ -121,7 +121,7 @@ class PdfToDocumentService {
     final temp = await getTemporaryDirectory();
     final extension = sourceName.split('.').last.toLowerCase();
     final imageFile = File(
-      '\${temp.path}/offynex_image_ocr_\${DateTime.now().microsecondsSinceEpoch}.$extension',
+      '${temp.path}/offynex_image_ocr_${DateTime.now().microsecondsSinceEpoch}.$extension',
     );
     await imageFile.writeAsBytes(imageBytes, flush: true);
     String recognized;
@@ -157,7 +157,7 @@ class PdfToDocumentService {
     final title = sourceName.replaceFirst(RegExp(r'\.[^.]+$'), '');
     final converted = await convert(
       pdfBytes,
-      sourceName: '\${title.isEmpty ? 'Image Document' : title}.pdf',
+      sourceName: '${title.isEmpty ? 'Image Document' : title}.pdf',
       runOcr: false,
     );
     return PdfConversionResult(
@@ -181,7 +181,7 @@ class PdfToDocumentService {
       final bytes = Uint8List.fromList(List<int>.from(images[i].bytes as List));
       if (bytes.isEmpty) continue;
       final file = File(
-        '\${temp.path}/offynex_ocr_\${DateTime.now().microsecondsSinceEpoch}_$i.png',
+        '${temp.path}/offynex_ocr_${DateTime.now().microsecondsSinceEpoch}_$i.png',
       );
       await file.writeAsBytes(bytes, flush: true);
       try {
@@ -206,7 +206,7 @@ class PdfToDocumentService {
   ) async {
     final delta = <Map<String, dynamic>>[];
     final support = await getApplicationSupportDirectory();
-    final imageDir = Directory('\${support.path}/offynexbd_images');
+    final imageDir = Directory('${support.path}/offynexbd_images');
     void addText(String value, [Map<String, dynamic>? attrs]) {
       if (value.isEmpty) return;
       delta.add(<String, dynamic>{
@@ -242,7 +242,7 @@ class PdfToDocumentService {
         final imageBytes = Uint8List.fromList(List<int>.from(element.bytes as List));
         if (imageBytes.isNotEmpty) {
           await imageDir.create(recursive: true);
-          final path = '\${imageDir.path}/offynex_pdf_\${DateTime.now().microsecondsSinceEpoch}.png';
+          final path = '${imageDir.path}/offynex_pdf_${DateTime.now().microsecondsSinceEpoch}.png';
           await File(path).writeAsBytes(imageBytes, flush: true);
           delta.add(<String, dynamic>{'insert': <String, dynamic>{'image': path}});
           addText('\n');
