@@ -361,3 +361,11 @@
 - The 31 supported functions are not full Excel formula parity. Logical, text, date/time, lookup, conditional aggregate, array/dynamic and financial functions remain unimplemented.
 - Multi-worksheet workbooks, charts, sorting/filtering, pivot tables, data validation, conditional formatting, ODS/CSV and advanced print-preview controls remain incomplete.
 - Physical Android/device and printer visual verification remains separate from CI.
+
+
+### Android APK verification for the audited application source
+- [x] Build #166 (run ID `44150127443`, commit `3e63aaf5b9dc0b7986b9e42a8ed43d5a906f5222`) — Analyze, Tests, Android Release APK build, signing-file cleanup, generated-source save and artifact upload all SUCCESS.
+- [x] Artifact: `OFFYNEXBD-Android-APK`, 49,987,088 bytes; available until 2026-11-24T18:45:21Z.
+- [x] Artifact download: https://api.github.com/repos/Digital24Online/OFFYNEXBD/actions/artifacts/14358866885/zip
+- [x] Build #167 adds only further formula edge-case tests; the application source is unchanged from Build #166. Build #167 Analyze and all Tests also passed. Its redundant APK step was still running at this checkpoint.
+- [x] Therefore the current application source has a verified successful Android APK build; Build #167's additional test-only commit remains under final workflow confirmation.
