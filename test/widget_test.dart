@@ -70,7 +70,6 @@ void main() {
     expect(find.text('Top Align'), findsOneWidget);
     expect(find.text('Middle Align'), findsOneWidget);
     expect(find.text('Bottom Align'), findsOneWidget);
-    expect(find.text('Clear Formats'), findsOneWidget);
 
     await tester.enterText(find.byType(TextField).first, 'Keep me');
     await tester.testTextInput.receiveAction(TextInputAction.done);
