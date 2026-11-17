@@ -218,3 +218,13 @@
 - Added a PDF export test for embedded font resources and supported rich-text formatting.
 - Important validation limit: embedding fonts prevents external font substitution, but the PDF package's complex-script shaping and exact visual equivalence for every Bengali conjunct/ligature must still be checked with rendered PDFs on Android and desktop. No claim of perfect glyph-shape preservation is made until that visual test passes. Arbitrary user-installed fonts are not yet supported; only the bundled Bengali fonts are selectable.
 - Status: source repair and implementation committed; CI analysis, automated tests, Android APK and real Bengali print/PDF visual verification pending.
+
+
+## OFFYNEX Sheets PDF and Print Batch — 2026-11-17
+
+- Added a dedicated Sheets PDF export service with bundled Noto Sans Bengali and Noto Serif Bengali fonts embedded in the PDF.
+- Added Save as PDF and Print actions to the File ribbon; both use the same PDF builder and A4 landscape layout.
+- PDF output includes the used cell range, displayed cell values/formula results, supported bold/italic/underline, font size/color, fill color and alignment, plus a sheet heading and page numbering.
+- Existing workbook data, local autosave and XLSX import/export code are retained.
+- Added an automated test for Bengali PDF font embedding and styled cell output.
+- Analyze, automated tests, Android APK and visual print verification are pending; exact Bengali complex-glyph shaping must be checked on rendered output before claiming perfect visual fidelity.
