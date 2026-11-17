@@ -818,6 +818,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
             _editCell(row, column - 1);
           }),
           _ribbonCommand('Bold', Icons.format_bold, () => _toggleCellStyle('bold')),
+          _ribbonCommand(_t('ফরম্যাট মুছুন', 'Clear Formats'), Icons.format_clear, _clearSelectedCellFormats),
           _ribbonCommand('Italic', Icons.format_italic, () => _toggleCellStyle('italic')),
           _ribbonCommand('Underline', Icons.format_underline, () => _toggleCellStyle('underline')),
           _ribbonCommand('Font Size', Icons.format_size, _chooseFontSize),
@@ -833,7 +834,6 @@ class _SheetsScreenState extends State<SheetsScreen> {
           _ribbonCommand('Number Format', Icons.numbers, _chooseNumberFormat),
           _ribbonCommand('Borders', Icons.border_all, _toggleCellBorder),
           _ribbonCommand(_t('সেল মুছুন', 'Clear cell'), Icons.backspace_outlined, _clearSelectedCell),
-          _ribbonCommand(_t('ফরম্যাট মুছুন', 'Clear Formats'), Icons.format_clear, _clearSelectedCellFormats),
           _ribbonCommand(_t('১০টি Row', 'Add 10 rows'), Icons.table_rows, _addRows),
           _ribbonCommand(_t('২টি Column', 'Add 2 columns'), Icons.view_column, _addColumns),
           _ribbonCommand(_t('শেষ Row বাদ', 'Remove last row'), Icons.remove, _removeLastRow),
