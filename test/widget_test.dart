@@ -98,7 +98,7 @@ void main() {
     expect((updatedStyles['A1'] as Map<String, dynamic>)['wrapText'], isTrue);
     expect((updatedStyles['A1'] as Map<String, dynamic>)['verticalAlign'], 'top');
 
-    await tester.ensureVisible(find.text('Clear Formats'));
+    await tester.ensureVisible(find.text('ফরম্যাট মুছুন'));
     await tester.tap(find.text('Clear Formats'));
     await tester.pumpAndSettle();
 
