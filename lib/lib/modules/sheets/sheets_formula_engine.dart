@@ -244,7 +244,8 @@ class _FormulaParser {
         } else if (_isAggregateFunction(name) &&
             current != null &&
             SheetsFormulaEngine._isCellReference(current!) &&
-            (position + 1 >= tokens.length || tokens[position + 1] != ':')) {
+            (position + 1 >= tokens.length ||
+                (tokens[position + 1] != ':' && tokens[position + 1] != '('))) {
           // Direct blank/text references are ignored by spreadsheet aggregate
           // functions, just like blank/text cells inside a referenced range.
           final reference = _take();
@@ -312,6 +313,9 @@ class _FormulaParser {
       case 'FLOOR':
         _expectNoExtraArguments(name, values, 2);
         if (values[1] == 0) throw const FormatException('Significance cannot be zero');
+        if (values[0] > 0 && values[1] < 0) {
+          throw const FormatException('Number and significance have different signs');
+        }
         final quotient = values[0] / values[1];
         return (name == 'CEILING' ? quotient.ceilToDouble() : quotient.floorToDouble()) * values[1];
       case 'SQRT':

@@ -154,6 +154,32 @@ void main() {
       expect(rangeEngine.evaluateCell('B4'), 3);
     });
 
+    test('supports nested LOG10 calls inside aggregate functions', () {
+      final engine = SheetsFormulaEngine({
+        'A1': '=SUM(LOG10(1000),1)',
+        'A2': '=AVERAGE(LOG10(100),2)',
+      });
+      expect(engine.evaluateCell('A1'), 4);
+      expect(engine.evaluateCell('A2'), 2);
+    });
+
+    test('matches CEILING and FLOOR negative-number significance rules', () {
+      final engine = SheetsFormulaEngine({
+        'A1': '=CEILING(-2.5,-2)',
+        'A2': '=CEILING(-2.5,2)',
+        'A3': '=FLOOR(-2.5,-2)',
+        'A4': '=FLOOR(-2.5,2)',
+        'A5': '=CEILING(2.5,-2)',
+        'A6': '=FLOOR(2.5,-2)',
+      });
+      expect(engine.evaluateCell('A1'), -4);
+      expect(engine.evaluateCell('A2'), -2);
+      expect(engine.evaluateCell('A3'), -2);
+      expect(engine.evaluateCell('A4'), -4);
+      expect(engine.evaluateCell('A5'), isNull);
+      expect(engine.evaluateCell('A6'), isNull);
+    });
+
     test('treats non-finite cell text as text, not numeric data', () {
       final engine = SheetsFormulaEngine({
         'A1': 'NaN',
