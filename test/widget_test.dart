@@ -110,4 +110,32 @@ void main() {
     expect(clearedStyles.containsKey('A1'), isFalse);
   });
 
+  testWidgets('Sheets builds distant rows only when they become visible',
+      (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({
+      'offynex_sheets_workbook_v1': jsonEncode({
+        'name': 'Sheet1',
+        'rows': 1000,
+        'columns': 12,
+        'cells': {'A1000': 'Bottom row'},
+        'styles': {},
+      }),
+    });
+
+    await tester.pumpWidget(const OFFYNEXBDApp());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('শিটস'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('sheet-cell-A1000')), findsNothing);
+
+    await tester.drag(
+      find.byKey(const ValueKey('sheets-grid-vertical')),
+      const Offset(0, -100000),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('sheet-cell-A1000')), findsOneWidget);
+  });
+
 }
