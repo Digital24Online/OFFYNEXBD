@@ -65,6 +65,29 @@ jobs:
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
           printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=upload-keystore.jks\n' "$STORE_PASSWORD" "$KEY_PASSWORD" "$KEY_ALIAS" > android/key.properties
           
+      - name: Install Android NDK (retry on corrupt download)
+        shell: bash
+        run: |
+          set -euo pipefail
+          NDK_VERSION="28.2.13676358"
+          SDKMANAGER="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/cmdline-tools" -type f -name sdkmanager 2>/dev/null | head -n 1)"
+          if [ -z "$SDKMANAGER" ]; then
+            echo "Android sdkmanager not found"
+            exit 1
+          fi
+          NDK_DIR="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/ndk/$NDK_VERSION"
+          for attempt in 1 2 3; do
+            echo "NDK install attempt $attempt/3"
+            rm -rf "$NDK_DIR"
+            yes | "$SDKMANAGER" --install "ndk;$NDK_VERSION" && break
+            if [ "$attempt" -eq 3 ]; then
+              echo "NDK installation failed after 3 attempts"
+              exit 1
+            fi
+            sleep 15
+          done
+          test -d "$NDK_DIR"
+
       - name: Build Android APK
         run: flutter build apk --release
 
