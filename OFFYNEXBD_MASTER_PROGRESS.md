@@ -333,3 +333,31 @@
 - [x] The 31-function formula-engine batch and LOG10 parser regression are now CI-verified. This does not imply full Excel formula compatibility; the remaining function families and edge cases listed in the project audit are still pending.
 - Run URL: https://github.com/Digital24Online/OFFYNEXBD/actions/runs/44145977349
 - Artifact download: https://api.github.com/repos/Digital24Online/OFFYNEXBD/actions/artifacts/14355609677/zip
+
+
+## OFFYNEX Sheets — Formula Semantics and Regression Audit — 2026-11-18
+
+### Implemented corrections
+- [x] Corrected MOD remainder sign to follow spreadsheet divisor-sign behavior for positive and negative inputs.
+- [x] Aggregate functions now ignore direct blank/text cell references as well as blanks/text inside ranges; formula errors and circular references remain errors.
+- [x] Empty MIN/MAX return zero; empty AVERAGE/MEDIAN/LARGE remain invalid.
+- [x] ROUND, ROUNDUP and ROUNDDOWN now handle negative precision, negative values, non-integer precision rejection and finite-range safeguards.
+- [x] CEILING/FLOOR now handle negative-number/significance combinations and reject positive numbers with negative significance.
+- [x] Scientific notation such as 1E3 and 2.5e-1 is parsed.
+- [x] Nested LOG10 function calls inside aggregate functions are parsed without mistaking LOG10 for a cell reference.
+- [x] Non-finite text values such as NaN/Infinity are not treated as numeric cell values.
+- [x] General number display no longer truncates calculated values to four decimal places.
+- [x] Row removal no longer mistakes a LOG10 function name for a row-10 reference, while real references such as A10 still protect the row.
+- [x] Added regression tests for all above behaviors, invalid domains, overflow, empty aggregates, formula range-size limits, and row-removal/data-display widgets.
+- [x] Updated modules/sheets/README.md to describe current implemented foundations and explicitly list major features that remain incomplete.
+
+### Latest CI verification
+- [x] Build #167 (run ID 44150323330; commit 7aa0136db371fac061a2d6f6df2fee7e7330c1d6): Flutter Analyze — SUCCESS.
+- [x] Build #167: complete automated Test Suite — SUCCESS.
+- [ ] Build #167: Android Release APK build and artifact upload — IN PROGRESS at checkpoint update; do not claim APK success until both steps complete.
+- Run URL: https://github.com/Digital24Online/OFFYNEXBD/actions/runs/44150323330
+
+### Scope limits
+- The 31 supported functions are not full Excel formula parity. Logical, text, date/time, lookup, conditional aggregate, array/dynamic and financial functions remain unimplemented.
+- Multi-worksheet workbooks, charts, sorting/filtering, pivot tables, data validation, conditional formatting, ODS/CSV and advanced print-preview controls remain incomplete.
+- Physical Android/device and printer visual verification remains separate from CI.
