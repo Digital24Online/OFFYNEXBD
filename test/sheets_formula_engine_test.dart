@@ -154,6 +154,56 @@ void main() {
       expect(rangeEngine.evaluateCell('B4'), 3);
     });
 
+    test('matches spreadsheet MOD sign rules for positive and negative divisors', () {
+      final engine = SheetsFormulaEngine({
+        'A1': '=MOD(-3,2)',
+        'A2': '=MOD(3,-2)',
+        'A3': '=MOD(-3,-2)',
+        'A4': '=MOD(4,2)',
+      });
+      expect(engine.evaluateCell('A1'), 1);
+      expect(engine.evaluateCell('A2'), -1);
+      expect(engine.evaluateCell('A3'), -1);
+      expect(engine.evaluateCell('A4'), 0);
+    });
+
+    test('aggregate functions ignore direct blank and text cell references', () {
+      final engine = SheetsFormulaEngine({
+        'A1': '',
+        'A2': 'customer',
+        'A3': '10',
+        'B1': '=SUM(A1,A2,A3)',
+        'B2': '=AVERAGE(A1,A2,A3)',
+        'B3': '=COUNT(A1,A2,A3)',
+        'B4': '=MIN(A1,A2,A3)',
+        'B5': '=MAX(A1,A2,A3)',
+        'B6': '=MEDIAN(A1,A2,A3)',
+      });
+      expect(engine.evaluateCell('B1'), 10);
+      expect(engine.evaluateCell('B2'), 10);
+      expect(engine.evaluateCell('B3'), 1);
+      expect(engine.evaluateCell('B4'), 10);
+      expect(engine.evaluateCell('B5'), 10);
+      expect(engine.evaluateCell('B6'), 10);
+    });
+
+    test('rounding functions support negative precision and negative values', () {
+      final engine = SheetsFormulaEngine({
+        'A1': '=ROUND(1234,-2)',
+        'A2': '=ROUNDUP(1234,-2)',
+        'A3': '=ROUNDDOWN(1234,-2)',
+        'A4': '=ROUNDUP(-1.231,2)',
+        'A5': '=ROUNDDOWN(-1.239,2)',
+        'A6': '=ROUND(1.25,1.5)',
+      });
+      expect(engine.evaluateCell('A1'), 1200);
+      expect(engine.evaluateCell('A2'), 1300);
+      expect(engine.evaluateCell('A3'), 1200);
+      expect(engine.evaluateCell('A4'), -1.24);
+      expect(engine.evaluateCell('A5'), -1.23);
+      expect(engine.evaluateCell('A6'), isNull);
+    });
+
     test('rejects invalid ranks, domains and argument counts', () {
       final engine = SheetsFormulaEngine({
         'A1': '=LARGE(1,2,3)', 'A2': '=SMALL(1,0)', 'A3': '=LN(0)',

@@ -238,6 +238,22 @@ class _FormulaParser {
             throw const FormatException('Invalid range end');
           }
           values.addAll(engine._readRange(start, end, visiting));
+        } else if (_isAggregateFunction(name) &&
+            current != null &&
+            SheetsFormulaEngine._isCellReference(current!) &&
+            (position + 1 >= tokens.length || tokens[position + 1] != ':')) {
+          // Direct blank/text references are ignored by spreadsheet aggregate
+          // functions, just like blank/text cells inside a referenced range.
+          final reference = _take();
+          final raw = engine.cells[reference]?.trim() ?? '';
+          if (raw.isNotEmpty &&
+              (raw.startsWith('=') || double.tryParse(raw) != null)) {
+            final value = engine._readCell(reference, visiting);
+            if (value == null) {
+              throw const FormatException('Invalid or circular cell reference');
+            }
+            values.add(value);
+          }
         } else {
           values.add(_parseAdditive());
         }
@@ -255,6 +271,7 @@ class _FormulaParser {
     if (name == 'PRODUCT') {
       return values.isEmpty ? 0 : values.fold<double>(1, (a, b) => a * b);
     }
+    if (values.isEmpty && (name == 'MIN' || name == 'MAX')) return 0;
     if (values.isEmpty) throw const FormatException('No numeric values');
 
     switch (name) {
@@ -268,21 +285,10 @@ class _FormulaParser {
         _expectNoExtraArguments(name, values, 1);
         return values.first.abs();
       case 'ROUND':
-        _expectNoExtraArguments(name, values, 2);
-        final factor = math.pow(10, values[1]).toDouble();
-        if (!factor.isFinite || factor == 0) throw const FormatException('Invalid ROUND precision');
-        return (values[0] * factor).roundToDouble() / factor;
       case 'ROUNDUP':
       case 'ROUNDDOWN':
         _expectNoExtraArguments(name, values, 2);
-        final factor = math.pow(10, values[1]).toDouble();
-        if (!factor.isFinite || factor == 0) throw const FormatException('Invalid rounding precision');
-        final scaled = values[0] * factor;
-        if (!scaled.isFinite) throw const FormatException('Rounding overflow');
-        final rounded = name == 'ROUNDUP'
-            ? (scaled.isNegative ? scaled.floorToDouble() : scaled.ceilToDouble())
-            : scaled.truncateToDouble();
-        return rounded / factor;
+        return _roundWithPrecision(values[0], values[1], name);
       case 'MEDIAN':
         final sorted = [...values]..sort();
         final middle = sorted.length ~/ 2;
@@ -313,7 +319,12 @@ class _FormulaParser {
       case 'MOD':
         _expectNoExtraArguments(name, values, 2);
         if (values[1] == 0) throw const FormatException('Division by zero');
-        return values[0] % values[1];
+        final remainder = values[0] % values[1];
+        if (remainder == 0) return 0;
+        // Excel MOD has the sign of the divisor, unlike Dart's remainder.
+        return remainder.sign == values[1].sign
+            ? remainder
+            : remainder + values[1];
       case 'INT':
         _expectNoExtraArguments(name, values, 1);
         return values.first.floorToDouble();
@@ -358,6 +369,36 @@ class _FormulaParser {
         return math.atan(values.first);
     }
     throw const FormatException('Unsupported function');
+  }
+
+  bool _isAggregateFunction(String name) => const {
+    'SUM', 'AVERAGE', 'COUNT', 'MIN', 'MAX', 'PRODUCT',
+    'MEDIAN', 'LARGE', 'SMALL',
+  }.contains(name);
+
+  double _roundWithPrecision(double number, double precision, String mode) {
+    if (!precision.isFinite || precision != precision.truncateToDouble()) {
+      throw const FormatException('Rounding precision must be an integer');
+    }
+    // Beyond IEEE-754's useful decimal range, finer precision changes nothing;
+    // coarser precision rounds every finite value to zero.
+    if (precision > 308) return number;
+    if (precision < -308) return 0;
+    final factor = math.pow(10, precision).toDouble();
+    if (factor == 0) return 0;
+    if (!factor.isFinite) return number;
+    final scaled = number * factor;
+    if (!scaled.isFinite) return number;
+    final rounded = switch (mode) {
+      'ROUNDUP' => scaled.isNegative
+          ? scaled.floorToDouble()
+          : scaled.ceilToDouble(),
+      'ROUNDDOWN' => scaled.truncateToDouble(),
+      _ => scaled.roundToDouble(),
+    };
+    final result = rounded / factor;
+    if (!result.isFinite) throw const FormatException('Rounding overflow');
+    return result;
   }
 
   void _expectNoExtraArguments(String name, List<double> values, int count) {
