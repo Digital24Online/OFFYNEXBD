@@ -252,6 +252,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
       _columnCount--;
       if (_selectedCell != null && cellPattern.hasMatch(_selectedCell!)) {
         _selectedCell = null;
+        _formulaBarController.clear();
       }
     });
     await _saveWorkbook();
