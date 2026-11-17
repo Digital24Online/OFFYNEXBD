@@ -11,10 +11,12 @@ void main() {
     final sans = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
     final serif = await rootBundle.load('assets/fonts/NotoSerifBengali.ttf');
     const complexBangla = 'ক্ষ্ম ঙ্ক্ষ ত্ত্ব কর্ম ধর্ম প্রয়োজন কি কোথায়';
+    const englishText = 'English mixed text — Office 365';
     final bytes = await SheetsPdfExportService.build(
       sheetName: 'বাংলা হিসাব',
       values: [
         ['নাম', 'টাকার পরিমাণ'],
+        [englishText, 'Office 365'],
         ['রহিম', '১২৫০.৫০'],
         [complexBangla, '৳১২৫০'],
       ],
@@ -44,5 +46,6 @@ void main() {
     expect(extracted, contains('বাংলা হিসাব'));
     expect(extracted, contains(complexBangla));
     expect(extracted, contains('৳১২৫০'));
+    expect(extracted, contains(englishText));
   });
 }

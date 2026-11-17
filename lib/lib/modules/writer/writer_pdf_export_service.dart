@@ -21,7 +21,7 @@ class WriterPdfExportService {
     final sansFont = pw.Font.ttf(sansFontData);
     final serifFont = pw.Font.ttf(serifFontData);
     final widgets = <pw.Widget>[
-      pw.Text(title, style: pw.TextStyle(font: sansFont, fontSize: 18)),
+      pw.Text(title, style: pw.TextStyle(font: sansFont, fontFallback: [pw.Font.helvetica()], fontSize: 18)),
       pw.SizedBox(height: 14),
     ];
     final spans = <pw.TextSpan>[];
@@ -39,6 +39,7 @@ class WriterPdfExportService {
               : null;
       return pw.TextStyle(
         font: fontFor(attributes),
+        fontFallback: [pw.Font.helvetica()],
         fontSize: size,
         fontWeight: attributes['bold'] == true
             ? pw.FontWeight.bold
@@ -180,6 +181,7 @@ class WriterPdfExportService {
                   value,
                   style: pw.TextStyle(
                     font: font,
+                    fontFallback: [pw.Font.helvetica()],
                     fontSize: 9,
                     fontWeight: rowIndex == 0 && data['headerRow'] == true
                         ? pw.FontWeight.bold

@@ -62,6 +62,7 @@ class SheetsPdfExportService {
               overflow: pw.TextOverflow.clip,
               style: pw.TextStyle(
                 font: font,
+                fontFallback: [pw.Font.helvetica()],
                 fontSize: size,
                 color: color,
                 fontWeight: style['bold'] == true ? pw.FontWeight.bold : pw.FontWeight.normal,
@@ -80,14 +81,14 @@ class SheetsPdfExportService {
       header: (context) => pw.Container(
         alignment: pw.Alignment.centerLeft,
         padding: const pw.EdgeInsets.only(bottom: 8),
-        child: pw.Text(sheetName, style: pw.TextStyle(font: sans, fontSize: 13, fontWeight: pw.FontWeight.bold)),
+        child: pw.Text(sheetName, style: pw.TextStyle(font: sans, fontFallback: [pw.Font.helvetica()], fontSize: 13, fontWeight: pw.FontWeight.bold)),
       ),
       footer: (context) => pw.Container(
         alignment: pw.Alignment.centerRight,
         padding: const pw.EdgeInsets.only(top: 8),
         child: pw.Text(
           'Page ${context.pageNumber} of ${context.pagesCount}',
-          style: pw.TextStyle(font: sans, fontSize: 8, color: PdfColors.grey700),
+          style: pw.TextStyle(font: sans, fontFallback: [pw.Font.helvetica()], fontSize: 8, color: PdfColors.grey700),
         ),
       ),
       build: (context) => [

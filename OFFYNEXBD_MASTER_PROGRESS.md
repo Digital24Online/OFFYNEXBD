@@ -246,3 +246,13 @@
 - Expanded Sheets PDF rendering to respect the workbook's gridline visibility, individual cell borders, wrap/ellipsis behavior and vertical alignment, in addition to existing font, color, fill and horizontal alignment.
 - Expanded Writer and Sheets PDF tests with complex Bengali conjunct/reph/matra samples and PDF text extraction checks.
 - Current batch status: source changes prepared; GitHub Analyze, automated tests and Android APK verification are pending. Visual print inspection on actual Android/printer devices remains a separate final acceptance check; no claim is made about every third-party font or printer.
+
+
+## Build #144–#146 Failure Analysis and Mixed-script PDF Fix — 2026-11-17
+
+- Build #144 failed at Analyze: the PDF TextOverflow enum in this package has no `ellipsis`; Build #145 repeated that same failure because it started before the correction reached the branch.
+- Build #146 passed Flutter Analyze but failed one Writer PDF test (25 passed, 1 failed). Sheets Bengali PDF test passed.
+- Exact failure: Writer mixed English text was extracted as Bengali-looking mojibake (`ঊহমষরংয সরীবফ ঃবীঃ`) instead of `English mixed text`.
+- Root cause: the embedded Noto Sans Bengali / Noto Serif Bengali fonts do not cover every Latin/Unicode symbol; a Bengali font alone is not a complete fallback chain. The PDF package documentation explicitly requires fallback fonts for characters not covered by Bengali faces.
+- Corrective batch: add Helvetica as a Latin/symbol fallback to Writer title, rich-text spans and table cells, and to Sheets cells/header/footer. Keep Noto Bengali as the primary font for Bengali shaping. Expand Writer and Sheets tests to assert mixed Bengali/English round-trip and a regression check against the mojibake string.
+- Current verification status: changes committed; a new GitHub Actions run must pass Analyze, all tests and Android APK build/upload. Actual Android printer/viewer visual inspection remains pending.

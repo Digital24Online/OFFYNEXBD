@@ -11,12 +11,13 @@ void main() {
     final sans = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
     final serif = await rootBundle.load('assets/fonts/NotoSerifBengali.ttf');
     const complexBangla = 'ক্ষ্ম ঙ্ক্ষ ত্ত্ব কর্ম ধর্ম প্রয়োজন কি কোথায়';
+    const englishText = 'English mixed text — Office 365';
     final bytes = await WriterPdfExportService.build(
       title: 'বাংলা ডকুমেন্ট',
       delta: [
         {'insert': complexBangla, 'attributes': {'bold': true, 'font': 'serif', 'size': '24', 'color': '#123456'}},
         {'insert': '\n', 'attributes': {'align': 'center'}},
-        {'insert': 'English mixed text', 'attributes': {'italic': true, 'underline': true}},
+        {'insert': englishText, 'attributes': {'italic': true, 'underline': true}},
         {'insert': '\n'},
       ],
       sansFontData: sans,
@@ -30,6 +31,8 @@ void main() {
     final extracted = BanglaPdfExtractor.extract(bytes).text;
     expect(extracted, contains('বাংলা ডকুমেন্ট'));
     expect(extracted, contains(complexBangla));
-    expect(extracted, contains('English mixed text'));
+    expect(extracted, contains(englishText));
+    expect(extracted, contains('ক্ষ্ম'));
+    expect(extracted, isNot(contains('ঊহমষরংয')));
   });
 }
