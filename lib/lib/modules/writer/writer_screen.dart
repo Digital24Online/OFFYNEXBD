@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,6 +11,9 @@ import 'writer_table.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 const String documentsKey = 'offynex_writer_documents';
 
@@ -305,6 +310,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
 
   // Writer-এর অতিরিক্ত নথি, রিভিউ ও ভিউ সেটিংস।
   double zoomLevel = 1.0;
+  String viewFit = 'Page';
   bool showRuler = true;
   bool showStatusBar = true;
   bool showPageBorder = true;
@@ -329,6 +335,9 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
       zoomLevel = (savedMeta['zoom'] is num)
           ? (savedMeta['zoom'] as num).toDouble().clamp(0.6, 1.5).toDouble()
           : 1.0;
+      viewFit = ['Page', 'Width', 'Actual'].contains(savedMeta['viewFit'])
+          ? savedMeta['viewFit'] as String
+          : 'Page';
       showRuler = savedMeta['showRuler'] is bool
           ? savedMeta['showRuler'] as bool : true;
       showStatusBar = savedMeta['showStatusBar'] is bool
@@ -504,6 +513,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
 
   Map<String, dynamic> _writerMetaToJson() => {
         'zoom': zoomLevel,
+        'viewFit': viewFit,
         'showRuler': showRuler,
         'showStatusBar': showStatusBar,
         'showPageBorder': showPageBorder,
@@ -1331,6 +1341,8 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   
   Widget buildFileRibbon() => _ribbonPanel([
         _ribbonButton(Icons.save, 'Save', () async { await saveDocument(); _showMessage('সংরক্ষণ সম্পন্ন।'); }),
+        _ribbonButton(Icons.preview_outlined, 'Print Preview', openPrintPreview),
+        _ribbonButton(Icons.print_outlined, 'Print', printDocument),
         _ribbonButton(Icons.drive_file_rename_outline, 'Rename', renameCurrentDocument),
         _ribbonButton(Icons.copy, 'Copy Text', copyDocumentText),
         _ribbonButton(Icons.info_outline, 'Document Info', showDocumentInfo),
@@ -1397,6 +1409,11 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
       ]);
 
   Widget buildViewRibbon() => _ribbonPanel([
+        Wrap(spacing: 6, children: [
+          ChoiceChip(label: const Text('Full Page'), selected: viewFit == 'Page', onSelected: (_) => _setViewFit('Page')),
+          ChoiceChip(label: const Text('Page Width'), selected: viewFit == 'Width', onSelected: (_) => _setViewFit('Width')),
+          ChoiceChip(label: const Text('100%'), selected: viewFit == 'Actual', onSelected: (_) => _setViewFit('Actual')),
+        ]),
         SizedBox(
           width: 180,
           child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -1759,6 +1776,92 @@ Future<void> showCustomFontSizeDialog() async {
       return Size(selected.height, selected.width);
     }
     return selected;
+  }
+
+  PdfPageFormat get _selectedPdfFormat {
+    final page = _pageDimensions;
+    return PdfPageFormat(page.width / 96 * 72, page.height / 96 * 72);
+  }
+
+  Future<Uint8List> _buildWriterPdf(PdfPageFormat format) async {
+    final fontData = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
+    final bengaliFont = pw.Font.ttf(fontData);
+    final plainText = quillController.document.toPlainText().replaceAll('\\r', '');
+    final paragraphs = plainText.split('\\n');
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: format,
+        margin: pw.EdgeInsets.fromLTRB(
+          marginLeft * 72,
+          marginTop * 72,
+          marginRight * 72,
+          marginBottom * 72,
+        ),
+        theme: pw.ThemeData.withFont(base: bengaliFont),
+        build: (context) => [
+          pw.Text(
+            titleController.text.trim().isEmpty
+                ? 'Untitled Document'
+                : titleController.text.trim(),
+            style: pw.TextStyle(font: bengaliFont, fontSize: 18),
+          ),
+          pw.SizedBox(height: 16),
+          ...paragraphs.map((paragraph) => paragraph.isEmpty
+              ? pw.SizedBox(height: 8)
+              : pw.Padding(
+                  padding: const pw.EdgeInsets.only(bottom: 5),
+                  child: pw.Text(
+                    paragraph,
+                    style: pw.TextStyle(font: bengaliFont, fontSize: 11),
+                  ),
+                )),
+        ],
+      ),
+    );
+    return pdf.save();
+  }
+
+  Future<void> openPrintPreview() async {
+    await saveDocument();
+    if (!mounted) return;
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _WriterPrintPreviewScreen(
+          fileName: titleController.text.trim().isEmpty
+              ? 'OFFYNEXBD-Document'
+              : titleController.text.trim(),
+          initialPageFormat: _selectedPdfFormat,
+          buildPdf: _buildWriterPdf,
+        ),
+      ),
+    );
+  }
+
+  Future<void> printDocument() async {
+    await saveDocument();
+    if (!mounted) return;
+    try {
+      await Printing.layoutPdf(
+        name: titleController.text.trim().isEmpty
+            ? 'OFFYNEXBD-Document.pdf'
+            : '${titleController.text.trim()}.pdf',
+        format: _selectedPdfFormat,
+        onLayout: _buildWriterPdf,
+      );
+    } catch (error) {
+      _showMessage('প্রিন্ট তৈরি করা যায়নি: $error');
+    }
+  }
+
+  void _setViewFit(String mode) {
+    setState(() {
+      viewFit = mode;
+      zoomLevel = 1.0;
+    });
+    scheduleSave();
   }
 
   void _saveLayoutChange(VoidCallback change) {
@@ -2420,18 +2523,30 @@ Future<void> insertWriterImage() async {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final page = _pageDimensions;
-                final availableWidth = constraints.maxWidth > 24
-                    ? constraints.maxWidth - 24
-                    : constraints.maxWidth;
-                final zoomedWidth = page.width * zoomLevel;
-                final displayWidth = zoomedWidth < availableWidth
-                    ? zoomedWidth
-                    : availableWidth;
-                final scale = displayWidth / page.width;
+                final availableWidth = math.max(1.0, constraints.maxWidth - 24);
+                final fitScale = math.min(
+                  availableWidth / page.width,
+                  constraints.maxHeight / page.height,
+                );
+                final baseScale = viewFit == 'Width'
+                    ? availableWidth / page.width
+                    : viewFit == 'Actual'
+                        ? 1.0
+                        : fitScale;
+                final scale = (baseScale * zoomLevel).clamp(0.15, 2.0).toDouble();
+                final displayWidth = page.width * scale;
+                final displayHeight = page.height * scale;
 
-                return Center(
-                  child: Container(
+                return SingleChildScrollView(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(
+                      width: math.max(availableWidth, displayWidth),
+                      height: displayHeight + 24,
+                      child: Center(
+                        child: Container(
                     width: displayWidth,
+                    height: displayHeight,
                     margin: const EdgeInsets.symmetric(vertical: 12),
                     padding: EdgeInsets.fromLTRB(
                       marginLeft * 96 * scale,
@@ -2464,6 +2579,9 @@ Future<void> insertWriterImage() async {
                           ),
                           WriterImageEmbedBuilder(),
                         ],
+                      ),
+                    ),
+                        ),
                       ),
                     ),
                   ),
@@ -2512,6 +2630,35 @@ Future<void> insertWriterImage() async {
 }
 
     
+class _WriterPrintPreviewScreen extends StatelessWidget {
+  final String fileName;
+  final PdfPageFormat initialPageFormat;
+  final Future<Uint8List> Function(PdfPageFormat) buildPdf;
+
+  const _WriterPrintPreviewScreen({
+    required this.fileName,
+    required this.initialPageFormat,
+    required this.buildPdf,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Print Preview')),
+      body: PdfPreview(
+        build: buildPdf,
+        initialPageFormat: initialPageFormat,
+        canChangePageFormat: true,
+        canChangeOrientation: true,
+        allowPrinting: true,
+        allowSharing: true,
+        pdfFileName: '$fileName.pdf',
+        maxPageWidth: 700,
+      ),
+    );
+  }
+}
+
 class WriterImageEmbedBuilder extends EmbedBuilder {
   @override
   String get key => BlockEmbed.imageType;
