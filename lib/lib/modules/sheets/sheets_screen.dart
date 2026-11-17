@@ -33,6 +33,11 @@ class _SheetsScreenState extends State<SheetsScreen> {
   String _sheetName = 'Sheet1';
   String? _selectedCell;
 
+  final TextEditingController _formulaBarController = TextEditingController();
+  int _activeRibbonTab = 0;
+  bool _showGridlines = true;
+  double _zoom = 1.0;
+
   bool get _bn => widget.isBangla;
 
   String _t(String bn, String en) => _bn ? bn : en;
@@ -379,7 +384,251 @@ class _SheetsScreenState extends State<SheetsScreen> {
   void dispose() {
     _horizontalController.dispose();
     _verticalController.dispose();
+    _formulaBarController.dispose();
     super.dispose();
+  }
+
+  void _selectCell(String key) {
+    setState(() {
+      _selectedCell = key;
+      _formulaBarController.text = _cells[key] ?? '';
+      _formulaBarController.selection = TextSelection.collapsed(
+        offset: _formulaBarController.text.length,
+      );
+    });
+  }
+
+  Future<void> _commitFormulaBar() async {
+    final key = _selectedCell;
+    if (key == null) return;
+    final value = _formulaBarController.text.trim();
+    setState(() {
+      if (value.isEmpty) {
+        _cells.remove(key);
+      } else {
+        _cells[key] = value;
+      }
+    });
+    await _saveWorkbook();
+  }
+
+  Future<void> _clearSelectedCell() async {
+    final key = _selectedCell;
+    if (key == null) return;
+    setState(() {
+      _cells.remove(key);
+      _formulaBarController.clear();
+    });
+    await _saveWorkbook();
+  }
+
+  Future<void> _insertFunction(String function) async {
+    final key = _selectedCell;
+    if (key == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t('আগে একটি Cell নির্বাচন করুন।', 'Select a cell first.'))),
+      );
+      return;
+    }
+    final controller = TextEditingController(text: 'A1:A5');
+    final range = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('$function(…)'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: InputDecoration(
+            labelText: _t('Cell বা Range', 'Cell or range'),
+            hintText: 'A1:A5',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(_t('বাতিল', 'Cancel')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, controller.text.trim()),
+            child: Text(_t('যোগ করুন', 'Insert')),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (range == null || range.isEmpty || !mounted) return;
+    final formula = '=$function($range)';
+    setState(() {
+      _cells[key] = formula;
+      _formulaBarController.text = formula;
+    });
+    await _saveWorkbook();
+  }
+
+  Widget _ribbonCommand(String label, IconData icon, VoidCallback action) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 4),
+      child: OutlinedButton.icon(
+        onPressed: action,
+        icon: Icon(icon, size: 17),
+        label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: const Color(0xFF263B55),
+          side: const BorderSide(color: Color(0xFFDCE3EC)),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRibbon() {
+    const tabs = ['File', 'Home', 'Insert', 'Formulas', 'Data', 'View'];
+    final labels = _bn ? ['ফাইল', 'হোম', 'ইনসার্ট', 'ফর্মুলা', 'ডেটা', 'ভিউ'] : tabs;
+    final commands = <Widget>[];
+    switch (_activeRibbonTab) {
+      case 0:
+        commands.addAll([
+          _ribbonCommand('Import XLSX', Icons.file_open, _importWorkbook),
+          _ribbonCommand('Export XLSX', Icons.file_download, _exportWorkbook),
+          _ribbonCommand(_t('নাম পরিবর্তন', 'Rename sheet'), Icons.drive_file_rename_outline, _renameSheet),
+          _ribbonCommand(_t('শিট খালি', 'Clear sheet'), Icons.delete_outline, _clearSheet),
+        ]);
+        break;
+      case 1:
+        commands.addAll([
+          _ribbonCommand(_t('সেল সম্পাদনা', 'Edit cell'), Icons.edit, () {
+            final key = _selectedCell;
+            if (key == null) return;
+            final match = RegExp(r'^([A-Z]+)([1-9]\d*)$').firstMatch(key);
+            if (match == null) return;
+            final row = int.parse(match.group(2)!) - 1;
+            var column = 0;
+            for (final rune in match.group(1)!.runes) {
+              column = column * 26 + rune - 64;
+            }
+            _editCell(row, column - 1);
+          }),
+          _ribbonCommand(_t('সেল মুছুন', 'Clear cell'), Icons.backspace_outlined, _clearSelectedCell),
+          _ribbonCommand(_t('১০টি Row', 'Add 10 rows'), Icons.table_rows, _addRows),
+          _ribbonCommand(_t('২টি Column', 'Add 2 columns'), Icons.view_column, _addColumns),
+          _ribbonCommand(_t('শেষ Row বাদ', 'Remove last row'), Icons.remove, _removeLastRow),
+          _ribbonCommand(_t('শেষ Column বাদ', 'Remove last column'), Icons.remove, _removeLastColumn),
+        ]);
+        break;
+      case 2:
+        commands.addAll([
+          _ribbonCommand(_t('Row যোগ', 'Add rows'), Icons.add, _addRows),
+          _ribbonCommand(_t('Column যোগ', 'Add columns'), Icons.view_column, _addColumns),
+          _ribbonCommand(_t('শিটের নাম', 'Sheet name'), Icons.drive_file_rename_outline, _renameSheet),
+        ]);
+        break;
+      case 3:
+        for (final function in ['SUM', 'AVERAGE', 'COUNT', 'MIN', 'MAX']) {
+          commands.add(_ribbonCommand(function, Icons.functions, () => _insertFunction(function)));
+        }
+        break;
+      case 4:
+        commands.addAll([
+          _ribbonCommand('Import XLSX', Icons.file_open, _importWorkbook),
+          _ribbonCommand('Export XLSX', Icons.file_download, _exportWorkbook),
+          _ribbonCommand(_t('সব মুছুন', 'Clear all'), Icons.delete_outline, _clearSheet),
+        ]);
+        break;
+      case 5:
+        commands.add(Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Text(_t('Gridlines', 'Gridlines')),
+            Switch(value: _showGridlines, onChanged: (value) => setState(() => _showGridlines = value)),
+            const SizedBox(width: 10),
+            const Text('Zoom'),
+            SizedBox(
+              width: 140,
+              child: Slider(
+                value: _zoom,
+                min: 0.75,
+                max: 1.5,
+                divisions: 15,
+                onChanged: (value) => setState(() => _zoom = value),
+              ),
+            ),
+          ]),
+        ));
+        break;
+    }
+    return Material(
+      color: Colors.white,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(children: List.generate(tabs.length, (index) {
+            final selected = _activeRibbonTab == index;
+            return InkWell(
+              onTap: () => setState(() => _activeRibbonTab = index),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 12),
+                decoration: BoxDecoration(
+                  color: selected ? const Color(0xFFEAF2FC) : Colors.white,
+                  border: Border(bottom: BorderSide(
+                    color: selected ? const Color(0xFF1677E8) : Colors.transparent,
+                    width: 3,
+                  )),
+                ),
+                child: Text(labels[index], style: TextStyle(
+                  fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+                  color: selected ? const Color(0xFF1265C5) : const Color(0xFF34445A),
+                )),
+              ),
+            );
+          })),
+        ),
+        const Divider(height: 1, color: Color(0xFFE5EAF1)),
+        SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: commands)),
+        const Divider(height: 1, color: Color(0xFFE5EAF1)),
+      ]),
+    );
+  }
+
+  Widget _buildFormulaBar() {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
+      child: Row(children: [
+        Container(
+          width: 62,
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(vertical: 11),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF1F4F8),
+            border: Border.all(color: const Color(0xFFDCE3EC)),
+            borderRadius: BorderRadius.circular(5),
+          ),
+          child: Text(_selectedCell ?? '—', style: const TextStyle(fontWeight: FontWeight.bold)),
+        ),
+        const SizedBox(width: 8),
+        const Text('fx', style: TextStyle(fontWeight: FontWeight.bold, fontStyle: FontStyle.italic)),
+        const SizedBox(width: 8),
+        Expanded(child: TextField(
+          controller: _formulaBarController,
+          enabled: _selectedCell != null,
+          onSubmitted: (_) => _commitFormulaBar(),
+          minLines: 1,
+          maxLines: 1,
+          decoration: InputDecoration(
+            hintText: _t('Cell নির্বাচন করে মান বা Formula লিখুন', 'Select a cell and enter a value or formula'),
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(5)),
+          ),
+        )),
+        IconButton(
+          tooltip: _t('প্রয়োগ করুন', 'Apply'),
+          onPressed: _selectedCell == null ? null : _commitFormulaBar,
+          icon: const Icon(Icons.check_circle_outline, color: Color(0xFF159B68)),
+        ),
+      ]),
+    );
   }
 
   @override
@@ -391,29 +640,9 @@ class _SheetsScreenState extends State<SheetsScreen> {
         backgroundColor: Colors.white,
         actions: [
           IconButton(
-            tooltip: _t('XLSX Import', 'Import XLSX'),
-            onPressed: _importWorkbook,
-            icon: const Icon(Icons.file_open_outlined),
-          ),
-          IconButton(
-            tooltip: _t('XLSX Export', 'Export XLSX'),
-            onPressed: _exportWorkbook,
-            icon: const Icon(Icons.file_download_outlined),
-          ),
-          IconButton(
-            tooltip: _t('শিটের নাম পরিবর্তন', 'Rename sheet'),
-            onPressed: _renameSheet,
-            icon: const Icon(Icons.drive_file_rename_outline),
-          ),
-          IconButton(
             tooltip: _t('সংরক্ষণ', 'Save'),
             onPressed: _saveWorkbook,
             icon: const Icon(Icons.save_outlined),
-          ),
-          IconButton(
-            tooltip: _t('সব মুছুন', 'Clear all'),
-            onPressed: _clearSheet,
-            icon: const Icon(Icons.delete_outline),
           ),
         ],
       ),
@@ -421,54 +650,23 @@ class _SheetsScreenState extends State<SheetsScreen> {
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
+                _buildRibbon(),
+                _buildFormulaBar(),
                 Container(
-                  color: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  child: Wrap(
-                    spacing: 6,
-                    runSpacing: 4,
-                    children: [
-                      OutlinedButton.icon(
-                        onPressed: _addRows,
-                        icon: const Icon(Icons.add, size: 17),
-                        label: Text(_t('১০টি Row', '10 Rows')),
-                      ),
-                      OutlinedButton.icon(
-                        onPressed: _addColumns,
-                        icon: const Icon(Icons.add, size: 17),
-                        label: Text(_t('২টি Column', '2 Columns')),
-                      ),
-                      OutlinedButton.icon(
-                        onPressed: _rowCount > 1 ? _removeLastRow : null,
-                        icon: const Icon(Icons.remove, size: 17),
-                        label: Text(_t('শেষ Row বাদ', 'Remove last row')),
-                      ),
-                      OutlinedButton.icon(
-                        onPressed: _columnCount > 1 ? _removeLastColumn : null,
-                        icon: const Icon(Icons.remove, size: 17),
-                        label: Text(_t('শেষ Column বাদ', 'Remove last column')),
-                      ),
-                      Chip(
-                        avatar: Icon(_saved ? Icons.cloud_done_outlined : Icons.sync, size: 16),
-                        label: Text(_saved ? _t('সংরক্ষিত', 'Saved') : _t('সংরক্ষণ হচ্ছে', 'Saving')),
-                      ),
-                    ],
-                  ),
+                  width: double.infinity,
+                  color: const Color(0xFFF7F9FC),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                  child: Row(children: [
+                    Icon(_saved ? Icons.cloud_done_outlined : Icons.sync, size: 16,
+                        color: _saved ? const Color(0xFF159B68) : Colors.orange),
+                    const SizedBox(width: 6),
+                    Text(_saved ? _t('সংরক্ষিত', 'Saved') : _t('সংরক্ষণ হচ্ছে', 'Saving'),
+                        style: const TextStyle(fontSize: 12)),
+                    const Spacer(),
+                    Text('$_rowCount × $_columnCount',
+                        style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                  ]),
                 ),
-                if (_selectedCell != null)
-                  Container(
-                    width: double.infinity,
-                    color: const Color(0xFFEAF2FC),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    child: Row(
-                      children: [
-                        Text(_selectedCell!, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        const SizedBox(width: 12),
-                        Expanded(child: Text(_cells[_selectedCell!] ?? '', maxLines: 1, overflow: TextOverflow.ellipsis)),
-                        Text('= ${_displayValue(_selectedCell!)}', style: const TextStyle(fontWeight: FontWeight.w600)),
-                      ],
-                    ),
-                  ),
                 Expanded(
                   child: Scrollbar(
                     controller: _verticalController,
@@ -485,16 +683,16 @@ class _SheetsScreenState extends State<SheetsScreen> {
                           child: DataTable(
                             horizontalMargin: 8,
                             columnSpacing: 4,
-                            headingRowHeight: 38,
-                            dataRowMinHeight: 42,
-                            dataRowMaxHeight: 48,
+                            headingRowHeight: 38 * _zoom,
+                            dataRowMinHeight: 42 * _zoom,
+                            dataRowMaxHeight: 48 * _zoom,
                             headingRowColor: WidgetStateProperty.all(const Color(0xFFE5ECF5)),
                             columns: [
                               DataColumn(label: SizedBox(width: 42, child: Center(child: Text('#')))),
                               for (var column = 0; column < _columnCount; column++)
                                 DataColumn(
                                   label: SizedBox(
-                                    width: 104,
+                                    width: 104 * _zoom,
                                     child: Center(
                                       child: Text(_columnName(column), style: const TextStyle(fontWeight: FontWeight.bold)),
                                     ),
@@ -509,20 +707,24 @@ class _SheetsScreenState extends State<SheetsScreen> {
                                     for (var column = 0; column < _columnCount; column++)
                                       DataCell(
                                         SizedBox(
-                                          width: 104,
+                                          width: 104 * _zoom,
                                           child: InkWell(
-                                            onTap: () => _editCell(row, column),
+                                            onTap: () => _selectCell(_cellKey(row, column)),
+                                            onLongPress: () => _editCell(row, column),
                                             child: Container(
                                               alignment: Alignment.centerLeft,
                                               padding: const EdgeInsets.symmetric(horizontal: 8),
                                               decoration: BoxDecoration(
                                                 color: _selectedCell == _cellKey(row, column) ? const Color(0xFFDCEBFF) : Colors.white,
-                                                border: Border.all(color: const Color(0xFFE1E6ED), width: 0.5),
+                                                border: _showGridlines
+                                                    ? Border.all(color: const Color(0xFFE1E6ED), width: 0.5)
+                                                    : Border.all(color: Colors.transparent, width: 0.5),
                                               ),
                                               child: Text(
                                                 _displayValue(_cellKey(row, column)),
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(fontSize: 13 * _zoom),
                                               ),
                                             ),
                                           ),
@@ -555,4 +757,5 @@ class _SheetsScreenState extends State<SheetsScreen> {
             ),
     );
   }
+
 }
