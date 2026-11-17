@@ -468,10 +468,8 @@ class _SheetsScreenState extends State<SheetsScreen> {
         builder: (dialogContext) => AlertDialog(
           title: Text(_t('CSV Import করবেন?', 'Import CSV?')),
           content: Text(_t(
-            rows.length.toString() + 'টি Row ও ' + columns.toString() +
-                'টি Column বর্তমান শিটের জায়গা নেবে। CSV-তে Cell formatting থাকে না; বর্তমান তথ্য ও Formatting বদলে যাবে।',
-            rows.length.toString() + ' rows and ' + columns.toString() +
-                ' columns will replace the current sheet. CSV does not contain cell formatting; current data and formatting will be replaced.',
+            '${rows.length}টি Row ও ${columns}টি Column বর্তমান শিটের জায়গা নেবে। CSV-তে Cell formatting থাকে না; বর্তমান তথ্য ও Formatting বদলে যাবে.',
+            '${rows.length} rows and ${columns} columns will replace the current sheet. CSV does not contain cell formatting; current data and formatting will be replaced.',
           )),
           actions: [
             TextButton(
@@ -537,7 +535,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
       final bytes = Uint8List.fromList(utf8.encode(SheetsCsvCodec.encode(values)));
       final safeName = _sheetName.trim().isEmpty ? 'OFFYNEXBD-Sheet' : _sheetName.trim();
       final saved = await FilePicker.saveFile(
-        fileName: safeName.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_') + '.csv',
+        fileName: '${safeName.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_')}.csv',
         bytes: bytes,
         mimeType: 'text/csv',
         dialogTitle: _t('CSV ফাইল সংরক্ষণ', 'Save CSV file'),
