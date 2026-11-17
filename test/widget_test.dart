@@ -110,6 +110,47 @@ void main() {
     expect(clearedStyles.containsKey('A1'), isFalse);
   });
 
+  testWidgets('Sheets vertical alignment works without Wrap Text',
+      (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(const OFFYNEXBDApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('শিটস'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('হোম'));
+    await tester.pumpAndSettle();
+
+    final cellFinder = find.byKey(const ValueKey('sheet-cell-A1'));
+    await tester.tap(cellFinder);
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Top Align'));
+    await tester.tap(find.text('Top Align'));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Align Right'));
+    await tester.tap(find.text('Align Right'));
+    await tester.pumpAndSettle();
+
+    final cellContainer = find.ancestor(
+      of: cellFinder,
+      matching: find.byType(Container),
+    ).first;
+    expect(
+      tester.widget<Container>(cellContainer).alignment,
+      Alignment.topRight,
+    );
+
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('offynex_sheets_workbook_v1');
+    final workbook = jsonDecode(raw!) as Map<String, dynamic>;
+    final styles = workbook['styles'] as Map<String, dynamic>;
+    expect((styles['A1'] as Map<String, dynamic>)['wrapText'], isNot(true));
+    expect((styles['A1'] as Map<String, dynamic>)['verticalAlign'], 'top');
+    expect((styles['A1'] as Map<String, dynamic>)['align'], 'right');
+  });
+
   testWidgets('Sheets builds distant rows only when they become visible',
       (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({
