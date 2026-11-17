@@ -223,7 +223,7 @@ void main() {
     await tester.tap(find.text('Align Right'));
     await tester.pumpAndSettle();
 
-    final cellContainer = find.ancestor(
+    final cellContainer = find.descendant(
       of: cellFinder,
       matching: find.byType(Container),
     ).first;
