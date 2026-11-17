@@ -59,7 +59,7 @@ class SheetsPdfExportService {
                 _ => pw.TextAlign.left,
               },
               maxLines: style['wrapText'] == true ? 3 : 1,
-              overflow: pw.TextOverflow.ellipsis,
+              overflow: pw.TextOverflow.clip,
               style: pw.TextStyle(
                 font: font,
                 fontSize: size,
