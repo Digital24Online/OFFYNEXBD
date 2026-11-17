@@ -284,7 +284,7 @@ class _FormulaParser {
         return sorted.length.isOdd ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
       case 'LARGE':
       case 'SMALL':
-        _expectNoExtraArguments(name, values, 2);
+        _expectAtLeastArguments(name, values, 2);
         final rank = values.last;
         final candidates = values.sublist(0, values.length - 1);
         if (rank < 1 || rank > candidates.length || rank != rank.roundToDouble()) {
@@ -358,6 +358,12 @@ class _FormulaParser {
   void _expectNoExtraArguments(String name, List<double> values, int count) {
     if (values.length != count) {
       throw FormatException('$name expects $count argument(s)');
+    }
+  }
+
+  void _expectAtLeastArguments(String name, List<double> values, int count) {
+    if (values.length < count) {
+      throw FormatException('$name expects at least $count arguments');
     }
   }
 }

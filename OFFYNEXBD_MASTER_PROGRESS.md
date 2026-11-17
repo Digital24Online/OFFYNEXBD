@@ -299,3 +299,11 @@
 - Build #151 failed at Analyze Project, not in formula tests: lint prefer_is_empty at sheets_formula_engine.dart LOG argument validation.
 - Corrected the empty-list check to values.isEmpty; the full LOG argument/domain validation remains intact.
 - Build #152 was started before this lint correction and must not be treated as verification of the corrected code. A new integrated validation run is required.
+
+
+## Sheets Formula Validation — Build #153 Failure and LARGE/SMALL Correction — 2026-11-17
+
+- Build #153 (run ID `44142906724`, commit `b0c29af86d2092f9aa66ea4fdb592c984d21de07`) passed Flutter Analyze (`No issues found`) but automated tests reported 27 passed and 1 failed; Android APK build/upload did not run.
+- Exact failing assertion: `LARGE(1,3,5,7,2)` returned null instead of 5. Root cause: the parser correctly collects multiple data values plus the final rank, but the implementation incorrectly validated LARGE/SMALL as requiring exactly two flattened values.
+- Corrected validation to require at least two values (one or more data values plus rank), preserving rank/domain validation. Added coverage for both LARGE and SMALL with multi-value arguments and cell ranges.
+- Analyze, the full test suite, Android APK build and artifact upload remain pending; do not mark the formula expansion verified until all pass.

@@ -140,6 +140,16 @@ void main() {
       expect(engine.evaluateCell('A16'), 0);
       expect(engine.evaluateCell('A17'), 0);
       expect(engine.evaluateCell('A18'), 0);
+
+      final rangeEngine = SheetsFormulaEngine({
+        'A1': '1', 'A2': '3', 'A3': '5', 'A4': '7',
+        'B1': '=LARGE(A1:A4,2)', 'B2': '=SMALL(A1:A4,2)',
+        'B3': '=LARGE(1,3,5,7,2)', 'B4': '=SMALL(1,3,5,7,2)',
+      });
+      expect(rangeEngine.evaluateCell('B1'), 5);
+      expect(rangeEngine.evaluateCell('B2'), 3);
+      expect(rangeEngine.evaluateCell('B3'), 5);
+      expect(rangeEngine.evaluateCell('B4'), 3);
     });
 
     test('rejects invalid ranks, domains and argument counts', () {
