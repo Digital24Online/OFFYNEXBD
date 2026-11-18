@@ -1280,3 +1280,5 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Added regression tests for Writer image + Scan PDF cross-device restoration, unrelated local-path rejection and invalid archive rejection.
 - [ ] Current source branch CI Analyze/tests/Android APK/artifact verification is pending.
 - [ ] This is portable offline backup/restore, not online Cloud Sync. Authentication, remote storage, encryption-at-rest, sharing and conflict resolution remain incomplete.
+
+- CI correction note: Build #402 (run ID 44383735233, source commit `c411f9b8aa226fd105558cde4da28488a222bcb7`) failed at Analyze because of two DOCX string-style infos, one missing mounted guard after an async Writer import, and one unused test import. These findings are being corrected in the integrated batch; no APK was produced by that run.

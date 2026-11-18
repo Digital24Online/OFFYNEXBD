@@ -132,7 +132,7 @@ class WriterDocxExportService {
     void addPart(String kind, String text) {
       if (text.trim().isEmpty) return;
       final id = 'rId${nextId++}';
-      final fileName = '$kind' + '1.xml';
+      final fileName = kind == 'header' ? 'header1.xml' : 'footer1.xml';
       final relationType = kind == 'header'
           ? 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/header'
           : 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer';

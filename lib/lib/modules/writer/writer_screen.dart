@@ -168,6 +168,7 @@ class _WriterScreenState extends State<WriterScreen> {
               bytes,
               imageDirectory: Directory('${appDirectory.path}/offynexbd_images'),
             );
+      if (!mounted) return;
       final existingIds = documents.map((item) => item['id']?.toString()).toSet();
       final additions = imported
           .where((item) => !existingIds.contains(item['id']))
