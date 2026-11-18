@@ -18,6 +18,7 @@ class _PdfToDocumentScreenState extends State<PdfToDocumentScreen> {
   PdfConversionResult? result;
   String? sourceName;
   String sourceKind = 'pdf_import';
+  Map<String, dynamic>? savedDocument;
   String? error;
   bool busy = false;
 
@@ -50,7 +51,7 @@ class _PdfToDocumentScreenState extends State<PdfToDocumentScreen> {
       documents.add(record);
       await storeDocuments(documents);
       if (!mounted) return;
-      setState(() { sourceName = file.name; sourceKind = 'pdf_import'; result = converted; busy = false; });
+      setState(() { sourceName = file.name; sourceKind = 'pdf_import'; savedDocument = record; result = converted; busy = false; });
     } catch (e) {
       if (!mounted) return;
       setState(() { error = e.toString().replaceFirst('Exception: ', ''); busy = false; });
@@ -89,6 +90,7 @@ class _PdfToDocumentScreenState extends State<PdfToDocumentScreen> {
       setState(() {
         sourceName = file.name;
         sourceKind = 'image_import';
+        savedDocument = record;
         result = converted;
         busy = false;
       });
@@ -126,16 +128,19 @@ class _PdfToDocumentScreenState extends State<PdfToDocumentScreen> {
   Future<void> _openWriter() async {
     final value = result;
     if (value == null) return;
-    final docs = await loadDocuments();
-    final doc = docs.lastWhere(
-      (item) => item['source'] == sourceKind && (item['sourcePdfName'] == sourceName || item['sourceImageName'] == sourceName),
-      orElse: () => <String, dynamic>{
-        'id': DateTime.now().microsecondsSinceEpoch.toString(),
-        'title': value.title, 'content': value.writerDelta,
-      },
-    );
+    // Open the exact record created by this conversion. Matching by filename
+    // could accidentally open an older document with the same filename.
+    final doc = savedDocument ??
+        <String, dynamic>{
+          'id': DateTime.now().microsecondsSinceEpoch.toString(),
+          'title': value.title,
+          'content': value.writerDelta,
+        };
     if (!mounted) return;
-    await Navigator.push(context, MaterialPageRoute(builder: (_) => WriterEditorScreen(document: doc)));
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => WriterEditorScreen(document: doc)),
+    );
   }
 
   @override
