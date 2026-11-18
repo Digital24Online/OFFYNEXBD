@@ -60,12 +60,41 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_key);
-    final decoded = raw == null ? <dynamic>[] : jsonDecode(raw) as List<dynamic>;
+    var loaded = <Map<String, dynamic>>[];
+    String? recoveryMessage;
+    if (raw != null) {
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is! List) {
+          throw const FormatException('Workspace record root must be a list.');
+        }
+        loaded = decoded
+            .whereType<Map>()
+            .map((item) => Map<String, dynamic>.from(item))
+            .toList(growable: false);
+      } catch (error) {
+        final recoveryKey =
+            '${_key}_recovery_${DateTime.now().microsecondsSinceEpoch}';
+        final preserved = await prefs.setString(recoveryKey, raw);
+        recoveryMessage = preserved
+            ? (_bn
+                ? 'এই মডিউলের ডেটা পড়া যায়নি। মূল ডেটার Recovery Copy রাখা হয়েছে: $recoveryKey'
+                : 'Workspace data could not be read. Original recovery copy saved: $recoveryKey')
+            : (_bn
+                ? 'ডেটা পড়া যায়নি এবং Recovery Copy সংরক্ষণ ব্যর্থ: $error'
+                : 'Workspace data could not be read and recovery copy failed: $error');
+      }
+    }
     if (!mounted) return;
     setState(() {
-      _items = decoded.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      _items = loaded;
       _loading = false;
     });
+    if (recoveryMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(recoveryMessage), duration: const Duration(seconds: 10)),
+      );
+    }
   }
 
   Future<void> _save() async {
