@@ -112,4 +112,36 @@ void main() {
       throwsA(isA<FormatException>()),
     );
   });
+
+  test('DOCX font family classification checks sans-serif before serif', () async {
+    final archive = Archive();
+    final xml = '''
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>
+<w:p><w:r><w:rPr><w:rFonts w:ascii="Arial"/></w:rPr><w:t>Sans</w:t></w:r></w:p>
+<w:p><w:r><w:rPr><w:rFonts w:ascii="Noto Serif Bengali"/></w:rPr><w:t>Serif</w:t></w:r></w:p>
+<w:sectPr/></w:body></w:document>''';
+    final data = utf8.encode(xml);
+    archive.addFile(ArchiveFile('word/document.xml', data.length, data));
+    final bytes = Uint8List.fromList(ZipEncoder().encodeBytes(archive));
+    final imported = await WriterDocumentFormatService.importFile(
+      bytes: bytes, extension: 'docx', imageDirectory: temp, title: 'fonts.docx',
+    );
+    expect(imported.delta.any((op) => op['insert'] == 'Sans' && (op['attributes'] as Map?)?['font'] == 'sans-serif'), isTrue);
+    expect(imported.delta.any((op) => op['insert'] == 'Serif' && (op['attributes'] as Map?)?['font'] == 'serif'), isTrue);
+  });
+
+  test('ODT sans-serif family is not misclassified as serif', () async {
+    final archive = Archive();
+    const content = '''<office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text" xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style"><office:body><office:text><text:p><text:span text:style-name="Sans">Sans text</text:span></text:p></office:text></office:body></office:document-content>''';
+    const styles = '''<office:document-styles xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style" xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0"><office:styles><style:style style:name="Sans" style:family="text"><style:text-properties fo:font-family="sans-serif"/></style:style></office:styles></office:document-styles>''';
+    final contentBytes = utf8.encode(content), styleBytes = utf8.encode(styles);
+    archive.addFile(ArchiveFile('content.xml', contentBytes.length, contentBytes));
+    archive.addFile(ArchiveFile('styles.xml', styleBytes.length, styleBytes));
+    final bytes = Uint8List.fromList(ZipEncoder().encodeBytes(archive));
+    final imported = await WriterDocumentFormatService.importFile(
+      bytes: bytes, extension: 'odt', imageDirectory: temp, title: 'fonts.odt',
+    );
+    expect(imported.delta.any((op) => op['insert'] == 'Sans text' && (op['attributes'] as Map?)?['font'] == 'sans-serif'), isTrue);
+  });
+
 }

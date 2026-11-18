@@ -291,6 +291,13 @@ class WriterDocumentFormatService {
     return value == null || !const {'0', 'false', 'off', 'none'}.contains(value);
   }
 
+  static String _fontFamilyCategory(String family) {
+    final value = family.toLowerCase().trim();
+    if (value.contains('sans') || value.contains('arial') || value.contains('calibri') || value.contains('helvetica') || value.contains('roboto')) return 'sans-serif';
+    if (value.contains('serif') || value.contains('times') || value.contains('georgia') || value.contains('cambria')) return 'serif';
+    return 'sans-serif';
+  }
+
   static Map<String, dynamic> _docxRunAttributes(XmlElement? props) {
     if (props == null) return {};
     final result = <String, dynamic>{};
@@ -308,7 +315,7 @@ class WriterDocumentFormatService {
     }
     final fonts = _firstChild(props, 'rFonts');
     final family = fonts == null ? null : _attribute(fonts, 'ascii');
-    if (family != null) result['font'] = family.toLowerCase().contains('serif') ? 'serif' : 'sans-serif';
+    if (family != null) result['font'] = _fontFamilyCategory(family);
     return result;
   }
 

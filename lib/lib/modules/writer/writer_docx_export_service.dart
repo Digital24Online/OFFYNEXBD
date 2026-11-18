@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:archive/archive.dart';
 import 'package:docx_creator/docx_creator.dart';
 
 /// Converts supported OFFYNEX Writer Quill content into a real DOCX file.
@@ -9,6 +10,9 @@ class WriterDocxExportService {
   static Future<List<int>> build({
     required String title,
     required List<Map<String, dynamic>> delta,
+    Map<String, dynamic>? pageLayout,
+    String headerText = '',
+    String footerText = '',
   }) async {
     final html = StringBuffer()..write('<h1>${_escape(title)}</h1>');
     final line = StringBuffer();
@@ -70,11 +74,117 @@ class WriterDocxExportService {
 
     final nodes = await DocxParser.fromHtml(html.toString());
     final document = DocxBuiltDocument(elements: nodes);
-    final bytes = await DocxExporter().exportToBytes(document);
+    final originalBytes = await DocxExporter().exportToBytes(document);
+    final bytes = _applyPageAndHeaderFooter(
+      originalBytes,
+      pageLayout: pageLayout ?? const {},
+      headerText: headerText,
+      footerText: footerText,
+    );
     if (bytes.isEmpty || bytes.length < 4 || bytes[0] != 0x50 || bytes[1] != 0x4B) {
       throw StateError('DOCX export did not produce a valid ZIP-based document.');
     }
     return bytes;
+  }
+
+
+  static List<int> _applyPageAndHeaderFooter(
+    List<int> source, {
+    required Map<String, dynamic> pageLayout,
+    required String headerText,
+    required String footerText,
+  }) {
+    final input = ZipDecoder().decodeBytes(source);
+    final files = <String, List<int>>{};
+    for (final file in input.files.where((item) => item.isFile)) {
+      files[file.name] = file.readBytes() ?? <int>[];
+    }
+
+    final sizes = <String, List<int>>{
+      'A4': [11906, 16838],
+      'A5': [8391, 11906],
+      'Letter': [12240, 15840],
+      'Legal': [12240, 20160],
+    };
+    final selected = sizes[pageLayout['pageSize']?.toString()] ?? sizes['A4']!;
+    final landscape = pageLayout['orientation'] == 'Landscape';
+    final width = landscape ? selected[1] : selected[0];
+    final height = landscape ? selected[0] : selected[1];
+    int margin(String key) {
+      final raw = pageLayout[key];
+      final inches = raw is num ? raw.toDouble() : 1.0;
+      return (inches.clamp(0.25, 2.5) * 1440).round();
+    }
+
+    final relationshipsPath = 'word/_rels/document.xml.rels';
+    var relationships = files.containsKey(relationshipsPath)
+        ? utf8.decode(files[relationshipsPath]!)
+        : '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>';
+    final contentTypesPath = '[Content_Types].xml';
+    var contentTypes = utf8.decode(files[contentTypesPath] ?? <int>[]);
+    var nextId = 1;
+    for (final match in RegExp(r'Id="rId(\\d+)"').allMatches(relationships)) {
+      final value = int.tryParse(match.group(1) ?? '');
+      if (value != null && value >= nextId) nextId = value + 1;
+    }
+
+    final sectionReferences = StringBuffer();
+    void addPart(String kind, String text) {
+      if (text.trim().isEmpty) return;
+      final id = 'rId${nextId++}';
+      final fileName = '$kind' + '1.xml';
+      final relationType = kind == 'header'
+          ? 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/header'
+          : 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer';
+      relationships = relationships.replaceFirst(
+        '</Relationships>',
+        '<Relationship Id="$id" Type="$relationType" Target="$fileName"/></Relationships>',
+      );
+      sectionReferences.write('<w:$kind w:type="default" r:id="$id"/>');
+      final element = kind == 'header' ? 'hdr' : 'ftr';
+      files['word/$fileName'] = utf8.encode(
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<w:$element xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+        '<w:p><w:r><w:t xml:space="preserve">${_escape(text)}</w:t></w:r></w:p>'
+        '</w:$element>',
+      );
+      final partType = kind == 'header'
+          ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml'
+          : 'application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml';
+      contentTypes = contentTypes.replaceFirst(
+        '</Types>',
+        '<Override PartName="/word/$fileName" ContentType="$partType"/></Types>',
+      );
+    }
+
+    addPart('header', headerText);
+    addPart('footer', footerText);
+    final section = '<w:sectPr>${sectionReferences.toString()}'
+        '<w:pgSz w:w="$width" w:h="$height"${landscape ? ' w:orient="landscape"' : ''}/>'
+        '<w:pgMar w:top="${margin('top')}" w:bottom="${margin('bottom')}" '
+        'w:left="${margin('left')}" w:right="${margin('right')}" w:header="720" w:footer="720" w:gutter="0"/>'
+        '</w:sectPr>';
+    var documentXml = utf8.decode(files['word/document.xml'] ?? <int>[]);
+    if (RegExp(r'<w:sectPr[\\s\\S]*?</w:sectPr>').hasMatch(documentXml)) {
+      documentXml = documentXml.replaceFirst(
+        RegExp(r'<w:sectPr[\\s\\S]*?</w:sectPr>'),
+        section,
+      );
+    } else {
+      documentXml = documentXml.replaceFirst('</w:body>', '$section</w:body>');
+    }
+    if (!documentXml.contains('<w:sectPr>')) {
+      throw StateError('DOCX page settings could not be written.');
+    }
+    files['word/document.xml'] = utf8.encode(documentXml);
+    files[relationshipsPath] = utf8.encode(relationships);
+    if (contentTypes.isNotEmpty) files[contentTypesPath] = utf8.encode(contentTypes);
+
+    final output = Archive();
+    for (final entry in files.entries) {
+      output.addFile(ArchiveFile(entry.key, entry.value.length, entry.value));
+    }
+    return ZipEncoder().encodeBytes(output);
   }
 
   static String _styledText(String value, Map<String, dynamic> attributes) {

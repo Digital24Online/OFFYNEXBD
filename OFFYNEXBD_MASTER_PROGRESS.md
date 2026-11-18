@@ -1243,3 +1243,20 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 
 ### New-chat continuation prompt
 “OFFYNEXBD MASTER PROJECT চালু করো। GitHub-এর OFFYNEXBD_MASTER_PROGRESS.md-এর সর্বশেষ ‘New Chat Handoff’ এবং active PR #3/branch-এর বর্তমান অবস্থা পড়ে ঠিক সেখান থেকে কাজ চালাও। আগের কোনো কাজ পুনরায় শুরু বা আমাকে আবার নির্দেশনা দিতে বলবে না। Writer-এর বাকি কাজগুলো একসঙ্গে অডিট, বাস্তবায়ন, পরীক্ষা ও CI যাচাই করো। সহজ বাংলায় কথা বলবে; কাজ যাচাই না করে সম্পন্ন বলবে না।”
+
+
+---
+
+## Writer Reliability Batch — DOCX export, portable backup, fonts and localization (2026-11-19)
+
+- [x] DOCX export now receives the current page size, orientation, four margins, and header/footer text from the active Writer document.
+- [x] DOCX package writer adds Word section page dimensions/margins and separate header/footer parts with relationships and content-type declarations.
+- [x] Added archive-level regression coverage for A5 landscape dimensions, margins, and exported header/footer parts.
+- [x] Fixed DOCX/ODT font family detection: sans-serif is checked before generic serif matching, preventing the substring collision in `sans-serif`.
+- [x] Added DOCX and ODT regression tests for sans-serif and serif classification.
+- [x] Added a portable `.offynex` Writer backup format that packages referenced images with the document library and restores image files to the destination app storage.
+- [x] Writer backup import retains legacy JSON import compatibility; new backup export uses the portable archive format.
+- [x] Localized the Writer View ribbon controls for Bangla and English.
+- [ ] Run Flutter Analyze, complete automated tests, Android Release APK build and artifact upload on this batch.
+- [ ] Real Microsoft Word / LibreOffice opening and print output must still be checked; CI archive tests do not replace external office application testing.
+- [ ] Remaining Writer gaps: true live pagination, complex DOCX/ODT fidelity, spellcheck, full font management, comprehensive ribbon localization, large-document performance and Android physical-device/printing validation.

@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'writer_table.dart';
 import 'writer_pdf_export_service.dart';
 import 'writer_document_codec.dart';
+import 'writer_document_backup_service.dart';
 import 'writer_docx_export_service.dart';
 import 'writer_document_format_service.dart';
 import 'writer_viewport.dart';
@@ -116,12 +117,16 @@ class _WriterScreenState extends State<WriterScreen> {
       return;
     }
     try {
-      final json = WriterDocumentCodec.encode(documents);
+      final appDirectory = await getApplicationSupportDirectory();
+      final archive = await WriterDocumentBackupService.exportArchive(
+        documents,
+        imageDirectory: Directory('${appDirectory.path}/offynexbd_images'),
+      );
       final saved = await FilePicker.saveFile(
-        fileName: 'OFFYNEXBD-Writer-documents.json',
-        bytes: Uint8List.fromList(utf8.encode(json)),
-        mimeType: 'application/json',
-        dialogTitle: 'Export Writer documents',
+        fileName: 'OFFYNEXBD-Writer-backup.offynex',
+        bytes: archive,
+        mimeType: 'application/zip',
+        dialogTitle: 'Export Writer backup',
       );
       if (saved != null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -147,7 +152,7 @@ class _WriterScreenState extends State<WriterScreen> {
     try {
       final picked = await FilePicker.pickFile(
         type: FileType.custom,
-        allowedExtensions: const ['json'],
+        allowedExtensions: const ['offynex', 'zip', 'json'],
       );
       if (picked == null) return;
       if (!mounted) return;
@@ -156,9 +161,13 @@ class _WriterScreenState extends State<WriterScreen> {
       if (bytes.isEmpty || bytes.length > 20 * 1024 * 1024) {
         throw const FormatException('Writer archive must be between 1 byte and 20 MB.');
       }
-      final imported = WriterDocumentCodec.decode(
-        utf8.decode(bytes, allowMalformed: false),
-      );
+      final appDirectory = await getApplicationSupportDirectory();
+      final imported = (picked.extension?.toLowerCase() == 'json')
+          ? WriterDocumentCodec.decode(utf8.decode(bytes, allowMalformed: false))
+          : await WriterDocumentBackupService.importArchive(
+              bytes,
+              imageDirectory: Directory('${appDirectory.path}/offynexbd_images'),
+            );
       final existingIds = documents.map((item) => item['id']?.toString()).toSet();
       final additions = imported
           .where((item) => !existingIds.contains(item['id']))
@@ -1593,14 +1602,14 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
 
   Widget buildViewRibbon() => _ribbonPanel([
         Wrap(spacing: 6, children: [
-          ChoiceChip(label: const Text('Full Page'), selected: viewFit == 'Page', onSelected: (_) => _setViewFit('Page')),
-          ChoiceChip(label: const Text('Page Width'), selected: viewFit == 'Width', onSelected: (_) => _setViewFit('Width')),
+          ChoiceChip(label: Text(_t('সম্পূর্ণ পৃষ্ঠা', 'Full Page')), selected: viewFit == 'Page', onSelected: (_) => _setViewFit('Page')),
+          ChoiceChip(label: Text(_t('পৃষ্ঠার প্রস্থ', 'Page Width')), selected: viewFit == 'Width', onSelected: (_) => _setViewFit('Width')),
           ChoiceChip(label: const Text('100%'), selected: viewFit == 'Actual', onSelected: (_) => _setViewFit('Actual')),
         ]),
         SizedBox(
           width: 180,
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text('Zoom ${(zoomLevel * 100).round()}%'),
+            Text('${_t('জুম', 'Zoom')} ${(zoomLevel * 100).round()}%'),
             Slider(
               value: zoomLevel,
               min: WriterViewportLayout.minimumZoom,
@@ -1611,11 +1620,11 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
             ),
           ]),
         ),
-        FilterChip(label: const Text('Ruler'), selected: showRuler, onSelected: (v) { setState(() => showRuler = v); scheduleSave(); }),
-        FilterChip(label: const Text('Page Border'), selected: showPageBorder, onSelected: (v) { setState(() => showPageBorder = v); scheduleSave(); }),
-        FilterChip(label: const Text('Status Bar'), selected: showStatusBar, onSelected: (v) { setState(() => showStatusBar = v); scheduleSave(); }),
+        FilterChip(label: Text(_t('রুলার', 'Ruler')), selected: showRuler, onSelected: (v) { setState(() => showRuler = v); scheduleSave(); }),
+        FilterChip(label: Text(_t('পৃষ্ঠার বর্ডার', 'Page Border')), selected: showPageBorder, onSelected: (v) { setState(() => showPageBorder = v); scheduleSave(); }),
+        FilterChip(label: Text(_t('স্ট্যাটাস বার', 'Status Bar')), selected: showStatusBar, onSelected: (v) { setState(() => showStatusBar = v); scheduleSave(); }),
         FilterChip(
-           label: const Text('Focus Mode'),
+           label: Text(_t('ফোকাস মোড', 'Focus Mode')),
            selected: focusMode,
            onSelected: (value) {
              setState(() => focusMode = value);
@@ -2183,6 +2192,9 @@ Future<void> showCustomFontSizeDialog() async {
             ? 'Untitled Document'
             : titleController.text.trim(),
         delta: delta,
+        pageLayout: _pageLayoutToJson(),
+        headerText: headerText,
+        footerText: footerText,
       );
       if (!mounted) return;
       final baseName = titleController.text.trim().isEmpty

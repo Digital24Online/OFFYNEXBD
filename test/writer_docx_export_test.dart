@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'dart:convert';
 
+import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offynexbd/lib/modules/writer/writer_docx_export_service.dart';
 
@@ -7,6 +9,9 @@ void main() {
   test('Writer DOCX export produces a valid Office document with formatted text', () async {
     final bytes = await WriterDocxExportService.build(
       title: 'বাংলা Report',
+      pageLayout: {'pageSize': 'A5', 'orientation': 'Landscape', 'top': 0.5, 'bottom': 0.75, 'left': 1.0, 'right': 1.25},
+      headerText: 'পরীক্ষার Header',
+      footerText: 'Footer text',
       delta: [
         {'insert': 'শিরোনাম\n', 'attributes': {'header': 1}},
         {'insert': 'বাংলা ও English ', 'attributes': {'bold': true}},
@@ -18,6 +23,14 @@ void main() {
     expect(bytes.length, greaterThan(1000));
     expect(bytes[0], 0x50);
     expect(bytes[1], 0x4B);
+    final archive = ZipDecoder().decodeBytes(bytes);
+    final documentXml = utf8.decode(archive.findFile('word/document.xml')!.readBytes()!);
+    expect(documentXml, contains('<w:pgSz w:w="11906" w:h="8391" w:orient="landscape"/>'));
+    expect(documentXml, contains('w:top="720"'));
+    expect(documentXml, contains('<w:header w:type="default"'));
+    expect(documentXml, contains('<w:footer w:type="default"'));
+    expect(utf8.decode(archive.findFile('word/header1.xml')!.readBytes()!), contains('পরীক্ষার Header'));
+    expect(utf8.decode(archive.findFile('word/footer1.xml')!.readBytes()!), contains('Footer text'));
   });
 
   test('Writer DOCX export rejects missing local image instead of creating broken link', () async {
