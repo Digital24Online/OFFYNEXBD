@@ -618,3 +618,11 @@ Continue development as coordinated batches across Writer, Sheets, Slides, PDF, 
 - [x] PDF/Image conversion screen now retains the exact record it just created and opens that record in Writer. It no longer searches by filename, which could open an older conversion with the same name.
 - [x] Removed obsolete filename-matching state.
 - [ ] Validate commits `54b8802044c234d4c288c5e01d7df52be0145484` and `644a35d822d03365a964b9cb1d3d697f409dee51` with Analyze, full tests and APK build/upload.
+
+
+### Additional coordinated module work — 2026-11-18 (validation pending)
+- [x] Forms response viewer now has a separate JSON export for collected submissions, including format/version and export timestamp. Existing form definitions and responses remain separate; all remain included in the local Cloud backup.
+- [x] PDF-to-Writer navigation now opens the exact record created by the current conversion rather than searching by filename, preventing duplicate-filename collisions.
+- [x] Slides now has a landscape PDF export: one non-empty content line becomes one slide page; Bangla font is embedded; export is capped at 200 slides.
+- [x] Extracted PDF generation into `slides_pdf_export_service.dart` and added tests for Bangla/English PDF output and slide-count limits.
+- [ ] Validate latest Forms response export, PDF navigation and Slides PDF export commits with Flutter Analyze, full test suite and Android APK build/upload. No claim of PPTX or full slideshow support: those remain future work.
