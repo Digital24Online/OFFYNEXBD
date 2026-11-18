@@ -596,6 +596,18 @@ class _SheetsScreenState extends State<SheetsScreen> {
   }
 
   Future<void> _deleteWorksheet() async {
+    final dependentPivots = _workbook.sheets.where(
+      (sheet) => sheet.pivotConfig?['sourceSheetId'] == _workbook.activeSheetId,
+    );
+    if (dependentPivots.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t(
+          'এই Worksheet-এর ওপর Pivot Table নির্ভর করছে। আগে Pivot Worksheet মুছুন।',
+          'A Pivot Table depends on this worksheet. Delete the dependent Pivot worksheet first.',
+        ))),
+      );
+      return;
+    }
     if (_workbook.sheets.length <= 1) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_t('কমপক্ষে একটি Worksheet রাখতে হবে।', 'At least one worksheet must remain.'))),
@@ -1520,6 +1532,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
         commands.addAll([
           _ribbonCommand(_t('খুঁজুন ও পরিবর্তন', 'Find & Replace'), Icons.find_replace, _findAndReplace),
           _ribbonCommand(_t('শর্তসাপেক্ষ Formatting', 'Conditional Formatting'), Icons.format_color_fill, _setConditionalFormatting),
+          _ribbonCommand(_t('Formatting নিয়ম সরান', 'Clear formatting rules'), Icons.format_clear, _clearConditionalFormatting),
           _ribbonCommand(_t('সেল সম্পাদনা', 'Edit cell'), Icons.edit, () {
             final key = _selectedCell;
             if (key == null) return;
@@ -2096,6 +2109,27 @@ class _CellEditDialogState extends State<_CellEditDialog> {
         SnackBar(content: Text(_t('Conditional Formatting নিয়ম যোগ হয়েছে।', 'Conditional formatting rule added.'))),
       );
     }
+  }
+
+  Future<void> _clearConditionalFormatting() async {
+    if (_activeWorksheet.conditionalFormats.isEmpty) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(_t('Conditional Formatting সরাবেন?', 'Clear conditional formatting?')),
+        content: Text(_t(
+          'এই Worksheet-এর সব Conditional Formatting নিয়ম সরানো হবে।',
+          'All conditional formatting rules on this worksheet will be removed.',
+        )),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(_t('বাতিল', 'Cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text(_t('সব সরান', 'Clear rules'))),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _activeWorksheet.conditionalFormats.clear());
+    await _saveWorkbook();
   }
 
   Future<void> _createChart() async {
