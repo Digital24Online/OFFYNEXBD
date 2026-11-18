@@ -17,6 +17,7 @@ import 'sheets_csv_codec.dart';
 import 'sheets_row_view.dart';
 import 'sheets_find_replace.dart';
 import 'sheets_data_validation.dart';
+import 'sheets_xlsx_validation_codec.dart';
 import '../../theme/offynex_theme.dart';
 
 const String _sheetStorageKey = 'offynex_sheets_workbook_v1';
@@ -1080,13 +1081,23 @@ class _SheetsScreenState extends State<SheetsScreen> {
         if (style.isNotEmpty) styles[key] = style;
       }
     }
+    final importedValidation = SheetsXlsxValidationCodec.read(
+      source,
+      baseRows: source.maxRows.clamp(1, SheetsWorkbookLimits.maxRows).toInt(),
+      baseColumns: source.maxColumns.clamp(1, SheetsWorkbookLimits.maxColumns).toInt(),
+    );
+    SheetsWorkbookLimits.validate(
+      importedValidation.rows,
+      importedValidation.columns,
+    );
     return SheetsWorksheet(
       id: 'import-$index-${DateTime.now().microsecondsSinceEpoch}',
       name: name,
-      rows: source.maxRows.clamp(1, SheetsWorkbookLimits.maxRows),
-      columns: source.maxColumns.clamp(1, SheetsWorkbookLimits.maxColumns),
+      rows: importedValidation.rows,
+      columns: importedValidation.columns,
       cells: cells,
       styles: styles,
+      validations: importedValidation.validations,
     );
   }
 
@@ -1214,6 +1225,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
         bottomBorder: border ? xlsx.Border(borderStyle: xlsx.BorderStyle.Thin) : null,
       );
     }
+    SheetsXlsxValidationCodec.write(sheet, source.validations);
   }
 
   Future<void> _exportWorkbook() async {
