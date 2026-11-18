@@ -2,6 +2,29 @@
 class FormsResponseCsvCodec {
   const FormsResponseCsvCodec._();
 
+  static List<Map<String, dynamic>> filter(
+    List<Map<String, dynamic>> responses,
+    String query,
+  ) {
+    final normalized = query.trim().toLowerCase();
+    if (normalized.isEmpty) return List<Map<String, dynamic>>.of(responses);
+    return responses.where((response) {
+      final formTitle = response['formTitle']?.toString().toLowerCase() ?? '';
+      final submittedAt = response['submittedAt']?.toString().toLowerCase() ?? '';
+      if (formTitle.contains(normalized) || submittedAt.contains(normalized)) {
+        return true;
+      }
+      final answers = response['answers'];
+      if (answers is! List) return false;
+      return answers.any((answer) {
+        if (answer is! Map) return false;
+        final question = answer['question']?.toString().toLowerCase() ?? '';
+        final value = answer['answer']?.toString().toLowerCase() ?? '';
+        return question.contains(normalized) || value.contains(normalized);
+      });
+    }).toList(growable: false);
+  }
+
   static String encode(List<Map<String, dynamic>> responses) {
     if (responses.isEmpty) {
       throw const FormatException('There are no form responses to export.');
