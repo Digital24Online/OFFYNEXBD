@@ -575,7 +575,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
     final replaceController = TextEditingController();
     var matchCase = false;
     var includeFormulas = false;
-    final request = await showDialog<({String find, String replacement, bool matchCase})>(
+    final request = await showDialog<({String find, String replacement, bool matchCase, bool includeFormulas})>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
