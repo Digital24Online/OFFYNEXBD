@@ -729,6 +729,74 @@ class _SheetsScreenState extends State<SheetsScreen> {
     }
   }
 
+  SheetsWorksheet _worksheetFromExcel(String name, xlsx.Sheet source, int index) {
+    SheetsWorkbookLimits.validate(source.maxRows, source.maxColumns);
+    final cells = <String, String>{};
+    final styles = <String, Map<String, dynamic>>{};
+    for (final row in source.rows) {
+      for (final cell in row) {
+        if (cell == null) continue;
+        final key = _cellKey(cell.rowIndex, cell.columnIndex);
+        if (cell.value != null) {
+          final dynamic value = cell.value;
+          final text = value is xlsx.FormulaCellValue
+              ? '=\${value.formula.toString().replaceFirst(RegExp(r'^='), '')}'
+              : value.toString();
+          if (text.isNotEmpty) cells[key] = text;
+        }
+        final importedStyle = cell.cellStyle;
+        if (importedStyle == null) continue;
+        final style = <String, dynamic>{};
+        if (importedStyle.isBold) style['bold'] = true;
+        if (importedStyle.isItalic) style['italic'] = true;
+        if (importedStyle.underline != xlsx.Underline.None) style['underline'] = true;
+        if (importedStyle.fontSize != null) style['fontSize'] = importedStyle.fontSize;
+        final format = importedStyle.numberFormat.formatCode;
+        if (format.contains('%')) {
+          style['numberFormat'] = 'percent';
+        } else if (format.contains('৳') || format.contains(r'\$')) {
+          style['numberFormat'] = 'currency';
+        } else if (format.contains('0.00')) {
+          style['numberFormat'] = 'number';
+        }
+        final font = importedStyle.fontColor.colorHex;
+        if (font != 'none' && font.toUpperCase() != 'FF000000') {
+          style['fontColor'] = font.length == 8 ? font.substring(2) : font;
+        }
+        final fill = importedStyle.backgroundColor.colorHex;
+        if (fill != 'none') {
+          style['fillColor'] = fill.length == 8 ? fill.substring(2) : fill;
+        }
+        switch (importedStyle.verticalAlignment) {
+          case xlsx.VerticalAlign.Top: style['verticalAlign'] = 'top'; break;
+          case xlsx.VerticalAlign.Center: style['verticalAlign'] = 'center'; break;
+          default: style['verticalAlign'] = 'bottom'; break;
+        }
+        if (importedStyle.wrap == xlsx.TextWrapping.WrapText) style['wrapText'] = true;
+        switch (importedStyle.horizontalAlignment) {
+          case xlsx.HorizontalAlign.Center: style['align'] = 'center'; break;
+          case xlsx.HorizontalAlign.Right: style['align'] = 'right'; break;
+          default: style['align'] = 'left'; break;
+        }
+        if (importedStyle.leftBorder.borderStyle != null ||
+            importedStyle.rightBorder.borderStyle != null ||
+            importedStyle.topBorder.borderStyle != null ||
+            importedStyle.bottomBorder.borderStyle != null) {
+          style['border'] = true;
+        }
+        if (style.isNotEmpty) styles[key] = style;
+      }
+    }
+    return SheetsWorksheet(
+      id: 'import-$index-\${DateTime.now().microsecondsSinceEpoch}',
+      name: name,
+      rows: source.maxRows.clamp(1, SheetsWorkbookLimits.maxRows),
+      columns: source.maxColumns.clamp(1, SheetsWorkbookLimits.maxColumns),
+      cells: cells,
+      styles: styles,
+    );
+  }
+
   Future<void> _importWorkbook() async {
     try {
       final picked = await FilePicker.pickFile(
@@ -739,163 +807,43 @@ class _SheetsScreenState extends State<SheetsScreen> {
       final bytes = await picked.readAsBytes();
       if (!mounted) return;
       SheetsWorkbookLimits.validateImportBytes(bytes.length);
-      final workbook = xlsx.Excel.decodeBytes(bytes);
-      if (workbook.tables.isEmpty) throw FormatException('Workbook has no worksheets');
-      final sheetNames = workbook.tables.keys.toList(growable: false);
-      final defaultSheetName = workbook.getDefaultSheet() ?? sheetNames.first;
-      var sheetName = defaultSheetName;
-      if (sheetNames.length > 1) {
-        String selectedSheet = defaultSheetName;
-        final chosenSheet = await showDialog<String>(
-          context: context,
-          builder: (dialogContext) => StatefulBuilder(
-            builder: (dialogContext, setDialogState) => AlertDialog(
-              title: Text(_t('কোন Worksheet Import করবেন?', 'Choose a worksheet to import')),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(_t(
-                    'এই সংস্করণে একবারে একটি Worksheet Import করা যায়। অন্য Worksheet-গুলো অপরিবর্তিত XLSX ফাইলে থাকবে।',
-                    'This version imports one worksheet at a time. Other worksheets remain in the original XLSX file.',
-                  )),
-                  const SizedBox(height: 12),
-                  DropdownButton<String>(
-                    isExpanded: true,
-                    value: selectedSheet,
-                    items: [
-                      for (final name in sheetNames)
-                        DropdownMenuItem<String>(value: name, child: Text(name)),
-                    ],
-                    onChanged: (value) {
-                      if (value != null) setDialogState(() => selectedSheet = value);
-                    },
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: Text(_t('বাতিল', 'Cancel')),
-                ),
-                FilledButton(
-                  onPressed: () => Navigator.pop(dialogContext, selectedSheet),
-                  child: Text(_t('পরবর্তী', 'Continue')),
-                ),
-              ],
-            ),
-          ),
-        );
-        if (chosenSheet == null || !mounted) return;
-        sheetName = chosenSheet;
+      final sourceWorkbook = xlsx.Excel.decodeBytes(bytes);
+      final names = sourceWorkbook.tables.keys.toList(growable: false);
+      if (names.isEmpty) throw const FormatException('Workbook has no worksheets.');
+      if (names.length > SheetsWorkbookCodec.maxWorksheets) {
+        throw const FormatException('Workbook contains more than 100 worksheets.');
       }
-      final sheet = workbook.tables[sheetName];
-      if (sheet == null) throw FormatException('Worksheet could not be read');
-      SheetsWorkbookLimits.validate(sheet.maxRows, sheet.maxColumns);
-      final imported = <String, String>{};
-      final importedStyles = <String, Map<String, dynamic>>{};
-      for (final row in sheet.rows) {
-        for (final cell in row) {
-          if (cell == null) continue;
-          final key = _cellKey(cell.rowIndex, cell.columnIndex);
-          if (cell.value != null) {
-            final dynamic cellValue = cell.value;
-            final String value = cellValue is xlsx.FormulaCellValue
-                ? '=${cellValue.formula.toString().replaceFirst(RegExp(r'^='), '')}'
-                : cellValue.toString();
-            if (value.isNotEmpty) imported[key] = value;
-          }
-          final importedStyle = cell.cellStyle;
-          if (importedStyle != null) {
-            final style = <String, dynamic>{};
-            if (importedStyle.isBold) style['bold'] = true;
-            if (importedStyle.isItalic) style['italic'] = true;
-            if (importedStyle.underline != xlsx.Underline.None) style['underline'] = true;
-            if (importedStyle.fontSize != null) style['fontSize'] = importedStyle.fontSize;
-            final formatCode = importedStyle.numberFormat.formatCode;
-            if (formatCode.contains('%')) {
-              style['numberFormat'] = 'percent';
-            } else if (formatCode.contains('৳') || formatCode.contains(r'\$')) {
-              style['numberFormat'] = 'currency';
-            } else if (formatCode.contains('0.00')) {
-              style['numberFormat'] = 'number';
-            }
-            final fontHex = importedStyle.fontColor.colorHex;
-            if (fontHex != 'none' && fontHex.toUpperCase() != 'FF000000') {
-              style['fontColor'] = fontHex.length == 8 ? fontHex.substring(2) : fontHex;
-            }
-            final fillHex = importedStyle.backgroundColor.colorHex;
-            if (fillHex != 'none') {
-              style['fillColor'] = fillHex.length == 8 ? fillHex.substring(2) : fillHex;
-            }
-            switch (importedStyle.verticalAlignment) {
-              case xlsx.VerticalAlign.Top:
-                style['verticalAlign'] = 'top';
-                break;
-              case xlsx.VerticalAlign.Center:
-                style['verticalAlign'] = 'center';
-                break;
-              default:
-                style['verticalAlign'] = 'bottom';
-                break;
-            }
-            if (importedStyle.wrap == xlsx.TextWrapping.WrapText) {
-              style['wrapText'] = true;
-            }
-            switch (importedStyle.horizontalAlignment) {
-              case xlsx.HorizontalAlign.Center:
-                style['align'] = 'center';
-                break;
-              case xlsx.HorizontalAlign.Right:
-                style['align'] = 'right';
-                break;
-              default:
-                style['align'] = 'left';
-                break;
-            }
-            if (importedStyle.leftBorder.borderStyle != null ||
-                importedStyle.rightBorder.borderStyle != null ||
-                importedStyle.topBorder.borderStyle != null ||
-                importedStyle.bottomBorder.borderStyle != null) {
-              style['border'] = true;
-            }
-            if (style.isNotEmpty) importedStyles[key] = style;
-          }
-        }
+      final imported = <SheetsWorksheet>[];
+      for (var i = 0; i < names.length; i++) {
+        final source = sourceWorkbook.tables[names[i]];
+        if (source == null) throw FormatException('Could not read worksheet \${names[i]}.');
+        imported.add(_worksheetFromExcel(names[i], source, i));
       }
+      final totalCells = imported.fold<int>(0, (total, sheet) => total + sheet.cells.length);
       if (!mounted) return;
-      final replace = await showDialog<bool>(
+      final confirmed = await showDialog<bool>(
         context: context,
         builder: (dialogContext) => AlertDialog(
-          title: Text(_t('Workbook Import করবেন?', 'Import workbook?')),
+          title: Text(_t('সব Worksheet Import করবেন?', 'Import all worksheets?')),
           content: Text(_t(
-            '$sheetName থেকে ${imported.length}টি সেল বর্তমান শিটের জায়গায় আসবে। বর্তমান শিটের তথ্য বদলে যাবে।',
-            '${imported.length} cells from $sheetName will replace the current sheet data. Only this worksheet is imported; other workbook sheets are not added to OFFYNEX Sheets.',
+            '\${imported.length}টি Worksheet এবং $totalCellsটি Cell বর্তমান Workbook-এর জায়গায় আসবে। আগের Workbook-এর Backup রাখা হবে।',
+            '\${imported.length} worksheets and $totalCells cells will replace the current workbook. A backup will be kept.',
           )),
           actions: [
             TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(_t('বাতিল', 'Cancel'))),
-            FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text(_t('Import', 'Import'))),
+            FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text(_t('সব Import', 'Import all'))),
           ],
         ),
       );
-      if (replace != true || !mounted) return;
-      // Wait for pending edits so the backup captures the latest saved state.
+      if (confirmed != true || !mounted) return;
       await _saveQueue;
       if (!mounted) return;
-      // Preserve the current workbook before a destructive replacement.
       final prefs = await SharedPreferences.getInstance();
-      final previousWorkbook = prefs.getString(_sheetStorageKey);
-      final backupKey = await SheetsImportSafety.preserveCurrentWorkbook(
-        prefs,
-        previousWorkbook,
-      );
+      final oldRaw = prefs.getString(_sheetStorageKey);
+      final backupKey = await SheetsImportSafety.preserveCurrentWorkbook(prefs, oldRaw);
       if (!mounted) return;
       setState(() {
-        _cells..clear()..addAll(imported);
-        _cellStyles..clear()..addAll(importedStyles);
-        _rowCount = sheet.maxRows.clamp(1, 1000);
-        _columnCount = sheet.maxColumns.clamp(1, 100);
-        _sheetName = sheetName;
+        _workbook = SheetsWorkbook(activeSheetId: imported.first.id, sheets: imported);
         _selectedCell = null;
         _viewColumnIndex = null;
         _filterQuery = null;
@@ -906,8 +854,8 @@ class _SheetsScreenState extends State<SheetsScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(backupKey == null
-            ? _t('XLSX Import সফল হয়েছে।', 'XLSX imported successfully.')
-            : _t('XLSX Import সফল। আগের Workbook-এর Backup: $backupKey', 'XLSX imported. Previous workbook backup: $backupKey'))),
+            ? _t('সব Worksheet Import সফল হয়েছে।', 'All worksheets imported successfully.')
+            : _t('Import সফল। আগের Workbook-এর Backup: $backupKey', 'Import successful. Previous workbook backup: $backupKey'))),
       );
     } catch (error) {
       if (!mounted) return;
@@ -917,73 +865,77 @@ class _SheetsScreenState extends State<SheetsScreen> {
     }
   }
 
+  void _writeWorksheetToExcel(xlsx.Excel workbook, SheetsWorksheet source) {
+    final sheet = workbook[source.name];
+    for (final key in {...source.cells.keys, ...source.styles.keys}) {
+      final value = source.cells[key] ?? '';
+      final cell = sheet.cell(xlsx.CellIndex.indexByString(key.toUpperCase()));
+      if (value.startsWith('=')) {
+        cell.value = xlsx.FormulaCellValue(value.substring(1));
+      } else {
+        final numeric = double.tryParse(value);
+        if (numeric != null && numeric.isFinite) {
+          cell.value = numeric == numeric.roundToDouble()
+              ? xlsx.IntCellValue(numeric.toInt())
+              : xlsx.DoubleCellValue(numeric);
+        } else if (value.toUpperCase() == 'TRUE' || value.toUpperCase() == 'FALSE') {
+          cell.value = xlsx.BoolCellValue(value.toUpperCase() == 'TRUE');
+        } else {
+          cell.value = xlsx.TextCellValue(value);
+        }
+      }
+      final style = source.styles[key];
+      if (style == null || style.isEmpty) continue;
+      final alignment = switch (style['align']) {
+        'center' => xlsx.HorizontalAlign.Center,
+        'right' => xlsx.HorizontalAlign.Right,
+        _ => xlsx.HorizontalAlign.Left,
+      };
+      final format = switch (style['numberFormat']) {
+        'number' => xlsx.CustomNumericNumFormat(formatCode: '#,##0.00'),
+        'currency' => xlsx.CustomNumericNumFormat(formatCode: '৳#,##0.00'),
+        'percent' => xlsx.CustomNumericNumFormat(formatCode: '0.00%'),
+        _ => xlsx.NumFormat.standard_0,
+      };
+      final fill = style['fillColor'] as String?;
+      final font = style['fontColor'] as String?;
+      final border = style['border'] == true;
+      cell.cellStyle = xlsx.CellStyle(
+        bold: style['bold'] == true,
+        italic: style['italic'] == true,
+        underline: style['underline'] == true ? xlsx.Underline.Single : xlsx.Underline.None,
+        fontSize: (style['fontSize'] as num?)?.toInt(),
+        fontColorHex: font == null ? xlsx.ExcelColor.black : xlsx.ExcelColor.fromHexString('#$font'),
+        backgroundColorHex: fill == null ? xlsx.ExcelColor.none : xlsx.ExcelColor.fromHexString('#$fill'),
+        horizontalAlign: alignment,
+        verticalAlign: switch (style['verticalAlign']) {
+          'top' => xlsx.VerticalAlign.Top,
+          'center' => xlsx.VerticalAlign.Center,
+          _ => xlsx.VerticalAlign.Bottom,
+        },
+        textWrapping: style['wrapText'] == true ? xlsx.TextWrapping.WrapText : xlsx.TextWrapping.Clip,
+        numberFormat: format,
+        leftBorder: border ? xlsx.Border(borderStyle: xlsx.BorderStyle.Thin) : null,
+        rightBorder: border ? xlsx.Border(borderStyle: xlsx.BorderStyle.Thin) : null,
+        topBorder: border ? xlsx.Border(borderStyle: xlsx.BorderStyle.Thin) : null,
+        bottomBorder: border ? xlsx.Border(borderStyle: xlsx.BorderStyle.Thin) : null,
+      );
+    }
+  }
+
   Future<void> _exportWorkbook() async {
     try {
       final workbook = xlsx.Excel.createExcel();
+      final firstName = _workbook.sheets.first.name;
       final defaultName = workbook.getDefaultSheet();
-      final safeName = _sheetName.trim().isEmpty ? 'Sheet1' : _sheetName.trim();
-      if (defaultName != null && defaultName != safeName) workbook.rename(defaultName, safeName);
-      final sheet = workbook[safeName];
-      for (final key in {..._cells.keys, ..._cellStyles.keys}) {
-        final value = _cells[key] ?? '';
-        final cell = sheet.cell(xlsx.CellIndex.indexByString(key.toUpperCase()));
-        if (value.startsWith('=')) {
-          cell.value = xlsx.FormulaCellValue(value.substring(1));
-        } else {
-          final numeric = double.tryParse(value);
-          if (numeric != null && numeric.isFinite) {
-            cell.value = numeric == numeric.roundToDouble()
-                ? xlsx.IntCellValue(numeric.toInt())
-                : xlsx.DoubleCellValue(numeric);
-          } else if (value.toUpperCase() == 'TRUE' || value.toUpperCase() == 'FALSE') {
-            cell.value = xlsx.BoolCellValue(value.toUpperCase() == 'TRUE');
-          } else {
-            cell.value = xlsx.TextCellValue(value);
-          }
-        }
-        final style = _cellStyles[key];
-        if (style != null && style.isNotEmpty) {
-          final alignment = switch (style['align']) {
-            'center' => xlsx.HorizontalAlign.Center,
-            'right' => xlsx.HorizontalAlign.Right,
-            _ => xlsx.HorizontalAlign.Left,
-          };
-          final format = switch (style['numberFormat']) {
-            'number' => xlsx.CustomNumericNumFormat(formatCode: '#,##0.00'),
-            'currency' => xlsx.CustomNumericNumFormat(formatCode: '৳#,##0.00'),
-            'percent' => xlsx.CustomNumericNumFormat(formatCode: '0.00%'),
-            _ => xlsx.NumFormat.standard_0,
-          };
-          final fill = style['fillColor'] as String?;
-          final font = style['fontColor'] as String?;
-          final hasBorder = style['border'] == true;
-          cell.cellStyle = xlsx.CellStyle(
-            bold: style['bold'] == true,
-            italic: style['italic'] == true,
-            underline: style['underline'] == true ? xlsx.Underline.Single : xlsx.Underline.None,
-            fontSize: (style['fontSize'] as num?)?.toInt(),
-            fontColorHex: font == null ? xlsx.ExcelColor.black : xlsx.ExcelColor.fromHexString('#$font'),
-            backgroundColorHex: fill == null ? xlsx.ExcelColor.none : xlsx.ExcelColor.fromHexString('#$fill'),
-            horizontalAlign: alignment,
-            verticalAlign: switch (style['verticalAlign']) {
-              'top' => xlsx.VerticalAlign.Top,
-              'center' => xlsx.VerticalAlign.Center,
-              _ => xlsx.VerticalAlign.Bottom,
-            },
-            textWrapping: style['wrapText'] == true
-                ? xlsx.TextWrapping.WrapText
-                : xlsx.TextWrapping.Clip,
-            numberFormat: format,
-            leftBorder: hasBorder ? xlsx.Border(borderStyle: xlsx.BorderStyle.Thin) : null,
-            rightBorder: hasBorder ? xlsx.Border(borderStyle: xlsx.BorderStyle.Thin) : null,
-            topBorder: hasBorder ? xlsx.Border(borderStyle: xlsx.BorderStyle.Thin) : null,
-            bottomBorder: hasBorder ? xlsx.Border(borderStyle: xlsx.BorderStyle.Thin) : null,
-          );
-        }
+      if (defaultName != null && defaultName != firstName) workbook.rename(defaultName, firstName);
+      for (final source in _workbook.sheets) {
+        _writeWorksheetToExcel(workbook, source);
       }
       final bytes = workbook.save();
       if (bytes == null) throw StateError('XLSX encoding failed');
-      final fileName = '${safeName.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_')}.xlsx';
+      final safeName = _sheetName.trim().isEmpty ? 'OFFYNEXBD-Workbook' : _sheetName.trim();
+      final fileName = '\${safeName.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_')}.xlsx';
       final saved = await FilePicker.saveFile(
         fileName: fileName,
         bytes: Uint8List.fromList(bytes),
@@ -992,7 +944,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
       );
       if (saved == null || !mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_t('XLSX Export সম্পন্ন হয়েছে।', 'XLSX export completed.'))),
+        SnackBar(content: Text(_t('সব Worksheet-সহ XLSX Export সম্পন্ন হয়েছে।', 'XLSX export completed with all worksheets.'))),
       );
     } catch (error) {
       if (!mounted) return;
