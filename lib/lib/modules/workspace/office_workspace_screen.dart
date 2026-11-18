@@ -297,43 +297,27 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
         final file = File(path);
         if (await file.exists()) await file.delete();
       } catch (error) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(_bn
-                ? 'স্ক্যানের তালিকা থেকে সরানো হয়েছে, কিন্তু PDF ফাইল মুছতে পারেনি: $error'
-                : 'Removed from the scan list, but the PDF file could not be deleted: $error'),
-          ));
-        }
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(_bn ? 'স্ক্যানের তালিকা থেকে সরানো হয়েছে, কিন্তু PDF ফাইল মুছতে পারেনি: $error' : 'Removed from the scan list, but the PDF file could not be deleted: $error'),
+        ));
       }
     }
   }
 
   Future<void> _shareScan(Map<String, dynamic> item) async {
     final path = item['scanPdfPath'];
-    if (path is! String || path.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(_bn ? 'স্ক্যান PDF-এর পথ পাওয়া যায়নি।' : 'Scan PDF path is unavailable.'),
-      ));
-      return;
-    }
+    if (path is! String || path.isEmpty) return;
     try {
       final file = File(path);
-      if (!await file.exists()) {
-        throw const FileSystemException('Saved scan PDF was not found.');
-      }
-      final bytes = await file.readAsBytes();
+      if (!await file.exists()) throw const FileSystemException('Saved scan PDF was not found.');
       await Printing.sharePdf(
-        bytes: Uint8List.fromList(bytes),
-        filename: item['title']?.toString().isNotEmpty == true
-            ? '${item['title']}.pdf'
-            : 'OFFYNEXBD-Scan.pdf',
+        bytes: Uint8List.fromList(await file.readAsBytes()),
+        filename: item['title']?.toString().trim().isNotEmpty == true ? '${item['title']}.pdf' : 'OFFYNEXBD-Scan.pdf',
       );
     } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('${_bn ? 'PDF শেয়ার ব্যর্থ' : 'PDF share failed'}: $error'),
-        ));
-      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('${_bn ? 'PDF শেয়ার ব্যর্থ' : 'PDF share failed'}: $error'),
+      ));
     }
   }
 
@@ -344,43 +328,14 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
       if (Platform.isAndroid) {
         final captured = await ScanDocumentService.captureAndroid();
         if (captured == null) return;
-
-        // Keep every captured PDF in the Scan library, even when OCR finds no text.
         final scanRecord = <String, dynamic>{
           'id': DateTime.now().microsecondsSinceEpoch.toString(),
-          'title': captured.fileName.replaceFirst(RegExp(r'\.pdf, caseSensitive: false), ''),
-          'content': captured.recognizedText,
-          'updatedAt': DateTime.now().toIso8601String(),
-          'source': 'native_document_scan',
-          'scanPdfPath': captured.pdfPath,
-          'pageCount': captured.pageCount,
-          'ocrLanguage': 'ben+eng',
-        };
-        final updatedScans = [scanRecord, ..._items];
-        await _save(updatedScans);
-        if (!mounted) return;
-        setState(() => _items = updatedScans);
-
-        // OCR text also becomes an editable Writer document when available.
-        if (captured.recognizedText.trim().isNotEmpty) {
-          final documents = await loadDocuments();
-          documents.add({
-            'id': DateTime.now().microsecondsSinceEpoch.toString(),
-            'title': scanRecord['title'],
-            'content': PdfToDocumentService.plainTextToDelta(captured.recognizedText),
-            'updated': DateTime.now().toIso8601String(),
-            'source': 'native_document_scan',
-            'scanPdfPath': captured.pdfPath,
-            'pageCount': captured.pageCount,
-            'ocrLanguage': 'ben+eng',
-          });
-          await storeDocuments(documents);
-        }
+          'title': captured.fileName.replaceFirst(RegExp(r'\.pdf
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(_bn
-              ? '${captured.pageCount} পৃষ্ঠা Scan লাইব্রেরিতে PDF হিসেবে সংরক্ষিত হয়েছে। ${captured.recognizedText.trim().isEmpty ? 'OCR লেখা পাওয়া যায়নি।' : 'সম্পাদনাযোগ্য লেখা Writer-এও রাখা হয়েছে।'}'
-              : '${captured.pageCount} pages saved to the Scan library as PDF. ${captured.recognizedText.trim().isEmpty ? 'No OCR text was detected.' : 'Editable text was also saved to Writer.'}'),
+              ? '${captured.pageCount} পৃষ্ঠা স্ক্যান PDF হিসেবে সংরক্ষিত হয়েছে। ${captured.recognizedText.trim().isEmpty ? 'OCR লেখা পাওয়া যায়নি।' : 'লেখা Writer-এও সংরক্ষিত হয়েছে।'}'
+              : '${captured.pageCount} pages saved as a scanned PDF. ${captured.recognizedText.trim().isEmpty ? 'No OCR text was detected.' : 'Recognized text was also saved to Writer.'}'),
           action: SnackBarAction(
             label: _bn ? 'PDF শেয়ার' : 'Share PDF',
             onPressed: () => _shareScan(scanRecord),
@@ -410,12 +365,12 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
         'updated': DateTime.now().toIso8601String(),
         'source': 'scan_ocr',
         'sourceImageName': file.name,
-        'conversion': {'pageCount': 1, 'ocrUsed': true},
+        'conversion': {'pageCount': converted.pageCount, 'ocrUsed': true},
       });
       await storeDocuments(documents);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(_bn ? 'ছবির লেখা Writer-এ সংরক্ষিত হয়েছে।' : 'Image OCR text saved to Writer.'),
+        content: Text(_bn ? 'স্ক্যানের লেখা Writer-এ সংরক্ষিত হয়েছে।' : 'Scanned text saved to Writer.'),
         action: SnackBarAction(
           label: _bn ? 'Writer খুলুন' : 'Open Writer',
           onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => WriterScreen(isBangla: _bn))),
@@ -1132,11 +1087,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
                   FilledButton.icon(
                     onPressed: _busy ? null : _scanImage,
                     icon: _busy ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.document_scanner),
-                    label: Text(_busy
-                        ? (_bn ? 'স্ক্যান হচ্ছে…' : 'Scanning…')
-                        : (Platform.isAndroid
-                            ? (_bn ? 'ক্যামেরা দিয়ে ডকুমেন্ট স্ক্যান' : 'Scan document with camera')
-                            : (_bn ? 'ছবি নির্বাচন করে OCR স্ক্যান' : 'Select image and OCR scan'))),
+                    label: Text(_busy ? (_bn ? 'স্ক্যান হচ্ছে…' : 'Scanning…') : (Platform.isAndroid ? (_bn ? 'ক্যামেরা দিয়ে ডকুমেন্ট স্ক্যান' : 'Scan document with camera') : (_bn ? 'ছবি নির্বাচন করে OCR স্ক্যান' : 'Select image and OCR scan'))),
                   ),
                 if (widget.module == 'Cloud') _cloudPanel(),
                 if (widget.module == 'AI Assistant')
@@ -1216,13 +1167,9 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
                           ? () {
                               final text = item['content']?.toString() ?? '';
                               if (text.trim().isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                  content: Text(_bn ? 'এই স্ক্যানে OCR লেখা পাওয়া যায়নি। PDF শেয়ার করতে পাশের বোতাম চাপুন।' : 'No OCR text was detected. Use the share button to share the PDF.'),
-                                ));
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_bn ? 'এই স্ক্যানে OCR লেখা পাওয়া যায়নি। PDF শেয়ার করতে পাশের বোতাম চাপুন।' : 'No OCR text was detected. Use the share button to share the PDF.')));
                               } else {
-                                Navigator.push(context, MaterialPageRoute(
-                                  builder: (_) => WriterScreen(isBangla: _bn),
-                                ));
+                                Navigator.push(context, MaterialPageRoute(builder: (_) => WriterScreen(isBangla: _bn)));
                               }
                             }
                           : () => _editItem(item: item),
@@ -1259,21 +1206,10 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
                                   ],
                                 )
                               : widget.module == 'Scan'
-                              ? Wrap(
-                                  spacing: 0,
-                                  children: [
-                                    IconButton(
-                                      tooltip: _bn ? 'PDF শেয়ার' : 'Share PDF',
-                                      icon: const Icon(Icons.share_outlined),
-                                      onPressed: () => _shareScan(item),
-                                    ),
-                                    IconButton(
-                                      tooltip: _bn ? 'মুছুন' : 'Delete',
-                                      icon: const Icon(Icons.delete_outline),
-                                      onPressed: () => _deleteItem(item),
-                                    ),
-                                  ],
-                                )
+                                  ? Wrap(spacing: 0, children: [
+                                      IconButton(tooltip: _bn ? 'PDF শেয়ার' : 'Share PDF', icon: const Icon(Icons.share_outlined), onPressed: () => _shareScan(item)),
+                                      IconButton(tooltip: _bn ? 'মুছুন' : 'Delete', icon: const Icon(Icons.delete_outline), onPressed: () => _deleteItem(item)),
+                                    ])
                               : widget.module == 'Database'
                                   ? Wrap(
                                       spacing: 0,
@@ -1487,8 +1423,6 @@ class _WorkspaceItemDialogState extends State<_WorkspaceItemDialog> {
         await _save(updatedScans);
         if (!mounted) return;
         setState(() => _items = updatedScans);
-
-        // OCR text also becomes an editable Writer document when available.
         if (captured.recognizedText.trim().isNotEmpty) {
           final documents = await loadDocuments();
           documents.add({
@@ -1506,11 +1440,16 @@ class _WorkspaceItemDialogState extends State<_WorkspaceItemDialog> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(_bn
-              ? '${captured.pageCount} পৃষ্ঠা Scan লাইব্রেরিতে PDF হিসেবে সংরক্ষিত হয়েছে। ${captured.recognizedText.trim().isEmpty ? 'OCR লেখা পাওয়া যায়নি।' : 'সম্পাদনাযোগ্য লেখা Writer-এও রাখা হয়েছে।'}'
-              : '${captured.pageCount} pages saved to the Scan library as PDF. ${captured.recognizedText.trim().isEmpty ? 'No OCR text was detected.' : 'Editable text was also saved to Writer.'}'),
+              ? '${captured.pageCount} পৃষ্ঠা স্ক্যান PDF হিসেবে সংরক্ষিত হয়েছে। ${captured.recognizedText.trim().isEmpty ? 'OCR লেখা পাওয়া যায়নি।' : 'লেখা Writer-এও সংরক্ষিত হয়েছে।'}'
+              : '${captured.pageCount} pages saved as a scanned PDF. ${captured.recognizedText.trim().isEmpty ? 'No OCR text was detected.' : 'Recognized text was also saved to Writer.'}'),
           action: SnackBarAction(
             label: _bn ? 'PDF শেয়ার' : 'Share PDF',
-            onPressed: () => _shareScan(scanRecord),
+            onPressed: () async {
+              await Printing.sharePdf(
+                bytes: captured.pdfBytes,
+                filename: captured.fileName,
+              );
+            },
           ),
           duration: const Duration(seconds: 8),
         ));
@@ -1537,12 +1476,12 @@ class _WorkspaceItemDialogState extends State<_WorkspaceItemDialog> {
         'updated': DateTime.now().toIso8601String(),
         'source': 'scan_ocr',
         'sourceImageName': file.name,
-        'conversion': {'pageCount': 1, 'ocrUsed': true},
+        'conversion': {'pageCount': converted.pageCount, 'ocrUsed': true},
       });
       await storeDocuments(documents);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(_bn ? 'ছবির লেখা Writer-এ সংরক্ষিত হয়েছে।' : 'Image OCR text saved to Writer.'),
+        content: Text(_bn ? 'স্ক্যানের লেখা Writer-এ সংরক্ষিত হয়েছে।' : 'Scanned text saved to Writer.'),
         action: SnackBarAction(
           label: _bn ? 'Writer খুলুন' : 'Open Writer',
           onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => WriterScreen(isBangla: _bn))),
@@ -1717,9 +1656,6 @@ class _WorkspaceItemDialogState extends State<_WorkspaceItemDialog> {
       'Database' => _bn
           ? 'টেবিলের নাম ও কমা দিয়ে Field লিখুন। Manage table rows দিয়ে Offline-এ Row তৈরি, সম্পাদনা ও মুছতে পারবেন। SQL/relational query engine এখনো যুক্ত হয়নি।'
           : 'Define table names and comma-separated fields. Manage table rows to create, edit and delete offline records. A SQL/relational query engine is not connected yet.',
-      'Scan' => _bn
-          ? 'ক্যামেরা দিয়ে বহু পৃষ্ঠা স্ক্যান করুন। PDF Scan লাইব্রেরিতে থাকবে; পাওয়া বাংলা/ইংরেজি OCR লেখা Writer-এ সম্পাদনা করা যাবে।'
-          : 'Scan multiple pages with the camera. PDFs stay in the Scan library; recognized Bangla/English OCR text can be edited in Writer.',
       _ => '',
     };
     if (help.isEmpty) return const SizedBox.shrink();
@@ -2259,11 +2195,7 @@ class _WorkspaceItemDialogState extends State<_WorkspaceItemDialog> {
                   FilledButton.icon(
                     onPressed: _busy ? null : _scanImage,
                     icon: _busy ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.document_scanner),
-                    label: Text(_busy
-                        ? (_bn ? 'স্ক্যান হচ্ছে…' : 'Scanning…')
-                        : (Platform.isAndroid
-                            ? (_bn ? 'ক্যামেরা দিয়ে ডকুমেন্ট স্ক্যান' : 'Scan document with camera')
-                            : (_bn ? 'ছবি নির্বাচন করে OCR স্ক্যান' : 'Select image and OCR scan'))),
+                    label: Text(_busy ? (_bn ? 'স্ক্যান হচ্ছে…' : 'Scanning…') : (Platform.isAndroid ? (_bn ? 'ক্যামেরা দিয়ে ডকুমেন্ট স্ক্যান' : 'Scan document with camera') : (_bn ? 'ছবি নির্বাচন করে OCR স্ক্যান' : 'Select image and OCR scan'))),
                   ),
                 if (widget.module == 'Cloud') _cloudPanel(),
                 if (widget.module == 'AI Assistant')
@@ -2339,20 +2271,7 @@ class _WorkspaceItemDialogState extends State<_WorkspaceItemDialog> {
                                       : Icons.auto_awesome),
                       title: Text(item['title']?.toString() ?? ''),
                       subtitle: Text(item['content']?.toString() ?? '', maxLines: 2, overflow: TextOverflow.ellipsis),
-                      onTap: widget.module == 'Scan'
-                          ? () {
-                              final text = item['content']?.toString() ?? '';
-                              if (text.trim().isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                  content: Text(_bn ? 'এই স্ক্যানে OCR লেখা পাওয়া যায়নি। PDF শেয়ার করতে পাশের বোতাম চাপুন।' : 'No OCR text was detected. Use the share button to share the PDF.'),
-                                ));
-                              } else {
-                                Navigator.push(context, MaterialPageRoute(
-                                  builder: (_) => WriterScreen(isBangla: _bn),
-                                ));
-                              }
-                            }
-                          : () => _editItem(item: item),
+                      onTap: () => _editItem(item: item),
                       trailing: widget.module == 'Forms'
                           ? Wrap(
                               spacing: 0,
@@ -2377,22 +2296,6 @@ class _WorkspaceItemDialogState extends State<_WorkspaceItemDialog> {
                                       tooltip: _bn ? 'PDF Export' : 'Export Slides PDF',
                                       icon: const Icon(Icons.picture_as_pdf_outlined),
                                       onPressed: () => _exportSlidePdf(item),
-                                    ),
-                                    IconButton(
-                                      tooltip: _bn ? 'মুছুন' : 'Delete',
-                                      icon: const Icon(Icons.delete_outline),
-                                      onPressed: () => _deleteItem(item),
-                                    ),
-                                  ],
-                                )
-                              : widget.module == 'Scan'
-                              ? Wrap(
-                                  spacing: 0,
-                                  children: [
-                                    IconButton(
-                                      tooltip: _bn ? 'PDF শেয়ার' : 'Share PDF',
-                                      icon: const Icon(Icons.share_outlined),
-                                      onPressed: () => _shareScan(item),
                                     ),
                                     IconButton(
                                       tooltip: _bn ? 'মুছুন' : 'Delete',
