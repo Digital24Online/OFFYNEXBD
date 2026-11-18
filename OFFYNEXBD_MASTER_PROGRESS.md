@@ -790,3 +790,8 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Restyled Writer ribbon tabs, editor title surface, app canvas and status strip using the shared theme. Existing Quill controller, autosave, document model, toolbar actions, page layout, tables, images, PDF and DOCX workflows are retained.
 - [ ] Validate the dashboard and Writer visual batch with Flutter Analyze, full automated tests, Android release APK build and artifact upload. Do not mark verified until the final source commit passes every CI stage.
 - [ ] Continue shared design rollout to Sheets, Slides, PDF, Fonts, AI Assistant, Cloud, Forms, Scan and Database only after this batch passes CI.
+
+
+- [x] Writer empty-state duplicate create action removed after CI #314 exposed a widget-test ambiguity; create remains available from the persistent New Document action.
+- [x] Sheets UI refresh: shared OFFYNEX theme applied to Ribbon tabs/commands, formula bar, grid headers/selection, status area and worksheet tabs. Existing formulas, workbook data, XLSX/CSV import/export, PDF/print, sorting/filtering, formatting and multi-sheet actions are unchanged.
+- [ ] Validate latest Writer + Sheets UI batch with Flutter Analyze, complete tests and Android release APK build before calling it verified.

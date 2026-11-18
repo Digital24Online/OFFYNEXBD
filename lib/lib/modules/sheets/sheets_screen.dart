@@ -15,6 +15,7 @@ import 'sheets_import_safety.dart';
 import 'sheets_workbook_codec.dart';
 import 'sheets_csv_codec.dart';
 import 'sheets_row_view.dart';
+import '../../theme/offynex_theme.dart';
 
 const String _sheetStorageKey = 'offynex_sheets_workbook_v1';
 
@@ -1186,10 +1187,11 @@ class _SheetsScreenState extends State<SheetsScreen> {
         icon: Icon(icon, size: 17),
         label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
         style: OutlinedButton.styleFrom(
-          foregroundColor: const Color(0xFF263B55),
-          side: const BorderSide(color: Color(0xFFDCE3EC)),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
+          foregroundColor: OFFYNEXTheme.ink,
+          backgroundColor: Colors.white,
+          side: const BorderSide(color: OFFYNEXTheme.border),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(11)),
         ),
       ),
     );
@@ -1303,7 +1305,9 @@ class _SheetsScreenState extends State<SheetsScreen> {
     }
     return Material(
       color: Colors.white,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      child: Container(
+        decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: OFFYNEXTheme.border))),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(children: List.generate(tabs.length, (index) {
@@ -1313,24 +1317,25 @@ class _SheetsScreenState extends State<SheetsScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 12),
                 decoration: BoxDecoration(
-                  color: selected ? const Color(0xFFEAF2FC) : Colors.white,
+                  color: selected ? OFFYNEXTheme.blueSoft : Colors.white,
                   border: Border(bottom: BorderSide(
-                    color: selected ? const Color(0xFF1677E8) : Colors.transparent,
+                    color: selected ? OFFYNEXTheme.blue : Colors.transparent,
                     width: 3,
                   )),
                 ),
                 child: Text(labels[index], style: TextStyle(
-                  fontWeight: selected ? FontWeight.bold : FontWeight.w500,
-                  color: selected ? const Color(0xFF1265C5) : const Color(0xFF34445A),
+                  fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                  color: selected ? OFFYNEXTheme.blue : OFFYNEXTheme.muted,
                 )),
               ),
             );
           })),
         ),
-        const Divider(height: 1, color: Color(0xFFE5EAF1)),
+        const Divider(height: 1, color: OFFYNEXTheme.border),
         SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: commands)),
         const Divider(height: 1, color: Color(0xFFE5EAF1)),
-      ]),
+        ]),
+      ),
     );
   }
 
@@ -1344,9 +1349,9 @@ class _SheetsScreenState extends State<SheetsScreen> {
           alignment: Alignment.center,
           padding: const EdgeInsets.symmetric(vertical: 11),
           decoration: BoxDecoration(
-            color: const Color(0xFFF1F4F8),
-            border: Border.all(color: const Color(0xFFDCE3EC)),
-            borderRadius: BorderRadius.circular(5),
+            color: OFFYNEXTheme.canvas,
+            border: Border.all(color: OFFYNEXTheme.border),
+            borderRadius: BorderRadius.circular(10),
           ),
           child: Text(_selectedCell ?? '—', style: const TextStyle(fontWeight: FontWeight.bold)),
         ),
@@ -1363,7 +1368,10 @@ class _SheetsScreenState extends State<SheetsScreen> {
             hintText: _t('Cell নির্বাচন করে মান বা Formula লিখুন', 'Select a cell and enter a value or formula'),
             isDense: true,
             contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(5)),
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: OFFYNEXTheme.border)),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: OFFYNEXTheme.border)),
           ),
         )),
         IconButton(
@@ -1380,7 +1388,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
   Widget _buildGridHeader() {
     return Container(
       height: 38 * _zoom,
-      color: const Color(0xFFE5ECF5),
+      color: OFFYNEXTheme.blueSoft,
       child: Row(children: [
         SizedBox(
           width: 42,
@@ -1417,12 +1425,12 @@ class _SheetsScreenState extends State<SheetsScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(
             color: _selectedCell == key
-                ? const Color(0xFFDCEBFF)
+                ? OFFYNEXTheme.blueSoft
                 : _colorFromHex(style['fillColor'] as String?, Colors.white),
             border: style['border'] == true
                 ? Border.all(color: const Color(0xFF596579), width: 1.2)
                 : _showGridlines
-                    ? Border.all(color: const Color(0xFFE1E6ED), width: 0.5)
+                    ? Border.all(color: OFFYNEXTheme.border, width: 0.6)
                     : Border.all(color: Colors.transparent, width: 0.5),
           ),
           child: Text(
@@ -1490,10 +1498,11 @@ class _SheetsScreenState extends State<SheetsScreen> {
   Widget build(BuildContext context) {
     final visibleRows = _buildVisibleRowIndices();
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FB),
+      backgroundColor: OFFYNEXTheme.canvas,
       appBar: AppBar(
-        title: Text(_t('OFFYNEX শিটস', 'OFFYNEX Sheets')),
-        backgroundColor: Colors.white,
+        title: Text(_t('OFFYNEX শিটস', 'OFFYNEX Sheets'), style: const TextStyle(color: OFFYNEXTheme.ink, fontWeight: FontWeight.w800)),
+        backgroundColor: OFFYNEXTheme.canvas,
+        surfaceTintColor: Colors.transparent,
         actions: [
           IconButton(
             tooltip: _t('সংরক্ষণ', 'Save'),
@@ -1510,11 +1519,11 @@ class _SheetsScreenState extends State<SheetsScreen> {
                 _buildFormulaBar(),
                 Container(
                   width: double.infinity,
-                  color: const Color(0xFFF7F9FC),
+                  color: OFFYNEXTheme.canvas,
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                   child: Row(children: [
                     Icon(_saved ? Icons.cloud_done_outlined : Icons.sync, size: 16,
-                        color: _saved ? const Color(0xFF159B68) : Colors.orange),
+                        color: _saved ? OFFYNEXTheme.teal : Colors.orange),
                     const SizedBox(width: 6),
                     Text(_saved ? _t('সংরক্ষিত', 'Saved') : _t('সংরক্ষণ হচ্ছে', 'Saving'),
                         style: const TextStyle(fontSize: 12)),
@@ -1531,7 +1540,8 @@ class _SheetsScreenState extends State<SheetsScreen> {
                 Container(
                   width: double.infinity,
                   color: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  decoration: const BoxDecoration(border: Border(top: BorderSide(color: OFFYNEXTheme.border))),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
                   child: Row(children: [
                     Expanded(
                       child: SingleChildScrollView(
@@ -1548,12 +1558,12 @@ class _SheetsScreenState extends State<SheetsScreen> {
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
                                   decoration: BoxDecoration(
                                     color: worksheet.id == _workbook.activeSheetId
-                                        ? const Color(0xFFE4F1EA)
-                                        : const Color(0xFFF2F4F7),
+                                        ? OFFYNEXTheme.blueSoft
+                                        : OFFYNEXTheme.canvas,
                                     border: Border(
                                       bottom: BorderSide(
                                         color: worksheet.id == _workbook.activeSheetId
-                                            ? const Color(0xFF159B68)
+                                            ? OFFYNEXTheme.blue
                                             : Colors.transparent,
                                         width: 2,
                                       ),
@@ -1579,7 +1589,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
                       key: const ValueKey('add-worksheet'),
                       tooltip: _t('নতুন Worksheet', 'Add worksheet'),
                       onPressed: _addWorksheet,
-                      icon: const Icon(Icons.add, color: Color(0xFF159B68)),
+                      icon: const Icon(Icons.add, color: OFFYNEXTheme.blue),
                     ),
                     IconButton(
                       key: const ValueKey('rename-worksheet'),
