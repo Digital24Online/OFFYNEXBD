@@ -15,7 +15,8 @@ import 'sheets_import_safety.dart';
 import 'sheets_workbook_codec.dart';
 import 'sheets_csv_codec.dart';
 import 'sheets_row_view.dart';
-import 'sheets_find_replace.dart';\nimport 'sheets_data_validation.dart';
+import 'sheets_find_replace.dart';
+import 'sheets_data_validation.dart';
 import '../../theme/offynex_theme.dart';
 
 const String _sheetStorageKey = 'offynex_sheets_workbook_v1';
@@ -1411,7 +1412,11 @@ class _SheetsScreenState extends State<SheetsScreen> {
       'POWER': 'A1,2',
       'MOD': 'A1,2',
       'INT': 'A1',
-      'SIGN': 'A1',\n      'IF': 'A1>0,1,0',\n      'AND': 'A1>0,B1>0',\n      'OR': 'A1>0,B1>0',\n      'NOT': 'A1=0',
+      'SIGN': 'A1',
+      'IF': 'A1>0,1,0',
+      'AND': 'A1>0,B1>0',
+      'OR': 'A1>0,B1>0',
+      'NOT': 'A1=0',
     };
     final example = examples[function] ?? 'A1';
     final controller = TextEditingController(text: example);

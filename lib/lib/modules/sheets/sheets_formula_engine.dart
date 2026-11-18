@@ -253,7 +253,8 @@ class _FormulaParser {
       'ABS', 'ROUND', 'ROUNDUP', 'ROUNDDOWN', 'SQRT', 'POWER',
       'MOD', 'INT', 'SIGN', 'MEDIAN', 'LARGE', 'SMALL',
       'CEILING', 'FLOOR', 'PI', 'EXP', 'LN', 'LOG', 'LOG10',
-      'SIN', 'COS', 'TAN', 'ASIN', 'ACOS', 'ATAN',\n      'IF', 'AND', 'OR', 'NOT',
+      'SIN', 'COS', 'TAN', 'ASIN', 'ACOS', 'ATAN',
+      'IF', 'AND', 'OR', 'NOT',
     };
     if (!supported.contains(name)) {
       throw FormatException('Unsupported function: $name');
