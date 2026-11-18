@@ -78,6 +78,15 @@ class ScanDocumentService {
 
     // Preserve the captured PDF before OCR, so a recognition failure cannot
     // discard the user's scan.
+    // Save the PDF before OCR so recognition failures cannot discard the scan.
+    final documents = await getApplicationDocumentsDirectory();
+    final scansDirectory = Directory('${documents.path}/OFFYNEXBD/Scans');
+    await scansDirectory.create(recursive: true);
+    final stamp = DateTime.now().microsecondsSinceEpoch;
+    final fileName = 'OFFYNEXBD_Scan_$stamp.pdf';
+    final savedFile = File('${scansDirectory.path}/$fileName');
+    await savedFile.writeAsBytes(pdfBytes, flush: true);
+
     final recognizedPages = <String>[];
     final imagePaths = result.images ?? const <String>[];
     for (var index = 0; index < imagePaths.length; index++) {
@@ -97,14 +106,6 @@ class ScanDocumentService {
         // Keep the captured PDF even if OCR fails on an individual page.
       }
     }
-
-    final documents = await getApplicationDocumentsDirectory();
-    final scansDirectory = Directory('${documents.path}/OFFYNEXBD/Scans');
-    await scansDirectory.create(recursive: true);
-    final stamp = DateTime.now().microsecondsSinceEpoch;
-    final fileName = 'OFFYNEXBD_Scan_$stamp.pdf';
-    final savedFile = File('${scansDirectory.path}/$fileName');
-    await savedFile.writeAsBytes(pdfBytes, flush: true);
 
     return ScanCaptureResult(
       pdfBytes: pdfBytes,
