@@ -46,7 +46,7 @@ void main() {
 
     await tester.tap(find.text('Customers'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).at(1), 'name, phone, email');
+    await tester.enterText(find.byType(TextField).last, 'name, phone, email');
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
 
