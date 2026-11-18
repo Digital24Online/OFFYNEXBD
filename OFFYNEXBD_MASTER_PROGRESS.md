@@ -1030,3 +1030,22 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Added regression coverage for multi-cell/multi-area import, unsupported rules, grid/expansion limits, grouped export and XLSX save/reopen round-trip.
 - [ ] Flutter Analyze, full automated tests, Android release APK build and artifact upload must pass on the integrated commit before CI verification.
 - [ ] Formula/range-backed dropdowns and non-list Excel validation types remain unsupported; they are rejected with an explicit import error, not silently dropped.
+
+
+## Sheets Charts, Pivot Tables and Conditional Formatting — integrated feature batch (2026-11-18)
+
+- [x] Added bounded range parsing for cell/range references, including absolute and reversed ranges; analysis operations are limited to 10,000 cells.
+- [x] Added conditional-format rules for numeric greater/less/equal comparisons, text contains, empty and non-empty cells; rules apply in the live grid and are persisted per worksheet.
+- [x] Added bilingual rule creation and clear-all controls; maximum 100 rules per worksheet.
+- [x] Conditional formatting is materialized as cell styling during XLSX export for populated/styled cells; native Excel conditional-rule metadata is not yet preserved on export/import.
+- [x] Added Bar and Line chart creation from a header/label/value range, formula-value resolution, persistent chart specifications, live previews, and per-chart deletion; maximum 20 charts per worksheet.
+- [x] Chart rendering supports positive and negative values and retains valid zero-only data series.
+- [x] Added Pivot Table summary worksheets grouped by a selected column, with Sum, Count, Average, Minimum and Maximum aggregation; formulas in source cells are evaluated.
+- [x] Pivot source/range/fields/aggregation are persisted; a Refresh Pivot command rebuilds the summary from the original source worksheet.
+- [x] Prevented deletion of a source worksheet while a dependent Pivot Table still references it; deleting the Pivot worksheet first releases the dependency.
+- [x] Added workbook codec validation and regression tests for chart/conditional/Pivot persistence, invalid metadata and missing Pivot sources.
+- [ ] Flutter Analyze, full automated tests, Android release APK build and artifact upload are pending on this branch and must be verified before merging.
+- [ ] Charts are currently OFFYNEXBD workspace charts; native XLSX chart object import/export is not implemented.
+- [ ] Pivot summaries require manual Refresh after source-data edits; automatic refresh, multiple row/column fields, filters and drill-down are not implemented.
+- [ ] Conditional formatting uses this app's supported rule model; native Excel conditional-format rules are not round-tripped.
+- [ ] Physical Android layout, touch, performance and accessibility validation remain pending.
