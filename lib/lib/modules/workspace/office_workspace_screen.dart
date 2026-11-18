@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'slides_pdf_export_service.dart';
+import 'database_rows_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../pdf/pdf_to_document_service.dart';
@@ -469,6 +470,67 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
     ));
   }
 
+  Future<void> _manageDatabaseRows(Map<String, dynamic> table) async {
+    final fields = (table['content']?.toString() ?? '')
+        .split(',')
+        .map((field) => field.trim())
+        .where((field) => field.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+    if (fields.isEmpty || fields.length > 40) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(_bn
+            ? 'টেবিলে ১ থেকে ৪০টি কমা দিয়ে আলাদা করা Field লিখুন।'
+            : 'Define between 1 and 40 comma-separated fields first.'),
+      ));
+      return;
+    }
+    final prefs = await SharedPreferences.getInstance();
+    const storageKey = 'offynex_database_rows_v1';
+    final raw = prefs.getString(storageKey);
+    final allRows = <String, dynamic>{};
+    if (raw != null) {
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is! Map) throw const FormatException('Database store must be an object.');
+        allRows.addAll(Map<String, dynamic>.from(decoded));
+      } catch (error) {
+        final recoveryKey =
+            'offynex_database_rows_recovery_${DateTime.now().microsecondsSinceEpoch}';
+        final preserved = await prefs.setString(recoveryKey, raw);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(preserved
+              ? (_bn ? 'আগের Database Rows-এর Recovery Copy রাখা হয়েছে।' : 'Original database rows recovery copy saved.')
+              : 'Database recovery copy failed: $error'),
+        ));
+      }
+    }
+    final tableId = table['id']?.toString() ?? '';
+    final existing = allRows[tableId];
+    final initialRows = existing is List
+        ? existing.whereType<Map>().map((row) => Map<String, dynamic>.from(row)).toList()
+        : <Map<String, dynamic>>[];
+    final updated = await showDialog<List<Map<String, dynamic>>>(
+      context: context,
+      builder: (_) => DatabaseRowsDialog(
+        isBangla: _bn,
+        tableName: table['title']?.toString() ?? '',
+        fields: fields,
+        initialRows: initialRows,
+      ),
+    );
+    if (updated == null || !mounted) return;
+    allRows[tableId] = updated;
+    final saved = await prefs.setString(storageKey, jsonEncode(allRows));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(saved
+          ? (_bn ? 'টেবিলের ${updated.length}টি Row সংরক্ষণ হয়েছে।' : '${updated.length} table rows saved.')
+          : (_bn ? 'Database Row সংরক্ষণ হয়নি।' : 'Database rows could not be saved.')),
+    ));
+  }
+
   Future<void> _exportSlidePdf(Map<String, dynamic> slide) async {
     try {
       final title = slide['title']?.toString().trim() ?? '';
@@ -811,11 +873,27 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
                                     ),
                                   ],
                                 )
-                              : IconButton(
-                                  tooltip: _bn ? 'মুছুন' : 'Delete',
-                                  icon: const Icon(Icons.delete_outline),
-                                  onPressed: () => _deleteItem(item),
-                                ),
+                              : widget.module == 'Database'
+                                  ? Wrap(
+                                      spacing: 0,
+                                      children: [
+                                        IconButton(
+                                          tooltip: _bn ? 'টেবিলের Row' : 'Manage table rows',
+                                          icon: const Icon(Icons.table_rows_outlined),
+                                          onPressed: () => _manageDatabaseRows(item),
+                                        ),
+                                        IconButton(
+                                          tooltip: _bn ? 'মুছুন' : 'Delete',
+                                          icon: const Icon(Icons.delete_outline),
+                                          onPressed: () => _deleteItem(item),
+                                        ),
+                                      ],
+                                    )
+                                  : IconButton(
+                                      tooltip: _bn ? 'মুছুন' : 'Delete',
+                                      icon: const Icon(Icons.delete_outline),
+                                      onPressed: () => _deleteItem(item),
+                                    ),
                     ),
                   )),
                 ],
