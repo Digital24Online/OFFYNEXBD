@@ -13,6 +13,16 @@ on:
       - 'pubspec.yaml'
       - 'assets/**'
       - '.github/workflows/bootstrap.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'lib/**'
+      - 'modules/**'
+      - 'test/**'
+      - 'pubspec.yaml'
+      - 'assets/**'
+      - '.github/workflows/bootstrap.yml'
 
 permissions:
   contents: write
