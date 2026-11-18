@@ -55,6 +55,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
   final ScrollController _horizontalController = ScrollController();
   final ScrollController _verticalController = ScrollController();
   bool _loading = true;
+  bool _workbookDataBlocked = false;
   bool _saved = true;
   String? _workbookRecoveryMessage;
   Future<void> _saveQueue = Future<void>.value();
@@ -106,7 +107,9 @@ class _SheetsScreenState extends State<SheetsScreen> {
     } catch (error) {
       final recoveryKey = 'offynex_sheets_workbook_recovery_${DateTime.now().microsecondsSinceEpoch}';
       final preserved = raw != null && await prefs.setString(recoveryKey, raw);
-      canReplaceRawWorkbook = preserved;
+      _workbookDataBlocked = true;
+      // A recovery copy is not permission to replace the damaged primary data.
+      canReplaceRawWorkbook = false;
       _workbookRecoveryMessage = preserved
           ? _t('Workbook পড়া যায়নি। মূল ডেটার Recovery Copy সংরক্ষিত: $recoveryKey', 'Workbook could not be read. Original data recovery copy saved: $recoveryKey')
           : _t('Workbook পড়া যায়নি এবং Recovery Copy সংরক্ষণ ব্যর্থ হয়েছে: $error', 'Workbook could not be read and recovery copy failed: $error');
@@ -130,6 +133,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
   }
 
   Future<void> _saveWorkbook() async {
+    if (_workbookDataBlocked) return;
     final snapshot = SheetsWorkbookCodec.encode(_workbook);
     if (mounted) setState(() => _saved = false);
     _saveQueue = _saveQueue.catchError((_) {}).then((_) async {
@@ -1496,6 +1500,30 @@ class _SheetsScreenState extends State<SheetsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    if (_workbookDataBlocked) {
+      return Scaffold(
+        backgroundColor: OFFYNEXTheme.canvas,
+        appBar: AppBar(
+          title: Text(_t('OFFYNEX শিটস', 'OFFYNEX Sheets')),
+          backgroundColor: OFFYNEXTheme.canvas,
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              _workbookRecoveryMessage ?? _t(
+                'Workbook ডেটা ক্ষতিগ্রস্ত। মূল ডেটা সুরক্ষার জন্য সম্পাদনা বন্ধ রাখা হয়েছে।',
+                'Workbook data is damaged. Editing is blocked to protect the original data.',
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      );
+    }
     final visibleRows = _buildVisibleRowIndices();
     return Scaffold(
       backgroundColor: OFFYNEXTheme.canvas,

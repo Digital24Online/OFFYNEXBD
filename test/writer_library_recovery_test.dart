@@ -20,5 +20,13 @@ void main() {
     expect(prefs.getString(recoveryKeys.single), damaged);
     expect(prefs.getString(documentsKey), damaged);
     expect(writerDataRecoveryNotice, contains(recoveryKeys.single));
+
+    await expectLater(
+      storeDocuments([
+        {'id': 'new-doc', 'title': 'New document', 'content': ''},
+      ]),
+      throwsStateError,
+    );
+    expect(prefs.getString(documentsKey), damaged);
   });
 }

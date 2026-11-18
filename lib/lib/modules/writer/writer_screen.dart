@@ -19,8 +19,11 @@ import '../../theme/offynex_theme.dart';
 
 const String documentsKey = 'offynex_writer_documents';
 String? writerDataRecoveryNotice;
+bool writerLibraryDataBlocked = false;
 
 Future<List<Map<String, dynamic>>> loadDocuments() async {
+  writerLibraryDataBlocked = false;
+  writerDataRecoveryNotice = null;
   final prefs = await SharedPreferences.getInstance();
   final raw = prefs.getString(documentsKey);
 
@@ -35,6 +38,7 @@ Future<List<Map<String, dynamic>>> loadDocuments() async {
         .map((item) => Map<String, dynamic>.from(item as Map))
         .toList();
   } catch (error) {
+    writerLibraryDataBlocked = true;
     final recoveryKey =
         'offynex_writer_documents_recovery_${DateTime.now().microsecondsSinceEpoch}';
     final preserved = await prefs.setString(recoveryKey, raw);
@@ -48,6 +52,9 @@ Future<List<Map<String, dynamic>>> loadDocuments() async {
 Future<void> storeDocuments(
   List<Map<String, dynamic>> documents,
 ) async {
+  if (writerLibraryDataBlocked) {
+    throw StateError('Writer library is damaged; original data is protected from overwrite.');
+  }
   final prefs = await SharedPreferences.getInstance();
   await prefs.setString(documentsKey, jsonEncode(documents));
 }
@@ -65,6 +72,7 @@ class _WriterScreenState extends State<WriterScreen> {
 
   List<Map<String, dynamic>> documents = [];
   bool isLoading = true;
+  bool isDataBlocked = false;
 
   @override
   void initState() {
@@ -79,6 +87,7 @@ class _WriterScreenState extends State<WriterScreen> {
     setState(() {
       documents = result;
       isLoading = false;
+      isDataBlocked = writerLibraryDataBlocked;
     });
     final recoveryNotice = writerDataRecoveryNotice;
     if (recoveryNotice != null) {
@@ -90,6 +99,12 @@ class _WriterScreenState extends State<WriterScreen> {
   }
 
   Future<void> exportDocuments() async {
+    if (isDataBlocked) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Writer library is damaged. Original data has been preserved for recovery.')),
+      );
+      return;
+    }
     try {
       final json = WriterDocumentCodec.encode(documents);
       final saved = await FilePicker.saveFile(
@@ -113,6 +128,12 @@ class _WriterScreenState extends State<WriterScreen> {
   }
 
   Future<void> importDocuments() async {
+    if (isDataBlocked) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Writer library is damaged. Import is blocked to protect the original data.')),
+      );
+      return;
+    }
     try {
       final picked = await FilePicker.pickFile(
         type: FileType.custom,
@@ -174,6 +195,12 @@ class _WriterScreenState extends State<WriterScreen> {
   }
 
   Future<void> addDocument() async {
+    if (isDataBlocked) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Writer library is damaged. New documents are blocked until recovery.')),
+      );
+      return;
+    }
     final id = DateTime.now().microsecondsSinceEpoch.toString();
 
     final document = <String, dynamic>{
@@ -209,6 +236,7 @@ class _WriterScreenState extends State<WriterScreen> {
   Future<void> renameDocument(
     Map<String, dynamic> document,
   ) async {
+    if (isDataBlocked) return;
     final controller = TextEditingController(
       text: document['title']?.toString() ?? '',
     );
@@ -263,6 +291,7 @@ class _WriterScreenState extends State<WriterScreen> {
   Future<void> deleteDocument(
     Map<String, dynamic> document,
   ) async {
+    if (isDataBlocked) return;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -319,7 +348,7 @@ class _WriterScreenState extends State<WriterScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: addDocument, backgroundColor: OFFYNEXTheme.blue, foregroundColor: Colors.white,
+        onPressed: isDataBlocked ? null : addDocument, backgroundColor: OFFYNEXTheme.blue, foregroundColor: Colors.white,
         icon: const Icon(Icons.add_rounded), label: Text(_t('নতুন ডকুমেন্ট', 'New Document')),
       ),
       body: isLoading

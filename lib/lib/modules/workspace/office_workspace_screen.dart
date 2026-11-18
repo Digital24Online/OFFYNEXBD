@@ -130,12 +130,12 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
     }
   }
 
-  Future<void> _save() async {
+  Future<void> _save([List<Map<String, dynamic>>? candidate]) async {
     if (_workspaceDataBlocked) {
       throw StateError('Workspace editing is blocked because the original data is damaged.');
     }
     final prefs = await SharedPreferences.getInstance();
-    final saved = await prefs.setString(_key, jsonEncode(_items));
+    final saved = await prefs.setString(_key, jsonEncode(candidate ?? _items));
     if (!saved) throw StateError('Workspace data could not be saved.');
   }
 
@@ -153,21 +153,26 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
     );
     if (result == null || result['title']!.trim().isEmpty) return;
     final now = DateTime.now().toIso8601String();
-    setState(() {
-      if (item == null) {
-        _items.insert(0, {
-          'id': DateTime.now().microsecondsSinceEpoch.toString(),
-          'title': result['title']!.trim(),
-          'content': result['content'] ?? '',
-          'updatedAt': now,
-        });
-      } else {
-        item['title'] = result['title']!.trim();
-        item['content'] = result['content'] ?? '';
-        item['updatedAt'] = now;
-      }
-    });
-    await _save();
+    final updated = _items.map((entry) => Map<String, dynamic>.from(entry)).toList();
+    if (item == null) {
+      updated.insert(0, {
+        'id': DateTime.now().microsecondsSinceEpoch.toString(),
+        'title': result['title']!.trim(),
+        'content': result['content'] ?? '',
+        'updatedAt': now,
+      });
+    } else {
+      final index = updated.indexWhere((entry) => entry['id'] == item['id']);
+      if (index < 0) return;
+      updated[index] = {
+        ...updated[index],
+        'title': result['title']!.trim(),
+        'content': result['content'] ?? '',
+        'updatedAt': now,
+      };
+    }
+    await _save(updated);
+    if (mounted) setState(() => _items = updated);
   }
 
   Future<void> _exportRecords() async {
@@ -240,8 +245,9 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
         ));
         return;
       }
-      setState(() => _items.insertAll(0, additions));
-      await _save();
+      final updated = [...additions, ..._items];
+      await _save(updated);
+      if (mounted) setState(() => _items = updated);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(_bn ? '${additions.length}টি নতুন আইটেম Import হয়েছে।' : '${additions.length} new records imported.'),
@@ -281,8 +287,9 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
       ),
     );
     if (yes == true) {
-      setState(() => _items.removeWhere((e) => e['id'] == item['id']));
-      await _save();
+      final updated = _items.where((entry) => entry['id'] != item['id']).toList();
+      await _save(updated);
+      if (mounted) setState(() => _items = updated);
     }
   }
 

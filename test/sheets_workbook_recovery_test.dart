@@ -24,11 +24,7 @@ void main() {
         .toList();
     expect(recoveryKeys, hasLength(1));
     expect(prefs.getString(recoveryKeys.single), damaged);
-    final savedWorkbook = SheetsWorkbookCodec.decode(
-      prefs.getString('offynex_sheets_workbook_v1')!,
-    );
-    expect(savedWorkbook.sheets, hasLength(1));
-    expect(savedWorkbook.activeSheet.name, 'Sheet1');
-    expect(savedWorkbook.activeSheet.cells, isEmpty);
+    expect(prefs.getString('offynex_sheets_workbook_v1'), damaged);
+    expect(find.textContaining('Workbook could not be read'), findsOneWidget);
   });
 }
