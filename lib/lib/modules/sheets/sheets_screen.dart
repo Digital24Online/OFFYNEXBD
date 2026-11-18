@@ -367,7 +367,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
     return {
       for (final entry in sheet.cells.entries)
         entry.key: entry.value.startsWith('=')
-            ? (engine.evaluateCell(entry.key)?.toString() ?? '')
+            ? (engine.evaluateCell(entry.key)?.toString() ?? '#ERROR')
             : entry.value,
     };
   }
@@ -1475,7 +1475,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
         }
       }
       final resolvedValue = value.startsWith('=')
-          ? (SheetsFormulaEngine(source.cells).evaluateCell(key)?.toString() ?? '')
+          ? (engine.evaluateCell(key)?.toString() ?? '#ERROR')
           : value;
       final style = <String, dynamic>{
         ...?source.styles[key],
@@ -2009,7 +2009,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
   Widget _buildGridCell(int row, int column) {
     final key = _cellKey(row, column);
     final rawValue = _cells[key] ?? '';
-    final resolvedValue = rawValue.startsWith('=') ? (_numericValue(key)?.toString() ?? '') : rawValue;
+    final resolvedValue = rawValue.startsWith('=') ? (_numericValue(key)?.toString() ?? '#ERROR') : rawValue;
     final style = <String, dynamic>{
       ...?_cellStyles[key],
       ...SheetsAnalytics.conditionalStyleForCell(key, resolvedValue, _activeWorksheet.conditionalFormats),
