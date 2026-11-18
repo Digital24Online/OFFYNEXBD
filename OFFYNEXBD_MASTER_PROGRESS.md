@@ -1056,3 +1056,10 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Added three regression tests for DOCX formatting import, ODT text/style/table round-trip and unsupported/oversized file rejection.
 - [ ] Flutter Analyze, complete tests, Android release APK and real-device checks are pending; do not claim full format fidelity before validation.
 - [ ] Advanced automatic pagination, spellcheck and installable user-font management remain open Writer tasks.
+
+
+## Writer interchange CI readiness — 2026-11-18
+
+- [x] Enabled GitHub Actions pull-request validation for source, tests, dependencies and asset changes; the existing main-branch and manual triggers remain enabled.
+- [x] ODT package now includes its document title metadata and lists the metadata file in the package manifest.
+- [ ] Pull-request Analyze, full test suite and Android APK build have not yet reported a result; merge remains blocked until the run passes.

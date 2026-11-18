@@ -418,6 +418,7 @@ class WriterDocumentFormatService {
 <manifest:file-entry manifest:full-path="/" manifest:media-type="application/vnd.oasis.opendocument.text"/>
 <manifest:file-entry manifest:full-path="content.xml" manifest:media-type="text/xml"/>
 <manifest:file-entry manifest:full-path="styles.xml" manifest:media-type="text/xml"/>
+<manifest:file-entry manifest:full-path="meta.xml" manifest:media-type="text/xml"/>
 ${manifestImages.join('\n')}
 </manifest:manifest>''';
     final mime = utf8.encode('application/vnd.oasis.opendocument.text');
@@ -427,6 +428,8 @@ ${manifestImages.join('\n')}
     archive.addFile(ArchiveFile.noCompress('mimetype', mime.length, mime));
     archive.addFile(ArchiveFile('content.xml', contentBytes.length, contentBytes));
     archive.addFile(ArchiveFile('styles.xml', styleBytes.length, styleBytes));
+    final meta = utf8.encode('<?xml version="1.0" encoding="UTF-8"?><office:document-meta xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:dc="http://purl.org/dc/elements/1.1/" office:version="1.2"><office:meta><dc:title>${_xmlEscape(title)}</dc:title></office:meta></office:document-meta>');
+    archive.addFile(ArchiveFile('meta.xml', meta.length, meta));
     archive.addFile(ArchiveFile('META-INF/manifest.xml', manifestBytes.length, manifestBytes));
     final encoded = ZipEncoder().encode(archive);
     if (encoded.isEmpty || encoded.length > maxInputBytes) throw const FormatException('ODT export exceeded the 25 MB limit.');
