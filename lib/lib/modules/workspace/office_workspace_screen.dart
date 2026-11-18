@@ -297,7 +297,9 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
     if (widget.module == 'Scan' && path is String && path.isNotEmpty) {
       try {
         final file = File(path);
-        if (await file.exists()) await file.delete();
+        if (await file.exists()) {
+          await file.delete();
+        }
       } catch (error) {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text((_bn ? 'তালিকা থেকে সরানো হয়েছে; PDF মুছতে পারেনি: ' : 'Removed from list; PDF delete failed: ') + error.toString()),
