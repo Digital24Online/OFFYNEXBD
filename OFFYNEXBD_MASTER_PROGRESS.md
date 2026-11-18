@@ -745,3 +745,6 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Native scanner service now handles Android cancellation and uses the local file paths returned by the plugin. The native Android plugin returns filesystem paths for the PDF and page images.
 - [x] Multi-page OCR separators now use real newline characters. The scanned PDF is saved to app documents before OCR begins, so OCR failure cannot discard the captured PDF (commit `b06e579c11edfe3e61f086ac912feb4589ee9617`).
 - [ ] Latest-source Build #267 / run `44261674201` is pending; its Analyze, full tests, Android APK and artifact upload must all pass before the native scanner is marked verified.
+
+- [x] Build #267 / run `44261674201` reached Analyze but failed only on one lint: redundant `dart:typed_data` import in the new Scan service (the import is already re-exported by Flutter services). Removed the redundant import in commit `f7c862dec623613b48e107242d6def03b65b2ff4`.
+- [ ] Build #268 / run `44261927870` validates that lint correction and the latest native Scan source; Analyze, full tests, Android APK and artifact upload remain pending.
