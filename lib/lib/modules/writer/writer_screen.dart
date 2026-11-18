@@ -1583,9 +1583,17 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   
   Widget _ribbonPanel(List<Widget> children) => Container(
         width: double.infinity,
-        color: const Color(0xFFF3F6FA),
-        padding: const EdgeInsets.all(10),
-        child: Wrap(spacing: 8, runSpacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: children),
+        color: const Color(0xFFEFF2F0),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+        decoration: const BoxDecoration(
+          border: Border(bottom: BorderSide(color: Color(0xFFD2DAD5))),
+        ),
+        child: Wrap(
+          spacing: 3,
+          runSpacing: 3,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: children,
+        ),
       );
 
   String _ribbonLabel(String english) {
@@ -1617,10 +1625,36 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   }
 
   Widget _ribbonButton(IconData icon, String label, VoidCallback action) =>
-      OutlinedButton.icon(
-        onPressed: action,
-        icon: Icon(icon, size: 18),
-        label: Text(_ribbonLabel(label)),
+      SizedBox(
+        width: 78,
+        height: 68,
+        child: Tooltip(
+          message: _ribbonLabel(label),
+          child: TextButton(
+            onPressed: action,
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFF26362D),
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(5),
+              ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 21, color: const Color(0xFF315D43)),
+                const SizedBox(height: 4),
+                Text(
+                  _ribbonLabel(label),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 10, height: 1.1),
+                ),
+              ],
+            ),
+          ),
+        ),
       );
 
   void selectAllText() {
@@ -1670,7 +1704,10 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     ];
     return Container(
       padding: const EdgeInsets.fromLTRB(10, 7, 10, 0),
-      decoration: const BoxDecoration(color: Colors.white, border: Border(bottom: BorderSide(color: OFFYNEXTheme.border))),
+      decoration: const BoxDecoration(
+        color: Color(0xFF185C3B),
+        border: Border(bottom: BorderSide(color: Color(0xFF12452C))),
+      ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(children: List.generate(tabs.length, (index) {
@@ -1684,11 +1721,23 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
                 duration: const Duration(milliseconds: 160),
                 padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 11),
                 decoration: BoxDecoration(
-                  color: selected ? OFFYNEXTheme.blueSoft : Colors.transparent,
-                  borderRadius: BorderRadius.circular(11),
-                  border: Border(bottom: BorderSide(color: selected ? OFFYNEXTheme.blue : Colors.transparent, width: 2.5)),
+                  color: selected ? const Color(0xFFE8F1EB) : Colors.transparent,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(5)),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: selected ? const Color(0xFFB8D5C1) : Colors.transparent,
+                      width: 3,
+                    ),
+                  ),
                 ),
-                child: Text(tabs[index], style: TextStyle(color: selected ? OFFYNEXTheme.blue : OFFYNEXTheme.muted, fontSize: 12, fontWeight: selected ? FontWeight.w800 : FontWeight.w600)),
+                child: Text(
+                  tabs[index],
+                  style: TextStyle(
+                    color: selected ? const Color(0xFF174B30) : Colors.white,
+                    fontSize: 12,
+                    fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                  ),
+                ),
               ),
             ),
           );
@@ -2604,8 +2653,10 @@ Future<void> insertWriterImage() async {
     return Scaffold(
       backgroundColor: OFFYNEXTheme.canvas,
       appBar: focusMode ? null : AppBar(
-        backgroundColor: OFFYNEXTheme.canvas,
-        title: const Text('OFFYNEX Writer', style: TextStyle(color: OFFYNEXTheme.ink, fontWeight: FontWeight.w800)),
+        backgroundColor: const Color(0xFF185C3B),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        title: const Text('OFFYNEX Writer', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
         actions: [
           IconButton(tooltip: _t('সব নির্বাচন', 'Select all'), onPressed: selectAllText, icon: const Icon(Icons.select_all)),
           IconButton(tooltip: _t('সংরক্ষণ', 'Save'), onPressed: () => saveDocument(), icon: const Icon(Icons.save_outlined)),
