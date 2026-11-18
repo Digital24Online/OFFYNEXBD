@@ -443,17 +443,8 @@ class _SheetsScreenState extends State<SheetsScreen> {
 
 
 
-  int? _selectedColumnIndex() {
-    final key = _selectedCell;
-    if (key == null) return null;
-    final match = RegExp(r'^([A-Z]+)[1-9]\\d*$').firstMatch(key);
-    if (match == null) return null;
-    var column = 0;
-    for (final rune in match.group(1)!.runes) {
-      column = column * 26 + rune - 64;
-    }
-    return column - 1;
-  }
+  int? _selectedColumnIndex() =>
+      SheetsRowView.columnIndexFromCellKey(_selectedCell);
 
   void _sortBySelectedColumn() {
     final column = _selectedColumnIndex();
