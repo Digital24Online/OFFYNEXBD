@@ -596,3 +596,12 @@ Continue development as coordinated batches across Writer, Sheets, Slides, PDF, 
 - [ ] Build #221 / run `44254160203`: Writer recovery test source commit `5bcd2500c261b7498615811cf26ec5dd2c0363a9`; Analyze/tests passed, Android APK build still running at last check.
 - [ ] Forms response collection is implemented locally: one question per line, response form, additive saved responses, response viewer, and recovery copy for malformed response archives. Online form sharing is not implemented.
 - [ ] Corrected Forms newline splitting to handle actual LF/CRLF lines and updated module guidance. Added widget test for multi-question response collection, local persistence and response viewer. Commits after Build #222 started require a fresh CI run.
+
+
+### Forms response test correction + general workspace recovery
+- [x] Build #221 / run `44254160203` completed successfully: Writer recovery-copy tests passed, Android APK build and upload succeeded.
+- [x] Forms response collection test now exercises three newline-separated questions, saves all answers locally and checks the Responses viewer. Build #226 (`44255228472`) has passed Analyze and the complete test suite; APK build was still running at the last check.
+- [x] Fixed the Forms question split expression to support LF/CRLF and corrected the widget test fixture/assertions.
+- [x] Added common recovery-copy handling for malformed Slides, Fonts, AI Assistant, Forms and Database workspace record files. Original raw JSON is preserved under a module-specific `_recovery_*` SharedPreferences key before the workspace shows an empty list.
+- [x] Added a widget test proving malformed workspace JSON remains intact and is copied to recovery storage.
+- [ ] Latest commits `e9f2f0bc9d0c92507318c4409674fda83be7858e`, `8f31c781d61ccf724d76227df30f98eb700d3e09`, and `715031c6e97b114edd24ba58a3489dc7b05e7527` need their own successful Analyze, full tests and APK build/upload before these newest changes are marked verified.
