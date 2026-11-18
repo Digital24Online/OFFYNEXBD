@@ -32,7 +32,7 @@ class ScanDocumentService {
   static String combineRecognizedPages(Iterable<String> pages) => pages
       .map((page) => page.trim())
       .where((page) => page.isNotEmpty)
-      .join('\\n\\n');
+      .join('\n\n');
 
   static Future<ScanCaptureResult?> captureAndroid() async {
     if (!Platform.isAndroid) {
@@ -76,6 +76,8 @@ class ScanDocumentService {
       throw const FormatException('স্ক্যান PDF খালি অথবা ৫০ MB-এর বেশি।');
     }
 
+    // Preserve the captured PDF before OCR, so a recognition failure cannot
+    // discard the user's scan.
     final recognizedPages = <String>[];
     final imagePaths = result.images ?? const <String>[];
     for (var index = 0; index < imagePaths.length; index++) {
@@ -109,7 +111,7 @@ class ScanDocumentService {
       pdfPath: savedFile.path,
       fileName: fileName,
       pageCount: pdf.pageCount,
-      recognizedText: recognizedPages.join('\n\n'),
+      recognizedText: combineRecognizedPages(recognizedPages),
     );
   }
 }
