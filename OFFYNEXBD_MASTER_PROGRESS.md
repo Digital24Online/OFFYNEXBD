@@ -695,3 +695,10 @@ Continue development as coordinated batches across Writer, Sheets, Slides, PDF, 
 ### Database CRUD corrected test checkpoint
 - [x] Build #244 / run `44258247618` passed Flutter Analyze and the complete test suite after moving TextEditingControllers into the nested row-editor widget.
 - [ ] Android NDK setup and APK build were still running at the last check. Wait for artifact upload before marking Database row CRUD fully verified.
+
+
+### Database row CRUD — Build #244 verified (2026-11-18)
+- [x] Build #244 / run `44258247618`, source commit `24e69adbc861e0f0cd5bd1882de176ee089442a2`: Flutter Analyze passed, full test suite passed, Android APK build passed, artifact upload passed.
+- [x] Artifact `OFFYNEXBD-Android-APK`: ID `14406877998`, size 50,231,735 bytes.
+- [x] Database offline row create/edit/delete workflow and controller-lifecycle regression test are verified by this build.
+- [x] Build #239 / run `44257520506`, source commit `1f1a41945bd28e23a74db63a4b3ff14a32ae1367`, also passed all CI stages; artifact ID `14406612497`, size 50,205,416 bytes.
