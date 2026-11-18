@@ -5,7 +5,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../writer/writer_screen.dart';
 import 'pdf_to_document_service.dart';
-import '../theme/offynex_theme.dart';
+import '../../theme/offynex_theme.dart';
 
 class PdfToDocumentScreen extends StatefulWidget {
   const PdfToDocumentScreen({super.key, required this.isBangla});
