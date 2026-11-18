@@ -523,3 +523,12 @@ Continue development as coordinated batches across Writer, Sheets, Slides, PDF, 
 - [x] Added automated codec tests for round-trip, cross-module rejection, duplicate/invalid records and unsupported module names.
 - [ ] Run #207 (ID 44252236191) validates this source batch. Do not mark it verified until Analyze, all tests and Android APK build/upload succeed.
 - [ ] These JSON files are an app-specific interchange format, not PPTX, ODT, DOCX, XLSX or an installable font package. Native formats and full module functionality remain in the coordinated roadmap.
+
+
+## Shared Workspace Search and Import Safety — 2026-11-18 (validation pending)
+
+- [x] Added case-insensitive search across saved titles and content in Slides, Fonts, AI Assistant, Forms and Database workspaces.
+- [x] Search is non-destructive and only filters the visible list; stored records are not changed.
+- [x] Added a widget regression test confirming title/content filtering.
+- [x] CI exposed an async BuildContext lint issue after the workspace JSON file read; added a mounted guard immediately after the await.
+- [ ] Latest source after the mounted-guard correction is commit `5a6512be200f49023f1d311af1f6106679fa8938`; wait for its own workflow to pass before marking the search/import batch verified.
