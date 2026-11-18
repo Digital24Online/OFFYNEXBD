@@ -487,3 +487,27 @@
 ### Remaining coordinated product work
 - The seven new workspaces are functional local foundations, not complete commercial-grade modules.
 - Continue coordinated implementation across all ten modules: real Slides/PPTX, complete PDF tools, installable and activatable font management plus Bijoy conversion, configured AI service, authenticated cloud sync, interactive Forms and responses, camera-based advanced scanner, relational Database, and richer Writer/Sheets format and feature coverage.
+
+
+## Verified Integrated Workspace Foundation — 2026-11-18 (Build #200)
+
+### Shared module workspace batch
+- [x] All seven previously missing Home Screen routes now open dedicated offline-first workspaces: Slides, Fonts, AI Assistant, Cloud, Forms, Scan and Database.
+- [x] Each workspace uses its own versioned SharedPreferences key; create/edit/delete draft records are available without overwriting Writer or Sheets storage.
+- [x] Scan image OCR reuses the existing Bengali/English OCR conversion service and saves recognized text as a Writer document.
+- [x] Cloud local backup/restore includes OFFYNEXBD-prefixed SharedPreferences values only. This is local/file backup, not online cloud synchronization.
+- [x] Bangla/English preference is persisted.
+- [ ] These are foundational workspaces, not completed full-featured modules. Slides rendering/PPTX export, dynamic font activation, secure AI service, online cloud sync, Forms responses/sharing, camera scanning enhancements and relational database engine remain future work.
+- [x] Build #200 (run ID 44250644711; source commit b69e17d4faade43cd6128eb6ffdf97f572ade489): Flutter Analyze SUCCESS, complete automated test suite SUCCESS, Android APK build SUCCESS, signing cleanup SUCCESS, generated source save SUCCESS and APK upload SUCCESS.
+- [x] APK artifact: OFFYNEXBD-Android-APK (50,111,069 bytes; artifact ID 14403333452; available until 2026-11-25).
+- [x] Run: https://github.com/Digital24Online/OFFYNEXBD/actions/runs/44250644711
+
+### Portable Cloud backup improvement — validation pending
+- [x] Added a versioned backup codec with strict format/version checks, OFFYNEXBD-only key validation and supported SharedPreferences value validation.
+- [x] Added JSON file export and import using the existing file picker; restore remains confirmation-gated.
+- [x] Added codec tests for supported-value round trip, unsupported versions, foreign keys and invalid value types.
+- [ ] Latest validation is running in workflow #203 (run ID 44251489785). Do not mark this improvement verified until Analyze, all tests and Android APK build/upload pass.
+- [ ] Online cloud sync remains unimplemented; do not describe local backup as cloud sync.
+
+### Integrated development rule
+Continue development as coordinated batches across Writer, Sheets, Slides, PDF, Fonts, AI Assistant, Cloud, Forms, Scan and Database. Audit shared dependencies and data compatibility before edits; preserve existing user data and features; add regression tests; run Analyze, full tests and Android APK build before marking any batch verified.
