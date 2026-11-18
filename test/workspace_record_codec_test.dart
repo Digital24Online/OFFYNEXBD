@@ -92,4 +92,5 @@ void main() {
       () => WorkspaceRecordCodec.decode(oversizedFile, expectedModule: 'Slides'),
       throwsFormatException,
     );
+  });
 }

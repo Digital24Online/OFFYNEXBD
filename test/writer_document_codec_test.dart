@@ -83,4 +83,5 @@ void main() {
     );
     final oversized = ''.padRight(WriterDocumentCodec.maxArchiveBytes + 1, 'x');
     expect(() => WriterDocumentCodec.decode(oversized), throwsFormatException);
+  });
 }

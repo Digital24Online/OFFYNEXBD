@@ -902,3 +902,12 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Root cause isolated to three newly extended test files: size-limit test declarations were accidentally nested inside preceding tests due to missing closing braces in Writer document codec, workspace record codec and Slides PDF export tests.
 - [x] Corrected test declaration boundaries only; all assertions and cases are retained.
 - [ ] Re-run Analyze, complete tests, Android APK build and artifact upload on this correction commit.
+
+
+## Build #347 syntax correction — 2026-11-18
+
+- [x] Build #347 / run `44319688458` on commit `cf0721a9f151c26d6302b605d2dd986b138890ae` failed at Flutter Analyze before tests could run.
+- [x] Exact issue: the final size-limit test in each of `test/slides_pdf_export_test.dart`, `test/workspace_record_codec_test.dart` and `test/writer_document_codec_test.dart` was missing its closing `});`.
+- [x] Restored the three test-block closures; no test or assertion was removed.
+- [ ] Re-run Flutter Analyze, full automated tests, Android release APK build and artifact upload on the corrected commit.
+- [ ] Do not mark the resource-hardening batch verified until all CI stages pass.
