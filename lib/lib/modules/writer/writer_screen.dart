@@ -15,6 +15,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
+import '../theme/offynex_theme.dart';
 
 const String documentsKey = 'offynex_writer_documents';
 String? writerDataRecoveryNotice;
@@ -294,93 +295,98 @@ class _WriterScreenState extends State<WriterScreen> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final horizontalPadding = width >= 900 ? 32.0 : 18.0;
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F6FA),
+      backgroundColor: OFFYNEXTheme.canvas,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        title: Text(
-          _t('OFFYNEX Writer', 'OFFYNEX Writer'),
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
+        backgroundColor: OFFYNEXTheme.canvas,
+        titleSpacing: horizontalPadding,
+        title: Row(children: [
+          Container(width: 38, height: 38, decoration: BoxDecoration(color: OFFYNEXTheme.blueSoft, borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.description_rounded, color: OFFYNEXTheme.blue)),
+          const SizedBox(width: 11),
+          Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+            Text(_t('Writer', 'Writer'), style: const TextStyle(color: OFFYNEXTheme.ink, fontSize: 18, fontWeight: FontWeight.w800)),
+            Text(_t('ডকুমেন্ট ও লেখালেখি', 'Documents and writing'), style: const TextStyle(color: OFFYNEXTheme.muted, fontSize: 10, fontWeight: FontWeight.w500)),
+          ]),
+        ]),
         actions: [
-          IconButton(
-            tooltip: _t('ডকুমেন্ট Import', 'Import documents'),
-            onPressed: importDocuments,
-            icon: const Icon(Icons.file_download_outlined),
-          ),
-          IconButton(
-            tooltip: _t('ডকুমেন্ট Export', 'Export documents'),
-            onPressed: exportDocuments,
-            icon: const Icon(Icons.file_upload_outlined),
-          ),
+          IconButton(tooltip: _t('ডকুমেন্ট Import', 'Import documents'), onPressed: importDocuments, icon: const Icon(Icons.file_download_outlined)),
+          IconButton(tooltip: _t('ডকুমেন্ট Export', 'Export documents'), onPressed: exportDocuments, icon: const Icon(Icons.file_upload_outlined)),
+          const SizedBox(width: 6),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: addDocument,
-        icon: const Icon(Icons.add),
-        label: Text(_t('নতুন ডকুমেন্ট', 'New Document')),
+        onPressed: addDocument, backgroundColor: OFFYNEXTheme.blue, foregroundColor: Colors.white,
+        icon: const Icon(Icons.add_rounded), label: Text(_t('নতুন ডকুমেন্ট', 'New Document')),
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : documents.isEmpty
               ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.description_outlined,
-                        size: 65,
-                        color: Colors.grey,
-                      ),
-                      SizedBox(height: 12),
-                      Text(_t('এখনো কোনো ডকুমেন্ট নেই', 'No documents yet')),
-                      Text(_t('নতুন ডকুমেন্ট তৈরি করুন', 'Create a new document')),
-                    ],
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.all(horizontalPadding),
+                    child: Container(
+                      width: 520, padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 34),
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), border: Border.all(color: OFFYNEXTheme.border)),
+                      child: Column(mainAxisSize: MainAxisSize.min, children: [
+                        Container(width: 76, height: 76, decoration: BoxDecoration(color: OFFYNEXTheme.blueSoft, borderRadius: BorderRadius.circular(24)), child: const Icon(Icons.description_outlined, size: 38, color: OFFYNEXTheme.blue)),
+                        const SizedBox(height: 18),
+                        Text(_t('আপনার প্রথম ডকুমেন্ট তৈরি করুন', 'Create your first document'), textAlign: TextAlign.center, style: const TextStyle(color: OFFYNEXTheme.ink, fontSize: 19, fontWeight: FontWeight.w800)),
+                        const SizedBox(height: 8),
+                        Text(_t('সব লেখা ও ডকুমেন্ট এখানে নিরাপদে সংরক্ষিত থাকবে।', 'Your writing and documents will be saved securely on this device.'), textAlign: TextAlign.center, style: const TextStyle(color: OFFYNEXTheme.muted, fontSize: 13, height: 1.5)),
+                        const SizedBox(height: 22),
+                        FilledButton.icon(onPressed: addDocument, icon: const Icon(Icons.add_rounded), label: Text(_t('নতুন ডকুমেন্ট', 'New Document'))),
+                      ]),
+                    ),
                   ),
                 )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(12),
+              : GridView.builder(
+                  padding: EdgeInsets.fromLTRB(horizontalPadding, 12, horizontalPadding, 100),
                   itemCount: documents.length,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: width >= 1100 ? 4 : width >= 700 ? 3 : 2,
+                    crossAxisSpacing: 16, mainAxisSpacing: 16,
+                    childAspectRatio: width >= 700 ? 1.12 : 0.94,
+                  ),
                   itemBuilder: (context, index) {
                     final document = documents[index];
-                    final title =
-                        document['title']?.toString() ??
-                        'Untitled Document';
-
-                    return Card(
-                      color: Colors.white,
-                      child: ListTile(
-                        leading: const Icon(
-                          Icons.description,
-                          color: Color(0xFF168BFA),
-                          size: 32,
-                        ),
-                        title: Text(
-                          title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        subtitle: Text(_t('ডিভাইসে সংরক্ষিত', 'Saved on device')),
-                        onTap: () => openDocument(document),
-                        trailing: PopupMenuButton<String>(
-                          onSelected: (value) {
-                            if (value == 'rename') {
-                              renameDocument(document);
-                            } else if (value == 'delete') {
-                              deleteDocument(document);
-                            }
-                          },
-                          itemBuilder: (_) => [
-                            PopupMenuItem(
-                              value: 'rename',
-                              child: Text(_t('নাম পরিবর্তন', 'Rename')),
-                            ),
-                            PopupMenuItem(
-                              value: 'delete',
-                              child: Text(_t('মুছুন', 'Delete')),
-                            ),
-                          ],
+                    final title = document['title']?.toString() ?? 'Untitled Document';
+                    final updated = document['updated']?.toString();
+                    return Material(
+                      color: Colors.white, borderRadius: BorderRadius.circular(20),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(20), onTap: () => openDocument(document),
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20), border: Border.all(color: OFFYNEXTheme.border),
+                            boxShadow: [BoxShadow(color: OFFYNEXTheme.ink.withValues(alpha: 0.035), blurRadius: 16, offset: const Offset(0, 6))],
+                          ),
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Row(children: [
+                              Container(width: 44, height: 50, decoration: BoxDecoration(color: OFFYNEXTheme.blueSoft, borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.description_rounded, color: OFFYNEXTheme.blue, size: 25)),
+                              const Spacer(),
+                              PopupMenuButton<String>(
+                                tooltip: _t('আরও অপশন', 'More options'),
+                                onSelected: (value) { if (value == 'rename') renameDocument(document); if (value == 'delete') deleteDocument(document); },
+                                itemBuilder: (_) => [
+                                  PopupMenuItem(value: 'rename', child: Text(_t('নাম পরিবর্তন', 'Rename'))),
+                                  PopupMenuItem(value: 'delete', child: Text(_t('মুছুন', 'Delete'))),
+                                ],
+                              ),
+                            ]),
+                            const Spacer(),
+                            Text(title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: OFFYNEXTheme.ink, fontSize: 15, fontWeight: FontWeight.w800, height: 1.3)),
+                            const SizedBox(height: 6),
+                            Text(_t('ডিভাইসে সংরক্ষিত', 'Saved on device'), style: const TextStyle(color: OFFYNEXTheme.muted, fontSize: 11)),
+                            if (updated != null) ...[
+                              const SizedBox(height: 4),
+                              Text(updated.replaceFirst('T', '  '), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: OFFYNEXTheme.muted, fontSize: 9)),
+                            ],
+                          ]),
                         ),
                       ),
                     );
@@ -1658,63 +1664,38 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   }
 
   Widget buildRibbonTabs() {
-  final tabs = [
-    _t('ফাইল', 'File'),
-    _t('হোম', 'Home'),
-    _t('ইনসার্ট', 'Insert'),
-    _t('ডিজাইন', 'Design'),
-    _t('লেআউট', 'Layout'),
-    _t('রেফারেন্স', 'References'),
-    _t('রিভিউ', 'Review'),
-    _t('ভিউ', 'View'),
-  ];
-
-  return Container(
-    color: Colors.white,
-    child: SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: List.generate(tabs.length, (index) {
+    final tabs = [
+      _t('ফাইল', 'File'), _t('হোম', 'Home'), _t('ইনসার্ট', 'Insert'),
+      _t('ডিজাইন', 'Design'), _t('লেআউট', 'Layout'),
+      _t('রেফারেন্স', 'References'), _t('রিভিউ', 'Review'), _t('ভিউ', 'View'),
+    ];
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 7, 10, 0),
+      decoration: const BoxDecoration(color: Colors.white, border: Border(bottom: BorderSide(color: OFFYNEXTheme.border))),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(children: List.generate(tabs.length, (index) {
           final selected = selectedRibbonTab == index;
-
-          return InkWell(
-            onTap: () {
-              setState(() {
-                selectedRibbonTab = index;
-              });
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 18,
-                vertical: 14,
-              ),
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: selected
-                        ? const Color(0xFF168BFA)
-                        : Colors.transparent,
-                    width: 3,
-                  ),
+          return Padding(
+            padding: const EdgeInsets.only(right: 5),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(11),
+              onTap: () => setState(() => selectedRibbonTab = index),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 11),
+                decoration: BoxDecoration(
+                  color: selected ? OFFYNEXTheme.blueSoft : Colors.transparent,
+                  borderRadius: BorderRadius.circular(11),
+                  border: Border(bottom: BorderSide(color: selected ? OFFYNEXTheme.blue : Colors.transparent, width: 2.5)),
                 ),
-              ),
-              child: Text(
-                tabs[index],
-                style: TextStyle(
-                  color: selected
-                      ? const Color(0xFF168BFA)
-                      : Colors.black87,
-                  fontWeight: selected
-                      ? FontWeight.bold
-                      : FontWeight.normal,
-                ),
+                child: Text(tabs[index], style: TextStyle(color: selected ? OFFYNEXTheme.blue : OFFYNEXTheme.muted, fontSize: 12, fontWeight: selected ? FontWeight.w800 : FontWeight.w600)),
               ),
             ),
           );
-        }),
+        })),
       ),
-    ),
-  );
+    );
   }
   
   
@@ -2622,10 +2603,10 @@ Future<void> insertWriterImage() async {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F6FA),
+      backgroundColor: OFFYNEXTheme.canvas,
       appBar: focusMode ? null : AppBar(
-        backgroundColor: Colors.white,
-        title: const Text('OFFYNEX Writer'),
+        backgroundColor: OFFYNEXTheme.canvas,
+        title: const Text('OFFYNEX Writer', style: TextStyle(color: OFFYNEXTheme.ink, fontWeight: FontWeight.w800)),
         actions: [
           IconButton(tooltip: _t('সব নির্বাচন', 'Select all'), onPressed: selectAllText, icon: const Icon(Icons.select_all)),
           IconButton(tooltip: _t('সংরক্ষণ', 'Save'), onPressed: () => saveDocument(), icon: const Icon(Icons.save_outlined)),
@@ -2643,11 +2624,9 @@ Future<void> insertWriterImage() async {
       body: Column(
         children: [
           if (!focusMode) Container(
-            color: Colors.white,
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 10,
-            ),
+            margin: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), border: Border.all(color: OFFYNEXTheme.border)),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
             child: TextField(
               controller: titleController,
               onChanged: (_) => scheduleSave(),
@@ -2656,10 +2635,7 @@ Future<void> insertWriterImage() async {
                 hintText: 'Document name',
                 prefixIcon: Icon(Icons.description_outlined),
               ),
-              style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(color: OFFYNEXTheme.ink, fontSize: 17, fontWeight: FontWeight.w800),
             ),
           ),
           if (!focusMode) Column(
@@ -2671,7 +2647,7 @@ Future<void> insertWriterImage() async {
                 ] else if (selectedRibbonTab == 1) ...[
                 buildHomeRibbon(),
                 Container(
-                  color: const Color(0xFFEAF0F8),
+                  color: Colors.white,
                   child: QuillSimpleToolbar(
                     controller: quillController,
                     config: const QuillSimpleToolbarConfig(
@@ -2817,7 +2793,7 @@ Future<void> insertWriterImage() async {
           ),
           if (showStatusBar) Container(
             width: double.infinity,
-            color: Colors.white,
+            decoration: const BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: OFFYNEXTheme.border))),
             padding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 12,
@@ -2838,7 +2814,7 @@ Future<void> insertWriterImage() async {
                 Icon(
                   isSaved ? Icons.save : Icons.sync,
                   size: 15,
-                  color: isSaved ? Colors.green : Colors.orange,
+                  color: isSaved ? OFFYNEXTheme.teal : const Color(0xFFE59A32),
                 ),
                 const SizedBox(width: 5),
                 Text(

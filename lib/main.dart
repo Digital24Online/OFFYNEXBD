@@ -357,7 +357,7 @@ void openModule(OfficeModule module) {
                               children: [
                                 const Icon(Icons.auto_awesome_rounded, color: Color(0xFFFFD27A), size: 17),
                                 const SizedBox(width: 8),
-                                Text('The Future of Office Productivity', style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.2)),
+                                Text('OFFYNEXBD  •  The Future of Office Productivity', style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.2)),
                               ],
                             ),
                           ],
@@ -389,7 +389,7 @@ void openModule(OfficeModule module) {
                   const SizedBox(height: 17),
                   LayoutBuilder(
                     builder: (context, constraints) {
-                      final columns = constraints.maxWidth >= 1050 ? 4 : constraints.maxWidth >= 650 ? 3 : 2;
+                      final columns = constraints.maxWidth >= 760 ? 4 : constraints.maxWidth >= 560 ? 3 : 2;
                       return GridView.builder(
                         key: const ValueKey('offynex-module-grid'),
                         shrinkWrap: true,
@@ -399,7 +399,7 @@ void openModule(OfficeModule module) {
                           crossAxisCount: columns,
                           crossAxisSpacing: 14,
                           mainAxisSpacing: 14,
-                          childAspectRatio: columns == 2 ? 1.22 : 1.28,
+                          childAspectRatio: columns == 4 ? 1.18 : 1.22,
                         ),
                         itemBuilder: (context, index) {
                           final module = modules[index];
