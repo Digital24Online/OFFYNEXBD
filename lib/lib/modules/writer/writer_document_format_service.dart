@@ -122,7 +122,7 @@ class WriterDocumentFormatService {
       if (name == 'hyperlink') {
         final id = _attribute(node, 'id');
         final target = id == null ? null : _safeLink(relationships[id]);
-        final linked = <String, dynamic>{...attrs, if (target case final safeTarget?) 'link': safeTarget};
+        final linked = <String, dynamic>{...attrs, 'link': ?target};
         for (final child in node.children) { await walk(child, linked); }
         return;
       }
@@ -397,7 +397,7 @@ class WriterDocumentFormatService {
       final name = node.name.local;
       if (name == 'a') {
         final target = _safeLink(_attribute(node, 'href'));
-        final linked = <String, dynamic>{...attrs, if (target case final safeTarget?) 'link': safeTarget};
+        final linked = <String, dynamic>{...attrs, 'link': ?target};
         for (final child in node.children) { await walk(child, linked); }
         return;
       }
@@ -594,7 +594,7 @@ class WriterDocumentFormatService {
 <style:style style:name="T_Bold" style:family="text"><style:text-properties fo:font-weight="bold"/></style:style>
 <style:style style:name="T_Italic" style:family="text"><style:text-properties fo:font-style="italic"/></style:style>
 <style:style style:name="T_Underline" style:family="text"><style:text-properties style:text-underline-style="solid"/></style:style>
-${inlineTextStyles.entries.map((entry) => '<style:style style:name="' + entry.value + '" style:family="text"><style:text-properties ' + entry.key + '/></style:style>').join('\n')}
+${inlineTextStyles.entries.map((entry) => '<style:style style:name="${entry.value}" style:family="text"><style:text-properties ${entry.key}/></style:style>').join('\n')}
 </office:styles>
 <office:automatic-styles><style:page-layout style:name="pm1"><style:page-layout-properties fo:page-width="${page[0].toStringAsFixed(2)}cm" fo:page-height="${page[1].toStringAsFixed(2)}cm" style:print-orientation="${pageLayout['orientation'] == 'Landscape' ? 'landscape' : 'portrait'}" fo:margin-top="${margin('top')}" fo:margin-bottom="${margin('bottom')}" fo:margin-left="${margin('left')}" fo:margin-right="${margin('right')}"/></style:page-layout></office:automatic-styles>
 <office:master-styles><style:master-page style:name="Default" style:page-layout-name="pm1"><style:header><text:p>${_xmlEscape(headerText)}</text:p></style:header><style:footer><text:p>${_xmlEscape(footerText)}</text:p></style:footer></style:master-page></office:master-styles>
