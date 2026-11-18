@@ -384,3 +384,19 @@
 - Run URL: https://github.com/Digital24Online/OFFYNEXBD/actions/runs/44156020614
 - Artifact download: https://api.github.com/repos/Digital24Online/OFFYNEXBD/actions/artifacts/14360978705/zip
 - [ ] Remaining Sheets features are not complete: multi-sheet workbook management, charts, sorting/filtering, pivot tables, data validation, conditional formatting, ODS/CSV import/export, advanced print-preview controls, larger-workbook performance and physical Android/printer visual verification.
+
+## OFFYNEX Sheets — CSV Import/Export Verified — 2026-11-18
+
+- [x] Added a dedicated CSV codec with UTF-8/BOM handling and correct parsing/encoding for commas, escaped quotes, CRLF/LF, quoted multiline cells and Bengali text.
+- [x] Added Import CSV and Export CSV actions in the Sheets File and Data ribbons; labels support Bangla and English.
+- [x] CSV import validates the 1,000-row × 100-column workbook limit before replacing the current sheet and asks for confirmation; it explains that CSV does not preserve formatting.
+- [x] CSV export writes the used worksheet range; formula contents are exported as formula text.
+- [x] Added automated CSV codec tests for Bengali, quoted values, commas, multiline cells, BOM, trailing newline, malformed quoting and round-trip behavior.
+- [x] Updated `modules/sheets/README.md` with CSV behavior and known limitations. CSV does not preserve cell formatting; imported cells are unformatted. ODS import/export remains unimplemented.
+- [x] Build #178 (run ID `44160413539`; commit `ef7d4a62efb68d78ab14e96bcf51f3d5ee0ad6e8`) completed SUCCESS.
+- [x] Flutter Analyze — SUCCESS.
+- [x] Full automated test suite — SUCCESS.
+- [x] Android APK build, signing-file cleanup, generated-source save and APK upload — SUCCESS.
+- [x] Artifact: `OFFYNEXBD-Android-APK`, 50,028,708 bytes; artifact ID `14363800988`; available until 2026-11-24T19:42:58Z.
+- Run URL: https://github.com/Digital24Online/OFFYNEXBD/actions/runs/44160413539
+- [ ] Remaining Sheets features: multi-sheet workbook management, charts, sorting/filtering, pivot tables, data validation, conditional formatting, ODS import/export, advanced print-preview controls, larger-workbook performance and physical Android/printer visual verification.
