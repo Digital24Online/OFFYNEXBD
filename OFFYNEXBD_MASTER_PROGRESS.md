@@ -512,3 +512,14 @@
 
 ### Integrated development rule
 Continue development as coordinated batches across Writer, Sheets, Slides, PDF, Fonts, AI Assistant, Cloud, Forms, Scan and Database. Audit shared dependencies and data compatibility before edits; preserve existing user data and features; add regression tests; run Analyze, full tests and Android APK build before marking any batch verified.
+
+
+## Coordinated Workspace Data Portability — 2026-11-18 (validation pending)
+
+- [x] Added a module-scoped JSON record format for Slides, Fonts, AI Assistant, Forms and Database.
+- [x] Added strict format/version/module checks, record field validation, duplicate-ID rejection and a 10,000-record safety ceiling.
+- [x] Added JSON Export and Import actions to the five draft workspaces.
+- [x] Import is additive: records whose IDs already exist are skipped; existing records are never replaced. Import is capped at 10 MB.
+- [x] Added automated codec tests for round-trip, cross-module rejection, duplicate/invalid records and unsupported module names.
+- [ ] Run #207 (ID 44252236191) validates this source batch. Do not mark it verified until Analyze, all tests and Android APK build/upload succeed.
+- [ ] These JSON files are an app-specific interchange format, not PPTX, ODT, DOCX, XLSX or an installable font package. Native formats and full module functionality remain in the coordinated roadmap.
