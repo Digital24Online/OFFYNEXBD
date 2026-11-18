@@ -894,3 +894,11 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Build #345 reached Flutter Analyze; the only reported issue was an unnecessary string-interpolation brace in Slides PDF text-size calculation.
 - [x] Removed the redundant brace without changing export behavior.
 - [ ] Re-run Analyze, complete tests, Android release APK build and artifact upload on the corrected integrated commit.
+
+
+## Build #346 test declaration correction — 2026-11-18
+
+- [x] Build #346 / run `44318916415` on commit `3219c1913de92a137694e73559e875a8181bef99`: Flutter Analyze passed; test stage reported 106 passed and 3 failed; APK build/upload were skipped.
+- [x] Root cause isolated to three newly extended test files: size-limit test declarations were accidentally nested inside preceding tests due to missing closing braces in Writer document codec, workspace record codec and Slides PDF export tests.
+- [x] Corrected test declaration boundaries only; all assertions and cases are retained.
+- [ ] Re-run Analyze, complete tests, Android APK build and artifact upload on this correction commit.

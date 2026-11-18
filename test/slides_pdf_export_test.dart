@@ -27,6 +27,7 @@ void main() {
       ),
       throwsFormatException,
     );
+  });
 
   test('rejects presentation text above the 5 MB export limit', () async {
     await expectLater(
@@ -36,7 +37,4 @@ void main() {
       ),
       throwsFormatException,
     );
-  });
-
-  });
 }

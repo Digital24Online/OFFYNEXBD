@@ -72,6 +72,7 @@ void main() {
       () => WorkspaceRecordCodec.encode('Unknown Module', records),
       throwsArgumentError,
     );
+  });
 
   test('workspace record codec enforces the 10 MB import and export limit', () {
     final oversizedContent = ''.padRight(WorkspaceRecordCodec.maxFileBytes, 'x');
@@ -91,7 +92,4 @@ void main() {
       () => WorkspaceRecordCodec.decode(oversizedFile, expectedModule: 'Slides'),
       throwsFormatException,
     );
-  });
-
-  });
 }
