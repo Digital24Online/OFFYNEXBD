@@ -15,7 +15,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
-import '../theme/offynex_theme.dart';
+import '../../theme/offynex_theme.dart';
 
 const String documentsKey = 'offynex_writer_documents';
 String? writerDataRecoveryNotice;
