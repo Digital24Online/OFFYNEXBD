@@ -50,8 +50,8 @@
 - [x] Platform project folders exist for Android, iPhone, Windows and macOS.
 - [x] Home Screen displays the ten planned module names.
 - [x] Initial Writer, Sheets and PDF-to-Document source implementations exist.
-- [ ] Slides, Fonts, AI Assistant, Cloud, Forms, Scan and Database are not yet implemented as working modules.
-- [ ] A production backend, cloud authentication/synchronization service, and complete database/security architecture are not yet implemented.
+- [x] Partial offline functionality exists across Slides, Fonts, AI Assistant, Cloud backup, Forms, Scan and Database; these are not yet complete office-grade or production modules.
+- [ ] Production backend, cloud authentication/synchronization, shared online Forms, live AI services, and complete database/security architecture remain unimplemented.
 - Note: module names, README files, planned folders or UI tiles do not count as completed functional modules. See the 2026-11-18 integrated repository audit below.
 
 ## Verified Development Checkpoint — 2026-11-16
@@ -838,3 +838,27 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] APK artifact: `OFFYNEXBD-Android-APK`, ID `14428305759`, size 51,174,989 bytes; expires 2026-11-25T12:35:52Z.
 - [ ] Physical Android device validation remains outstanding; CI success does not replace real-device verification.
 
+
+
+## Integrated Data Integrity and Import Safety Batch — 2026-11-18
+
+- [x] Forms response archive validation: malformed or partially malformed response archives are copied to a recovery key; save, export and response viewing are blocked rather than silently dropping records. Build #331 / run `44308240635` completed successfully on commit `8c242979bcbd69fb0980e6cda2f01987ff0ae2a6`; Analyze, full tests, Android release APK and artifact upload passed. Artifact `OFFYNEXBD-Android-APK`, ID `14430310243`, size 51,198,289 bytes; expires 2026-11-25T13:00:25Z.
+- [x] Writer library safety: malformed archive data now sets a write-block state; creating, importing, renaming, deleting and exporting are guarded so a recovery-only empty view cannot overwrite the original library. The shared store helper also refuses writes while blocked. Regression coverage verifies the original raw archive remains unchanged.
+- [x] Sheets recovery safety: malformed workbook data is preserved as a recovery copy; the primary workbook is no longer replaced with a blank workbook, and editing is blocked until recovery. Regression test verifies the original raw workbook remains unchanged.
+- [x] Workspace mutation safety: Slides, Fonts, AI Assistant, Cloud, Forms and Database record create/edit/import/delete operations now persist a candidate collection before changing in-memory state; failed persistence cannot leave a misleading changed UI state.
+- [x] Sheets CSV import: rejects empty or larger-than-20-MB files, waits for pending saves, creates a full-workbook backup before replacement, and reports save failures rather than claiming success.
+- [ ] Latest combined source validation: Build #334 / run `44310287107`, commit `43e63414b3d69758bef3b9e4c6dae34f3c5df2dd`. Flutter Analyze and the complete automated test suite passed; Android release APK build was still running at this checkpoint. Do not mark this batch release-verified until APK build, signing cleanup, source save and artifact upload complete.
+
+### Product-level work still open (not to be marked complete)
+- Writer: native DOCX import into Quill, ODT import/export, full rich-content pagination and fidelity, spell-check dictionary, font management, device/printer verification.
+- Sheets: advanced Excel compatibility, charts, pivot tables, data validation, conditional formatting, ODS import/export, print-preview controls and large-workbook/device testing.
+- Slides: full slide editor, PPTX import/export and slideshow rendering; current export is text-based PDF.
+- PDF: scanned/malformed/encrypted edge cases, OCR accuracy and source-layout fidelity.
+- Fonts: actual installable font library and system font management; current workspace is not a complete font manager.
+- AI Assistant: secure backend/API integration; do not expose secrets in the client or simulate a live AI service.
+- Cloud: production online authentication, sync and conflict resolution; current backup/restore is local only.
+- Forms: online publishing, share links, remote response collection and access controls; current forms are local.
+- Scan: physical Android camera, edge detection, OCR and PDF sharing verification; other-platform scanner parity.
+- Database: advanced schema/query/relationship functionality and device-level performance/security validation.
+- Cross-platform: iPhone, Windows and macOS build/interaction testing. Android CI does not verify these platforms.
+- Physical printer and real-device validation remain outstanding across relevant modules.
