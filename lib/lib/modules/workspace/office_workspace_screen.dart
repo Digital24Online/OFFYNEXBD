@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../pdf/pdf_to_document_service.dart';
 import 'workspace_backup_codec.dart';
+import 'workspace_record_codec.dart';
 import '../writer/writer_screen.dart';
 
 /// Offline-first workspaces shared by Slides, Fonts, AI, Cloud, Forms,
@@ -99,6 +100,89 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
       }
     });
     await _save();
+  }
+
+  Future<void> _exportRecords() async {
+    try {
+      final json = WorkspaceRecordCodec.encode(widget.module, _items);
+      final safeModule = widget.module.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-');
+      final saved = await FilePicker.saveFile(
+        fileName: 'OFFYNEXBD-$safeModule-records.json',
+        bytes: Uint8List.fromList(utf8.encode(json)),
+        mimeType: 'application/json',
+        dialogTitle: _bn ? 'ডেটা Export সংরক্ষণ' : 'Save workspace export',
+      );
+      if (saved != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(_bn ? 'ডেটা Export সম্পন্ন হয়েছে।' : 'Workspace export completed.'),
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('${_bn ? 'Export ব্যর্থ' : 'Export failed'}: $e'),
+        ));
+      }
+    }
+  }
+
+  Future<void> _importRecords() async {
+    try {
+      final picked = await FilePicker.pickFile(
+        type: FileType.custom,
+        allowedExtensions: const ['json'],
+      );
+      if (picked == null || !mounted) return;
+      final bytes = await picked.readAsBytes();
+      if (bytes.isEmpty || bytes.length > 10 * 1024 * 1024) {
+        throw const FormatException('Workspace file must be between 1 byte and 10 MB.');
+      }
+      final imported = WorkspaceRecordCodec.decode(
+        utf8.decode(bytes, allowMalformed: false),
+        expectedModule: widget.module,
+      );
+      final yes = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(_bn ? 'ডেটা Import করবেন?' : 'Import workspace data?'),
+          content: Text(_bn
+              ? '${imported.length}টি আইটেম পাওয়া গেছে। একই ID আগে থাকলে পুরোনো আইটেম অপরিবর্তিত থাকবে; নতুনগুলো যোগ হবে।'
+              : '${imported.length} records found. Existing IDs will be kept unchanged; only new records will be added.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(_bn ? 'বাতিল' : 'Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(_bn ? 'Import' : 'Import'),
+            ),
+          ],
+        ),
+      );
+      if (yes != true || !mounted) return;
+      final existingIds = _items.map((item) => item['id']?.toString()).toSet();
+      final additions = imported.where((item) => !existingIds.contains(item['id'])).toList();
+      if (additions.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(_bn ? 'নতুন কোনো আইটেম পাওয়া যায়নি।' : 'No new records to import.'),
+        ));
+        return;
+      }
+      setState(() => _items.insertAll(0, additions));
+      await _save();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(_bn ? '${additions.length}টি নতুন আইটেম Import হয়েছে।' : '${additions.length} new records imported.'),
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('${_bn ? 'Import ব্যর্থ' : 'Import failed'}: $e'),
+        ));
+      }
+    }
   }
 
   String get _contentLabel {
@@ -410,6 +494,18 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
                     Expanded(child: Text(_bn ? 'সংরক্ষিত আইটেম' : 'Saved items',
                         style: Theme.of(context).textTheme.titleMedium)),
                     Text('${_items.length}'),
+                  ]),
+                  Wrap(spacing: 8, runSpacing: 8, children: [
+                    OutlinedButton.icon(
+                      onPressed: _exportRecords,
+                      icon: const Icon(Icons.file_upload_outlined),
+                      label: Text(_bn ? 'Export JSON' : 'Export JSON'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: _importRecords,
+                      icon: const Icon(Icons.file_download_outlined),
+                      label: Text(_bn ? 'Import JSON' : 'Import JSON'),
+                    ),
                   ]),
                   if (_items.isEmpty)
                     Padding(
