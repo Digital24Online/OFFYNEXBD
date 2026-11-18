@@ -631,3 +631,9 @@ Continue development as coordinated batches across Writer, Sheets, Slides, PDF, 
 ### Slides PDF service lint correction
 - [x] First Analyze runs for the extracted Slides PDF service identified one redundant `dart:typed_data` import (Flutter services already exposes `Uint8List`). Removed in commit `05274986d428301a38046e48e69e78645ebd6ffb`.
 - [ ] Revalidate the corrected Slides PDF service and test in the next CI workflow; do not mark Slides PDF export complete until the full Android build succeeds.
+
+
+### Forms + workspace recovery — Build #229 verified
+- [x] Build #229 / run `44255669985` passed Flutter Analyze, full tests, Android APK build and upload. Artifact ID `14405983212`, size 50,177,256 bytes.
+- [x] This verifies Forms response collection test assertions and the Forms question parsing correction present in that source commit.
+- [ ] Workspace-wide damaged-record recovery and the newest Forms response export still require the later Build #227/#228/#231+ source runs to finish successfully; do not use #229 as proof for later commits.
