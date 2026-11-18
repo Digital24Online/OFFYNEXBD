@@ -287,10 +287,37 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
         ],
       ),
     );
-    if (yes == true) {
-      final updated = _items.where((entry) => entry['id'] != item['id']).toList();
-      await _save(updated);
-      if (mounted) setState(() => _items = updated);
+    if (yes != true || !mounted) return;
+    final updated = _items.where((entry) => entry['id'] != item['id']).toList();
+    await _save(updated);
+    if (mounted) setState(() => _items = updated);
+    final path = item['scanPdfPath'];
+    if (widget.module == 'Scan' && path is String && path.isNotEmpty) {
+      try {
+        final file = File(path);
+        if (await file.exists()) await file.delete();
+      } catch (error) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text((_bn ? 'তালিকা থেকে সরানো হয়েছে; PDF মুছতে পারেনি: ' : 'Removed from list; PDF delete failed: ') + error.toString()),
+        ));
+      }
+    }
+  }
+
+  Future<void> _shareScan(Map<String, dynamic> item) async {
+    final path = item['scanPdfPath'];
+    if (path is! String || path.isEmpty) return;
+    try {
+      final file = File(path);
+      if (!await file.exists()) throw const FileSystemException('Saved scan PDF was not found.');
+      await Printing.sharePdf(
+        bytes: Uint8List.fromList(await file.readAsBytes()),
+        filename: (item['title']?.toString().trim().isNotEmpty == true ? item['title'].toString().trim() : 'OFFYNEXBD-Scan') + '.pdf',
+      );
+    } catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text((_bn ? 'PDF শেয়ার ব্যর্থ: ' : 'PDF share failed: ') + error.toString()),
+      ));
     }
   }
 
@@ -301,11 +328,25 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
       if (Platform.isAndroid) {
         final captured = await ScanDocumentService.captureAndroid();
         if (captured == null) return;
+        final scanRecord = <String, dynamic>{
+          'id': DateTime.now().microsecondsSinceEpoch.toString(),
+          'title': captured.fileName.replaceFirst(RegExp(r'\.pdf$', caseSensitive: false), ''),
+          'content': captured.recognizedText,
+          'updatedAt': DateTime.now().toIso8601String(),
+          'source': 'native_document_scan',
+          'scanPdfPath': captured.pdfPath,
+          'pageCount': captured.pageCount,
+          'ocrLanguage': 'ben+eng',
+        };
+        final updatedScans = [scanRecord, ..._items];
+        await _save(updatedScans);
+        if (!mounted) return;
+        setState(() => _items = updatedScans);
         if (captured.recognizedText.trim().isNotEmpty) {
           final documents = await loadDocuments();
           documents.add({
             'id': DateTime.now().microsecondsSinceEpoch.toString(),
-            'title': captured.fileName.replaceFirst(RegExp(r'\.pdf$', caseSensitive: false), ''),
+            'title': scanRecord['title'],
             'content': PdfToDocumentService.plainTextToDelta(captured.recognizedText),
             'updated': DateTime.now().toIso8601String(),
             'source': 'native_document_scan',
@@ -322,12 +363,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
               : '${captured.pageCount} pages saved as a scanned PDF. ${captured.recognizedText.trim().isEmpty ? 'No OCR text was detected.' : 'Recognized text was also saved to Writer.'}'),
           action: SnackBarAction(
             label: _bn ? 'PDF শেয়ার' : 'Share PDF',
-            onPressed: () async {
-              await Printing.sharePdf(
-                bytes: captured.pdfBytes,
-                filename: captured.fileName,
-              );
-            },
+            onPressed: () => _shareScan(scanRecord),
           ),
           duration: const Duration(seconds: 8),
         ));
@@ -1085,7 +1121,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
                           : 'Prompt ideas: “Summarize this text”, “Translate to Bengali”, “Draft a formal office letter”. Save prompts for use when AI is connected.'),
                     ),
                   ),
-                if (widget.module != 'Scan' && widget.module != 'Cloud' && !_workspaceDataBlocked) ...[
+                if (widget.module != 'Cloud' && !_workspaceDataBlocked) ...[
                   const SizedBox(height: 12),
                   Row(children: [
                     Expanded(child: Text(_bn ? 'সংরক্ষিত আইটেম' : 'Saved items',
@@ -1149,7 +1185,9 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
                                       : Icons.auto_awesome),
                       title: Text(item['title']?.toString() ?? ''),
                       subtitle: Text(item['content']?.toString() ?? '', maxLines: 2, overflow: TextOverflow.ellipsis),
-                      onTap: () => _editItem(item: item),
+                      onTap: () => widget.module == 'Scan'
+                          ? _shareScan(item)
+                          : _editItem(item: item),
                       trailing: widget.module == 'Forms'
                           ? Wrap(
                               spacing: 0,
@@ -1182,6 +1220,19 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
                                     ),
                                   ],
                                 )
+                              : widget.module == 'Scan'
+                                  ? Wrap(spacing: 0, children: [
+                                      IconButton(
+                                        tooltip: _bn ? 'PDF শেয়ার' : 'Share PDF',
+                                        icon: const Icon(Icons.share_outlined),
+                                        onPressed: () => _shareScan(item),
+                                      ),
+                                      IconButton(
+                                        tooltip: _bn ? 'মুছুন' : 'Delete',
+                                        icon: const Icon(Icons.delete_outline),
+                                        onPressed: () => _deleteItem(item),
+                                      ),
+                                    ])
                               : widget.module == 'Database'
                                   ? Wrap(
                                       spacing: 0,
