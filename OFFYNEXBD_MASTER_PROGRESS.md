@@ -577,3 +577,11 @@ Continue development as coordinated batches across Writer, Sheets, Slides, PDF, 
 - [x] Both recovery keys remain OFFYNEXBD-prefixed, so they are included in the local Cloud backup.
 - [x] Added tests proving the original raw data remains stored and a recovery copy is created.
 - [ ] Revalidate all Writer archive and recovery changes plus Sheets recovery changes in CI before marking complete.
+
+
+### Workspace JSON Import/Export + Search — Build #212 verified
+- [x] Build #212 (run ID `44253188504`, commit `fccd1f4006b52f6d004734d6bdadcc71a1e4dc6d`) passed Flutter Analyze, the complete automated test suite, Android signing setup, NDK setup, APK build and artifact upload.
+- [x] Artifact `OFFYNEXBD-Android-APK`: ID `14405660426`, size 50,151,865 bytes.
+- [x] Run: https://github.com/Digital24Online/OFFYNEXBD/actions/runs/44253188504
+- [x] This validated the five workspace modules' module-scoped JSON import/export and search, including corrected Forms/Database regression tests.
+- [ ] Writer archive and Writer/Sheets data-recovery safeguards are newer changes and remain pending validation in Builds #217–#221.
