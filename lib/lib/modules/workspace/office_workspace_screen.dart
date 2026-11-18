@@ -361,7 +361,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
         content: Text(_bn ? 'স্ক্যানের লেখা Writer-এ সংরক্ষিত হয়েছে।' : 'Scanned text saved to Writer.'),
         action: SnackBarAction(
           label: _bn ? 'Writer খুলুন' : 'Open Writer',
-          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WriterScreen())),
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => WriterScreen(isBangla: _bn))),
         ),
       ));
     } catch (e) {

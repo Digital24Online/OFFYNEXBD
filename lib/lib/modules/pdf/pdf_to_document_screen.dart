@@ -138,7 +138,7 @@ class _PdfToDocumentScreenState extends State<PdfToDocumentScreen> {
     if (!mounted) return;
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => WriterEditorScreen(document: doc)),
+      MaterialPageRoute(builder: (_) => WriterEditorScreen(document: doc, isBangla: widget.isBangla)),
     );
   }
 
