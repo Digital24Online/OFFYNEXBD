@@ -28,7 +28,7 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('add-worksheet')));
     await tester.pumpAndSettle();
-    expect(find.text('Sheet2'), findsOneWidget);
+    expect(find.text('Sheet1'), findsOneWidget);
 
     await tester.longPress(find.byKey(const ValueKey('sheet-cell-A1')));
     await tester.pumpAndSettle();
@@ -44,7 +44,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('old-data'), findsOneWidget);
 
-    await tester.tap(find.text('Sheet2'));
+    await tester.tap(find.text('Sheet1'));
     await tester.pumpAndSettle();
     expect(find.text('new-data'), findsOneWidget);
 
