@@ -795,3 +795,5 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Writer empty-state duplicate create action removed after CI #314 exposed a widget-test ambiguity; create remains available from the persistent New Document action.
 - [x] Sheets UI refresh: shared OFFYNEX theme applied to Ribbon tabs/commands, formula bar, grid headers/selection, status area and worksheet tabs. Existing formulas, workbook data, XLSX/CSV import/export, PDF/print, sorting/filtering, formatting and multi-sheet actions are unchanged.
 - [ ] Validate latest Writer + Sheets UI batch with Flutter Analyze, complete tests and Android release APK build before calling it verified.
+
+- [x] CI #316 identified a Sheets status/worksheet-bar Container color+decoration assertion. Corrected by moving white surface color into BoxDecoration; Analyze had already passed, and full regression tests are being rerun. No test was removed or weakened.

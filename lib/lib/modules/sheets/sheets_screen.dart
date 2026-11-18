@@ -1539,8 +1539,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
                 Expanded(child: _buildGrid(visibleRows)),
                 Container(
                   width: double.infinity,
-                  color: Colors.white,
-                  decoration: const BoxDecoration(border: Border(top: BorderSide(color: OFFYNEXTheme.border))),
+                  decoration: const BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: OFFYNEXTheme.border))),
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
                   child: Row(children: [
                     Expanded(
