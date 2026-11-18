@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offynexbd/main.dart';
+import 'package:offynexbd/lib/modules/sheets/sheets_workbook_codec.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -94,9 +95,9 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString('offynex_sheets_workbook_v1');
     expect(raw, isNotNull);
-    final workbook = jsonDecode(raw!) as Map<String, dynamic>;
-    final styles = workbook['styles'] as Map<String, dynamic>;
-    expect((styles['A1'] as Map<String, dynamic>)['bold'], isTrue);
+    var workbook = SheetsWorkbookCodec.decode(raw!);
+    var styles = workbook.activeSheet.styles;
+    expect(styles['A1']?['bold'], isTrue);
 
     await tester.ensureVisible(find.text('Wrap Text'));
     await tester.tap(find.text('Wrap Text'));
@@ -106,21 +107,19 @@ void main() {
     await tester.pumpAndSettle();
 
     final updatedRaw = prefs.getString('offynex_sheets_workbook_v1');
-    final updatedWorkbook = jsonDecode(updatedRaw!) as Map<String, dynamic>;
-    final updatedStyles = updatedWorkbook['styles'] as Map<String, dynamic>;
-    expect((updatedStyles['A1'] as Map<String, dynamic>)['wrapText'], isTrue);
-    expect((updatedStyles['A1'] as Map<String, dynamic>)['verticalAlign'], 'top');
+    workbook = SheetsWorkbookCodec.decode(updatedRaw!);
+    styles = workbook.activeSheet.styles;
+    expect(styles['A1']?['wrapText'], isTrue);
+    expect(styles['A1']?['verticalAlign'], 'top');
 
     await tester.ensureVisible(find.text('ফরম্যাট মুছুন'));
     await tester.tap(find.text('ফরম্যাট মুছুন'));
     await tester.pumpAndSettle();
 
     final clearedRaw = prefs.getString('offynex_sheets_workbook_v1');
-    final clearedWorkbook = jsonDecode(clearedRaw!) as Map<String, dynamic>;
-    final clearedCells = clearedWorkbook['cells'] as Map<String, dynamic>;
-    final clearedStyles = clearedWorkbook['styles'] as Map<String, dynamic>;
-    expect(clearedCells['A1'], 'Keep me');
-    expect(clearedStyles.containsKey('A1'), isFalse);
+    final clearedWorkbook = SheetsWorkbookCodec.decode(clearedRaw!);
+    expect(clearedWorkbook.activeSheet.cells['A1'], 'Keep me');
+    expect(clearedWorkbook.activeSheet.styles.containsKey('A1'), isFalse);
   });
 
   testWidgets('Sheets protects populated edge rows and columns',
@@ -152,11 +151,11 @@ void main() {
 
     var prefs = await SharedPreferences.getInstance();
     var raw = prefs.getString('offynex_sheets_workbook_v1');
-    var workbook = jsonDecode(raw!) as Map<String, dynamic>;
-    expect(workbook['rows'], 30);
-    expect(workbook['columns'], 12);
-    expect((workbook['cells'] as Map<String, dynamic>)['A30'], 'Keep row');
-    expect((workbook['cells'] as Map<String, dynamic>)['L1'], 'Keep column');
+    var workbook = SheetsWorkbookCodec.decode(raw!);
+    expect(workbook.activeSheet.rows, 30);
+    expect(workbook.activeSheet.columns, 12);
+    expect(workbook.activeSheet.cells['A30'], 'Keep row');
+    expect(workbook.activeSheet.cells['L1'], 'Keep column');
 
     await tester.ensureVisible(find.text('১০টি Row'));
     await tester.tap(find.text('১০টি Row'));
@@ -167,11 +166,11 @@ void main() {
 
     prefs = await SharedPreferences.getInstance();
     raw = prefs.getString('offynex_sheets_workbook_v1');
-    workbook = jsonDecode(raw!) as Map<String, dynamic>;
-    expect(workbook['rows'], 40);
-    expect(workbook['columns'], 14);
-    expect((workbook['cells'] as Map<String, dynamic>)['A30'], 'Keep row');
-    expect((workbook['cells'] as Map<String, dynamic>)['L1'], 'Keep column');
+    workbook = SheetsWorkbookCodec.decode(raw!);
+    expect(workbook.activeSheet.rows, 40);
+    expect(workbook.activeSheet.columns, 14);
+    expect(workbook.activeSheet.cells['A30'], 'Keep row');
+    expect(workbook.activeSheet.cells['L1'], 'Keep column');
   });
 
   testWidgets('Sheets cell editing recalculates formulas and persists data',
@@ -207,10 +206,9 @@ void main() {
     expect(find.text('20'), findsOneWidget);
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString('offynex_sheets_workbook_v1');
-    final workbook = jsonDecode(raw!) as Map<String, dynamic>;
-    final cells = workbook['cells'] as Map<String, dynamic>;
-    expect(cells['A1'], '10');
-    expect(cells['A2'], '=A1*2');
+    final workbook = SheetsWorkbookCodec.decode(raw!);
+    expect(workbook.activeSheet.cells['A1'], '10');
+    expect(workbook.activeSheet.cells['A2'], '=A1*2');
   });
 
   testWidgets('Sheets row removal does not mistake LOG10 for a cell reference',
@@ -236,9 +234,9 @@ void main() {
 
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString('offynex_sheets_workbook_v1');
-    final workbook = jsonDecode(raw!) as Map<String, dynamic>;
-    expect(workbook['rows'], 9);
-    expect((workbook['cells'] as Map<String, dynamic>)['B1'], '=LOG10(1000)');
+    final workbook = SheetsWorkbookCodec.decode(raw!);
+    expect(workbook.activeSheet.rows, 9);
+    expect(workbook.activeSheet.cells['B1'], '=LOG10(1000)');
   });
 
   testWidgets('Sheets protects rows referenced by formulas',
@@ -264,9 +262,9 @@ void main() {
 
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString('offynex_sheets_workbook_v1');
-    final workbook = jsonDecode(raw!) as Map<String, dynamic>;
-    expect(workbook['rows'], 10);
-    expect((workbook['cells'] as Map<String, dynamic>)['B1'], '=A10');
+    final workbook = SheetsWorkbookCodec.decode(raw!);
+    expect(workbook.activeSheet.rows, 10);
+    expect(workbook.activeSheet.cells['B1'], '=A10');
   });
 
   testWidgets('Sheets general number display preserves calculated precision',
@@ -322,11 +320,11 @@ void main() {
 
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString('offynex_sheets_workbook_v1');
-    final workbook = jsonDecode(raw!) as Map<String, dynamic>;
-    final styles = workbook['styles'] as Map<String, dynamic>;
-    expect((styles['A1'] as Map<String, dynamic>)['wrapText'], isNot(true));
-    expect((styles['A1'] as Map<String, dynamic>)['verticalAlign'], 'top');
-    expect((styles['A1'] as Map<String, dynamic>)['align'], 'right');
+    final workbook = SheetsWorkbookCodec.decode(raw!);
+    final style = workbook.activeSheet.styles['A1']!;
+    expect(style['wrapText'], isNot(true));
+    expect(style['verticalAlign'], 'top');
+    expect(style['align'], 'right');
   });
 
   testWidgets('Sheets builds distant rows only when they become visible',
