@@ -1129,3 +1129,12 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - Build #388: Flutter Analyze SUCCESS; 150 tests passed and one DOCX import test failed because the service retained the source extension in the imported title.
 - [x] DOCX/ODT import title normalization now removes only the supported .docx/.odt suffix and preserves other periods in the document title.
 - [ ] Re-run all tests and Android APK build.
+
+
+## Writer CI artifact publication repair — 2026-11-18
+
+- Build #389: Flutter Analyze SUCCESS; all 151 tests SUCCESS; Android Release APK compiled successfully (108.0 MB).
+- The workflow then failed in "Save Generated Source" because GitHub Actions checked out a detached HEAD and the step used a bare `git push`; this caused the APK upload step to be skipped.
+- [x] Updated the source-save step to push explicitly to the triggering branch (`HEAD:${GITHUB_REF_NAME}`) and skip source pushes on pull-request runs.
+- [ ] Re-run workflow to verify artifact upload and final job success.
+- [ ] Physical Android device validation and complete Writer parity checks remain open.

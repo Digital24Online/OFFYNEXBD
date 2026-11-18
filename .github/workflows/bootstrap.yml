@@ -145,13 +145,14 @@ jobs:
           rm -f android/app/upload-keystore.jks
 
       - name: Save Generated Source
+        if: github.event_name != 'pull_request'
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.email "41898282+users.noreply.github.com"
           git add .
           if ! git diff --cached --quiet; then
             git commit -m "Create OFFYNEXBD Flutter foundation"
-            git push
+            git push origin "HEAD:${GITHUB_REF_NAME}"
           fi
 
       - name: Upload Android APK
