@@ -105,6 +105,52 @@ void main() {
       expect(engine.evaluateCell('B1'), isNull);
     });
 
+    test('supports Excel comparison operators and numeric logical functions', () {
+      final engine = SheetsFormulaEngine({
+        'A1': '=IF(10>5,100,0)',
+        'A2': '=IF(2>=3,1,2)',
+        'A3': '=AND(1,2,1)',
+        'A4': '=OR(0,0,1)',
+        'A5': '=NOT(0)',
+        'A6': '=IF(A1<>0,A1/10,0)',
+        'A7': '=IF(2=2,3,4)',
+        'A8': '=IF(3<=2,1,2)',
+        'A9': '=IF(3<2,1,2)',
+        'A10': '=IF(3>2,1,2)',
+        'A11': '=NOT(5>2)',
+        'A12': '=AND(2>1,3>=3)',
+        'A13': '=OR(1<0,1=1)',
+        'A14': '=IF((2+3)*2=10,7,8)',
+      });
+      expect(engine.evaluateCell('A1'), 100);
+      expect(engine.evaluateCell('A2'), 2);
+      expect(engine.evaluateCell('A3'), 1);
+      expect(engine.evaluateCell('A4'), 1);
+      expect(engine.evaluateCell('A5'), 1);
+      expect(engine.evaluateCell('A6'), 10);
+      expect(engine.evaluateCell('A7'), 3);
+      expect(engine.evaluateCell('A8'), 2);
+      expect(engine.evaluateCell('A9'), 2);
+      expect(engine.evaluateCell('A10'), 1);
+      expect(engine.evaluateCell('A11'), 0);
+      expect(engine.evaluateCell('A12'), 1);
+      expect(engine.evaluateCell('A13'), 1);
+      expect(engine.evaluateCell('A14'), 7);
+    });
+
+    test('rejects malformed comparisons and invalid logical argument counts', () {
+      final engine = SheetsFormulaEngine({
+        'A1': '=1>2>3',
+        'A2': '=IF(1,2)',
+        'A3': '=AND()',
+        'A4': '=OR()',
+        'A5': '=NOT(1,2)',
+      });
+      for (var row = 1; row <= 5; row++) {
+        expect(engine.evaluateCell('A$row'), isNull);
+      }
+    });
+
     test('rejects unsupported functions and malformed formulas', () {
       final engine = SheetsFormulaEngine({
         'A1': '=UNKNOWN(1)', 'A2': '=1+',

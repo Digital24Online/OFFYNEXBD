@@ -5,7 +5,7 @@ import 'package:offynexbd/lib/modules/sheets/sheets_workbook_codec.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  testWidgets('Freeze Top Row pins the first visible row and persists its state',
+  testWidgets('Freeze Top Row pins physical row 1 and persists its state',
       (tester) async {
     final workbook = SheetsWorkbook(
       activeSheetId: 'one',

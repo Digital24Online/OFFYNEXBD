@@ -151,11 +151,36 @@ class _FormulaParser {
 
   double? parse() {
     if (tokens.isEmpty) return null;
-    final result = _parseAdditive();
+    final result = _parseComparison();
     if (position != tokens.length || !result.isFinite) {
       throw const FormatException('Invalid formula');
     }
     return result;
+  }
+
+  double _parseComparison() {
+    final left = _parseAdditive();
+    final operator = current;
+    if (operator == null ||
+        !const {'=', '<>', '>', '<', '>=', '<='}.contains(operator)) {
+      return left;
+    }
+    _take();
+    final right = _parseAdditive();
+    if (current != null &&
+        const {'=', '<>', '>', '<', '>=', '<='}.contains(current)) {
+      throw const FormatException('Chained comparisons are not supported');
+    }
+    final result = switch (operator) {
+      '=' => left == right,
+      '<>' => left != right,
+      '>' => left > right,
+      '<' => left < right,
+      '>=' => left >= right,
+      '<=' => left <= right,
+      _ => false,
+    };
+    return result ? 1 : 0;
   }
 
   double _parseAdditive() {
@@ -197,7 +222,7 @@ class _FormulaParser {
 
   double _parsePrimary() {
     if (_accept('(')) {
-      final value = _parseAdditive();
+      final value = _parseComparison();
       _expect(')');
       return value;
     }
@@ -228,7 +253,7 @@ class _FormulaParser {
       'ABS', 'ROUND', 'ROUNDUP', 'ROUNDDOWN', 'SQRT', 'POWER',
       'MOD', 'INT', 'SIGN', 'MEDIAN', 'LARGE', 'SMALL',
       'CEILING', 'FLOOR', 'PI', 'EXP', 'LN', 'LOG', 'LOG10',
-      'SIN', 'COS', 'TAN', 'ASIN', 'ACOS', 'ATAN',
+      'SIN', 'COS', 'TAN', 'ASIN', 'ACOS', 'ATAN',\n      'IF', 'AND', 'OR', 'NOT',
     };
     if (!supported.contains(name)) {
       throw FormatException('Unsupported function: $name');
@@ -268,7 +293,7 @@ class _FormulaParser {
             values.add(value);
           }
         } else {
-          values.add(_parseAdditive());
+          values.add(_parseComparison());
         }
         if (_accept(')')) break;
         _expect(',');
@@ -372,6 +397,22 @@ class _FormulaParser {
       case 'TAN':
         _expectNoExtraArguments(name, values, 1);
         return math.tan(values.first);
+      case 'IF':
+        _expectNoExtraArguments(name, values, 3);
+        return values[0] != 0 ? values[1] : values[2];
+      case 'AND':
+        if (values.isEmpty || values.length > 255) {
+          throw const FormatException('AND expects between 1 and 255 arguments');
+        }
+        return values.every((value) => value != 0) ? 1 : 0;
+      case 'OR':
+        if (values.isEmpty || values.length > 255) {
+          throw const FormatException('OR expects between 1 and 255 arguments');
+        }
+        return values.any((value) => value != 0) ? 1 : 0;
+      case 'NOT':
+        _expectNoExtraArguments(name, values, 1);
+        return values.first == 0 ? 1 : 0;
       case 'ASIN':
         _expectNoExtraArguments(name, values, 1);
         if (values.first.abs() > 1) throw const FormatException('ASIN domain error');

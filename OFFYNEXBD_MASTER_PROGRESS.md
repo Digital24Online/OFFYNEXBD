@@ -986,3 +986,13 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Added codec validation and regression tests for persistence, legacy defaults, invalid metadata and the ribbon toggle.
 - [ ] Flutter Analyze, full automated tests, Android APK build and artifact upload are pending on this source batch.
 - [ ] Physical-device scrolling and imported/exported XLSX freeze-pane compatibility remain to be validated; this feature currently applies to the OFFYNEXBD Sheets workspace view.
+
+
+## Sheets formula and freeze-pane reliability batch (2026-11-18)
+
+- [x] Added Excel-style numeric comparison operators: =, <>, >, <, >= and <=, with chained comparisons rejected safely.
+- [x] Added numeric IF, AND, OR and NOT functions to the formula engine and formula ribbon picker; formula values remain numeric in this version.
+- [x] Added regression coverage for comparisons, nested arithmetic, logical combinations and invalid argument/comparison syntax.
+- [x] Corrected Freeze Top Row to pin physical worksheet row 1, rather than the first row after sorting/filtering; filtered/sorted row order remains view-only.
+- [ ] Flutter Analyze, full tests, Android APK build and upload pending on this combined batch.
+- [ ] Remaining Sheets work still includes charts, pivot tables, data validation, conditional formatting, ODS, advanced Excel fidelity and performance/device testing.

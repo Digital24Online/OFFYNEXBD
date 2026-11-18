@@ -1289,7 +1289,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
       'POWER': 'A1,2',
       'MOD': 'A1,2',
       'INT': 'A1',
-      'SIGN': 'A1',
+      'SIGN': 'A1',\n      'IF': 'A1>0,1,0',\n      'AND': 'A1>0,B1>0',\n      'OR': 'A1>0,B1>0',\n      'NOT': 'A1=0',
     };
     final example = examples[function] ?? 'A1';
     final controller = TextEditingController(text: example);
@@ -1413,7 +1413,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
           'LARGE', 'SMALL', 'ABS', 'ROUND', 'ROUNDUP', 'ROUNDDOWN',
           'CEILING', 'FLOOR', 'SQRT', 'POWER', 'MOD', 'INT', 'SIGN',
           'PI', 'EXP', 'LN', 'LOG', 'LOG10', 'SIN', 'COS', 'TAN',
-          'ASIN', 'ACOS', 'ATAN',
+          'ASIN', 'ACOS', 'ATAN', 'IF', 'AND', 'OR', 'NOT',
         ]) {
           commands.add(_ribbonCommand(function, Icons.functions, () => _insertFunction(function)));
         }
@@ -1622,12 +1622,10 @@ class _SheetsScreenState extends State<SheetsScreen> {
   }
 
   Widget _buildGrid(List<int> visibleRows) {
-    final frozenRow = _activeWorksheet.freezeTopRow && visibleRows.isNotEmpty
-        ? visibleRows.first
-        : null;
+    final frozenRow = _activeWorksheet.freezeTopRow ? 0 : null;
     final scrollingRows = frozenRow == null
         ? visibleRows
-        : visibleRows.skip(1).toList(growable: false);
+        : visibleRows.where((row) => row != frozenRow).toList(growable: false);
     return Scrollbar(
       controller: _horizontalController,
       thumbVisibility: true,
