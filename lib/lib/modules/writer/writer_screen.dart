@@ -476,6 +476,8 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
           ? savedMeta['captureRevisions'] as bool : false;
       focusMode = savedMeta['focusMode'] is bool
           ? savedMeta['focusMode'] as bool : false;
+      headerText = savedMeta['headerText']?.toString() ?? '';
+      footerText = savedMeta['footerText']?.toString() ?? '';
       final savedComments = savedMeta['comments'];
       if (savedComments is List) {
         writerComments = savedComments
@@ -651,6 +653,8 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
         'comments': writerComments,
         'citations': writerCitations,
         'revisions': writerRevisions,
+        'headerText': headerText,
+        'footerText': footerText,
       };
 
   void _captureRevisionIfNeeded() {
