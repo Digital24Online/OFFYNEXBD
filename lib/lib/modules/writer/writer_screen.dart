@@ -2298,7 +2298,7 @@ Future<void> showCustomFontSizeDialog() async {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _pageTransformController.value = Matrix4.identity()
-        ..translateByDouble(translateX, translateY, 0);
+        ..translateByDouble(translateX, translateY, 0, 1);
     });
     scheduleSave();
   }

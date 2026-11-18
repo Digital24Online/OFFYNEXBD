@@ -1108,3 +1108,10 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Added a zero fallback for nullable file length, separated the mounted guard, converted string composition to interpolation and replaced deprecated matrix translation with translateByDouble.
 - [x] Removed the remaining unnecessary interpolation braces in ODT image names.
 - [ ] Re-run Analyze, full tests and Android APK build on the corrected commit.
+
+
+## Writer viewport Matrix4 API correction — 2026-11-18
+
+- Build #386 reduced Analyze findings to one Matrix4 API signature mismatch: translateByDouble requires x, y, z and w.
+- [x] Added the homogeneous w=1 argument; no other Analyze errors or lints were reported in Build #386.
+- [ ] Re-run Analyze, tests and Android APK build.
