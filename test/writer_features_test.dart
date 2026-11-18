@@ -49,14 +49,14 @@ void main() {
 
   testWidgets('Writer header and footer settings persist with document metadata', (tester) async {
     SharedPreferences.setMockInitialValues({});
-    await tester.pumpWidget(const MaterialApp(home: WriterScreen(isBangla: true)));
+    await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: true)));
     await tester.pumpAndSettle();
     await tester.tap(find.text('নতুন ডকুমেন্ট'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('ফাইল'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Header / Footer'));
+    await tester.tap(find.text('হেডার / ফুটার'));
     await tester.pumpAndSettle();
 
     final fields = find.byType(TextField);
