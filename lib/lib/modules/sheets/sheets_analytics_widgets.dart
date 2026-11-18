@@ -178,7 +178,7 @@ class _SheetsChartDialogState extends State<SheetsChartDialog> {
   Widget build(BuildContext context) => AlertDialog(
     title: Text(t('Chart তৈরি করুন', 'Create chart')),
     content: Column(mainAxisSize: MainAxisSize.min, children: [
-      TextField(controller: _title, decoration: InputDecoration(labelText: t('শিরোনাম', 'Title'))),
+      TextField(controller: _title, maxLength: 100, decoration: InputDecoration(labelText: t('শিরোনাম', 'Title'))),
       TextField(controller: _range, decoration: const InputDecoration(labelText: 'Data range', hintText: 'A1:C10')),
       const SizedBox(height: 10),
       DropdownButtonFormField<String>(
