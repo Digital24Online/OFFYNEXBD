@@ -1070,3 +1070,10 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - Build #378 (run ID 44362647172) reached dependency resolution and failed before Analyze because pdf ^3.13.1 requires xml ^7.0.1 while Writer initially pinned xml ^6.5.0.
 - [x] Updated the direct XML dependency to ^7.0.1 to satisfy the existing PDF package constraint.
 - [ ] Re-run dependency resolution, Analyze, full tests and Android APK build on the corrected branch.
+
+
+## Writer format-import integration correction — 2026-11-18
+
+- Build #381 reached Flutter Analyze but failed because the first DOCX/ODT import/export method insertion was truncated at a raw filename regular expression, producing cascading Dart parser errors.
+- [x] Replaced the entire import/export method region with complete, bounded methods; removed the fragile extension regular expression and used the selected file's extension/name fields.
+- [ ] Re-run Analyze, all tests and Android APK build; no feature is considered verified until the full run passes.
