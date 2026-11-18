@@ -605,3 +605,16 @@ Continue development as coordinated batches across Writer, Sheets, Slides, PDF, 
 - [x] Added common recovery-copy handling for malformed Slides, Fonts, AI Assistant, Forms and Database workspace record files. Original raw JSON is preserved under a module-specific `_recovery_*` SharedPreferences key before the workspace shows an empty list.
 - [x] Added a widget test proving malformed workspace JSON remains intact and is copied to recovery storage.
 - [ ] Latest commits `e9f2f0bc9d0c92507318c4409674fda83be7858e`, `8f31c781d61ccf724d76227df30f98eb700d3e09`, and `715031c6e97b114edd24ba58a3489dc7b05e7527` need their own successful Analyze, full tests and APK build/upload before these newest changes are marked verified.
+
+
+### Forms response collection — Build #226 verified
+- [x] Build #226 / run `44255228472` passed Analyze, all tests, Android APK build and artifact upload. Artifact ID `14405858046`, size 50,178,349 bytes.
+- [x] Validated three-question Forms response collection, local response persistence and response viewer.
+- [x] Forms response data is stored under an `offynex_` key and included in the local Cloud backup.
+- [x] Added JSON export of collected responses, separate from the form-definition archive.
+- [ ] New response-export implementation in commit `985dbf1e29d0e751d7349a47c6241dd85118e3cd` still needs CI verification.
+
+### PDF conversion navigation integrity — validation pending
+- [x] PDF/Image conversion screen now retains the exact record it just created and opens that record in Writer. It no longer searches by filename, which could open an older conversion with the same name.
+- [x] Removed obsolete filename-matching state.
+- [ ] Validate commits `54b8802044c234d4c288c5e01d7df52be0145484` and `644a35d822d03365a964b9cb1d3d697f409dee51` with Analyze, full tests and APK build/upload.
