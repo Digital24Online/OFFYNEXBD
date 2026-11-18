@@ -1174,3 +1174,72 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - Imported page layout and header/footer are now applied to the new Writer document instead of silently resetting to A4 defaults/empty header-footer.
 - Added round-trip/import assertions for DOCX and ODT page setup and header/footer.
 - Limitations remain for section-specific layouts, multiple headers/footers, first/even page variants, complex fields/page-number fields, and exact pagination.
+
+
+---
+
+## New Chat Handoff — Verified checkpoint 2026-11-19
+
+### Mandatory continuation rules
+- Continue the existing OFFYNEXBD project; do not restart, scaffold a duplicate app, or ask the user to repeat prior requirements.
+- User wants related tasks handled in coherent batches, not one tiny task per turn. Avoid repetitive progress dialogue; perform repository inspection, implementation, tests, and CI verification before reporting.
+- Use simple Bangla for user-facing communication. Do not ask the user to upload files/images or write code.
+- Do not claim a feature is complete merely because a screen, menu, or source file exists. Completion requires implementation plus appropriate tests and validation.
+- Do not claim physical Android/printer validation based on CI.
+- Keep OFFYNEXBD separate from Digital 24 Online and INAB BD.
+- Writer is the active priority; do not move to another module until Writer's software work is complete and remaining device-only checks are explicitly identified.
+
+### Repository and active work
+- Repository: https://github.com/Digital24Online/OFFYNEXBD
+- Active branch: `work/writer-mobile-page-viewport`
+- Active PR: https://github.com/Digital24Online/OFFYNEXBD/pull/3
+- Branch head at checkpoint: `160351fd365c18a94688b365cd621c8f000ee6bb`
+- Main branch remains separate; do not assume the active PR is merged.
+
+### Latest verified Android CI
+- Workflow run #400, run ID `44381024091`.
+- Commit: `160351fd365c18a94688b365cd621c8f000ee6bb`.
+- Flutter Analyze: SUCCESS.
+- Automated tests: SUCCESS.
+- Android Release APK build: SUCCESS.
+- APK artifact upload: SUCCESS.
+- Artifact: `OFFYNEXBD-Android-APK`, artifact ID `14464681374`, size 51,491,506 bytes; expires 2026-11-25.
+- Run: https://github.com/Digital24Online/OFFYNEXBD/actions/runs/44381024091
+- APK artifact success does not establish real-device gesture, printer, or full office-suite compatibility.
+
+### Latest Writer implementation checkpoint
+- Mobile page viewport controls include Fit Page, Fit Width, 100% and pinch-zoom handling.
+- DOCX/ODT import reads common page size, orientation, margins and default header/footer text.
+- ODT import/export supports bold, italic, underline, strike-through, foreground/background color, font size, font family and hyperlinks.
+- DOCX/ODT hyperlink import/export supports safe HTTP, HTTPS and mailto targets.
+- Regression tests cover the supported import/export metadata and formatting.
+- CI run #400 verifies Analyze, tests, APK build and upload for this checkpoint.
+
+### Writer remaining work — do not mark complete yet
+1. True document pagination and accurate page-break behavior.
+2. Advanced DOCX/ODT fidelity: complex tables, merged cells, floating images, numbering/lists, paragraph styles and multiple sections.
+3. Section-specific, first/even-page headers and footers; fields and page-number fields.
+4. Confirm and extend DOCX export of page layout, headers and footers.
+5. Spellcheck, including Bangla.
+6. Font management/import and Bangla shaping/ligature tests.
+7. Large-document performance, crash recovery and robust backup/restore with portable embedded images.
+8. Complete Bangla/English UI localization and responsive mobile ribbon audit.
+9. Expand widget tests for zoom, pinch, scrolling, editing and page display.
+10. Android physical-device testing and printer/Print Preview integration checks.
+
+### Other modules — incomplete
+- Sheets: formula/grid foundation, lazy rendering, cell editing/persistence, find/replace, freeze top row and dropdown validation work exist. Still needs charts, pivot tables, conditional formatting, broader Excel fidelity, ODS, advanced print setup, large-workbook and device tests.
+- Slides, PDF, Fonts, AI, Cloud, Forms, Scan and Database are only initial/partial implementations; none should be represented as complete office-grade modules.
+- Production authentication/backend, online sync, shared cloud services, security architecture and cross-platform release validation remain open.
+
+### Next batch to execute
+1. Inspect Writer DOCX export service and ensure page layout/header/footer export is present and tested.
+2. Audit portable image packaging in Writer backup/restore and document import/export.
+3. Fix font-family classification so sans-serif is not misclassified as serif.
+4. Complete Bangla/English localization audit for Writer ribbons and controls.
+5. Add/extend automated tests for the above as one coherent batch.
+6. Update this progress file, run Analyze + full tests + Android Release build + artifact upload, and only then report verified status.
+7. Keep device-only checks clearly separated from CI-verified work.
+
+### New-chat continuation prompt
+“OFFYNEXBD MASTER PROJECT চালু করো। GitHub-এর OFFYNEXBD_MASTER_PROGRESS.md-এর সর্বশেষ ‘New Chat Handoff’ এবং active PR #3/branch-এর বর্তমান অবস্থা পড়ে ঠিক সেখান থেকে কাজ চালাও। আগের কোনো কাজ পুনরায় শুরু বা আমাকে আবার নির্দেশনা দিতে বলবে না। Writer-এর বাকি কাজগুলো একসঙ্গে অডিট, বাস্তবায়ন, পরীক্ষা ও CI যাচাই করো। সহজ বাংলায় কথা বলবে; কাজ যাচাই না করে সম্পন্ন বলবে না।”
