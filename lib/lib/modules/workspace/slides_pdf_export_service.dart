@@ -23,7 +23,7 @@ class SlidesPdfExportService {
     if (slides.length > maxSlides) {
       throw const FormatException('A presentation can contain up to 200 slides.');
     }
-    final textBytes = utf8.encode('${title}\n${slides.join('\n')}').length;
+    final textBytes = utf8.encode('$title\n${slides.join('\n')}').length;
     if (textBytes > maxTextBytes) {
       throw const FormatException('Presentation text exceeds the 5 MB limit.');
     }

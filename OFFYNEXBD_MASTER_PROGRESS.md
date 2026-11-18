@@ -887,3 +887,10 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Regression tests added for these boundaries; final test syntax correction included before final verification.
 - [ ] GitHub Actions full Analyze, test suite, Android APK build and artifact upload remain pending for the final integrated source commit.
 - [ ] These protections are not a claim of office-suite feature completion. PPTX/DOCX/ODT/ODS parity, chart/pivot features, full slide editor, production Cloud sync, live AI backend, online Forms, full font manager, advanced Database and physical/cross-platform checks remain outstanding.
+
+
+## Build #345 analyzer correction — 2026-11-18
+
+- [x] Build #345 reached Flutter Analyze; the only reported issue was an unnecessary string-interpolation brace in Slides PDF text-size calculation.
+- [x] Removed the redundant brace without changing export behavior.
+- [ ] Re-run Analyze, complete tests, Android release APK build and artifact upload on the corrected integrated commit.
