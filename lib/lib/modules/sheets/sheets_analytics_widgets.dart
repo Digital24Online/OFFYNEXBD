@@ -42,16 +42,16 @@ class _SheetsConditionalRuleDialogState
 
   @override
   Widget build(BuildContext context) {
-    const operators = {
-      'greaterThan': 'Greater than',
-      'greaterOrEqual': 'Greater than or equal',
-      'lessThan': 'Less than',
-      'lessOrEqual': 'Less than or equal',
-      'equal': 'Equal to',
-      'notEqual': 'Not equal to',
-      'contains': 'Text contains',
-      'isEmpty': 'Is empty',
-      'isNotEmpty': 'Is not empty',
+    final operators = {
+      'greaterThan': t('এর চেয়ে বড়', 'Greater than'),
+      'greaterOrEqual': t('সমান বা বড়', 'Greater than or equal'),
+      'lessThan': t('এর চেয়ে ছোট', 'Less than'),
+      'lessOrEqual': t('সমান বা ছোট', 'Less than or equal'),
+      'equal': t('সমান', 'Equal to'),
+      'notEqual': t('সমান নয়', 'Not equal to'),
+      'contains': t('লেখা রয়েছে', 'Text contains'),
+      'isEmpty': t('খালি', 'Is empty'),
+      'isNotEmpty': t('খালি নয়', 'Is not empty'),
     };
     const colors = {
       'D9EAD3': 'Green',
