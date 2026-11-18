@@ -434,15 +434,43 @@ class _SheetsScreenState extends State<SheetsScreen> {
       ),
     );
     if (selected == null || !mounted) return;
-    setState(() {
-      _cells[key] = selected;
-      _formulaBarController.text = selected;
-    });
-    await _saveWorkbook();
+    await _writeCellValue(key, selected);
   }
 
   bool _cellValueAllowed(String key, String value) =>
       SheetsDataValidation.accepts(value, _activeWorksheet.validations[key]);
+
+  /// One guarded write path for interactive cell-value changes.
+  Future<bool> _writeCellValue(
+    String key,
+    String value, {
+    bool selectAfterWrite = false,
+  }) async {
+    final normalized = value.trim();
+    if (!_cellValueAllowed(key, normalized)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_t(
+            'এই Cell-এর Dropdown তালিকা থেকে মান নির্বাচন করুন।',
+            'Choose a value from this cell’s dropdown list.',
+          ))),
+        );
+      }
+      return false;
+    }
+    if (!mounted) return false;
+    setState(() {
+      if (normalized.isEmpty) {
+        _cells.remove(key);
+      } else {
+        _cells[key] = normalized;
+      }
+      if (selectAfterWrite) _selectedCell = key;
+      if (_selectedCell == key) _formulaBarController.text = normalized;
+    });
+    await _saveWorkbook();
+    return true;
+  }
 
   Future<void> _toggleFreezeTopRow() async {
     setState(() {
@@ -476,22 +504,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
       ),
     );
     if (result == null || !mounted) return;
-    if (!_cellValueAllowed(key, result.trim())) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_t('এই Cell-এর Dropdown তালিকা থেকে মান নির্বাচন করুন।', 'Choose a value from this cell’s dropdown list.'))),
-      );
-      return;
-    }
-    if (result.trim().isEmpty) {
-      _cells.remove(key);
-    } else {
-      _cells[key] = result.trim();
-    }
-    setState(() {
-      _selectedCell = key;
-      _formulaBarController.text = _cells[key] ?? '';
-    });
-    await _saveWorkbook();
+    await _writeCellValue(key, result, selectAfterWrite: true);
   }
 
   Future<void> _renameSheet() async {
@@ -1325,21 +1338,8 @@ class _SheetsScreenState extends State<SheetsScreen> {
   Future<void> _commitFormulaBar() async {
     final key = _selectedCell;
     if (key == null) return;
-    final value = _formulaBarController.text.trim();
-    if (!_cellValueAllowed(key, value)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_t('এই Cell-এর Dropdown তালিকা থেকে মান নির্বাচন করুন।', 'Choose a value from this cell’s dropdown list.'))),
-      );
-      return;
-    }
-    setState(() {
-      if (value.isEmpty) {
-        _cells.remove(key);
-      } else {
-        _cells[key] = value;
-      }
-    });
-    await _saveWorkbook();
+    final value = _formulaBarController.text;
+    await _writeCellValue(key, value);
   }
 
   Future<void> _clearSelectedCell() async {
@@ -1374,11 +1374,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
       return;
     }
     if (function == 'PI') {
-      setState(() {
-        _cells[key] = '=PI()';
-        _formulaBarController.text = '=PI()';
-      });
-      await _saveWorkbook();
+      await _writeCellValue(key, '=PI()');
       return;
     }
     const examples = <String, String>{
@@ -1447,11 +1443,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
     controller.dispose();
     if (range == null || range.isEmpty || !mounted) return;
     final formula = '=$function($range)';
-    setState(() {
-      _cells[key] = formula;
-      _formulaBarController.text = formula;
-    });
-    await _saveWorkbook();
+    await _writeCellValue(key, formula);
   }
 
   Widget _ribbonCommand(String label, IconData icon, VoidCallback action) {
