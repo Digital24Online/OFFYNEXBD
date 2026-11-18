@@ -1160,3 +1160,8 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - ODT export generates named inline styles from validated Quill attributes instead of dropping those formats.
 - Added ODT round-trip assertions for all newly supported inline attributes.
 - This remains a standards-interoperability implementation, not a claim of pixel-perfect fidelity across every office suite. Page layout/header/footer import, advanced numbering, complex table merges and floating objects remain to be verified/implemented.
+
+
+### Writer CI lint follow-up — 2026-11-19
+- Applied the null-check pattern consistently to both DOCX and ODT hyperlink attribute maps after CI surfaced the second instance.
+- The ODT inline-style enhancement is queued for full analyzer, regression-test and Android build validation.

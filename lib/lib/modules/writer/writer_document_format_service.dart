@@ -263,7 +263,7 @@ class WriterDocumentFormatService {
       final name = node.name.local;
       if (name == 'a') {
         final target = _safeLink(_attribute(node, 'href'));
-        final linked = <String, dynamic>{...attrs, if (target != null) 'link': target};
+        final linked = <String, dynamic>{...attrs, if (target case final safeTarget?) 'link': safeTarget};
         for (final child in node.children) { await walk(child, linked); }
         return;
       }
