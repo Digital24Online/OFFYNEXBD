@@ -290,7 +290,9 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
     if (yes != true || !mounted) return;
     final updated = _items.where((entry) => entry['id'] != item['id']).toList();
     await _save(updated);
-    if (mounted) setState(() => _items = updated);
+    if (mounted) {
+      setState(() => _items = updated);
+    }
     final path = item['scanPdfPath'];
     if (widget.module == 'Scan' && path is String && path.isNotEmpty) {
       try {
@@ -312,12 +314,14 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
       if (!await file.exists()) throw const FileSystemException('Saved scan PDF was not found.');
       await Printing.sharePdf(
         bytes: Uint8List.fromList(await file.readAsBytes()),
-        filename: (item['title']?.toString().trim().isNotEmpty == true ? item['title'].toString().trim() : 'OFFYNEXBD-Scan') + '.pdf',
+        filename: '${item['title']?.toString().trim().isNotEmpty == true ? item['title'].toString().trim() : 'OFFYNEXBD-Scan'}.pdf',
       );
     } catch (error) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text((_bn ? 'PDF শেয়ার ব্যর্থ: ' : 'PDF share failed: ') + error.toString()),
-      ));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text((_bn ? 'PDF শেয়ার ব্যর্থ: ' : 'PDF share failed: ') + error.toString()),
+        ));
+      }
     }
   }
 
