@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'lib/modules/writer/writer_screen.dart';
 import 'lib/modules/sheets/sheets_screen.dart';
 import 'lib/modules/pdf/pdf_to_document_screen.dart';
+import 'lib/modules/workspace/office_workspace_screen.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_localizations/flutter_localizations.dart'
     hide GlobalMaterialLocalizations, GlobalCupertinoLocalizations;
@@ -172,6 +173,20 @@ void openModule(OfficeModule module) {
       context,
       MaterialPageRoute(
         builder: (context) => SheetsScreen(isBangla: isBangla),
+      ),
+    );
+    return;
+  }
+
+  if (const ['Slides', 'Fonts', 'AI Assistant', 'Cloud', 'Forms', 'Scan', 'Database']
+      .contains(module.name)) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => OfficeWorkspaceScreen(
+          module: module.name,
+          isBangla: isBangla,
+        ),
       ),
     );
     return;
