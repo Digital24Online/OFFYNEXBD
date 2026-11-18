@@ -110,38 +110,10 @@ class PdfToDocumentService {
         'সমর্থিত ছবি নির্বাচন করুন: JPG, JPEG, PNG, WEBP, BMP বা TIFF।',
       );
     }
-    if (imageBytes.length > 30 * 1024 * 1024) {
-      throw const FormatException('ছবির সর্বোচ্চ সাইজ ৩০ MB।');
-    }
-    if (Platform.isWindows) {
-      throw UnsupportedError(
-        'এই Windows সংস্করণে OCR ইঞ্জিন এখনো যুক্ত হয়নি।',
-      );
-    }
-    final temp = await getTemporaryDirectory();
-    final extension = sourceName.split('.').last.toLowerCase();
-    final imageFile = File(
-      '${temp.path}/offynex_image_ocr_${DateTime.now().microsecondsSinceEpoch}.$extension',
+    final recognized = await recognizeImageBytes(
+      imageBytes,
+      sourceName: sourceName,
     );
-    await imageFile.writeAsBytes(imageBytes, flush: true);
-    String recognized;
-    try {
-      recognized = await TesseractOcr.extractText(
-        imageFile.path,
-        config: OCRConfig(
-          language: 'ben+eng',
-          engine: OCREngine.tesseract,
-          options: const {'preserve_interword_spaces': '1'},
-        ),
-      );
-    } finally {
-      if (await imageFile.exists()) await imageFile.delete();
-    }
-    if (recognized.trim().isEmpty) {
-      throw const FormatException(
-        'ছবি থেকে কোনো লেখা শনাক্ত হয়নি। পরিষ্কার ও সোজা ছবি ব্যবহার করুন।',
-      );
-    }
     final fontData = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
     final font = pw.Font.ttf(fontData);
     final intermediatePdf = pw.Document();
@@ -168,6 +140,47 @@ class PdfToDocumentService {
       docxBytes: converted.docxBytes,
       ocrUsed: true,
     );
+  }
+
+  static Future<String> recognizeImageBytes(
+    Uint8List imageBytes, {
+    required String sourceName,
+  }) async {
+    if (imageBytes.isEmpty || !isSupportedImageName(sourceName)) {
+      throw const FormatException('সমর্থিত ও বৈধ ছবি নির্বাচন করুন।');
+    }
+    if (imageBytes.length > 30 * 1024 * 1024) {
+      throw const FormatException('ছবির সর্বোচ্চ সাইজ ৩০ MB।');
+    }
+    if (Platform.isWindows) {
+      throw UnsupportedError(
+        'এই Windows সংস্করণে OCR ইঞ্জিন এখনো যুক্ত হয়নি।',
+      );
+    }
+    final temp = await getTemporaryDirectory();
+    final extension = sourceName.split('.').last.toLowerCase();
+    final imageFile = File(
+      '${temp.path}/offynex_image_ocr_${DateTime.now().microsecondsSinceEpoch}.$extension',
+    );
+    await imageFile.writeAsBytes(imageBytes, flush: true);
+    try {
+      final recognized = await TesseractOcr.extractText(
+        imageFile.path,
+        config: OCRConfig(
+          language: 'ben+eng',
+          engine: OCREngine.tesseract,
+          options: const {'preserve_interword_spaces': '1'},
+        ),
+      );
+      if (recognized.trim().isEmpty) {
+        throw const FormatException(
+          'ছবি থেকে কোনো লেখা শনাক্ত হয়নি। পরিষ্কার ও সোজা ছবি ব্যবহার করুন।',
+        );
+      }
+      return recognized.trim();
+    } finally {
+      if (await imageFile.exists()) await imageFile.delete();
+    }
   }
 
   static bool _isEmpty(List<Map<String, dynamic>> delta) =>
