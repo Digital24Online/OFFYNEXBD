@@ -262,6 +262,29 @@ void main() {
         () => SheetsWorkbookCodec.decode(SheetsWorkbookCodec.encode(invalidPivot)),
         throwsFormatException,
       );
+
+      final missingSource = SheetsWorkbook(
+        activeSheetId: 'pivot',
+        sheets: [
+          SheetsWorksheet(
+            id: 'pivot',
+            name: 'Pivot',
+            rows: 2,
+            columns: 2,
+            pivotConfig: {
+              'sourceSheetId': 'deleted-source',
+              'range': 'A1:B5',
+              'groupColumn': 'A',
+              'valueColumn': 'B',
+              'aggregation': 'sum',
+            },
+          ),
+        ],
+      );
+      expect(
+        () => SheetsWorkbookCodec.decode(SheetsWorkbookCodec.encode(missingSource)),
+        throwsFormatException,
+      );
     });
 
     test('rejects oversized workbook exports without changing the source', () {
