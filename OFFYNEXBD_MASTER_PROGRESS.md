@@ -748,3 +748,14 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 
 - [x] Build #267 / run `44261674201` reached Analyze but failed only on one lint: redundant `dart:typed_data` import in the new Scan service (the import is already re-exported by Flutter services). Removed the redundant import in commit `f7c862dec623613b48e107242d6def03b65b2ff4`.
 - [ ] Build #268 / run `44261927870` validates that lint correction and the latest native Scan source; Analyze, full tests, Android APK and artifact upload remain pending.
+## Writer integrated completion batch — 2026-11-18 (CI validation pending)
+
+- Re-audited the existing Writer source and progress history. Serials 14.6 (Images), 15 (Layout), and 16 (References/Review/View) were already implemented; Serial 16 had passed Build #35. They were preserved rather than repeated.
+- Passed the app's selected Bangla/English language setting into Writer and localized the Writer library shell, editor shell, ribbon tabs, common status labels and document menu.
+- Added per-document Header and Footer metadata with `{page}` and `{pages}` placeholders. Writer PDF/print output now renders repeating headers, footers and dynamic page numbering.
+- Added Save as DOCX using the existing `docx_creator` dependency. Export converts supported rich text/headings and Writer table blocks; image bytes are embedded rather than exporting private local file paths.
+- Added DOCX export regression tests, missing-image safety test and PDF header/footer/page-number test.
+- Replaced the stale Writer README that incorrectly said the module was only planned. It now records implemented functionality and explicitly documents outstanding format/fidelity boundaries.
+- Relevant commits in this batch: `0fec434`, `bd5af56`, `10ed908`, `cb265eb`, `c876708`, `2f622d9`, `214d346`, `9fa34bc`, `d13bf09`, `931527d`, `c889f2f`, `5f71d0d`.
+- [ ] Validate the integrated Writer batch with Flutter Analyze, all tests, Android release APK build and artifact upload. Do not mark this batch verified until all stages pass on the final source commit.
+- [ ] Remaining product-level Writer gaps: native DOCX import into Quill, ODT import/export, full rich-content on-screen pagination, Word-grade DOCX fidelity for every Quill embed, native spell-check dictionary integration, font management/user font installation, and physical device/printer verification. The current Writer implementation must not be described as complete Microsoft Word parity.
