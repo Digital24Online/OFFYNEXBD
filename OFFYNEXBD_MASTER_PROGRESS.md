@@ -1122,3 +1122,10 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - Build #387 narrowed Analyze findings to two informational lints: a missing mounted guard after the asynchronous file-size read, and unnecessary interpolation braces in the ODT filename.
 - [x] Added the post-await mounted guard and simplified the filename interpolation.
 - [ ] Re-run Analyze, tests and Android APK build.
+
+
+## Writer document import title test correction — 2026-11-18
+
+- Build #388: Flutter Analyze SUCCESS; 150 tests passed and one DOCX import test failed because the service retained the source extension in the imported title.
+- [x] DOCX/ODT import title normalization now removes only the supported .docx/.odt suffix and preserves other periods in the document title.
+- [ ] Re-run all tests and Android APK build.

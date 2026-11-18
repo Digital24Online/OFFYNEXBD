@@ -507,7 +507,14 @@ ${manifestImages.join('\n')}
 
   static String _xmlEscape(String value) => value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&apos;');
   static String _safeTitle(String value) {
-    final text = value.trim();
+    var text = value.trim();
+    final dot = text.lastIndexOf('.');
+    if (dot > 0) {
+      final extension = text.substring(dot + 1).toLowerCase();
+      if (extension == 'docx' || extension == 'odt') {
+        text = text.substring(0, dot).trim();
+      }
+    }
     if (text.isEmpty) return 'Imported Document';
     return text.length > 180 ? text.substring(0, 180) : text;
   }
