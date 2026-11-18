@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart' hide GlobalMaterialLocalizations, GlobalCupertinoLocalizations;
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter_quill/flutter_quill.dart';
-import 'package:material_ui/material_ui.dart' hide GlobalMaterialLocalizations;
+import 'package:material_ui/material_ui.dart';
 import 'package:offynexbd/lib/modules/writer/writer_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
