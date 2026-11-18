@@ -93,6 +93,48 @@ void main() {
       expect(workbook.activeSheet.cells['A1'], r'$1[ok] $1[ok]');
     });
 
+
+    test('keeps formulas safe unless formula replacement is explicitly enabled', () {
+      final workbook = SheetsWorkbook(
+        activeSheetId: 'one',
+        sheets: [
+          SheetsWorksheet(
+            id: 'one',
+            name: 'One',
+            rows: 5,
+            columns: 3,
+            cells: {
+              'A1': 'Sales',
+              'B1': '=SUM(A1:A3)',
+              'C1': '=IF(A1="Sales",1,0)',
+            },
+          ),
+        ],
+      );
+
+      expect(
+        SheetsFindReplace.replaceInWorkbook(
+          workbook,
+          find: 'A1',
+          replacement: 'B1',
+        ),
+        0,
+      );
+      expect(workbook.activeSheet.cells['B1'], '=SUM(A1:A3)');
+
+      expect(
+        SheetsFindReplace.replaceInWorkbook(
+          workbook,
+          find: 'A1',
+          replacement: 'B1',
+          includeFormulas: true,
+        ),
+        2,
+      );
+      expect(workbook.activeSheet.cells['B1'], '=SUM(B1:A3)');
+      expect(workbook.activeSheet.cells['C1'], '=IF(B1="Sales",1,0)');
+    });
+
     test('rejects an empty search string', () {
       final workbook = SheetsWorkbook(
         activeSheetId: 'one',

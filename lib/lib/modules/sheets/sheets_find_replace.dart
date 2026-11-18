@@ -8,6 +8,7 @@ class SheetsFindReplace {
     required String find,
     required String replacement,
     bool matchCase = false,
+    bool includeFormulas = false,
   }) {
     if (find.isEmpty) {
       throw ArgumentError.value(find, 'find', 'Must not be empty.');
@@ -17,6 +18,7 @@ class SheetsFindReplace {
     var replacements = 0;
     for (final sheet in workbook.sheets) {
       for (final entry in sheet.cells.entries.toList()) {
+        if (!includeFormulas && entry.value.startsWith('=')) continue;
         final matches = pattern.allMatches(entry.value).length;
         if (matches == 0) continue;
         sheet.cells[entry.key] = entry.value.replaceAllMapped(

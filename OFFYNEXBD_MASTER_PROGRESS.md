@@ -968,3 +968,11 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Added regression tests for multi-worksheet replacement, case sensitivity, formatting preservation, regex-safe literal matching and empty search rejection.
 - [ ] Flutter Analyze, complete automated tests, Android release APK build and artifact upload are pending for this source commit.
 - [ ] This batch does not close the remaining Sheets gaps: charts, pivot tables, data validation, conditional formatting, ODS, advanced Excel compatibility, freeze panes and large-workbook/device testing.
+
+
+## Sheets Find & Replace formula safety — integrated correction (2026-11-18)
+
+- [x] Find & Replace now excludes formula cells by default, preventing accidental formula corruption during ordinary text replacement.
+- [x] Added an explicit “Include formulas” option for users who intentionally need formula text changed.
+- [x] Added regression coverage for default formula protection and opt-in formula replacement across worksheet cells.
+- [ ] Flutter Analyze, full tests, Android APK build and upload must pass on this correction commit before CI verification.

@@ -574,6 +574,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
     final findController = TextEditingController();
     final replaceController = TextEditingController();
     var matchCase = false;
+    var includeFormulas = false;
     final request = await showDialog<({String find, String replacement, bool matchCase})>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
@@ -607,6 +608,15 @@ class _SheetsScreenState extends State<SheetsScreen> {
                   matchCase = value ?? false;
                 }),
               ),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                value: includeFormulas,
+                controlAffinity: ListTileControlAffinity.leading,
+                title: Text(_t('Formula-এর ভেতরেও খুঁজুন', 'Include formulas')),
+                onChanged: (value) => setDialogState(() {
+                  includeFormulas = value ?? false;
+                }),
+              ),
               Text(
                 _t(
                   'সব Worksheet-এর Cell-এ খোঁজা ও পরিবর্তন করা হবে।',
@@ -629,6 +639,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
                   find: findController.text,
                   replacement: replaceController.text,
                   matchCase: matchCase,
+                  includeFormulas: includeFormulas,
                 ),
               ),
               child: Text(_t('সব পরিবর্তন', 'Replace all')),
@@ -652,6 +663,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
       find: request.find,
       replacement: request.replacement,
       matchCase: request.matchCase,
+      includeFormulas: request.includeFormulas,
     );
     if (count == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
