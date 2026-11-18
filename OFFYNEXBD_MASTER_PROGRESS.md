@@ -1017,3 +1017,16 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [ ] Flutter Analyze, complete automated tests, Android APK build and artifact upload are pending for this integrated correction.
 - [ ] Native XLSX data-validation import/export remains unsupported by the current mapping; not claimed complete.
 - [ ] Charts, pivot tables, conditional formatting, named ranges, ODS import/export, advanced print setup, freeze columns/panes, large-workbook performance and physical-device validation remain open.
+
+
+## Sheets XLSX dropdown-validation interoperability — integrated batch (2026-11-18)
+
+- [x] XLSX import reads native fixed-list dropdown validations and expands each supported range into the worksheet's per-cell validation model.
+- [x] Worksheet dimensions grow to include imported validation ranges, even when the validated cells contain no values.
+- [x] XLSX export writes per-cell dropdown rules back as native Excel data-validation ranges, coalescing adjacent cells with identical options.
+- [x] Multi-area ranges and absolute cell references are handled; unsupported non-list and formula/range-backed validations are rejected rather than silently discarded.
+- [x] Import/export enforces the existing 1,000-row × 100-column grid and a 10,000-cell validation expansion ceiling.
+- [x] Export/import explicitly rejects fixed-list options Excel cannot represent faithfully (commas, quotes, line breaks, or more than 255 joined characters).
+- [x] Added regression coverage for multi-cell/multi-area import, unsupported rules, grid/expansion limits, grouped export and XLSX save/reopen round-trip.
+- [ ] Flutter Analyze, full automated tests, Android release APK build and artifact upload must pass on the integrated commit before CI verification.
+- [ ] Formula/range-backed dropdowns and non-list Excel validation types remain unsupported; they are rejected with an explicit import error, not silently dropped.
