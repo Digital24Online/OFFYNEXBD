@@ -310,6 +310,20 @@ class WriterDocumentFormatService {
     if (underline != null && underline != 'none') result['underline'] = true;
     final color = _attribute(props, 'color');
     if (color != null && RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(color)) result['color'] = color;
+    final strike = _attribute(props, 'text-line-through-style');
+    if (strike != null && strike != 'none') result['strike'] = true;
+    final background = _attribute(props, 'background-color');
+    if (background != null && RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(background)) result['background'] = background;
+    final size = _attribute(props, 'font-size');
+    if (size != null) {
+      final match = RegExp(r'^([0-9]+(?:\\.[0-9]+)?)(pt|px)$').firstMatch(size.trim());
+      if (match != null) {
+        final amount = double.tryParse(match.group(1)!);
+        if (amount != null && amount >= 5 && amount <= 144) {
+          result['size'] = (match.group(2) == 'px' ? amount * 0.75 : amount).toStringAsFixed(2);
+        }
+      }
+    }
     final family = _attribute(props, 'font-family');
     if (family != null) result['font'] = family.toLowerCase().contains('serif') ? 'serif' : 'sans-serif';
     return result;
@@ -347,6 +361,25 @@ class WriterDocumentFormatService {
       'xmlns:xlink="http://www.w3.org/1999/xlink" office:version="1.2"><office:body><office:text>',
     );
     final paragraph = StringBuffer();
+    final inlineTextStyles = <String, String>{};
+    String inlineStyleName(Map<String, dynamic> attrs) {
+      final properties = <String>[];
+      if (attrs['bold'] == true) properties.add('fo:font-weight="bold"');
+      if (attrs['italic'] == true) properties.add('fo:font-style="italic"');
+      if (attrs['underline'] == true) properties.add('style:text-underline-style="solid"');
+      if (attrs['strike'] == true) properties.add('style:text-line-through-style="solid"');
+      final color = attrs['color']?.toString();
+      if (color != null && RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(color)) properties.add('fo:color="$color"');
+      final background = attrs['background']?.toString();
+      if (background != null && RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(background)) properties.add('fo:background-color="$background"');
+      final rawSize = double.tryParse(attrs['size']?.toString() ?? '');
+      if (rawSize != null && rawSize.isFinite && rawSize >= 5 && rawSize <= 144) properties.add('fo:font-size="${rawSize.toStringAsFixed(2)}pt"');
+      if (attrs['font'] == 'serif') properties.add('fo:font-family="Noto Serif Bengali"');
+      if (attrs['font'] == 'sans-serif') properties.add('fo:font-family="Noto Sans Bengali"');
+      if (properties.isEmpty) return '';
+      final key = properties.join(' ');
+      return inlineTextStyles.putIfAbsent(key, () => 'T_Inline${inlineTextStyles.length + 1}');
+    }
     var imageIndex = 0;
     void flushParagraph([Map<String, dynamic> block = const {}]) {
       final value = paragraph.toString();
@@ -371,9 +404,8 @@ class WriterDocumentFormatService {
         for (var i = 0; i < parts.length; i++) {
           if (parts[i].isNotEmpty) {
             var value = _xmlEscape(parts[i]);
-            if (attrs['bold'] == true) value = '<text:span text:style-name="T_Bold">$value</text:span>';
-            if (attrs['italic'] == true) value = '<text:span text:style-name="T_Italic">$value</text:span>';
-            if (attrs['underline'] == true) value = '<text:span text:style-name="T_Underline">$value</text:span>';
+            final styleName = inlineStyleName(attrs);
+            if (styleName.isNotEmpty) value = '<text:span text:style-name="$styleName">$value</text:span>';
             final link = _safeLink(attrs['link']?.toString());
             if (link != null) value = '<text:a xlink:href="${_xmlEscape(link)}">$value</text:a>';
             paragraph.write(value);
@@ -428,6 +460,7 @@ class WriterDocumentFormatService {
 <style:style style:name="T_Bold" style:family="text"><style:text-properties fo:font-weight="bold"/></style:style>
 <style:style style:name="T_Italic" style:family="text"><style:text-properties fo:font-style="italic"/></style:style>
 <style:style style:name="T_Underline" style:family="text"><style:text-properties style:text-underline-style="solid"/></style:style>
+${inlineTextStyles.entries.map((entry) => '<style:style style:name="' + entry.value + '" style:family="text"><style:text-properties ' + entry.key + '/></style:style>').join('\\n')}
 </office:styles>
 <office:automatic-styles><style:page-layout style:name="pm1"><style:page-layout-properties fo:page-width="${page[0].toStringAsFixed(2)}cm" fo:page-height="${page[1].toStringAsFixed(2)}cm" style:print-orientation="${pageLayout['orientation'] == 'Landscape' ? 'landscape' : 'portrait'}" fo:margin-top="${margin('top')}" fo:margin-bottom="${margin('bottom')}" fo:margin-left="${margin('left')}" fo:margin-right="${margin('right')}"/></style:page-layout></office:automatic-styles>
 <office:master-styles><style:master-page style:name="Default" style:page-layout-name="pm1"><style:header><text:p>${_xmlEscape(headerText)}</text:p></style:header><style:footer><text:p>${_xmlEscape(footerText)}</text:p></style:footer></style:master-page></office:master-styles>

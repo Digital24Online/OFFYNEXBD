@@ -1153,3 +1153,10 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 ### Writer hyperlink batch CI correction — 2026-11-19
 - CI run #394 identified two Dart analyzer style diagnostics in the new DOCX/ODT hyperlink map literals. Replaced nullable checks with null-check patterns; no functional behavior change.
 - Hyperlink import/export test coverage remains in the same Writer interchange batch. CI must be rerun and pass before considering this batch verified.
+
+
+### Writer ODT inline-format fidelity — 2026-11-19
+- ODT style import/export now covers strike-through, foreground/background colors, font size (pt/px normalization), and serif/sans-serif font family in addition to bold, italic and underline.
+- ODT export generates named inline styles from validated Quill attributes instead of dropping those formats.
+- Added ODT round-trip assertions for all newly supported inline attributes.
+- This remains a standards-interoperability implementation, not a claim of pixel-perfect fidelity across every office suite. Page layout/header/footer import, advanced numbering, complex table merges and floating objects remain to be verified/implemented.

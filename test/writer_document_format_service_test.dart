@@ -45,6 +45,7 @@ void main() {
       {'insert': '\n', 'attributes': {'header': 1}},
       {'insert': 'Bold', 'attributes': {'bold': true}},
       {'insert': 'Linked', 'attributes': {'link': 'https://example.com/docs'}},
+      {'insert': 'Styled', 'attributes': {'bold': true, 'italic': true, 'underline': true, 'strike': true, 'color': '#123456', 'background': '#F0E0D0', 'size': '18', 'font': 'serif'}},
       {'insert': '\n'},
       {'insert': {'offynexbd-writer-table': jsonEncode({'rows': [['A', 'B'], ['1', '2']], 'headerRow': true})}},
       {'insert': '\n'},
@@ -61,6 +62,16 @@ void main() {
     expect(imported.delta.any((op) => op['insert'] == 'Hello বাংলা'), isTrue);
     expect(imported.delta.any((op) => op['insert'] == 'Bold' && (op['attributes'] as Map?)?['bold'] == true), isTrue);
     expect(imported.delta.any((op) => op['insert'] == 'Linked' && (op['attributes'] as Map?)?['link'] == 'https://example.com/docs'), isTrue);
+    final styled = imported.delta.firstWhere((op) => op['insert'] == 'Styled');
+    final styleAttrs = styled['attributes'] as Map;
+    expect(styleAttrs['bold'], isTrue);
+    expect(styleAttrs['italic'], isTrue);
+    expect(styleAttrs['underline'], isTrue);
+    expect(styleAttrs['strike'], isTrue);
+    expect(styleAttrs['color'], '#123456');
+    expect(styleAttrs['background'], '#F0E0D0');
+    expect(double.parse(styleAttrs['size'].toString()), closeTo(18, 0.01));
+    expect(styleAttrs['font'], 'serif');
     expect(imported.delta.any((op) => op['insert'] is Map && (op['insert'] as Map).containsKey('offynexbd-writer-table')), isTrue);
     final exportedArchive = ZipDecoder().decodeBytes(bytes);
     expect(exportedArchive.files.first.name, 'mimetype');
