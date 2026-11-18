@@ -1115,3 +1115,10 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - Build #386 reduced Analyze findings to one Matrix4 API signature mismatch: translateByDouble requires x, y, z and w.
 - [x] Added the homogeneous w=1 argument; no other Analyze errors or lints were reported in Build #386.
 - [ ] Re-run Analyze, tests and Android APK build.
+
+
+## Writer final Analyze lint correction — 2026-11-18
+
+- Build #387 narrowed Analyze findings to two informational lints: a missing mounted guard after the asynchronous file-size read, and unnecessary interpolation braces in the ODT filename.
+- [x] Added the post-await mounted guard and simplified the filename interpolation.
+- [ ] Re-run Analyze, tests and Android APK build.

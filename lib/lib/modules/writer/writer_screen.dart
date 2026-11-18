@@ -2054,6 +2054,7 @@ Future<void> showCustomFontSizeDialog() async {
       if (picked == null) return;
       if (!mounted) return;
       final fileSize = picked.lengthSync() ?? await picked.length() ?? 0;
+      if (!mounted) return;
       if (fileSize <= 0 || fileSize > WriterDocumentFormatService.maxInputBytes) {
         _showMessage(_t('ফাইল খালি অথবা ২৫ MB-এর বেশি।', 'File is empty or exceeds 25 MB.'));
         return;
@@ -2163,7 +2164,7 @@ Future<void> showCustomFontSizeDialog() async {
       final rawName = titleController.text.trim().isEmpty ? 'OFFYNEXBD-Document' : titleController.text.trim();
       final safeName = rawName.replaceAll(' ', '_').replaceAll('/', '_').replaceAll('\\\\', '_');
       final saved = await FilePicker.saveFile(
-        fileName: '${safeName}.odt',
+        fileName: '$safeName.odt',
         bytes: bytes,
         mimeType: 'application/vnd.oasis.opendocument.text',
         dialogTitle: _t('ODT ফাইল সংরক্ষণ', 'Save ODT document'),
