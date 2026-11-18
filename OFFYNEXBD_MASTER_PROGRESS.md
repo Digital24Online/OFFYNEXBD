@@ -458,3 +458,31 @@
 - [x] Inspected Home Screen routing, dependency manifest, CI workflow, all ten module READMEs, and current Writer/Sheets/PDF source/test inventory.
 - [ ] Project-wide implementation and integration of all ten modules — NOT COMPLETE.
 - [ ] End-to-end cross-module and platform verification — NOT COMPLETE.
+
+## Integrated 10-Module Workspace Foundation — 2026-11-18
+
+### Implemented in the coordinated batch
+- [x] Added shared offline-first workspace source: `lib/lib/modules/workspace/office_workspace_screen.dart`.
+- [x] Connected Slides, Fonts, AI Assistant, Cloud, Forms, Scan and Database from Home Screen. Existing Writer, Sheets and PDF routes remain intact.
+- [x] Added per-module versioned local draft storage using separate SharedPreferences keys; create, edit and delete operations do not overwrite Writer or Sheets storage.
+- [x] Slides workspace stores presentation titles and slide text drafts.
+- [x] Fonts workspace stores font catalogue entries and notes. Dynamic font installation and editor-wide font activation are not implemented yet.
+- [x] AI Assistant workspace stores Bangla/English prompts and drafts. It does not claim to generate AI answers; a secure AI provider connection remains pending.
+- [x] Cloud workspace creates a JSON backup of OFFYNEXBD SharedPreferences data and restores compatible OFFYNEXBD keys after confirmation. This is local backup/restore, not online Cloud Sync.
+- [x] Forms workspace stores form titles and question drafts. Response collection, validation and sharing remain pending.
+- [x] Scan workspace accepts an image file, uses the existing Bengali/English OCR conversion service and saves recognized content as a Writer document. Camera capture, automatic edge detection and perspective correction remain pending.
+- [x] Database workspace stores table/schema notes. A relational database engine, query runner and data editor remain pending.
+- [x] Home Screen Bangla/English choice is now persisted with `offynex_language_bangla_v1`.
+- [x] Added widget tests for Forms draft persistence, Database schema editing and local Cloud backup generation.
+- [x] Flutter Analyze passed on source commit `dd63993b412fe097248df0d1e3f6e17339ec3927`.
+- [ ] Full test suite and Android release build for the corrected controller lifecycle are pending Build run `44250644711`.
+- [ ] Physical Android, camera, printer and desktop acceptance tests remain pending.
+
+### Test correction
+- Initial integrated workspace tests exposed dialog TextEditingController disposal before the reverse route animation finished.
+- Replaced parent-owned dialog controllers with a dedicated Stateful dialog that disposes controllers with its own widget lifecycle.
+- The corrected source is commit `b69e17d4faade43cd6128eb6ffdf97f572ade489`; verify via Build run `44250644711` before marking the batch CI-verified.
+
+### Remaining coordinated product work
+- The seven new workspaces are functional local foundations, not complete commercial-grade modules.
+- Continue coordinated implementation across all ten modules: real Slides/PPTX, complete PDF tools, installable and activatable font management plus Bijoy conversion, configured AI service, authenticated cloud sync, interactive Forms and responses, camera-based advanced scanner, relational Database, and richer Writer/Sheets format and feature coverage.
