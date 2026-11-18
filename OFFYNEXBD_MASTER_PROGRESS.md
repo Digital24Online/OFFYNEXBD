@@ -921,3 +921,12 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Added pure filtering regression tests for Bangla form titles, question labels, answers, date search, empty matches and blank search.
 - [ ] Validate this dashboard batch with Flutter Analyze, all automated tests, Android release APK build and artifact upload on its final commit.
 - [ ] Online Forms publishing, share links, remote response collection and access controls remain product-level work; local response search does not imply online Forms support.
+
+
+## Database CSV interchange — integrated feature batch (2026-11-18)
+
+- [x] Added schema-aware CSV export for offline Database table rows, including Bengali UTF-8 BOM and correct quoting for commas, double quotes and multiline cells.
+- [x] Added CSV import that checks exact column order, rejects malformed quotes/row widths and appends rows without replacing existing data.
+- [x] Import/export enforce a 10 MB file limit and a 100,000-row ceiling; the existing database JSON store and recovery path remain unchanged.
+- [x] Added regression tests for Bengali round-trip, quoted/multiline cells, schema mismatch, malformed CSV and invalid rows.
+- [ ] Flutter Analyze, complete automated tests, Android APK build and artifact upload must pass on this integrated commit before this batch is marked CI-verified.

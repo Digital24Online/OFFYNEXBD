@@ -1,4 +1,9 @@
+import 'dart:convert';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:material_ui/material_ui.dart';
+
+import 'database_rows_csv_codec.dart';
 
 class DatabaseRowsDialog extends StatefulWidget {
   const DatabaseRowsDialog({
@@ -20,6 +25,7 @@ class DatabaseRowsDialog extends StatefulWidget {
 
 class _DatabaseRowsDialogState extends State<DatabaseRowsDialog> {
   late final List<Map<String, dynamic>> _rows;
+  bool _fileBusy = false;
 
   @override
   void initState() {
@@ -57,6 +63,89 @@ class _DatabaseRowsDialogState extends State<DatabaseRowsDialog> {
     });
   }
 
+  Future<void> _exportCsv() async {
+    if (_fileBusy) return;
+    setState(() => _fileBusy = true);
+    try {
+      final csv = DatabaseRowsCsvCodec.encode(fields: widget.fields, rows: _rows);
+      final safeName = widget.tableName
+          .replaceAll(RegExp(r'[^a-zA-Z0-9 Bengali]'), '-')
+          .replaceAll(RegExp(r'-+'), '-');
+      final saved = await FilePicker.saveFile(
+        fileName: 'OFFYNEXBD-${safeName.isEmpty ? 'Database' : safeName}.csv',
+        bytes: Uint8List.fromList(utf8.encode(csv)),
+        mimeType: 'text/csv',
+        dialogTitle: widget.isBangla ? 'CSV Export সংরক্ষণ' : 'Export table CSV',
+      );
+      if (saved != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(widget.isBangla ? 'CSV Export সম্পন্ন হয়েছে।' : 'CSV export completed.'),
+        ));
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('${widget.isBangla ? 'Export ব্যর্থ' : 'Export failed'}: $error'),
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _fileBusy = false);
+    }
+  }
+
+  Future<void> _importCsv() async {
+    if (_fileBusy) return;
+    setState(() => _fileBusy = true);
+    try {
+      final picked = await FilePicker.pickFile(
+        type: FileType.custom,
+        allowedExtensions: const ['csv'],
+      );
+      if (picked == null || !mounted) return;
+      final imported = DatabaseRowsCsvCodec.decode(
+        await picked.readAsBytes(),
+        expectedFields: widget.fields,
+      );
+      if (imported.isEmpty) {
+        throw const FormatException('CSV contains no data rows.');
+      }
+      final yes = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(widget.isBangla ? 'CSV Import করবেন?' : 'Import CSV rows?'),
+          content: Text(widget.isBangla
+              ? '${imported.length}টি Row পাওয়া গেছে। বর্তমান Row অক্ষত রেখে নতুন Row যোগ হবে।'
+              : '${imported.length} rows found. New rows will be appended; existing rows will remain unchanged.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text(widget.isBangla ? 'বাতিল' : 'Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: Text(widget.isBangla ? 'Import' : 'Import'),
+            ),
+          ],
+        ),
+      );
+      if (yes != true || !mounted) return;
+      setState(() => _rows.addAll(imported));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(widget.isBangla
+            ? '${imported.length}টি নতুন Row যোগ হয়েছে। সংরক্ষণ করতে নিচে Save চাপুন।'
+            : '${imported.length} rows added. Press Save changes below to persist them.'),
+      ));
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('${widget.isBangla ? 'Import ব্যর্থ' : 'Import failed'}: $error'),
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _fileBusy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -68,6 +157,24 @@ class _DatabaseRowsDialogState extends State<DatabaseRowsDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(widget.isBangla ? '${_rows.length}টি Row' : '${_rows.length} rows'),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: _fileBusy ? null : _importCsv,
+                  icon: const Icon(Icons.file_download_outlined),
+                  label: Text(widget.isBangla ? 'CSV Import' : 'Import CSV'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: _fileBusy || _rows.isEmpty ? null : _exportCsv,
+                  icon: const Icon(Icons.file_upload_outlined),
+                  label: Text(widget.isBangla ? 'CSV Export' : 'Export CSV'),
+                ),
+              ],
+            ),
+            if (_fileBusy) const LinearProgressIndicator(),
             const SizedBox(height: 8),
             Expanded(
               child: _rows.isEmpty
