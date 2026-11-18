@@ -2061,7 +2061,6 @@ Future<void> showCustomFontSizeDialog() async {
           initialPageFormat: _selectedPdfFormat,
           buildPdf: _buildWriterPdf,
           controller: quillController,
-          focusNode: editorFocusNode,
           isBangla: widget.isBangla,
           onSave: saveDocument,
           onEditTable: editWriterTable,
@@ -3029,7 +3028,6 @@ class _WriterPrintPreviewScreen extends StatefulWidget {
   final PdfPageFormat initialPageFormat;
   final Future<Uint8List> Function(PdfPageFormat) buildPdf;
   final QuillController controller;
-  final FocusNode focusNode;
   final bool isBangla;
   final Future<void> Function() onSave;
   final Future<void> Function(
@@ -3043,7 +3041,6 @@ class _WriterPrintPreviewScreen extends StatefulWidget {
     required this.initialPageFormat,
     required this.buildPdf,
     required this.controller,
-    required this.focusNode,
     required this.isBangla,
     required this.onSave,
     required this.onEditTable,
@@ -3059,6 +3056,19 @@ class _WriterPrintPreviewScreenState
   bool _editing = false;
   bool _saving = false;
   int _previewRevision = 0;
+  late final FocusNode _previewFocusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _previewFocusNode = FocusNode(debugLabel: 'Writer print preview editor');
+  }
+
+  @override
+  void dispose() {
+    _previewFocusNode.dispose();
+    super.dispose();
+  }
 
   String _t(String bn, String en) => widget.isBangla ? bn : en;
 
@@ -3085,7 +3095,7 @@ class _WriterPrintPreviewScreenState
   void _openEditor() {
     setState(() => _editing = true);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) widget.focusNode.requestFocus();
+      if (mounted) _previewFocusNode.requestFocus();
     });
   }
 
@@ -3168,7 +3178,7 @@ class _WriterPrintPreviewScreenState
                     ),
                     child: QuillEditor.basic(
                       controller: widget.controller,
-                      focusNode: widget.focusNode,
+                      focusNode: _previewFocusNode,
                       config: QuillEditorConfig(
                         expands: true,
                         padding: EdgeInsets.zero,
