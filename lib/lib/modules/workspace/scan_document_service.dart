@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:google_mlkit_document_scanner/google_mlkit_document_scanner.dart';
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../pdf/pdf_to_document_service.dart';
@@ -28,7 +29,7 @@ class ScanDocumentService {
   static const int maxPages = 50;
   static const int maxPdfBytes = 50 * 1024 * 1024;
 
-  static Future<ScanCaptureResult> captureAndroid() async {
+  static Future<ScanCaptureResult?> captureAndroid() async {
     if (!Platform.isAndroid) {
       throw UnsupportedError(
         'Native document scanning is currently available on Android only.',
@@ -47,6 +48,11 @@ class ScanDocumentService {
     late final DocumentScanningResult result;
     try {
       result = await scanner.scanDocument();
+    } on PlatformException catch (error) {
+      if (error.message?.toLowerCase().contains('operation cancelled') == true) {
+        return null;
+      }
+      rethrow;
     } finally {
       await scanner.close();
     }
@@ -56,7 +62,7 @@ class ScanDocumentService {
       throw const FormatException('স্ক্যান থেকে PDF তৈরি হয়নি।');
     }
 
-    final sourcePdf = File.fromUri(Uri.parse(pdf.uri));
+    final sourcePdf = File(pdf.uri);
     if (!await sourcePdf.exists()) {
       throw const FileSystemException('স্ক্যান করা PDF ফাইল পাওয়া যায়নি।');
     }
