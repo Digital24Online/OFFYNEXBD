@@ -720,3 +720,16 @@ Continue development as coordinated batches across Writer, Sheets, Slides, PDF, 
 - [x] Corrected the code in commit `cc1d2677eebd134279213479ca776584fc0e37d2`: CSV import restored to its original flow; backup logic now lives only in XLSX replacement and the backup key is used in its success message.
 - [x] Manually inspected both import paths and confirmed the XLSX path waits for pending saves, preserves the previous workbook, then replaces the active worksheet.
 - [ ] Build #252 / run `44260743427` is the first workflow on the corrected integration commit; wait for Analyze, full tests, APK build and artifact upload before marking verified.
+
+
+### Native Android Document Scanner — implementation pending CI (2026-11-18)
+- [x] Added `google_mlkit_document_scanner: ^0.4.1`, selected because its documented requirements match the existing Android compile/target SDK 35 baseline and the current Flutter/Dart toolchain. The package provides Android-native automatic document capture, edge detection, crop/perspective correction, rotation, filter/cleanup UI, and PDF/JPEG output. It is Android-only in this version; other platforms retain the existing image-picker OCR path.
+- [x] Added `lib/lib/modules/workspace/scan_document_service.dart`: full scanner mode, gallery import, up to 50 pages, JPEG + PDF output, 50 MB PDF cap, per-page 30 MB OCR input cap, saved PDF under app documents, and Bengali+English OCR for each captured page.
+- [x] Native scanner cancellation is handled without an error alert. The Android plugin returns local filesystem paths for PDF and page images; the integration uses those paths directly.
+- [x] Extracted reusable `PdfToDocumentService.recognizeImageBytes` so native multi-page scanning can OCR each page without creating a throwaway DOCX for every page. Existing single-image conversion now uses the same helper.
+- [x] Scan screen saves recognized text as a Writer document with scan PDF path/page metadata and provides a PDF share action. If OCR finds no text, the captured PDF is still saved and can be shared.
+- [x] Added tests for ordered multi-page OCR text aggregation and updated `modules/scan/README.md` with platform support and limits.
+- [ ] Full Analyze, tests, Android release APK and artifact upload remain pending for the scanner integration. Do not mark it verified until the latest-source workflow succeeds.
+- [x] Added workflow concurrency control so rapid source commits cancel superseded builds and preserve resources for validating the newest main-branch source.
+
+Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea3832466fa15dcb73804b4cc626591695d743` (scanner service), `613ca21812ef23fafe4ecd028ce84b2a60ce9c97` (reusable OCR), `df1e074d12c49d050a62a05631868e68d99bb578` (screen integration), `324cd19aec79219a71594fcf8671eb9a28330d8a` (cancellation/path correction), `d3e82d4b4c559f1b4addd59216137f2d77b53c78` (tests), `aa9b8a1936ed0663df8616c7d853abcda9fa4149` (CI concurrency).
