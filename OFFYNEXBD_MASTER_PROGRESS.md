@@ -585,3 +585,14 @@ Continue development as coordinated batches across Writer, Sheets, Slides, PDF, 
 - [x] Run: https://github.com/Digital24Online/OFFYNEXBD/actions/runs/44253188504
 - [x] This validated the five workspace modules' module-scoped JSON import/export and search, including corrected Forms/Database regression tests.
 - [ ] Writer archive and Writer/Sheets data-recovery safeguards are newer changes and remain pending validation in Builds #217–#221.
+
+
+## Verified Writer/Sheets recovery and archive batches — 2026-11-18
+
+- [x] Build #217 / run `44253702842`: Writer archive codec, round-trip tests, and Writer archive import/export passed Analyze, full tests and APK build/upload. Artifact ID `14405506006`, size 50,156,776 bytes.
+- [x] Build #218 / run `44253995059`: Writer recovery-copy safeguard passed Analyze, full tests and APK build/upload. Artifact ID `14405566194`, size 50,158,665 bytes.
+- [x] Build #219 / run `44254056707`: Sheets damaged-workbook recovery safeguard passed Analyze, full tests and APK build/upload. Artifact ID `14405142125`, size 50,158,659 bytes.
+- [x] Build #220 / run `44254121323`: Writer recovery test and complete source batch passed Analyze, full tests and APK build/upload. Artifact ID `14406130479`, size 50,159,788 bytes.
+- [ ] Build #221 / run `44254160203`: Writer recovery test source commit `5bcd2500c261b7498615811cf26ec5dd2c0363a9`; Analyze/tests passed, Android APK build still running at last check.
+- [ ] Forms response collection is implemented locally: one question per line, response form, additive saved responses, response viewer, and recovery copy for malformed response archives. Online form sharing is not implemented.
+- [ ] Corrected Forms newline splitting to handle actual LF/CRLF lines and updated module guidance. Added widget test for multi-question response collection, local persistence and response viewer. Commits after Build #222 started require a fresh CI run.
