@@ -1263,3 +1263,5 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [ ] Run Flutter Analyze, complete automated tests, Android Release APK build and artifact upload on this batch.
 - [ ] Real Microsoft Word / LibreOffice opening and print output must still be checked; CI archive tests do not replace external office application testing.
 - [ ] Remaining Writer gaps: true live pagination, complex DOCX/ODT fidelity, spellcheck, full font management, comprehensive ribbon localization, large-document performance and Android physical-device/printing validation.
+
+- CI trigger note (2026-11-19): source commit `e5e5f33f4691fbe3a326579f47ae61dc07567ac6` is the current Writer implementation checkpoint; run Analyze, all tests, Android release build and artifact upload against the latest PR head before considering this batch verified.
