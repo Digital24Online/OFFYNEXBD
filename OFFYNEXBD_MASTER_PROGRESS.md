@@ -1100,3 +1100,11 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Replaced all unresolved UI interpolation placeholders with explicit Dart string/path operations.
 - [x] Added a regression assertion that ODT `mimetype` is the first archive entry.
 - [ ] Analyze, tests and Android APK build remain pending for the corrected commit.
+
+
+## Writer Analyze cleanup — 2026-11-18
+
+- Build #385 installed dependencies successfully, then Analyze identified a nullable PlatformFile length, an async BuildContext lint, string-composition lints and a deprecated Matrix4.translate call.
+- [x] Added a zero fallback for nullable file length, separated the mounted guard, converted string composition to interpolation and replaced deprecated matrix translation with translateByDouble.
+- [x] Removed the remaining unnecessary interpolation braces in ODT image names.
+- [ ] Re-run Analyze, full tests and Android APK build on the corrected commit.

@@ -372,7 +372,7 @@ class WriterDocumentFormatService {
         final name = 'Pictures/image_${imageIndex++}.$ext';
         imageFiles.add(ArchiveFile(name, data.length, data));
         manifestImages.add('<manifest:file-entry manifest:full-path="$name" manifest:media-type="${_imageMime(ext)}"/>');
-        content.write('<text:p><draw:frame draw:name="Image${imageIndex}" text:anchor-type="as-char"><draw:image xlink:href="$name" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"/></draw:frame></text:p>');
+        content.write('<text:p><draw:frame draw:name="Image$imageIndex" text:anchor-type="as-char"><draw:image xlink:href="$name" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"/></draw:frame></text:p>');
       } else if (insert is Map && insert['offynexbd-writer-table'] is String) {
         flushParagraph();
         final rows = _decodeTable(insert['offynexbd-writer-table'] as String);

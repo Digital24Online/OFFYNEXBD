@@ -149,7 +149,8 @@ class _WriterScreenState extends State<WriterScreen> {
         type: FileType.custom,
         allowedExtensions: const ['json'],
       );
-      if (picked == null || !mounted) return;
+      if (picked == null) return;
+      if (!mounted) return;
       final bytes = await picked.readAsBytes();
       if (!mounted) return;
       if (bytes.isEmpty || bytes.length > 20 * 1024 * 1024) {
@@ -2050,8 +2051,9 @@ Future<void> showCustomFontSizeDialog() async {
         type: FileType.custom,
         allowedExtensions: ['docx', 'odt'],
       );
-      if (picked == null || !mounted) return;
-      final fileSize = picked.lengthSync() ?? await picked.length();
+      if (picked == null) return;
+      if (!mounted) return;
+      final fileSize = picked.lengthSync() ?? await picked.length() ?? 0;
       if (fileSize <= 0 || fileSize > WriterDocumentFormatService.maxInputBytes) {
         _showMessage(_t('ফাইল খালি অথবা ২৫ MB-এর বেশি।', 'File is empty or exceeds 25 MB.'));
         return;
@@ -2087,13 +2089,13 @@ Future<void> showCustomFontSizeDialog() async {
       final imported = await WriterDocumentFormatService.importFile(
         bytes: bytes,
         extension: picked.extension ?? '',
-        imageDirectory: Directory(appDirectory.path + '/offynexbd_images'),
+        imageDirectory: Directory('${appDirectory.path}/offynexbd_images'),
         title: fileTitle,
       );
       if (!mounted) return;
       final now = DateTime.now().toIso8601String();
       final newDocument = <String, dynamic>{
-        'id': 'writer_import_' + DateTime.now().microsecondsSinceEpoch.toString(),
+        'id': 'writer_import_${DateTime.now().microsecondsSinceEpoch}',
         'title': imported.title,
         'content': imported.delta,
         'created': now,
@@ -2131,8 +2133,8 @@ Future<void> showCustomFontSizeDialog() async {
       await storeDocuments([...documents, newDocument]);
       if (!mounted) return;
       _showMessage(_t(
-        imported.format + ' Import সম্পন্ন। নতুন ডকুমেন্ট তালিকায় যোগ হয়েছে.',
-        imported.format + ' import completed. The new document is in your library.',
+        '${imported.format} Import সম্পন্ন। নতুন ডকুমেন্ট তালিকায় যোগ হয়েছে.',
+        '${imported.format} import completed. The new document is in your library.',
       ));
       Navigator.of(context).pop(true);
     } catch (error) {
@@ -2152,7 +2154,7 @@ Future<void> showCustomFontSizeDialog() async {
       final bytes = await WriterDocumentFormatService.exportOdt(
         title: titleController.text.trim().isEmpty ? 'Untitled Document' : titleController.text.trim(),
         delta: delta,
-        imageDirectory: Directory(appDirectory.path + '/offynexbd_images'),
+        imageDirectory: Directory('${appDirectory.path}/offynexbd_images'),
         pageLayout: _pageLayoutToJson(),
         headerText: headerText,
         footerText: footerText,
@@ -2161,7 +2163,7 @@ Future<void> showCustomFontSizeDialog() async {
       final rawName = titleController.text.trim().isEmpty ? 'OFFYNEXBD-Document' : titleController.text.trim();
       final safeName = rawName.replaceAll(' ', '_').replaceAll('/', '_').replaceAll('\\\\', '_');
       final saved = await FilePicker.saveFile(
-        fileName: safeName + '.odt',
+        fileName: '${safeName}.odt',
         bytes: bytes,
         mimeType: 'application/vnd.oasis.opendocument.text',
         dialogTitle: _t('ODT ফাইল সংরক্ষণ', 'Save ODT document'),
@@ -2296,7 +2298,7 @@ Future<void> showCustomFontSizeDialog() async {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _pageTransformController.value = Matrix4.identity()
-        ..translate(translateX, translateY);
+        ..translateByDouble(translateX, translateY, 0);
     });
     scheduleSave();
   }
