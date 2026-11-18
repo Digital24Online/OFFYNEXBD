@@ -1077,3 +1077,11 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - Build #381 reached Flutter Analyze but failed because the first DOCX/ODT import/export method insertion was truncated at a raw filename regular expression, producing cascading Dart parser errors.
 - [x] Replaced the entire import/export method region with complete, bounded methods; removed the fragile extension regular expression and used the selected file's extension/name fields.
 - [ ] Re-run Analyze, all tests and Android APK build; no feature is considered verified until the full run passes.
+
+
+## Writer source restoration and DOCX/ODT integration — 2026-11-18
+
+- [x] Restored the complete Writer screen from the last intact mobile-viewport commit, preserving its ribbon, references, review, print preview, table/image editor, autosave and page controls.
+- [x] Reinserted DOCX/ODT import and ODT export as complete class methods at the correct scope; imports create a separate document and preserve the current one.
+- [x] Re-added File ribbon commands and Bangla/English labels.
+- [ ] Analyze, tests and Android APK build must pass before the Writer format changes are merged.
