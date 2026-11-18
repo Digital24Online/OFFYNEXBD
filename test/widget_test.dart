@@ -358,8 +358,8 @@ void main() {
   testWidgets('Writer mobile page view exposes bounded zoom controls and saves zoom',
       (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({});
-    await tester.view.setPhysicalSize(const Size(390, 844));
-    await tester.view.setDevicePixelRatio(1);
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
