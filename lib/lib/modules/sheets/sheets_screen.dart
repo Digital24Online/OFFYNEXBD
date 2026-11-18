@@ -348,7 +348,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
       ..._cellStyles.keys,
       ..._activeWorksheet.validations.keys,
     }) {
-      final match = RegExp(r'^([A-Z]+)([1-9]\\d*)
+      final match = RegExp(r'^([A-Z]+)([1-9]\d*)
     final key = _selectedCell;
     if (key == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -674,8 +674,8 @@ class _SheetsScreenState extends State<SheetsScreen> {
   Future<void> _removeLastColumn() async {
     if (_columnCount <= 1) return;
     final lastColumn = _columnName(_columnCount - 1);
-    final cellPattern = RegExp('^${RegExp.escape(lastColumn)}[1-9]\\d*\$', caseSensitive: false);
-    final formulaPattern = RegExp('(?<![A-Z0-9_])${RegExp.escape(lastColumn)}[1-9]\\d*(?!\\d)', caseSensitive: false);
+    final cellPattern = RegExp('^${RegExp.escape(lastColumn)}[1-9]\d*\$', caseSensitive: false);
+    final formulaPattern = RegExp('(?<![A-Z0-9_])${RegExp.escape(lastColumn)}[1-9]\d*(?!\d)', caseSensitive: false);
     final hasData = _cells.entries.any((entry) =>
         cellPattern.hasMatch(entry.key) && entry.value.isNotEmpty);
     final hasFormatting = _cellStyles.keys.any((key) => cellPattern.hasMatch(key));
@@ -2653,8 +2653,8 @@ class _CellEditDialogState extends State<_CellEditDialog> {
   Future<void> _removeLastColumn() async {
     if (_columnCount <= 1) return;
     final lastColumn = _columnName(_columnCount - 1);
-    final cellPattern = RegExp('^${RegExp.escape(lastColumn)}[1-9]\\d*\$', caseSensitive: false);
-    final formulaPattern = RegExp('(?<![A-Z0-9_])${RegExp.escape(lastColumn)}[1-9]\\d*(?!\\d)', caseSensitive: false);
+    final cellPattern = RegExp('^${RegExp.escape(lastColumn)}[1-9]\d*\$', caseSensitive: false);
+    final formulaPattern = RegExp('(?<![A-Z0-9_])${RegExp.escape(lastColumn)}[1-9]\d*(?!\d)', caseSensitive: false);
     final hasData = _cells.entries.any((entry) =>
         cellPattern.hasMatch(entry.key) && entry.value.isNotEmpty);
     final hasFormatting = _cellStyles.keys.any((key) => cellPattern.hasMatch(key));
