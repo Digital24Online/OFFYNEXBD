@@ -218,7 +218,10 @@ class SheetsWorkbookCodec {
         if (!{'bar', 'line'}.contains(type) || title.isEmpty || title.length > 100) {
           throw const FormatException('Invalid chart settings.');
         }
-        SheetsAnalytics.parseRange(range);
+        final chartRange = SheetsAnalytics.parseRange(range);
+        if (chartRange.rows < 2 || chartRange.columns < 2) {
+          throw const FormatException('Chart range must include labels and at least one data series.');
+        }
         charts.add({'type': type, 'title': title, 'range': range});
       }
     }
