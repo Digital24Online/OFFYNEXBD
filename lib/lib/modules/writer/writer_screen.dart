@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'writer_table.dart';
 import 'writer_pdf_export_service.dart';
 import 'writer_document_codec.dart';
+import 'writer_docx_export_service.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -1475,6 +1476,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
         _ribbonButton(Icons.copy, 'Copy Text', copyDocumentText),
         _ribbonButton(Icons.info_outline, 'Document Info', showDocumentInfo),
         _ribbonButton(Icons.article_outlined, 'Header / Footer', editHeaderFooter),
+        _ribbonButton(Icons.description_outlined, 'Export DOCX', exportDocx),
         _ribbonButton(Icons.delete_outline, 'Clear', clearDocument),
         _ribbonButton(Icons.close, 'Close', () => Navigator.maybePop(context)),
       ]);
@@ -1934,6 +1936,37 @@ Future<void> showCustomFontSizeDialog() async {
       headerText: headerText,
       footerText: footerText,
     );
+  }
+
+  Future<void> exportDocx() async {
+    try {
+      await saveDocument();
+      final delta = quillController.document.toDelta().toJson()
+          .map((item) => Map<String, dynamic>.from(item as Map))
+          .toList();
+      final bytes = await WriterDocxExportService.build(
+        title: titleController.text.trim().isEmpty
+            ? 'Untitled Document'
+            : titleController.text.trim(),
+        delta: delta,
+      );
+      if (!mounted) return;
+      final baseName = titleController.text.trim().isEmpty
+          ? 'OFFYNEXBD-Document'
+          : titleController.text.trim();
+      final fileName = '\${baseName.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_')}.docx';
+      final saved = await FilePicker.saveFile(
+        fileName: fileName,
+        bytes: Uint8List.fromList(bytes),
+        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        dialogTitle: _t('DOCX ফাইল সংরক্ষণ', 'Save DOCX document'),
+      );
+      if (saved == null || !mounted) return;
+      _showMessage(_t('DOCX Export সম্পন্ন হয়েছে।', 'DOCX export completed.'));
+    } catch (error) {
+      if (!mounted) return;
+      _showMessage(_t('DOCX তৈরি করা যায়নি: $error', 'Could not create DOCX: $error'));
+    }
   }
 
   Future<void> editHeaderFooter() async {
