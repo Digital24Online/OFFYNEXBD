@@ -911,3 +911,13 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Restored the three test-block closures; no test or assertion was removed.
 - [ ] Re-run Flutter Analyze, full automated tests, Android release APK build and artifact upload on the corrected commit.
 - [ ] Do not mark the resource-hardening batch verified until all CI stages pass.
+
+
+## Forms response dashboard search and filter — 2026-11-18 (CI pending)
+
+- [x] Build #350 / run `44322462331` verified on exact commit `c2f4ded0b82b2b24a1a8cd6504b8afe2a52a96ed`: Flutter Analyze, full automated tests, Android APK build, signing cleanup, generated-source save and APK upload all passed.
+- [x] Forms CSV export is present in that verified source; Bengali UTF-8 BOM, quoting/escaping and multi-form question separation are covered by tests. Existing JSON export is retained.
+- [x] Added response-dashboard search across form title, question, answer and submission timestamp. The dashboard shows total response/form counts and a matching-result count without changing stored response data.
+- [x] Added pure filtering regression tests for Bangla form titles, question labels, answers, date search, empty matches and blank search.
+- [ ] Validate this dashboard batch with Flutter Analyze, all automated tests, Android release APK build and artifact upload on its final commit.
+- [ ] Online Forms publishing, share links, remote response collection and access controls remain product-level work; local response search does not imply online Forms support.
