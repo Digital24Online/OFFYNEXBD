@@ -1954,7 +1954,7 @@ Future<void> showCustomFontSizeDialog() async {
       final baseName = titleController.text.trim().isEmpty
           ? 'OFFYNEXBD-Document'
           : titleController.text.trim();
-      final fileName = '\${baseName.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_')}.docx';
+      final fileName = '${baseName.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_')}.docx';
       final saved = await FilePicker.saveFile(
         fileName: fileName,
         bytes: Uint8List.fromList(bytes),
