@@ -35,9 +35,6 @@ class PortableWorkspaceBackupService {
         return rawPath;
       }
       final file = File(rawPath);
-      if (!file.isAbsolute) {
-        throw StateError('A local OFFYNEXBD asset path is not absolute.');
-      }
       final canonical = await file.resolveSymbolicLinks();
       final root = kind == 'writer-images' ? writerRoot : scanRoot;
       if (!canonical.startsWith('$root${Platform.pathSeparator}')) {
@@ -68,7 +65,8 @@ class PortableWorkspaceBackupService {
     if (writerRaw is String) {
       final decoded = jsonDecode(writerRaw);
       if (decoded is! List) throw const FormatException('Writer library backup is invalid.');
-      for (final rawDocument in decoded) {
+      for (var documentIndex = 0; documentIndex < decoded.length; documentIndex++) {
+        final rawDocument = decoded[documentIndex];
         if (rawDocument is! Map) continue;
         final document = Map<String, dynamic>.from(rawDocument);
         final content = document['content'];
@@ -90,6 +88,7 @@ class PortableWorkspaceBackupService {
         }
         final scanPath = document['scanPdfPath'];
         if (scanPath is String) document['scanPdfPath'] = await packageAsset(scanPath, 'scan-pdfs');
+        decoded[documentIndex] = document;
       }
       data['offynex_writer_documents'] = jsonEncode(decoded);
     }
@@ -98,11 +97,13 @@ class PortableWorkspaceBackupService {
     if (scanRaw is String) {
       final decoded = jsonDecode(scanRaw);
       if (decoded is! List) throw const FormatException('Scan library backup is invalid.');
-      for (final rawRecord in decoded) {
+      for (var recordIndex = 0; recordIndex < decoded.length; recordIndex++) {
+        final rawRecord = decoded[recordIndex];
         if (rawRecord is! Map) continue;
         final record = Map<String, dynamic>.from(rawRecord);
         final scanPath = record['scanPdfPath'];
         if (scanPath is String) record['scanPdfPath'] = await packageAsset(scanPath, 'scan-pdfs');
+        decoded[recordIndex] = record;
       }
       data['offynex_workspace_scan_v1'] = jsonEncode(decoded);
     }
@@ -176,7 +177,8 @@ class PortableWorkspaceBackupService {
       if (raw is! String) return;
       final decoded = jsonDecode(raw);
       if (decoded is! List) throw const FormatException('Writer library in backup is invalid.');
-      for (final rawDocument in decoded) {
+      for (var documentIndex = 0; documentIndex < decoded.length; documentIndex++) {
+        final rawDocument = decoded[documentIndex];
         if (rawDocument is! Map) continue;
         final document = Map<String, dynamic>.from(rawDocument);
         final content = document['content'];
@@ -195,6 +197,7 @@ class PortableWorkspaceBackupService {
         }
         final scanPath = document['scanPdfPath'];
         if (scanPath is String) document['scanPdfPath'] = await restoreAsset(scanPath);
+        decoded[documentIndex] = document;
       }
       data['offynex_writer_documents'] = jsonEncode(decoded);
     }
@@ -205,11 +208,13 @@ class PortableWorkspaceBackupService {
       if (scanRaw is String) {
         final decoded = jsonDecode(scanRaw);
         if (decoded is! List) throw const FormatException('Scan library in backup is invalid.');
-        for (final rawRecord in decoded) {
+        for (var recordIndex = 0; recordIndex < decoded.length; recordIndex++) {
+          final rawRecord = decoded[recordIndex];
           if (rawRecord is! Map) continue;
           final record = Map<String, dynamic>.from(rawRecord);
           final path = record['scanPdfPath'];
           if (path is String) record['scanPdfPath'] = await restoreAsset(path);
+          decoded[recordIndex] = record;
         }
         data['offynex_workspace_scan_v1'] = jsonEncode(decoded);
       }
