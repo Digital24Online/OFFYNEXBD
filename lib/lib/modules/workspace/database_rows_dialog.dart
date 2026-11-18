@@ -34,53 +34,14 @@ class _DatabaseRowsDialogState extends State<DatabaseRowsDialog> {
             (key, value) => MapEntry(key.toString(), value?.toString() ?? ''),
           ))
         : <String, String>{};
-    final controllers = widget.fields
-        .map((field) => TextEditingController(text: values[field] ?? ''))
-        .toList(growable: false);
     final result = await showDialog<Map<String, String>>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(widget.isBangla ? 'Row তথ্য' : 'Row details'),
-        content: SizedBox(
-          width: 480,
-          height: 320,
-          child: ListView(
-            children: [
-              for (var index = 0; index < widget.fields.length; index++)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: TextField(
-                    controller: controllers[index],
-                    decoration: InputDecoration(
-                      labelText: widget.fields[index],
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text(widget.isBangla ? 'বাতিল' : 'Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(
-              dialogContext,
-              {
-                for (var index = 0; index < widget.fields.length; index++)
-                  widget.fields[index]: controllers[index].text,
-              },
-            ),
-            child: Text(widget.isBangla ? 'Row সংরক্ষণ' : 'Save row'),
-          ),
-        ],
+      builder: (_) => _DatabaseRowEditDialog(
+        isBangla: widget.isBangla,
+        fields: widget.fields,
+        initialValues: values,
       ),
     );
-    for (final controller in controllers) {
-      controller.dispose();
-    }
     if (result == null || !mounted) return;
     setState(() {
       final updated = <String, dynamic>{
@@ -159,6 +120,83 @@ class _DatabaseRowsDialogState extends State<DatabaseRowsDialog> {
         FilledButton(
           onPressed: () => Navigator.pop(context, _rows),
           child: Text(widget.isBangla ? 'সব সংরক্ষণ' : 'Save changes'),
+        ),
+      ],
+    );
+  }
+}
+
+class _DatabaseRowEditDialog extends StatefulWidget {
+  const _DatabaseRowEditDialog({
+    required this.isBangla,
+    required this.fields,
+    required this.initialValues,
+  });
+
+  final bool isBangla;
+  final List<String> fields;
+  final Map<String, String> initialValues;
+
+  @override
+  State<_DatabaseRowEditDialog> createState() => _DatabaseRowEditDialogState();
+}
+
+class _DatabaseRowEditDialogState extends State<_DatabaseRowEditDialog> {
+  late final List<TextEditingController> _controllers;
+
+  @override
+  void initState() {
+    super.initState();
+    _controllers = widget.fields
+        .map((field) => TextEditingController(text: widget.initialValues[field] ?? ''))
+        .toList(growable: false);
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _controllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.isBangla ? 'Row তথ্য' : 'Row details'),
+      content: SizedBox(
+        width: 480,
+        height: 320,
+        child: ListView(
+          children: [
+            for (var index = 0; index < widget.fields.length; index++)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: TextField(
+                  controller: _controllers[index],
+                  decoration: InputDecoration(
+                    labelText: widget.fields[index],
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(widget.isBangla ? 'বাতিল' : 'Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(
+            context,
+            {
+              for (var index = 0; index < widget.fields.length; index++)
+                widget.fields[index]: _controllers[index].text,
+            },
+          ),
+          child: Text(widget.isBangla ? 'Row সংরক্ষণ' : 'Save row'),
         ),
       ],
     );
