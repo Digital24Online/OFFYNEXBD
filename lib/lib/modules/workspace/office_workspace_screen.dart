@@ -848,7 +848,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('\${_bn ? 'CSV Export ব্যর্থ' : 'CSV export failed'}: $error'),
+          content: Text('${_bn ? 'CSV Export ব্যর্থ' : 'CSV export failed'}: $error'),
         ));
       }
     }
