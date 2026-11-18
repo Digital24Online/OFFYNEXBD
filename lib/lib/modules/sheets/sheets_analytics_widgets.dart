@@ -343,13 +343,19 @@ class _SheetsChartPainter extends CustomPainter {
     const bottom = 12.0;
     final plotWidth = size.width - left - right;
     final plotHeight = size.height - top - bottom;
-    final maxValue = data.series
-        .expand((series) => series.values)
-        .fold<double>(0, (max, value) => value > max ? value : max);
-    final scale = maxValue <= 0 ? 1.0 : maxValue;
+    final allValues = data.series.expand((series) => series.values).toList();
+    if (allValues.isEmpty) return;
+    final rawMin = allValues.reduce((a, b) => a < b ? a : b);
+    final rawMax = allValues.reduce((a, b) => a > b ? a : b);
+    final minValue = rawMin < 0 ? rawMin : 0.0;
+    final maxValue = rawMax > 0 ? rawMax : 0.0;
+    final span = maxValue - minValue == 0 ? 1.0 : maxValue - minValue;
+    double yFor(double value) =>
+        top + plotHeight - ((value - minValue) / span) * plotHeight;
     final axis = Paint()..color = const Color(0xFFB8C3D0)..strokeWidth = 1;
     canvas.drawLine(Offset(left, top), Offset(left, top + plotHeight), axis);
-    canvas.drawLine(Offset(left, top + plotHeight), Offset(left + plotWidth, top + plotHeight), axis);
+    final zeroY = yFor(0);
+    canvas.drawLine(Offset(left, zeroY), Offset(left + plotWidth, zeroY), axis);
     final count = data.labels.length;
     if (line) {
       for (var seriesIndex = 0; seriesIndex < data.series.length; seriesIndex++) {
@@ -362,15 +368,14 @@ class _SheetsChartPainter extends CustomPainter {
         final path = Path();
         for (var i = 0; i < values.length; i++) {
           final x = left + (count <= 1 ? plotWidth / 2 : plotWidth * i / (count - 1));
-          final y = top + plotHeight - (values[i] / scale) * plotHeight;
+          final y = yFor(values[i]);
           if (i == 0) path.moveTo(x, y); else path.lineTo(x, y);
         }
         canvas.drawPath(path, paint);
         final dot = Paint()..color = colors[seriesIndex % colors.length];
         for (var i = 0; i < values.length; i++) {
           final x = left + (count <= 1 ? plotWidth / 2 : plotWidth * i / (count - 1));
-          final y = top + plotHeight - (values[i] / scale) * plotHeight;
-          canvas.drawCircle(Offset(x, y), 3, dot);
+          canvas.drawCircle(Offset(x, yFor(values[i])), 3, dot);
         }
       }
     } else {
@@ -379,12 +384,12 @@ class _SheetsChartPainter extends CustomPainter {
       for (var i = 0; i < count; i++) {
         for (var j = 0; j < data.series.length; j++) {
           final value = data.series[j].values[i];
-          final height = (value / scale) * plotHeight;
-          final rect = Rect.fromLTWH(
+          final valueY = yFor(value);
+          final rect = Rect.fromLTRB(
             left + i * groupWidth + j * barWidth + barWidth * 0.15,
-            top + plotHeight - height,
-            barWidth * 0.7,
-            height,
+            valueY < zeroY ? valueY : zeroY,
+            left + i * groupWidth + j * barWidth + barWidth * 0.85,
+            valueY > zeroY ? valueY : zeroY,
           );
           canvas.drawRRect(
             RRect.fromRectAndRadius(rect, const Radius.circular(2)),
