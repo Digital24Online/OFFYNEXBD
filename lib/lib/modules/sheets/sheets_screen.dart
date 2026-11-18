@@ -93,6 +93,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
   Future<void> _loadWorkbook() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_sheetStorageKey);
+    var canReplaceRawWorkbook = false;
     try {
       _workbook = raw == null
           ? SheetsWorkbook(
@@ -100,9 +101,11 @@ class _SheetsScreenState extends State<SheetsScreen> {
               sheets: [SheetsWorksheet(id: 'sheet-1', name: 'Sheet1', rows: _initialRows, columns: _initialColumns)],
             )
           : SheetsWorkbookCodec.decode(raw);
+      canReplaceRawWorkbook = raw != null;
     } catch (error) {
       final recoveryKey = 'offynex_sheets_workbook_recovery_${DateTime.now().microsecondsSinceEpoch}';
       final preserved = raw != null && await prefs.setString(recoveryKey, raw);
+      canReplaceRawWorkbook = preserved;
       _workbookRecoveryMessage = preserved
           ? _t('Workbook পড়া যায়নি। মূল ডেটার Recovery Copy সংরক্ষিত: $recoveryKey', 'Workbook could not be read. Original data recovery copy saved: $recoveryKey')
           : _t('Workbook পড়া যায়নি এবং Recovery Copy সংরক্ষণ ব্যর্থ হয়েছে: $error', 'Workbook could not be read and recovery copy failed: $error');
@@ -119,7 +122,8 @@ class _SheetsScreenState extends State<SheetsScreen> {
         SnackBar(content: Text(recoveryMessage), duration: const Duration(seconds: 10)),
       );
     }
-    if (raw != null && !raw.contains('"format":"OFFYNEXBD_SHEETS_WORKBOOK"')) {
+    if (raw != null && canReplaceRawWorkbook &&
+        !raw.contains('"format":"OFFYNEXBD_SHEETS_WORKBOOK"')) {
       await _saveWorkbook();
     }
   }
