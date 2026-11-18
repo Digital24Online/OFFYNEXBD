@@ -644,3 +644,7 @@ Continue development as coordinated batches across Writer, Sheets, Slides, PDF, 
 - [x] Build #228 / run `44255575772`: added regression test proving original malformed workspace JSON is preserved before showing an empty workspace; Analyze, all tests and APK build/upload passed. Artifact ID `14406357390`, size 50,177,251 bytes.
 - [x] Build #230 / run `44256035950`: PDF/Image conversion now opens the exact newly created Writer document; Analyze, full tests and APK build/upload passed. Artifact ID `14405254164`, size 50,181,529 bytes.
 - [ ] Forms response JSON export and Slides PDF export are newer changes and remain pending their own successful CI run.
+
+
+### PDF conversion follow-up — Build #232 verified
+- [x] Build #232 / run `44256236814` passed Flutter Analyze, all tests, Android APK build and artifact upload after removing obsolete PDF conversion state. Artifact ID `14405399366`, size 50,178,601 bytes.
