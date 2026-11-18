@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'sheets_formula_engine.dart';
 import 'sheets_workbook_limits.dart';
 import 'sheets_import_safety.dart';
+import 'sheets_workbook_codec.dart';
 import 'sheets_csv_codec.dart';
 import 'sheets_row_view.dart';
 
@@ -30,17 +31,22 @@ class _SheetsScreenState extends State<SheetsScreen> {
   static const int _initialRows = 30;
   static const int _initialColumns = 12;
 
-  final Map<String, String> _cells = {};
-  final Map<String, Map<String, dynamic>> _cellStyles = {};
+  late SheetsWorkbook _workbook;
+  SheetsWorksheet get _activeWorksheet => _workbook.activeSheet;
+  Map<String, String> get _cells => _activeWorksheet.cells;
+  Map<String, Map<String, dynamic>> get _cellStyles => _activeWorksheet.styles;
+  int get _rowCount => _activeWorksheet.rows;
+  set _rowCount(int value) => _activeWorksheet.rows = value;
+  int get _columnCount => _activeWorksheet.columns;
+  set _columnCount(int value) => _activeWorksheet.columns = value;
+  String get _sheetName => _activeWorksheet.name;
+  set _sheetName(String value) => _activeWorksheet.name = value;
   final ScrollController _horizontalController = ScrollController();
   final ScrollController _verticalController = ScrollController();
   bool _loading = true;
   bool _saved = true;
   String? _workbookRecoveryMessage;
   Future<void> _saveQueue = Future<void>.value();
-  int _rowCount = _initialRows;
-  int _columnCount = _initialColumns;
-  String _sheetName = 'Sheet1';
   String? _selectedCell;
   int? _viewColumnIndex;
   bool _sortAscending = true;
@@ -77,54 +83,23 @@ class _SheetsScreenState extends State<SheetsScreen> {
   Future<void> _loadWorkbook() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_sheetStorageKey);
-    if (raw != null) {
-      try {
-        final decoded = jsonDecode(raw);
-        if (decoded is! Map) {
-          throw const FormatException('Workbook root must be an object.');
-        }
-        final data = Map<String, dynamic>.from(decoded);
-        final loadedCells = <String, String>{};
-        final storedCells = data['cells'];
-        if (storedCells is Map) {
-          for (final entry in storedCells.entries) {
-            loadedCells[entry.key.toString()] = entry.value.toString();
-          }
-        }
-        final loadedStyles = <String, Map<String, dynamic>>{};
-        final storedStyles = data['styles'];
-        if (storedStyles is Map) {
-          for (final entry in storedStyles.entries) {
-            if (entry.value is Map) {
-              loadedStyles[entry.key.toString()] =
-                  Map<String, dynamic>.from(entry.value as Map);
-            }
-          }
-        }
-        final loadedName = data['name']?.toString() ?? 'Sheet1';
-        final loadedRows = ((data['rows'] as num?)?.toInt() ?? _initialRows)
-            .clamp(1, SheetsWorkbookLimits.maxRows);
-        final loadedColumns = ((data['columns'] as num?)?.toInt() ?? _initialColumns)
-            .clamp(1, SheetsWorkbookLimits.maxColumns);
-        _cells.addAll(loadedCells);
-        _cellStyles.addAll(loadedStyles);
-        _sheetName = loadedName;
-        _rowCount = loadedRows;
-        _columnCount = loadedColumns;
-      } catch (error) {
-        final recoveryKey =
-            'offynex_sheets_workbook_recovery_${DateTime.now().microsecondsSinceEpoch}';
-        final preserved = await prefs.setString(recoveryKey, raw);
-        _workbookRecoveryMessage = preserved
-            ? _t(
-                'Workbook পড়া যায়নি। মূল ডেটার Recovery Copy সংরক্ষিত: $recoveryKey',
-                'Workbook could not be read. Original data recovery copy saved: $recoveryKey',
-              )
-            : _t(
-                'Workbook পড়া যায়নি এবং Recovery Copy সংরক্ষণ ব্যর্থ হয়েছে: $error',
-                'Workbook could not be read and recovery copy failed: $error',
-              );
-      }
+    try {
+      _workbook = raw == null
+          ? SheetsWorkbook(
+              activeSheetId: 'sheet-1',
+              sheets: [SheetsWorksheet(id: 'sheet-1', name: 'Sheet1', rows: _initialRows, columns: _initialColumns)],
+            )
+          : SheetsWorkbookCodec.decode(raw);
+    } catch (error) {
+      final recoveryKey = 'offynex_sheets_workbook_recovery_\${DateTime.now().microsecondsSinceEpoch}';
+      final preserved = raw != null && await prefs.setString(recoveryKey, raw);
+      _workbookRecoveryMessage = preserved
+          ? _t('Workbook পড়া যায়নি। মূল ডেটার Recovery Copy সংরক্ষিত: $recoveryKey', 'Workbook could not be read. Original data recovery copy saved: $recoveryKey')
+          : _t('Workbook পড়া যায়নি এবং Recovery Copy সংরক্ষণ ব্যর্থ হয়েছে: $error', 'Workbook could not be read and recovery copy failed: $error');
+      _workbook = SheetsWorkbook(
+        activeSheetId: 'sheet-1',
+        sheets: [SheetsWorksheet(id: 'sheet-1', name: 'Sheet1', rows: _initialRows, columns: _initialColumns)],
+      );
     }
     if (!mounted) return;
     setState(() => _loading = false);
@@ -134,18 +109,13 @@ class _SheetsScreenState extends State<SheetsScreen> {
         SnackBar(content: Text(recoveryMessage), duration: const Duration(seconds: 10)),
       );
     }
+    if (raw != null && !raw.contains('"format":"OFFYNEXBD_SHEETS_WORKBOOK"')) {
+      await _saveWorkbook();
+    }
   }
 
   Future<void> _saveWorkbook() async {
-    // Capture a snapshot now and serialize writes to prevent stale saves winning races.
-    final snapshot = jsonEncode({
-      'name': _sheetName,
-      'rows': _rowCount,
-      'columns': _columnCount,
-      'cells': Map<String, String>.from(_cells),
-      'styles': _cellStyles,
-      'updatedAt': DateTime.now().toIso8601String(),
-    });
+    final snapshot = SheetsWorkbookCodec.encode(_workbook);
     if (mounted) setState(() => _saved = false);
     _saveQueue = _saveQueue.catchError((_) {}).then((_) async {
       final prefs = await SharedPreferences.getInstance();
@@ -155,9 +125,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
     final saveOperation = _saveQueue;
     try {
       await saveOperation;
-      if (mounted && identical(_saveQueue, saveOperation)) {
-        setState(() => _saved = true);
-      }
+      if (mounted && identical(_saveQueue, saveOperation)) setState(() => _saved = true);
     } catch (_) {
       if (!mounted) return;
       setState(() => _saved = false);
