@@ -16,6 +16,7 @@ import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
 
 const String documentsKey = 'offynex_writer_documents';
+String? writerDataRecoveryNotice;
 
 Future<List<Map<String, dynamic>>> loadDocuments() async {
   final prefs = await SharedPreferences.getInstance();
@@ -24,11 +25,20 @@ Future<List<Map<String, dynamic>>> loadDocuments() async {
   if (raw == null) return [];
 
   try {
-    final decoded = jsonDecode(raw) as List;
+    final decoded = jsonDecode(raw);
+    if (decoded is! List) {
+      throw const FormatException('Writer library root must be a list.');
+    }
     return decoded
-        .map((item) => Map<String, dynamic>.from(item))
+        .map((item) => Map<String, dynamic>.from(item as Map))
         .toList();
-  } catch (_) {
+  } catch (error) {
+    final recoveryKey =
+        'offynex_writer_documents_recovery_${DateTime.now().microsecondsSinceEpoch}';
+    final preserved = await prefs.setString(recoveryKey, raw);
+    writerDataRecoveryNotice = preserved
+        ? 'Writer library could not be read. Original data recovery copy saved: $recoveryKey'
+        : 'Writer library could not be read and recovery copy failed: $error';
     return [];
   }
 }
@@ -65,6 +75,13 @@ class _WriterScreenState extends State<WriterScreen> {
       documents = result;
       isLoading = false;
     });
+    final recoveryNotice = writerDataRecoveryNotice;
+    if (recoveryNotice != null) {
+      writerDataRecoveryNotice = null;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(recoveryNotice), duration: const Duration(seconds: 10)),
+      );
+    }
   }
 
   Future<void> exportDocuments() async {
