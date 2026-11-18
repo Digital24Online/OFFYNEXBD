@@ -947,3 +947,14 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Reverted the entire workspace screen to the exact last successful Build #355 version (`46ccbad5303609dd1102e3c7d567d4e741d47b0c`) in commit `cf0bb22b5b273eafa62c31d5b595dbaaa57d15f9`. This removes the faulty duplicate code and restores the previously verified Forms, Database, and other workspace functionality.
 - [ ] Scan PDF library listing/share/delete enhancement is NOT present in the restored source and remains incomplete. Do not describe it as implemented until a clean focused patch passes CI.
 - [ ] Build #359 / run `44334365915` validates the restored source; Analyze, full tests, APK build and upload are pending.
+
+
+## Scan workspace focused repair — Build #363 verified (2026-11-18)
+
+- [x] Final main commit: `efae8609c10912c485319bba4f4b61fd01105f6c`.
+- [x] Build #363 / run `44336065714` completed with overall conclusion `success`.
+- [x] Flutter Analyze passed; full automated tests passed; Android release APK build passed; signing-file cleanup passed; generated source save passed; Android APK artifact upload passed.
+- [x] Static source verification on the exact main commit confirms Scan list visibility, saved PDF path persistence, PDF share handler, PDF delete handler and Scan list actions are present.
+- [x] APK artifact: `OFFYNEXBD-Android-APK`, artifact ID `14441588470`, 51,264,578 bytes, SHA-256 `658772d794e635a57588d0aa727e518fc75b6e455dc0e3b5383f1e4b989fb1ea`, expires 2026-11-25 15:35:58 UTC.
+- [ ] Real Android device checks are still required for camera permission, auto edge detection, multi-page capture, OCR accuracy, saved PDF persistence after app restart, share and delete behavior. CI success does not prove physical-device behavior.
+- [ ] This verifies the Scan workspace repair only; it does not mean all OFFYNEXBD modules or all previously listed product gaps are complete.
