@@ -678,3 +678,9 @@ Continue development as coordinated batches across Writer, Sheets, Slides, PDF, 
 ### Forms response JSON export — Build #231 verified
 - [x] Build #231 / run `44256187962` passed Analyze, full tests, Android APK build and upload. Artifact ID `14405339663`, size 50,178,656 bytes.
 - [x] This validates the separate versioned JSON export of locally collected Forms responses.
+
+
+### Slides PDF export — Build #238 verified
+- [x] Build #238 / run `44256863470` passed Flutter Analyze, complete tests (including Bangla/English Slides PDF generation and 200-slide limit checks), Android APK build and upload.
+- [x] Artifact `OFFYNEXBD-Android-APK`: ID `14407300215`, size 50,205,409 bytes.
+- [x] Slides export currently creates a landscape PDF, one content line per slide; this is PDF output, not PPTX.
