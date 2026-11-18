@@ -32,6 +32,8 @@ void main() {
       expect(SheetsDataValidation.accepts('paid', options), isFalse);
       expect(SheetsDataValidation.accepts('Due', options), isFalse);
       expect(SheetsDataValidation.accepts('anything', null), isTrue);
+      expect(SheetsDataValidation.accepts('=SUM(A1:A5)', options), isFalse);
+      expect(SheetsDataValidation.accepts('=PI()', options), isFalse);
     });
   });
 }
