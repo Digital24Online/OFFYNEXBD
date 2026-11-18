@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:material_ui/material_ui.dart';
@@ -69,7 +70,7 @@ class _DatabaseRowsDialogState extends State<DatabaseRowsDialog> {
     try {
       final csv = DatabaseRowsCsvCodec.encode(fields: widget.fields, rows: _rows);
       final safeName = widget.tableName
-          .replaceAll(RegExp(r'[^a-zA-Z0-9 Bengali]'), '-')
+          .replaceAll(RegExp(r'[^a-zA-Z0-9\u0980-\u09FF]+'), '-')
           .replaceAll(RegExp(r'-+'), '-');
       final saved = await FilePicker.saveFile(
         fileName: 'OFFYNEXBD-${safeName.isEmpty ? 'Database' : safeName}.csv',
@@ -102,8 +103,10 @@ class _DatabaseRowsDialogState extends State<DatabaseRowsDialog> {
         allowedExtensions: const ['csv'],
       );
       if (picked == null || !mounted) return;
+      final bytes = await picked.readAsBytes();
+      if (!mounted) return;
       final imported = DatabaseRowsCsvCodec.decode(
-        await picked.readAsBytes(),
+        bytes,
         expectedFields: widget.fields,
       );
       if (imported.isEmpty) {
