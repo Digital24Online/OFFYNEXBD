@@ -553,3 +553,13 @@ Continue development as coordinated batches across Writer, Sheets, Slides, PDF, 
 - [x] Search regression test passed.
 - [x] The Forms widget test still used field indices from before the search field was added. Corrected it to target dialog title/content fields (indices 1 and 2 after the search field).
 - [ ] Revalidate commit `fccd1f4006b52f6d004734d6bdadcc71a1e4dc6d` in the next workflow; Build #211 test failure was limited to the stale Forms test selector.
+
+
+## Writer Document Portability — 2026-11-18 (validation pending)
+
+- [x] Added a dedicated versioned Writer archive codec; it preserves complete Writer records, including Quill Delta content, page layout, comments, citations, revisions and writer metadata.
+- [x] Added Writer library JSON Export and Import actions.
+- [x] Import is additive and skips existing IDs; it never replaces an existing document. Invalid versions, malformed records and duplicate IDs are rejected.
+- [x] Archive file size is capped at 20 MB and the archive is capped at 10,000 documents.
+- [x] Added codec round-trip, metadata-preservation and invalid/duplicate-record tests.
+- [ ] Validate commits `83d5a447`, `1356f67b`, `6841b92d`, and `6b38028a` in the latest CI run before marking this Writer feature verified.
