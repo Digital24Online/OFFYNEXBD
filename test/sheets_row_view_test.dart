@@ -3,6 +3,16 @@ import 'package:offynexbd/lib/modules/sheets/sheets_row_view.dart';
 
 void main() {
   group('SheetsRowView', () {
+    test('resolves selected cell keys to zero-based column indices', () {
+      expect(SheetsRowView.columnIndexFromCellKey('A1'), 0);
+      expect(SheetsRowView.columnIndexFromCellKey('Z9'), 25);
+      expect(SheetsRowView.columnIndexFromCellKey('AA12'), 26);
+      expect(SheetsRowView.columnIndexFromCellKey('BC305'), 54);
+      expect(SheetsRowView.columnIndexFromCellKey(null), isNull);
+      expect(SheetsRowView.columnIndexFromCellKey('A0'), isNull);
+      expect(SheetsRowView.columnIndexFromCellKey('A1x'), isNull);
+    });
+
     const values = ['Name', 'Zara', '10', '2', '', 'apple'];
     String valueForRow(int row) => values[row];
 
