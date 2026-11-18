@@ -114,7 +114,7 @@ class WriterDocumentFormatService {
       if (name == 'hyperlink') {
         final id = _attribute(node, 'id');
         final target = id == null ? null : _safeLink(relationships[id]);
-        final linked = <String, dynamic>{...attrs, if (target != null) 'link': target};
+        final linked = <String, dynamic>{...attrs, if (target case final safeTarget?) 'link': safeTarget};
         for (final child in node.children) { await walk(child, linked); }
         return;
       }

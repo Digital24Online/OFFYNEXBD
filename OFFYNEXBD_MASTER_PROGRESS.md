@@ -1148,3 +1148,8 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - Added DOCX and ODT hyperlink regression coverage alongside the existing paragraph, formatting, table and package checks.
 - This batch does not claim complete DOCX/ODT fidelity: headers/footers and section/page setup import, numbering fidelity, merged tables, floating images, advanced styles, comments/track changes and real-world round-trip compatibility remain open.
 - Build #390 (run ID 44367606027; commit 08ec234f733c4e537859233f6b72319dfb05d3c8) verified Analyze, 151 automated tests, Android Release APK build and APK artifact upload successfully. Artifact ID 14457907066; expires 2026-11-25. Physical Android gesture, editing and printer testing remain pending.
+
+
+### Writer hyperlink batch CI correction — 2026-11-19
+- CI run #394 identified two Dart analyzer style diagnostics in the new DOCX/ODT hyperlink map literals. Replaced nullable checks with null-check patterns; no functional behavior change.
+- Hyperlink import/export test coverage remains in the same Writer interchange batch. CI must be rerun and pass before considering this batch verified.
