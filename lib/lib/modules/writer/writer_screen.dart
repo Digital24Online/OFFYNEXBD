@@ -219,7 +219,7 @@ class _WriterScreenState extends State<WriterScreen> {
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             hintText: _t('ডকুমেন্টের নাম', 'Document name'),
           ),
         ),
@@ -1709,7 +1709,7 @@ Future<void> showCustomFontSizeDialog() async {
               final parsed = double.tryParse(controller.text.trim());
               if (parsed == null || !parsed.isFinite || parsed < 8 || parsed > 72) {
                 ScaffoldMessenger.of(dialogContext).showSnackBar(
-                  const SnackBar(content: Text(_t('৮ থেকে ৭২ পয়েন্টের মধ্যে সাইজ দিন।', 'Enter a font size between 8 and 72 points.'))),
+                  SnackBar(content: Text(_t('৮ থেকে ৭২ পয়েন্টের মধ্যে সাইজ দিন।', 'Enter a font size between 8 and 72 points.'))),
                 );
                 return;
               }
