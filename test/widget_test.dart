@@ -4,7 +4,6 @@ import 'package:material_ui/material_ui.dart';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offynexbd/main.dart';
-import 'package:offynexbd/lib/modules/writer/writer_screen.dart';
 import 'package:offynexbd/lib/modules/sheets/sheets_workbook_codec.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -385,6 +384,8 @@ void main() {
     await tester.pumpAndSettle();
     slider = tester.widget<Slider>(sliderFinder);
     expect(slider.value, closeTo(1.1, 0.001));
+    await tester.pump(const Duration(milliseconds: 800));
+    await tester.pumpAndSettle();
 
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString('offynex_writer_documents');
