@@ -11,21 +11,20 @@ class WriterDocxExportService {
     required List<Map<String, dynamic>> delta,
   }) async {
     final html = StringBuffer()..write('<h1>${_escape(title)}</h1>');
-    var paragraphTag = 'p';
-    var paragraphOpen = false;
+    final line = StringBuffer();
 
-    void openParagraph(Map<String, dynamic> attributes) {
-      if (paragraphOpen) return;
+    void flushLine(Map<String, dynamic> attributes) {
+      final content = line.toString();
+      line.clear();
       final heading = attributes['header'];
-      paragraphTag = heading == 1 ? 'h1' : heading == 2 ? 'h2' : heading == 3 ? 'h3' : 'p';
-      html.write('<$paragraphTag>');
-      paragraphOpen = true;
-    }
-
-    void closeParagraph() {
-      if (!paragraphOpen) return;
-      html.write('</$paragraphTag>');
-      paragraphOpen = false;
+      final list = attributes['list'];
+      if (list == 'bullet' || list == 'ordered') {
+        final tag = list == 'bullet' ? 'ul' : 'ol';
+        html.write('<$tag><li>$content</li></$tag>');
+      } else {
+        final tag = heading == 1 ? 'h1' : heading == 2 ? 'h2' : heading == 3 ? 'h3' : 'p';
+        html.write('<$tag>$content</$tag>');
+      }
     }
 
     for (final operation in delta) {
@@ -38,17 +37,12 @@ class WriterDocxExportService {
       if (insert is String) {
         final segments = insert.split('\n');
         for (var index = 0; index < segments.length; index++) {
-          final segment = segments[index];
-          if (segment.isNotEmpty) {
-            openParagraph(attributes);
-            html.write(_styledText(segment, attributes));
+          if (segments[index].isNotEmpty) {
+            line.write(_styledText(segments[index], attributes));
           }
-          if (index < segments.length - 1) {
-            closeParagraph();
-          }
+          if (index < segments.length - 1) flushLine(attributes);
         }
       } else if (insert is Map) {
-        closeParagraph();
         if (insert.containsKey('image')) {
           final path = insert['image']?.toString() ?? '';
           final file = File(path);
@@ -63,13 +57,16 @@ class WriterDocxExportService {
             'bmp' => 'image/bmp',
             _ => 'image/png',
           };
-          html.write('<p><img src="data:$mime;base64:${base64Encode(bytes)}" /></p>');
+          html.write('<p>${line.toString()}<img src="data:$mime;base64:${base64Encode(bytes)}" /></p>');
+          line.clear();
         } else if (insert.containsKey('offynexbd-writer-table')) {
+          html.write(line.toString());
+          line.clear();
           html.write(_tableHtml(insert['offynexbd-writer-table']?.toString() ?? '{}'));
         }
       }
     }
-    closeParagraph();
+    if (line.isNotEmpty) flushLine(<String, dynamic>{});
 
     final nodes = await DocxParser.fromHtml(html.toString());
     final document = DocxBuiltDocument(elements: nodes);
@@ -96,8 +93,8 @@ class WriterDocxExportService {
       styles.add('font-size:${(size * 0.75).round()}px');
     }
     final font = attributes['font']?.toString();
-    if (font == 'serif') styles.add('font-family:"Noto Serif Bengali",serif');
-    if (font == 'sans-serif') styles.add('font-family:"Noto Sans Bengali",sans-serif');
+    if (font == 'serif') styles.add('font-family:Noto Serif Bengali,serif');
+    if (font == 'sans-serif') styles.add('font-family:Noto Sans Bengali,sans-serif');
     final link = attributes['link']?.toString();
     if (link != null) {
       final uri = Uri.tryParse(link);
