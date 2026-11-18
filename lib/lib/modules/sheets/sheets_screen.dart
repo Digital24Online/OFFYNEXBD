@@ -2052,8 +2052,8 @@ class _CellEditDialogState extends State<_CellEditDialog> {
       if (row > lastRow) lastRow = row;
       if (column > lastColumn) lastColumn = column;
     }
-    lastRow = lastRow.clamp(2, SheetsWorkbookLimits.maxRows);
-    lastColumn = lastColumn.clamp(2, SheetsWorkbookLimits.maxColumns);
+    lastRow = lastRow.clamp(2, SheetsWorkbookLimits.maxRows).toInt();
+    lastColumn = lastColumn.clamp(2, SheetsWorkbookLimits.maxColumns).toInt();
     return 'A1:${SheetsAnalytics.columnName(lastColumn)}$lastRow';
   }
 
