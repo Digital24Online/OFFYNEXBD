@@ -345,7 +345,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
       return;
     }
     final controller = TextEditingController(
-      text: (_activeWorksheet.validations[key] ?? const <String>[]).join('\\n'),
+      text: (_activeWorksheet.validations[key] ?? const <String>[]).join('\n'),
     );
     final raw = await showDialog<String>(
       context: context,
@@ -359,7 +359,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
           maxLines: 8,
           decoration: InputDecoration(
             labelText: _t('প্রতি লাইনে একটি Option', 'One option per line'),
-            hintText: 'Pending\\nPaid\\nDue',
+            hintText: 'Pending\nPaid\nDue',
           ),
         ),
         actions: [
@@ -1542,11 +1542,11 @@ class _SheetsScreenState extends State<SheetsScreen> {
         break;
       case 4:
         commands.addAll([
+          _ribbonCommand(_t('Dropdown Validation', 'Dropdown Validation'), Icons.arrow_drop_down_circle_outlined, _setDataValidation),
           _ribbonCommand('Import XLSX', Icons.file_open, _importWorkbook),
           _ribbonCommand('Export XLSX', Icons.file_download, _exportWorkbook),
           _ribbonCommand('Import CSV', Icons.table_view, _importCsv),
           _ribbonCommand('Export CSV', Icons.file_download_outlined, _exportCsv),
-          _ribbonCommand(_t('Dropdown Validation', 'Dropdown Validation'), Icons.arrow_drop_down_circle_outlined, _setDataValidation),
           _ribbonCommand(_t('A→Z সাজান', 'Sort A→Z'), Icons.sort_by_alpha, _sortBySelectedColumn),
           _ribbonCommand(_t('Filter', 'Filter'), Icons.filter_alt, _filterBySelectedColumn),
           _ribbonCommand(_t('Sort/Filter বন্ধ', 'Clear sort/filter'), Icons.filter_alt_off, _clearSortAndFilter),

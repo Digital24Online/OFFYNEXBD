@@ -7,7 +7,7 @@ class SheetsDataValidation {
 
   static List<String> parseOptions(String source) {
     final options = source
-        .split(RegExp(r'\\r?\\n'))
+        .split(RegExp(r'\r?\n'))
         .map((value) => value.trim())
         .where((value) => value.isNotEmpty)
         .toList(growable: false);

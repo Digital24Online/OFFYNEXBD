@@ -5,17 +5,17 @@ void main() {
   group('SheetsDataValidation', () {
     test('parses trimmed options and removes blank lines', () {
       expect(
-        SheetsDataValidation.parseOptions(' Pending \\n\\nPaid\\nDue '),
+        SheetsDataValidation.parseOptions(' Pending \n\nPaid\nDue '),
         ['Pending', 'Paid', 'Due'],
       );
     });
 
     test('rejects empty, duplicate, excessive and oversized options', () {
-      expect(() => SheetsDataValidation.parseOptions('\\n  '), throwsFormatException);
-      expect(() => SheetsDataValidation.parseOptions('A\\nA'), throwsFormatException);
+      expect(() => SheetsDataValidation.parseOptions('\n  '), throwsFormatException);
+      expect(() => SheetsDataValidation.parseOptions('A\nA'), throwsFormatException);
       expect(
         () => SheetsDataValidation.parseOptions(
-          List.generate(101, (index) => 'Option $index').join('\\n'),
+          List.generate(101, (index) => 'Option $index').join('\n'),
         ),
         throwsFormatException,
       );
