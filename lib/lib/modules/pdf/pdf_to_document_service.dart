@@ -53,7 +53,7 @@ class PdfToDocumentService {
     final images = ((pdf.images as Iterable?) ?? const []).toList();
     final dynamic docx = pdf.toDocx();
     final dynamic exported = await dc.DocxExporter().exportToBytes(docx);
-    final docxBytes = exported is Uint8List
+    var docxBytes = exported is Uint8List
         ? exported
         : Uint8List.fromList(List<int>.from(exported as List));
 
@@ -70,6 +70,10 @@ class PdfToDocumentService {
           final recognized = await _ocrImages(images);
           if (recognized.trim().isNotEmpty) {
             delta = plainTextToDelta(recognized.trim());
+            // The PDF parser's initial DOCX contains no selectable text for
+            // image-only PDFs. Rebuild the DOCX from OCR output as well as the
+            // Writer Delta, so both exported formats contain the same text.
+            docxBytes = await buildDocxFromPlainText(recognized.trim());
             ocrUsed = true;
           } else {
             warning = 'OCR কোনো লেখা শনাক্ত করতে পারেনি।';
@@ -96,6 +100,33 @@ class PdfToDocumentService {
       ocrWarning: warning,
     );
   }
+
+  /// Builds an editable DOCX from OCR text, retaining paragraph breaks.
+  /// This is used when the source PDF contains only page images.
+  static Future<Uint8List> buildDocxFromPlainText(String text) async {
+    final normalized = text.replaceAll('\\r\\n', '\\n').replaceAll('\\r', '\\n');
+    final paragraphs = normalized.split('\\n');
+    final html = paragraphs
+        .map((paragraph) => '<p>${_escapeHtml(paragraph)}</p>')
+        .join();
+    final nodes = await dc.DocxParser.fromHtml(html);
+    final document = dc.DocxBuiltDocument(elements: nodes);
+    final exported = await dc.DocxExporter().exportToBytes(document);
+    final bytes = exported is Uint8List
+        ? exported
+        : Uint8List.fromList(List<int>.from(exported as List));
+    if (bytes.length < 4 || bytes[0] != 0x50 || bytes[1] != 0x4B) {
+      throw StateError('OCR DOCX export did not produce a valid DOCX file.');
+    }
+    return bytes;
+  }
+
+  static String _escapeHtml(String value) => value
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
 
   static bool isSupportedImageName(String name) =>
       RegExp(r'\.(png|jpe?g|webp|bmp|tif?f)$', caseSensitive: false)

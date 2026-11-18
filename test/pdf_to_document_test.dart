@@ -34,6 +34,15 @@ void main() {
       expect(converted.docxBytes, isNotEmpty);
     });
 
+    test('builds a real editable DOCX from Bangla and English OCR text', () async {
+      final bytes = await PdfToDocumentService.buildDocxFromPlainText(
+        'বাংলা OCR লেখা\\nEnglish OCR text',
+      );
+      expect(bytes, isNotEmpty);
+      expect(bytes[0], 0x50);
+      expect(bytes[1], 0x4B);
+    });
+
     test('accepts supported image extensions without case sensitivity', () {
       expect(PdfToDocumentService.isSupportedImageName('scan.JPG'), isTrue);
       expect(PdfToDocumentService.isSupportedImageName('paper.png'), isTrue);
