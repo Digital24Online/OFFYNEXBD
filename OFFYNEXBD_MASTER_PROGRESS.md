@@ -653,3 +653,12 @@ Continue development as coordinated batches across Writer, Sheets, Slides, PDF, 
 ### Slides PDF export CI checkpoint
 - [x] Build #238 / run `44256863470` on corrected source commit `05274986d428301a38046e48e69e78645ebd6ffb`: Flutter Analyze passed; complete test suite passed, including the new Bangla/English Slides PDF export and slide-count validation tests.
 - [ ] Android APK build and artifact upload were still running at the last check; wait for final success before marking Slides PDF export fully verified.
+
+
+### Database offline row CRUD — 2026-11-18 (validation pending)
+- [x] Added a dedicated table-row editor for Database workspace tables.
+- [x] Supports creating, editing and deleting rows with field/value mapping; row data is stored per stable table ID in `offynex_database_rows_v1`.
+- [x] Supports 1–40 comma-separated fields per table; malformed database-row JSON is copied to a timestamped recovery key before recovery.
+- [x] Added widget test for creating a customer row and editing its values while preserving the other field.
+- [x] Updated Database help text to distinguish offline row CRUD from the still-unimplemented SQL/relational query engine.
+- [ ] Validate commits `1f1a41945bd28e23a74db63a4b3ff14a32ae1367`, `307d3ffdd6bfae6e4ef49739a35e029d7376331f`, `9c9533fb7f20c17c755f5f2881d627be977493fa`, and `7e26c33081e465d4b99c40243e2abea61c486961` in CI before marking verified.
