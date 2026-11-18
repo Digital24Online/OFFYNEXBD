@@ -648,3 +648,8 @@ Continue development as coordinated batches across Writer, Sheets, Slides, PDF, 
 
 ### PDF conversion follow-up — Build #232 verified
 - [x] Build #232 / run `44256236814` passed Flutter Analyze, all tests, Android APK build and artifact upload after removing obsolete PDF conversion state. Artifact ID `14405399366`, size 50,178,601 bytes.
+
+
+### Slides PDF export CI checkpoint
+- [x] Build #238 / run `44256863470` on corrected source commit `05274986d428301a38046e48e69e78645ebd6ffb`: Flutter Analyze passed; complete test suite passed, including the new Bangla/English Slides PDF export and slide-count validation tests.
+- [ ] Android APK build and artifact upload were still running at the last check; wait for final success before marking Slides PDF export fully verified.
