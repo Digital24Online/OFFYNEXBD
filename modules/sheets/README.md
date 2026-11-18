@@ -10,6 +10,7 @@ OFFYNEX Sheets is an offline-first, single-worksheet spreadsheet workspace with 
 - Cell formatting: bold, italic, underline, font size, font color, fill, horizontal/vertical alignment, wrapping, borders and basic number formats.
 - XLSX import/export for the active worksheet, including a supported subset of cell values, formulas and formatting. Import explicitly lets users choose one worksheet from a multi-sheet file; other worksheets remain in the original XLSX and are not silently merged or discarded. Worksheets larger than the supported 1,000 × 100 grid are rejected before replacing saved data.
 - CSV import/export for cell values and formulas, with UTF-8/Bengali text, optional UTF-8 BOM, commas, escaped quotes, CRLF/LF line endings and quoted multiline fields. Import confirms before replacing the active sheet and enforces the same 1,000 × 100 grid limit.
+- Display-only sorting and filtering by the selected column: A→Z / Z→A sorting, case-insensitive substring filtering, combined sort + filter, blank cells last, stable original-order ties, and Clear sort/filter. The worksheet's underlying cell data, formulas, styles and formula references are not moved; clearing the view restores original row order. CSV/XLSX import and Clear Sheet reset the view state.
 - A4 landscape PDF export and print pipeline with Bengali OpenType shaping, English/Unicode fallback, supported cell styles, gridline visibility and page numbering.
 - Formula engine with 31 functions:
   `SUM, AVERAGE, COUNT, MIN, MAX, PRODUCT, ABS, ROUND, ROUNDUP, ROUNDDOWN, SQRT, POWER, MOD, INT, SIGN, MEDIAN, LARGE, SMALL, CEILING, FLOOR, PI, EXP, LN, LOG, LOG10, SIN, COS, TAN, ASIN, ACOS, ATAN`.
@@ -20,7 +21,7 @@ OFFYNEX Sheets is an offline-first, single-worksheet spreadsheet workspace with 
 
 - Workbook currently has one active worksheet; multi-sheet tabs and cross-sheet references are not implemented.
 - Formula compatibility is partial. Logical, text, date/time, lookup, conditional aggregate, array/dynamic and financial function families are not implemented.
-- Charts, sorting/filtering, pivot tables, data validation, conditional formatting, named ranges, external links and macros are not implemented.
+- Charts, pivot tables, data validation, conditional formatting, named ranges, external links and macros are not implemented.
 - XLSX import/export preserves only the supported subset; complex workbook structures, charts, merged cells, formulas outside the supported engine and advanced styles need compatibility work.
 - ODS import/export is not implemented. CSV does not store cell formatting, workbook formulas are exported as formula text, and CSV import creates unformatted cells.
 - Print preview controls, custom page scaling, repeated print titles and page-break editing remain pending.
