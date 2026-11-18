@@ -106,6 +106,17 @@ void main() {
       expect(data.series.last.values, [70, 80, 45]);
     });
 
+    test('accepts an explicitly populated series containing only zero values', () {
+      final data = SheetsAnalytics.buildChartData({
+        'A1': 'Period', 'B1': 'Balance',
+        'A2': 'Jan', 'B2': '0',
+        'A3': 'Feb', 'B3': '0',
+      }, 'A1:B3');
+      expect(data.labels, ['Jan', 'Feb']);
+      expect(data.series, hasLength(1));
+      expect(data.series.single.values, [0, 0]);
+    });
+
     test('rejects incomplete ranges and non-numeric data instead of drawing false charts', () {
       expect(() => SheetsAnalytics.buildChartData(cells, 'A1:A4'), throwsFormatException);
       expect(
