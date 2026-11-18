@@ -563,3 +563,8 @@ Continue development as coordinated batches across Writer, Sheets, Slides, PDF, 
 - [x] Archive file size is capped at 20 MB and the archive is capped at 10,000 documents.
 - [x] Added codec round-trip, metadata-preservation and invalid/duplicate-record tests.
 - [ ] Validate commits `83d5a447`, `1356f67b`, `6841b92d`, and `6b38028a` in the latest CI run before marking this Writer feature verified.
+
+
+### Writer archive static analysis correction
+- [x] The first Writer archive Analyze run found one redundant `dart:typed_data` import (the existing Flutter services import already exposes `Uint8List`). Removed it in commit `9a8600c39a357b7fbcf65afa3473365c30d9e8c8`.
+- [ ] Re-run Analyze, Writer codec tests, complete tests and APK build against the corrected source.
