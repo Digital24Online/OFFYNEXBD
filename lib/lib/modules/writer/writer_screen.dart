@@ -51,13 +51,16 @@ Future<void> storeDocuments(
 }
 
 class WriterScreen extends StatefulWidget {
-  const WriterScreen({super.key});
+  final bool isBangla;
+  const WriterScreen({super.key, this.isBangla = true});
 
   @override
   State<WriterScreen> createState() => _WriterScreenState();
 }
 
 class _WriterScreenState extends State<WriterScreen> {
+  String _t(String bn, String en) => widget.isBangla ? bn : en;
+
   List<Map<String, dynamic>> documents = [];
   bool isLoading = true;
 
@@ -193,6 +196,7 @@ class _WriterScreenState extends State<WriterScreen> {
       MaterialPageRoute(
         builder: (_) => WriterEditorScreen(
           document: document,
+          isBangla: widget.isBangla,
         ),
       ),
     );
@@ -387,10 +391,12 @@ class _WriterScreenState extends State<WriterScreen> {
 
 class WriterEditorScreen extends StatefulWidget {
   final Map<String, dynamic> document;
+  final bool isBangla;
 
   const WriterEditorScreen({
     super.key,
     required this.document,
+    this.isBangla = true,
   });
 
   @override
@@ -399,6 +405,8 @@ class WriterEditorScreen extends StatefulWidget {
 }
 
 class _WriterEditorScreenState extends State<WriterEditorScreen> {
+  String _t(String bn, String en) => widget.isBangla ? bn : en;
+
   late final TextEditingController titleController;
   late final FocusNode editorFocusNode;
   late QuillController quillController;
@@ -432,6 +440,8 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   List<Map<String, dynamic>> writerComments = [];
   List<Map<String, dynamic>> writerCitations = [];
   List<Map<String, dynamic>> writerRevisions = [];
+  String headerText = '';
+  String footerText = '';
 
   @override
   void initState() {
@@ -1464,6 +1474,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
         _ribbonButton(Icons.drive_file_rename_outline, 'Rename', renameCurrentDocument),
         _ribbonButton(Icons.copy, 'Copy Text', copyDocumentText),
         _ribbonButton(Icons.info_outline, 'Document Info', showDocumentInfo),
+        _ribbonButton(Icons.article_outlined, 'Header / Footer', editHeaderFooter),
         _ribbonButton(Icons.delete_outline, 'Clear', clearDocument),
         _ribbonButton(Icons.close, 'Close', () => Navigator.maybePop(context)),
       ]);
@@ -1614,14 +1625,14 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
 
   Widget buildRibbonTabs() {
   const tabs = [
-    'File',
-    'Home',
-    'Insert',
-    'Design',
-    'Layout',
-    'References',
-    'Review',
-    'View',
+    _t('ফাইল', 'File'),
+    _t('হোম', 'Home'),
+    _t('ইনসার্ট', 'Insert'),
+    _t('ডিজাইন', 'Design'),
+    _t('লেআউট', 'Layout'),
+    _t('রেফারেন্স', 'References'),
+    _t('রিভিউ', 'Review'),
+    _t('ভিউ', 'View'),
   ];
 
   return Container(
@@ -1683,16 +1694,16 @@ Future<void> showCustomFontSizeDialog() async {
           controller: controller,
           autofocus: true,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: const InputDecoration(labelText: 'Size in points (6–200)'),
+          decoration: const InputDecoration(labelText: 'Size in points (8–72)'),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () {
               final parsed = double.tryParse(controller.text.trim());
-              if (parsed == null || !parsed.isFinite || parsed < 6 || parsed > 200) {
+              if (parsed == null || !parsed.isFinite || parsed < 8 || parsed > 72) {
                 ScaffoldMessenger.of(dialogContext).showSnackBar(
-                  const SnackBar(content: Text('৬ থেকে ২০০ পয়েন্টের মধ্যে সাইজ দিন।')),
+                  const SnackBar(content: Text(_t('৮ থেকে ৭২ পয়েন্টের মধ্যে সাইজ দিন।', 'Enter a font size between 8 and 72 points.'))),
                 );
                 return;
               }
@@ -1920,7 +1931,69 @@ Future<void> showCustomFontSizeDialog() async {
       marginBottom: marginBottom * 72,
       marginLeft: marginLeft * 72,
       marginRight: marginRight * 72,
+      headerText: headerText,
+      footerText: footerText,
     );
+  }
+
+  Future<void> editHeaderFooter() async {
+    final header = TextEditingController(text: headerText);
+    final footer = TextEditingController(text: footerText);
+    final result = await showDialog<List<String>>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(_t('Header ও Footer', 'Header and Footer')),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(
+              controller: header,
+              maxLength: 180,
+              decoration: InputDecoration(
+                labelText: _t('Header লেখা', 'Header text'),
+                hintText: _t('প্রতিটি পৃষ্ঠার উপরে', 'Top of each page'),
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: footer,
+              maxLength: 180,
+              decoration: InputDecoration(
+                labelText: _t('Footer লেখা', 'Footer text'),
+                hintText: _t('পৃষ্ঠা নম্বর: {page} / মোট: {pages}', 'Page {page} of {pages}'),
+              ),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                _t('পৃষ্ঠা নম্বরের জন্য {page} এবং মোট পৃষ্ঠার জন্য {pages} লিখুন।', 'Use {page} for the current page and {pages} for total pages.'),
+                style: const TextStyle(fontSize: 12, color: Colors.black54),
+              ),
+            ),
+          ]),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(_t('বাতিল', 'Cancel')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, [header.text.trim(), footer.text.trim()]),
+            child: Text(_t('সংরক্ষণ', 'Save')),
+          ),
+        ],
+      ),
+    );
+    final nextHeader = header.text.trim();
+    final nextFooter = footer.text.trim();
+    header.dispose();
+    footer.dispose();
+    if (result == null || !mounted) return;
+    setState(() {
+      headerText = nextHeader;
+      footerText = nextFooter;
+    });
+    await saveDocument();
+    _showMessage(_t('Header ও Footer সংরক্ষিত হয়েছে।', 'Header and footer saved.'));
   }
 
   Future<void> openPrintPreview() async {
