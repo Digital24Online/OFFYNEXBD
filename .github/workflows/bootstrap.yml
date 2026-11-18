@@ -17,6 +17,11 @@ on:
 permissions:
   contents: write
 
+# Keep only the newest main-branch validation running after rapid source commits.
+concurrency:
+  group: offynexbd-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
