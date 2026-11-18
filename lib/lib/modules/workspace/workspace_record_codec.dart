@@ -10,6 +10,8 @@ class WorkspaceRecordCodec {
     'AI Assistant',
     'Forms',
     'Database',
+    'Cloud',
+    'Scan',
   };
 
   static String encode(

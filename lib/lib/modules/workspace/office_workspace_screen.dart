@@ -376,10 +376,9 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
     final keys = prefs.getKeys().where((k) => k.startsWith('offynex_')).toList()..sort();
     final data = <String, dynamic>{};
     for (final key in keys) {
-      final value = prefs.get(key);
-      if (value is String || value is bool || value is int || value is double || value is List<String>) {
-        data[key] = value;
-      }
+      // Pass every OFFYNEXBD preference to the strict backup codec.
+      // Never silently omit an unfamiliar value and produce an incomplete backup.
+      data[key] = prefs.get(key);
     }
     _backupController.text = WorkspaceBackupCodec.encode(data);
     if (mounted) setState(() {});

@@ -862,3 +862,15 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - Database: advanced schema/query/relationship functionality and device-level performance/security validation.
 - Cross-platform: iPhone, Windows and macOS build/interaction testing. Android CI does not verify these platforms.
 - Physical printer and real-device validation remain outstanding across relevant modules.
+
+
+## Integrated project-wide continuation — Build #341 verified and shared workspace corrections (2026-11-18)
+
+- [x] Verified Build #341 / run `44314759299` against exact source commit `9c22acf9124eb6598d16449f83268531579ce99b`: Flutter Analyze, complete automated test suite, Android release APK, signing cleanup, generated-source save and artifact upload all succeeded. Artifact `OFFYNEXBD-Android-APK`, ID `14432326906`, size 51,198,591 bytes; expires 2026-11-25.
+- [x] Re-audited the shared workspace paths used by Slides, Fonts, AI Assistant, Cloud, Forms, Scan and Database, plus the central local backup/restore flow.
+- [x] Fixed a backup completeness defect: the workspace screen previously filtered preference values before calling the strict backup codec, which could silently omit an unsupported OFFYNEXBD preference. It now passes every OFFYNEXBD key to the codec, allowing the codec to reject unsupported values instead of exporting an incomplete backup.
+- [x] Enabled module-scoped record export/import for Cloud and Scan as well as the previously supported record modules. Unknown module names remain rejected.
+- [x] Added regression coverage that round-trips portable records for every record-based workspace module and retains rejection of unknown modules.
+- [ ] Validate this follow-up batch with Flutter Analyze, the complete test suite, Android release APK build and artifact upload before marking it CI-verified.
+- [ ] Product gaps remain open across Writer (native DOCX import, ODT, advanced pagination/fidelity, spell-check and font management), Sheets (charts, pivots, validation, conditional formatting, ODS and advanced Excel compatibility), Slides (real slide editor, PPTX import/export and slideshow), PDF (layout fidelity and difficult/encrypted/scanned files), Fonts (installable font management), AI (secure live backend), Cloud (online sync/auth/conflict resolution), Forms (online publishing and remote collection), Scan (real-device and cross-platform validation), and Database (advanced schema/query/relationships).
+- [ ] Physical Android device, iPhone, Windows, macOS and printer validation remain separate from CI and have not been claimed complete.

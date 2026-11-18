@@ -48,9 +48,28 @@ void main() {
     );
   });
 
-  test('workspace record codec rejects unsupported module names', () {
+  test('workspace record codec supports every record-based workspace module', () {
+    for (final module in [
+      'Slides',
+      'Fonts',
+      'AI Assistant',
+      'Cloud',
+      'Forms',
+      'Scan',
+      'Database',
+    ]) {
+      final encoded = WorkspaceRecordCodec.encode(module, records);
+      expect(
+        WorkspaceRecordCodec.decode(encoded, expectedModule: module),
+        records,
+        reason: '$module must support portable record export and import',
+      );
+    }
+  });
+
+  test('workspace record codec still rejects unknown module names', () {
     expect(
-      () => WorkspaceRecordCodec.encode('Cloud', records),
+      () => WorkspaceRecordCodec.encode('Unknown Module', records),
       throwsArgumentError,
     );
   });
