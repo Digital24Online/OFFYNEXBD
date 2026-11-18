@@ -48,6 +48,8 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
   List<Map<String, dynamic>> _items = [];
   bool _loading = true;
   bool _busy = false;
+  bool _workspaceDataBlocked = false;
+  String? _workspaceRecoveryKey;
   String _searchQuery = '';
   final _backupController = TextEditingController();
 
@@ -67,6 +69,8 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_key);
     var loaded = <Map<String, dynamic>>[];
+    var dataBlocked = false;
+    String? recoveryKey;
     String? recoveryMessage;
     if (raw != null) {
       try {
@@ -74,26 +78,49 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
         if (decoded is! List) {
           throw const FormatException('Workspace record root must be a list.');
         }
-        loaded = decoded
-            .whereType<Map>()
-            .map((item) => Map<String, dynamic>.from(item))
-            .toList(growable: false);
+        final ids = <String>{};
+        loaded = decoded.map((item) {
+          if (item is! Map) {
+            throw const FormatException('Workspace record must be an object.');
+          }
+          final record = Map<String, dynamic>.from(item);
+          final id = record['id'];
+          final title = record['title'];
+          final content = record['content'];
+          final updatedAt = record['updatedAt'];
+          if (id is! String ||
+              id.trim().isEmpty ||
+              !ids.add(id) ||
+              title is! String ||
+              title.trim().isEmpty ||
+              content is! String ||
+              updatedAt is! String ||
+              DateTime.tryParse(updatedAt) == null) {
+            throw const FormatException('Workspace contains an invalid or duplicate record.');
+          }
+          return record;
+        }).toList(growable: false);
       } catch (error) {
-        final recoveryKey =
+        dataBlocked = true;
+        final candidateKey =
             '${_key}_recovery_${DateTime.now().microsecondsSinceEpoch}';
-        final preserved = await prefs.setString(recoveryKey, raw);
+        final preserved = await prefs.setString(candidateKey, raw);
+        if (preserved) recoveryKey = candidateKey;
         recoveryMessage = preserved
             ? (_bn
-                ? 'এই মডিউলের ডেটা পড়া যায়নি। মূল ডেটার Recovery Copy রাখা হয়েছে: $recoveryKey'
-                : 'Workspace data could not be read. Original recovery copy saved: $recoveryKey')
+                ? 'এই মডিউলের ডেটা যাচাই করা যায়নি। মূল ডেটা অপরিবর্তিত এবং Recovery Copy রাখা হয়েছে: $candidateKey'
+                : 'Workspace data could not be validated. Original data is unchanged and a recovery copy was saved: $candidateKey')
             : (_bn
-                ? 'ডেটা পড়া যায়নি এবং Recovery Copy সংরক্ষণ ব্যর্থ: $error'
-                : 'Workspace data could not be read and recovery copy failed: $error');
+                ? 'ডেটা যাচাই করা যায়নি এবং Recovery Copy সংরক্ষণ ব্যর্থ। মূল ডেটা সুরক্ষার জন্য সম্পাদনা বন্ধ রাখা হয়েছে: $error'
+                : 'Workspace data could not be validated and the recovery copy could not be saved. Editing is blocked to protect the original data: $error');
+        loaded = <Map<String, dynamic>>[];
       }
     }
     if (!mounted) return;
     setState(() {
       _items = loaded;
+      _workspaceDataBlocked = dataBlocked;
+      _workspaceRecoveryKey = recoveryKey;
       _loading = false;
     });
     if (recoveryMessage != null) {
@@ -104,11 +131,16 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
   }
 
   Future<void> _save() async {
+    if (_workspaceDataBlocked) {
+      throw StateError('Workspace editing is blocked because the original data is damaged.');
+    }
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_key, jsonEncode(_items));
+    final saved = await prefs.setString(_key, jsonEncode(_items));
+    if (!saved) throw StateError('Workspace data could not be saved.');
   }
 
   Future<void> _editItem({Map<String, dynamic>? item}) async {
+    if (_workspaceDataBlocked) return;
     final result = await showDialog<Map<String, String>>(
       context: context,
       builder: (_) => _WorkspaceItemDialog(
@@ -139,6 +171,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
   }
 
   Future<void> _exportRecords() async {
+    if (_workspaceDataBlocked) return;
     try {
       final json = WorkspaceRecordCodec.encode(widget.module, _items);
       final safeModule = widget.module.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-');
@@ -163,6 +196,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
   }
 
   Future<void> _importRecords() async {
+    if (_workspaceDataBlocked) return;
     try {
       final picked = await FilePicker.pickFile(
         type: FileType.custom,
@@ -234,6 +268,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
   }
 
   Future<void> _deleteItem(Map<String, dynamic> item) async {
+    if (_workspaceDataBlocked) return;
     final yes = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -812,7 +847,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
         surfaceTintColor: Colors.transparent,
         title: Text(title, style: const TextStyle(color: OFFYNEXTheme.ink, fontWeight: FontWeight.w800)),
         actions: [
-          if (widget.module != 'Scan' && widget.module != 'Cloud')
+          if (widget.module != 'Scan' && widget.module != 'Cloud' && !_workspaceDataBlocked)
             IconButton(
               tooltip: _bn ? 'নতুন তৈরি' : 'Create new',
               onPressed: () => _editItem(),
@@ -848,6 +883,35 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
                   ),
                 ),
                 _moduleHelp(),
+                if (_workspaceDataBlocked)
+                  Card(
+                    color: Colors.orange.shade50,
+                    child: Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _bn
+                                ? 'মডিউলের ডেটা ক্ষতিগ্রস্ত বা অবৈধ। মূল ডেটা সুরক্ষার জন্য সম্পাদনা ও Import বন্ধ রাখা হয়েছে।'
+                                : 'Workspace records are damaged or invalid. Editing and importing are disabled to protect the original data.',
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          if (_workspaceRecoveryKey != null) ...[
+                            const SizedBox(height: 6),
+                            SelectableText(
+                              '${_bn ? 'Recovery Copy' : 'Recovery copy'}: $_workspaceRecoveryKey',
+                            ),
+                          ] else
+                            Text(
+                              _bn
+                                  ? 'Recovery Copy সংরক্ষণ করা যায়নি; মূল ডেটা অপরিবর্তিত রাখা হয়েছে।'
+                                  : 'The recovery copy could not be saved; the original data has been left unchanged.',
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
                 if (widget.module == 'Scan')
                   FilledButton.icon(
                     onPressed: _busy ? null : _scanImage,
@@ -988,7 +1052,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
                 const SizedBox(height: 28),
               ],
             ),
-      floatingActionButton: widget.module == 'Scan' || widget.module == 'Cloud'
+      floatingActionButton: widget.module == 'Scan' || widget.module == 'Cloud' || _workspaceDataBlocked
           ? null
           : FloatingActionButton.extended(
               backgroundColor: OFFYNEXTheme.blue,

@@ -184,7 +184,41 @@ void main() {
     expect(recoveryKeys, hasLength(1));
     expect(prefs.getString(recoveryKeys.single), damaged);
     expect(prefs.getString('offynex_workspace_slides_v1'), damaged);
-    expect(find.text('Nothing saved yet.'), findsOneWidget);
+    expect(find.textContaining('Workspace records are damaged or invalid'), findsOneWidget);
+    expect(find.byType(FloatingActionButton), findsNothing);
+    expect(find.text('Nothing saved yet.'), findsNothing);
+  });
+
+  testWidgets('workspace with a malformed record preserves the entire original list and blocks editing',
+      (tester) async {
+    final damaged = jsonEncode([
+      {
+        'id': 'valid-1',
+        'title': 'Keep this record',
+        'content': 'Do not discard',
+        'updatedAt': '2026-11-18T10:00:00Z',
+      },
+      'malformed-record',
+    ]);
+    SharedPreferences.setMockInitialValues({
+      'offynex_workspace_slides_v1': damaged,
+    });
+
+    await tester.pumpWidget(const MaterialApp(
+      home: OfficeWorkspaceScreen(module: 'Slides', isBangla: false),
+    ));
+    await tester.pumpAndSettle();
+
+    final prefs = await SharedPreferences.getInstance();
+    final recoveryKeys = prefs.getKeys()
+        .where((key) => key.startsWith('offynex_workspace_slides_v1_recovery_'))
+        .toList();
+    expect(recoveryKeys, hasLength(1));
+    expect(prefs.getString(recoveryKeys.single), damaged);
+    expect(prefs.getString('offynex_workspace_slides_v1'), damaged);
+    expect(find.textContaining('Workspace records are damaged or invalid'), findsOneWidget);
+    expect(find.text('Keep this record'), findsNothing);
+    expect(find.byType(FloatingActionButton), findsNothing);
   });
 
   testWidgets('Cloud backup panel explains local-only status and generates backup',
