@@ -202,9 +202,11 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
         ));
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('${_bn ? 'ব্যাকআপ সংরক্ষণ ব্যর্থ' : 'Backup export failed'}: $e'),
-      ));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('${_bn ? 'ব্যাকআপ সংরক্ষণ ব্যর্থ' : 'Backup export failed'}: $e'),
+        ));
+      }
     }
   }
 
@@ -222,9 +224,11 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
       if (mounted) setState(() {});
       await _restoreBackup();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('${_bn ? 'ব্যাকআপ ফাইল পড়া যায়নি' : 'Could not import backup file'}: $e'),
-      ));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('${_bn ? 'ব্যাকআপ ফাইল পড়া যায়নি' : 'Could not import backup file'}: $e'),
+        ));
+      }
     }
   }
 
