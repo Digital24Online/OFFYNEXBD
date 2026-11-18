@@ -1044,3 +1044,15 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [ ] This viewport change does not yet provide true rich-content pagination: the existing continuous Quill editor and estimated page backgrounds remain a limitation for exact page breaks around tables/images.
 - [ ] DOCX import, ODT import/export, full-fidelity portable image packaging, advanced pagination, spellcheck and installable font management remain open Writer tasks.
 - [ ] Physical Android pinch/scroll, small-screen and accessibility checks remain pending.
+
+
+## Writer document format interchange — integrated implementation batch (2026-11-18)
+
+- [x] Added bounded DOCX and ODT import (25 MB source, 60 MB expanded archive, 2,000 archive entries, 15 MB per image).
+- [x] DOCX import maps paragraphs, common text formatting, headings, alignment, lists, editable Writer tables and embedded images into the existing Quill Delta/table/image model.
+- [x] ODT import maps paragraphs, headings, common span styles, lists, editable tables and embedded images into the existing document model.
+- [x] ODT export writes an OpenDocument ZIP package with text styles, headings, lists, editable tables, packaged images, page size/orientation/margins and header/footer content.
+- [x] Added File ribbon commands for DOCX/ODT import and ODT export; imports create a new library document and leave the open source document unchanged.
+- [x] Added three regression tests for DOCX formatting import, ODT text/style/table round-trip and unsupported/oversized file rejection.
+- [ ] Flutter Analyze, complete tests, Android release APK and real-device checks are pending; do not claim full format fidelity before validation.
+- [ ] Advanced automatic pagination, spellcheck and installable user-font management remain open Writer tasks.

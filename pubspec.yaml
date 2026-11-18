@@ -27,6 +27,8 @@ dependencies:
   bangla_pdf: ^1.9.2
   printing: ^5.14.2
   docx_creator: ^1.2.3
+  archive: ^4.0.7
+  xml: ^6.5.0
   tesseract_ocr: ^0.6.0
   google_mlkit_document_scanner: ^0.4.1
 
