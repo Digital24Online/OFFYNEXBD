@@ -1165,3 +1165,12 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 ### Writer CI lint follow-up — 2026-11-19
 - Applied the null-check pattern consistently to both DOCX and ODT hyperlink attribute maps after CI surfaced the second instance.
 - The ODT inline-style enhancement is queued for full analyzer, regression-test and Android build validation.
+
+
+### Writer page setup and header/footer import — 2026-11-19
+- DOCX section properties now import common paper sizes/orientation and page margins from Word twips.
+- DOCX default header/footer parts are resolved through package relationships and their text is imported.
+- ODT page dimensions/orientation/margins and master-page header/footer text are read from styles.xml.
+- Imported page layout and header/footer are now applied to the new Writer document instead of silently resetting to A4 defaults/empty header-footer.
+- Added round-trip/import assertions for DOCX and ODT page setup and header/footer.
+- Limitations remain for section-specific layouts, multiple headers/footers, first/even page variants, complex fields/page-number fields, and exact pagination.

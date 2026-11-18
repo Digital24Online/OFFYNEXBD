@@ -6,10 +6,13 @@ import 'package:archive/archive.dart';
 import 'package:xml/xml.dart';
 
 class WriterImportedDocument {
-  const WriterImportedDocument({required this.delta, required this.title, required this.format});
+  const WriterImportedDocument({required this.delta, required this.title, required this.format, this.pageLayout, this.headerText = '', this.footerText = ''});
   final List<Map<String, dynamic>> delta;
   final String title;
   final String format;
+  final Map<String, dynamic>? pageLayout;
+  final String headerText;
+  final String footerText;
 }
 
 /// Safe, bounded DOCX/ODT interchange for editable paragraphs, common
@@ -97,7 +100,12 @@ class WriterDocumentFormatService {
     }
     if (delta.isEmpty) delta.add({'insert': '\n'});
     _ensureTrailingNewline(delta);
-    return WriterImportedDocument(delta: delta, title: _safeTitle(title), format: 'DOCX');
+    final pageLayout = _docxPageLayout(body);
+    final headerFooter = _docxHeaderFooter(archive, body, relationships);
+    return WriterImportedDocument(
+      delta: delta, title: _safeTitle(title), format: 'DOCX',
+      pageLayout: pageLayout, headerText: headerFooter.$1, footerText: headerFooter.$2,
+    );
   }
 
   static Future<void> _appendDocxParagraph(
@@ -154,6 +162,127 @@ class WriterDocumentFormatService {
     if (aligns.containsKey(align)) result['align'] = aligns[align];
     if (_firstChild(props, 'numPr') != null) result['list'] = 'bullet';
     return result;
+  }
+
+  static Map<String, dynamic> _docxPageLayout(XmlElement body) {
+    final section = _firstDescendant(body, 'sectPr');
+    final defaults = <String, dynamic>{
+      'pageSize': 'A4', 'orientation': 'Portrait', 'marginPreset': 'Normal',
+      'top': 1.0, 'bottom': 1.0, 'left': 1.0, 'right': 1.0,
+    };
+    if (section == null) return defaults;
+    final size = _firstChild(section, 'pgSz');
+    final width = size == null ? null : double.tryParse(_attribute(size, 'w') ?? '');
+    final height = size == null ? null : double.tryParse(_attribute(size, 'h') ?? '');
+    if (width != null && height != null && width > 0 && height > 0) {
+      final w = width / 1440;
+      final h = height / 1440;
+      final landscape = _attribute(size!, 'orient') == 'landscape' || w > h;
+      final short = landscape ? h : w;
+      final long = landscape ? w : h;
+      const pages = <String, List<double>>{
+        'A4': [8.27, 11.69], 'A5': [5.83, 8.27], 'Letter': [8.5, 11.0], 'Legal': [8.5, 14.0],
+      };
+      var closest = 'A4';
+      var distance = double.infinity;
+      for (final entry in pages.entries) {
+        final d = (entry.value[0] - short).abs() + (entry.value[1] - long).abs();
+        if (d < distance) { distance = d; closest = entry.key; }
+      }
+      defaults['pageSize'] = closest;
+      defaults['orientation'] = landscape ? 'Landscape' : 'Portrait';
+    }
+    final margins = _firstChild(section, 'pgMar');
+    if (margins != null) {
+      for (final key in ['top', 'bottom', 'left', 'right']) {
+        final value = double.tryParse(_attribute(margins, key) ?? '');
+        if (value != null && value.isFinite) defaults[key] = (value / 1440).clamp(0.25, 2.5);
+      }
+    }
+    return defaults;
+  }
+
+  static (String, String) _docxHeaderFooter(
+    Archive archive, XmlElement body, Map<String, String> relationships,
+  ) {
+    final section = _firstDescendant(body, 'sectPr');
+    if (section == null) return ('', '');
+    String readPart(String referenceName) {
+      final reference = _firstChild(section, referenceName);
+      if (reference == null) return '';
+      final id = _attribute(reference, 'id');
+      final path = id == null ? null : relationships[id];
+      if (path == null || path.startsWith('http:') || path.startsWith('https:')) return '';
+      final file = archive.findFile(path);
+      if (file == null || file.size > 2 * 1024 * 1024) return '';
+      try {
+        final xml = XmlDocument.parse(utf8.decode(_fileBytes(file)));
+        return _descendants(xml, 'p').map(_plainText).where((line) => line.isNotEmpty).join('\n');
+      } catch (_) { return ''; }
+    }
+    return (readPart('headerReference'), readPart('footerReference'));
+  }
+
+  static double? _lengthInches(String? raw) {
+    if (raw == null) return null;
+    final match = RegExp(r'^([0-9]+(?:\.[0-9]+)?)(cm|mm|in|pt)$').firstMatch(raw.trim());
+    if (match == null) return null;
+    final amount = double.tryParse(match.group(1)!);
+    if (amount == null || !amount.isFinite) return null;
+    return switch (match.group(2)) {
+      'cm' => amount / 2.54, 'mm' => amount / 25.4, 'pt' => amount / 72, 'in' => amount, _ => null,
+    };
+  }
+
+  static Map<String, dynamic> _odtPageLayout(ArchiveFile? stylesFile) {
+    final defaults = <String, dynamic>{
+      'pageSize': 'A4', 'orientation': 'Portrait', 'marginPreset': 'Normal',
+      'top': 1.0, 'bottom': 1.0, 'left': 1.0, 'right': 1.0,
+    };
+    if (stylesFile == null) return defaults;
+    try {
+      final doc = XmlDocument.parse(utf8.decode(_fileBytes(stylesFile)));
+      final props = _firstDescendant(doc, 'page-layout-properties');
+      if (props == null) return defaults;
+      final width = _lengthInches(_attribute(props, 'page-width'));
+      final height = _lengthInches(_attribute(props, 'page-height'));
+      if (width != null && height != null) {
+        final landscape = _attribute(props, 'print-orientation') == 'landscape' || width > height;
+        final short = landscape ? height : width;
+        final long = landscape ? width : height;
+        const pages = <String, List<double>>{
+          'A4': [8.27, 11.69], 'A5': [5.83, 8.27], 'Letter': [8.5, 11.0], 'Legal': [8.5, 14.0],
+        };
+        var closest = 'A4';
+        var distance = double.infinity;
+        for (final entry in pages.entries) {
+          final d = (entry.value[0] - short).abs() + (entry.value[1] - long).abs();
+          if (d < distance) { distance = d; closest = entry.key; }
+        }
+        defaults['pageSize'] = closest;
+        defaults['orientation'] = landscape ? 'Landscape' : 'Portrait';
+      }
+      for (final pair in const {'top': 'margin-top', 'bottom': 'margin-bottom', 'left': 'margin-left', 'right': 'margin-right'}.entries) {
+        final value = _lengthInches(_attribute(props, pair.value));
+        if (value != null) defaults[pair.key] = value.clamp(0.25, 2.5);
+      }
+    } catch (_) {}
+    return defaults;
+  }
+
+  static (String, String) _odtHeaderFooter(ArchiveFile? stylesFile) {
+    if (stylesFile == null) return ('', '');
+    try {
+      final doc = XmlDocument.parse(utf8.decode(_fileBytes(stylesFile)));
+      final master = _firstDescendant(doc, 'master-page');
+      if (master == null) return ('', '');
+      final header = _firstChild(master, 'header');
+      final footer = _firstChild(master, 'footer');
+      return (
+        header == null ? '' : _descendants(header, 'p').map(_plainText).join('\n'),
+        footer == null ? '' : _descendants(footer, 'p').map(_plainText).join('\n'),
+      );
+    } catch (_) { return ('', ''); }
   }
 
   static bool _isOn(XmlElement? element) {
@@ -246,7 +375,12 @@ class WriterDocumentFormatService {
     }
     if (delta.isEmpty) delta.add({'insert': '\n'});
     _ensureTrailingNewline(delta);
-    return WriterImportedDocument(delta: delta, title: _safeTitle(title), format: 'ODT');
+    final pageLayout = _odtPageLayout(stylesFile);
+    final headerFooter = _odtHeaderFooter(stylesFile);
+    return WriterImportedDocument(
+      delta: delta, title: _safeTitle(title), format: 'ODT',
+      pageLayout: pageLayout, headerText: headerFooter.$1, footerText: headerFooter.$2,
+    );
   }
 
   static Future<void> _appendOdtParagraph(

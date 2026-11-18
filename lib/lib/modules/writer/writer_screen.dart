@@ -2102,13 +2102,7 @@ Future<void> showCustomFontSizeDialog() async {
         'created': now,
         'updated': now,
         'pageLayout': {
-          'pageSize': 'A4',
-          'orientation': 'Portrait',
-          'marginPreset': 'Normal',
-          'top': 1.0,
-          'bottom': 1.0,
-          'left': 1.0,
-          'right': 1.0,
+          ...?imported.pageLayout,
           'pageBackgroundColor': 0xFFFFFFFF,
         },
         'writerMeta': {
@@ -2123,8 +2117,8 @@ Future<void> showCustomFontSizeDialog() async {
           'comments': <Map<String, dynamic>>[],
           'citations': <Map<String, dynamic>>[],
           'revisions': <Map<String, dynamic>>[],
-          'headerText': '',
-          'footerText': '',
+          'headerText': imported.headerText,
+          'footerText': imported.footerText,
         },
       };
       final documents = await loadDocuments();
