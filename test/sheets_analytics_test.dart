@@ -180,6 +180,24 @@ void main() {
       ]);
     });
 
+    test('rejects a Pivot result that would exceed the worksheet row limit', () {
+      final oversized = <String, String>{'A1': 'Group', 'B1': 'Value'};
+      for (var row = 2; row <= 1000; row++) {
+        oversized['A$row'] = 'Group $row';
+        oversized['B$row'] = '1';
+      }
+      expect(
+        () => SheetsAnalytics.buildPivotSummary(
+          cells: oversized,
+          rangeText: 'A1:B1000',
+          groupColumn: 'A',
+          valueColumn: 'B',
+          aggregation: 'sum',
+        ),
+        throwsFormatException,
+      );
+    });
+
     test('rejects columns outside the source and non-numeric aggregate values', () {
       expect(
         () => SheetsAnalytics.buildPivotSummary(
