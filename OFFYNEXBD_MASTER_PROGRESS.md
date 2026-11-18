@@ -637,3 +637,10 @@ Continue development as coordinated batches across Writer, Sheets, Slides, PDF, 
 - [x] Build #229 / run `44255669985` passed Flutter Analyze, full tests, Android APK build and upload. Artifact ID `14405983212`, size 50,177,256 bytes.
 - [x] This verifies Forms response collection test assertions and the Forms question parsing correction present in that source commit.
 - [ ] Workspace-wide damaged-record recovery and the newest Forms response export still require the later Build #227/#228/#231+ source runs to finish successfully; do not use #229 as proof for later commits.
+
+
+### General workspace recovery + PDF navigation — verified builds
+- [x] Build #227 / run `44255537457`: module-wide damaged workspace record recovery passed Analyze, all tests, APK build/upload. Artifact ID `14406396484`, size 50,177,257 bytes.
+- [x] Build #228 / run `44255575772`: added regression test proving original malformed workspace JSON is preserved before showing an empty workspace; Analyze, all tests and APK build/upload passed. Artifact ID `14406357390`, size 50,177,251 bytes.
+- [x] Build #230 / run `44256035950`: PDF/Image conversion now opens the exact newly created Writer document; Analyze, full tests and APK build/upload passed. Artifact ID `14405254164`, size 50,181,529 bytes.
+- [ ] Forms response JSON export and Slides PDF export are newer changes and remain pending their own successful CI run.
