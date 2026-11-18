@@ -18,6 +18,8 @@ class WriterPdfExportService {
     required double marginBottom,
     required double marginLeft,
     required double marginRight,
+    String headerText = '',
+    String footerText = '',
   }) async {
     final sansFont = pw.Font.ttf(sansFontData);
     final serifFont = pw.Font.ttf(serifFontData);
@@ -143,6 +145,29 @@ class WriterPdfExportService {
           marginLeft, marginTop, marginRight, marginBottom,
         ),
         maxPages: 1000,
+        header: headerText.trim().isEmpty
+            ? null
+            : (context) => pw.Align(
+                alignment: pw.Alignment.centerLeft,
+                child: pw.Text(
+                  headerText,
+                  style: pw.TextStyle(font: latinFont, fontSize: 9, color: PdfColors.grey700),
+                ),
+              ),
+        footer: footerText.trim().isEmpty
+            ? null
+            : (context) {
+                final rendered = footerText
+                    .replaceAll('{page}', context.pageNumber.toString())
+                    .replaceAll('{pages}', context.pagesCount.toString());
+                return pw.Align(
+                  alignment: pw.Alignment.center,
+                  child: pw.Text(
+                    rendered,
+                    style: pw.TextStyle(font: latinFont, fontSize: 9, color: PdfColors.grey700),
+                  ),
+                );
+              },
         build: (_) => widgets,
       ),
     );
