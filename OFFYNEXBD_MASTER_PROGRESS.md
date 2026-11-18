@@ -874,3 +874,16 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [ ] Validate this follow-up batch with Flutter Analyze, the complete test suite, Android release APK build and artifact upload before marking it CI-verified.
 - [ ] Product gaps remain open across Writer (native DOCX import, ODT, advanced pagination/fidelity, spell-check and font management), Sheets (charts, pivots, validation, conditional formatting, ODS and advanced Excel compatibility), Slides (real slide editor, PPTX import/export and slideshow), PDF (layout fidelity and difficult/encrypted/scanned files), Fonts (installable font management), AI (secure live backend), Cloud (online sync/auth/conflict resolution), Forms (online publishing and remote collection), Scan (real-device and cross-platform validation), and Database (advanced schema/query/relationships).
 - [ ] Physical Android device, iPhone, Windows, macOS and printer validation remain separate from CI and have not been claimed complete.
+
+
+## Coordinated cross-module resource and import/export hardening — source batch committed (2026-11-18)
+
+- [x] Sheets workbook JSON: 20 MB import/export ceiling; existing legacy workbook migration remains intact.
+- [x] Sheets formulas: 4,096-character and 2,048-token ceilings to reject pathological input.
+- [x] PDF conversion: 50 MB source-file ceiling and 1,000-page ceiling.
+- [x] Slides PDF export: 200-slide and 5 MB combined text ceilings.
+- [x] Shared module record interchange: 10 MB import/export ceiling.
+- [x] Writer document archive: 25 MB import/export ceiling.
+- [x] Regression tests added for these boundaries; final test syntax correction included before final verification.
+- [ ] GitHub Actions full Analyze, test suite, Android APK build and artifact upload remain pending for the final integrated source commit.
+- [ ] These protections are not a claim of office-suite feature completion. PPTX/DOCX/ODT/ODS parity, chart/pivot features, full slide editor, production Cloud sync, live AI backend, online Forms, full font manager, advanced Database and physical/cross-platform checks remain outstanding.
