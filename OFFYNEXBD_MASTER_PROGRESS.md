@@ -540,3 +540,9 @@ Continue development as coordinated batches across Writer, Sheets, Slides, PDF, 
 - [x] Artifact: `OFFYNEXBD-Android-APK`, ID `14403898235`, 50,116,699 bytes; run `44251710031`.
 - [x] Run: https://github.com/Digital24Online/OFFYNEXBD/actions/runs/44251710031
 - [ ] This artifact validates the backup feature only; later workspace record import/export and search commits are being tested separately.
+
+
+### Search UI regression test correction
+- [x] Build #210 Flutter Analyze passed. The test suite found that adding the workspace search box changed TextField ordering in two older widget tests; the product UI behaved as intended, but tests still targeted the old field indices.
+- [x] Updated the Forms test to target dialog title/content fields after the search field, and the Database test to target the dialog content field explicitly.
+- [ ] Re-run validation for commit `bbc6bd7a2cc9e81eb250515b6815388391e880d6`; full tests and APK build are still pending.
