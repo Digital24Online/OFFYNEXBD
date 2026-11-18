@@ -135,6 +135,34 @@ void main() {
       );
     });
 
+    test('round-trips per-cell dropdown validation rules', () {
+      final workbook = SheetsWorkbook(
+        activeSheetId: 'one',
+        sheets: [
+          SheetsWorksheet(
+            id: 'one',
+            name: 'One',
+            rows: 10,
+            columns: 5,
+            validations: {'B2': ['Pending', 'Paid', 'Due']},
+          ),
+        ],
+      );
+      final decoded = SheetsWorkbookCodec.decode(SheetsWorkbookCodec.encode(workbook));
+      expect(decoded.activeSheet.validations['B2'], ['Pending', 'Paid', 'Due']);
+    });
+
+    test('rejects dropdown rules outside bounds, empty and duplicate options', () {
+      String raw(String key, String options) =>
+          '{"format":"OFFYNEXBD_SHEETS_WORKBOOK","version":2,'
+          '"activeSheetId":"one","sheets":[{"id":"one","name":"One",'
+          '"rows":10,"columns":5,"cells":{},"styles":{},'
+          '"validations":{"$key":$options}}]}';
+      expect(() => SheetsWorkbookCodec.decode(raw('F1', '["A"]')), throwsFormatException);
+      expect(() => SheetsWorkbookCodec.decode(raw('A1', '[]')), throwsFormatException);
+      expect(() => SheetsWorkbookCodec.decode(raw('A1', '["A","A"]')), throwsFormatException);
+    });
+
     test('rejects oversized workbook input before JSON decoding', () {
       final oversized = ''.padRight(
         SheetsWorkbookCodec.maxWorkbookBytes + 1,

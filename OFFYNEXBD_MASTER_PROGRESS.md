@@ -996,3 +996,13 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Corrected Freeze Top Row to pin physical worksheet row 1, rather than the first row after sorting/filtering; filtered/sorted row order remains view-only.
 - [ ] Flutter Analyze, full tests, Android APK build and upload pending on this combined batch.
 - [ ] Remaining Sheets work still includes charts, pivot tables, data validation, conditional formatting, ODS, advanced Excel fidelity and performance/device testing.
+
+
+## Sheets data validation — integrated dropdown batch (2026-11-18)
+
+- [x] Added per-cell dropdown list rules, persisted independently for every worksheet.
+- [x] Added Data-tab rule editor and a formula-bar dropdown picker for the selected cell.
+- [x] Manual cell edits and formula-bar commits now reject values outside the configured list; blank values remain allowed.
+- [x] Clear-sheet and CSV replacement remove obsolete validation rules; row/column shrink is blocked if it would discard a rule.
+- [x] Added bounded option parsing, duplicate/length checks, codec validation, persistence and widget regression tests.
+- [ ] XLSX native data-validation import/export, CI Analyze/tests/APK and physical-device verification remain pending.

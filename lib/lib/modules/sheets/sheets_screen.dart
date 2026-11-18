@@ -15,7 +15,7 @@ import 'sheets_import_safety.dart';
 import 'sheets_workbook_codec.dart';
 import 'sheets_csv_codec.dart';
 import 'sheets_row_view.dart';
-import 'sheets_find_replace.dart';
+import 'sheets_find_replace.dart';\nimport 'sheets_data_validation.dart';
 import '../../theme/offynex_theme.dart';
 
 const String _sheetStorageKey = 'offynex_sheets_workbook_v1';
@@ -336,6 +336,113 @@ class _SheetsScreenState extends State<SheetsScreen> {
     if (selected != null) await _applyCellStyle('numberFormat', selected);
   }
 
+  Future<void> _setDataValidation() async {
+    final key = _selectedCell;
+    if (key == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t('আগে একটি Cell নির্বাচন করুন।', 'Select a cell first.'))),
+      );
+      return;
+    }
+    final controller = TextEditingController(
+      text: (_activeWorksheet.validations[key] ?? const <String>[]).join('\\n'),
+    );
+    final raw = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(_t('Dropdown তালিকা', 'Dropdown list validation')),
+        content: TextField(
+          key: const ValueKey('sheets-validation-options'),
+          controller: controller,
+          autofocus: true,
+          minLines: 3,
+          maxLines: 8,
+          decoration: InputDecoration(
+            labelText: _t('প্রতি লাইনে একটি Option', 'One option per line'),
+            hintText: 'Pending\\nPaid\\nDue',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, ''),
+            child: Text(_t('নিয়ম সরান', 'Remove rule')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(_t('বাতিল', 'Cancel')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, controller.text),
+            child: Text(_t('সংরক্ষণ', 'Save')),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (raw == null || !mounted) return;
+    try {
+      final options = raw.trim().isEmpty
+          ? null
+          : SheetsDataValidation.parseOptions(raw);
+      final currentValue = _cells[key] ?? '';
+      if (!SheetsDataValidation.accepts(currentValue, options)) {
+        throw const FormatException(
+          'Current cell value is not in the new dropdown options. Change the cell value first.',
+        );
+      }
+      setState(() {
+        if (options == null) {
+          _activeWorksheet.validations.remove(key);
+        } else {
+          _activeWorksheet.validations[key] = options;
+        }
+      });
+      await _saveWorkbook();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(options == null
+              ? _t('Dropdown নিয়ম সরানো হয়েছে।', 'Dropdown rule removed.')
+              : _t('Dropdown নিয়ম সংরক্ষিত হয়েছে।', 'Dropdown rule saved.'))),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_t('নিয়ম সংরক্ষণ করা যায়নি: ', 'Could not save rule: ') + error.toString())),
+        );
+      }
+    }
+  }
+
+  Future<void> _chooseValidatedValue() async {
+    final key = _selectedCell;
+    if (key == null) return;
+    final options = _activeWorksheet.validations[key];
+    if (options == null || options.isEmpty) return;
+    final selected = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => SimpleDialog(
+        title: Text(_t('একটি Option নির্বাচন করুন', 'Choose a value')),
+        children: [
+          for (final option in options)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(dialogContext, option),
+              child: Text(option),
+            ),
+        ],
+      ),
+    );
+    if (selected == null || !mounted) return;
+    setState(() {
+      _cells[key] = selected;
+      _formulaBarController.text = selected;
+    });
+    await _saveWorkbook();
+  }
+
+  bool _cellValueAllowed(String key, String value) =>
+      SheetsDataValidation.accepts(value, _activeWorksheet.validations[key]);
+
   Future<void> _toggleFreezeTopRow() async {
     setState(() {
       _activeWorksheet.freezeTopRow = !_activeWorksheet.freezeTopRow;
@@ -368,6 +475,12 @@ class _SheetsScreenState extends State<SheetsScreen> {
       ),
     );
     if (result == null || !mounted) return;
+    if (!_cellValueAllowed(key, result.trim())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t('এই Cell-এর Dropdown তালিকা থেকে মান নির্বাচন করুন।', 'Choose a value from this cell’s dropdown list.'))),
+      );
+      return;
+    }
     if (result.trim().isEmpty) {
       _cells.remove(key);
     } else {
@@ -514,9 +627,10 @@ class _SheetsScreenState extends State<SheetsScreen> {
     final hasData = _cells.entries.any((entry) =>
         cellPattern.hasMatch(entry.key.toUpperCase()) && entry.value.isNotEmpty);
     final hasFormatting = _cellStyles.keys.any((key) => cellPattern.hasMatch(key.toUpperCase()));
+    final hasValidation = _activeWorksheet.validations.keys.any((key) => cellPattern.hasMatch(key.toUpperCase()));
     final hasFormulaReference = _cells.values.any((value) =>
         value.startsWith('=') && formulaPattern.hasMatch(value.toUpperCase()));
-    if (hasData || hasFormatting || hasFormulaReference) {
+    if (hasData || hasFormatting || hasValidation || hasFormulaReference) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_t('শেষ Row-তে তথ্য বা Formula reference আছে। আগে তা সরান।', 'The last row has data or formula references. Clear them first.'))),
       );
@@ -540,9 +654,10 @@ class _SheetsScreenState extends State<SheetsScreen> {
     final hasData = _cells.entries.any((entry) =>
         cellPattern.hasMatch(entry.key) && entry.value.isNotEmpty);
     final hasFormatting = _cellStyles.keys.any((key) => cellPattern.hasMatch(key));
+    final hasValidation = _activeWorksheet.validations.keys.any((key) => cellPattern.hasMatch(key));
     final hasFormulaReference = _cells.values.any((value) =>
         value.startsWith('=') && formulaPattern.hasMatch(value));
-    if (hasData || hasFormatting || hasFormulaReference) {
+    if (hasData || hasFormatting || hasValidation || hasFormulaReference) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_t('শেষ Column-তে তথ্য বা Formula reference আছে। আগে তা সরান।', 'The last column has data or formula references. Clear them first.'))),
       );
@@ -1178,6 +1293,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
     setState(() {
       _cells.clear();
       _cellStyles.clear();
+      _activeWorksheet.validations.clear();
       _selectedCell = null;
       _viewColumnIndex = null;
       _filterQuery = null;
@@ -1209,6 +1325,12 @@ class _SheetsScreenState extends State<SheetsScreen> {
     final key = _selectedCell;
     if (key == null) return;
     final value = _formulaBarController.text.trim();
+    if (!_cellValueAllowed(key, value)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t('এই Cell-এর Dropdown তালিকা থেকে মান নির্বাচন করুন।', 'Choose a value from this cell’s dropdown list.'))),
+      );
+      return;
+    }
     setState(() {
       if (value.isEmpty) {
         _cells.remove(key);
@@ -1424,6 +1546,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
           _ribbonCommand('Export XLSX', Icons.file_download, _exportWorkbook),
           _ribbonCommand('Import CSV', Icons.table_view, _importCsv),
           _ribbonCommand('Export CSV', Icons.file_download_outlined, _exportCsv),
+          _ribbonCommand(_t('Dropdown Validation', 'Dropdown Validation'), Icons.arrow_drop_down_circle_outlined, _setDataValidation),
           _ribbonCommand(_t('A→Z সাজান', 'Sort A→Z'), Icons.sort_by_alpha, _sortBySelectedColumn),
           _ribbonCommand(_t('Filter', 'Filter'), Icons.filter_alt, _filterBySelectedColumn),
           _ribbonCommand(_t('Sort/Filter বন্ধ', 'Clear sort/filter'), Icons.filter_alt_off, _clearSortAndFilter),
@@ -1530,6 +1653,13 @@ class _SheetsScreenState extends State<SheetsScreen> {
             enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: OFFYNEXTheme.border)),
           ),
         )),
+        if (_selectedCell != null && _activeWorksheet.validations.containsKey(_selectedCell))
+          IconButton(
+            key: const ValueKey('sheets-open-cell-dropdown'),
+            tooltip: _t('Dropdown থেকে নির্বাচন', 'Choose from dropdown'),
+            onPressed: _chooseValidatedValue,
+            icon: const Icon(Icons.arrow_drop_down_circle_outlined),
+          ),
         IconButton(
           tooltip: _t('প্রয়োগ করুন', 'Apply'),
           onPressed: _selectedCell == null ? null : _commitFormulaBar,

@@ -11,8 +11,10 @@ class SheetsWorksheet {
     Map<String, String>? cells,
     Map<String, Map<String, dynamic>>? styles,
     this.freezeTopRow = false,
+    Map<String, List<String>>? validations,
   })  : cells = cells ?? <String, String>{},
-        styles = styles ?? <String, Map<String, dynamic>>{};
+        styles = styles ?? <String, Map<String, dynamic>>{},
+        validations = validations ?? <String, List<String>>{};
 
   final String id;
   String name;
@@ -21,6 +23,7 @@ class SheetsWorksheet {
   final Map<String, String> cells;
   final Map<String, Map<String, dynamic>> styles;
   bool freezeTopRow;
+  final Map<String, List<String>> validations;
 }
 
 class SheetsWorkbook {
@@ -117,6 +120,10 @@ class SheetsWorkbookCodec {
     if (rawFreezeTopRow != null && rawFreezeTopRow is! bool) {
       throw const FormatException('Invalid freeze top row setting.');
     }
+    final rawValidations = data['validations'];
+    if (rawValidations != null && rawValidations is! Map) {
+      throw const FormatException('Invalid cell validation settings.');
+    }
     if (rawCells is! Map || rawStyles is! Map) {
       throw const FormatException('Invalid worksheet cell data.');
     }
@@ -127,6 +134,23 @@ class SheetsWorkbookCodec {
         throw const FormatException('Invalid cell reference or value.');
       }
       if ((entry.value as String).isNotEmpty) cells[key] = entry.value as String;
+    }
+    final validations = <String, List<String>>{};
+    if (rawValidations is Map) {
+      for (final entry in rawValidations.entries) {
+        final key = entry.key.toString().toUpperCase();
+        final options = entry.value;
+        if (!_isCellInsideBounds(key, rows, columns) ||
+            options is! List || options.isEmpty || options.length > 100 ||
+            options.any((option) => option is! String || option.trim().isEmpty || option.length > 200)) {
+          throw const FormatException('Invalid cell dropdown validation rule.');
+        }
+        final normalized = options.cast<String>().map((option) => option.trim()).toList(growable: false);
+        if (normalized.toSet().length != normalized.length) {
+          throw const FormatException('Dropdown options must be unique.');
+        }
+        validations[key] = normalized;
+      }
     }
     final styles = <String, Map<String, dynamic>>{};
     for (final entry in rawStyles.entries) {
@@ -144,6 +168,7 @@ class SheetsWorkbookCodec {
       cells: cells,
       styles: styles,
       freezeTopRow: rawFreezeTopRow == true,
+      validations: validations,
     );
   }
 
@@ -193,6 +218,7 @@ class SheetsWorkbookCodec {
         'cells': sheet.cells,
         'styles': sheet.styles,
         'freezeTopRow': sheet.freezeTopRow,
+        'validations': sheet.validations,
       });
     }
     if (!ids.contains(workbook.activeSheetId)) {
