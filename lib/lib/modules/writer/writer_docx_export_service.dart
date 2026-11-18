@@ -66,7 +66,7 @@ class WriterDocxExportService {
         }
       }
     }
-    if (line.isNotEmpty) flushLine(<String, dynamic>{});
+    if (line.length > 0) flushLine(<String, dynamic>{});
 
     final nodes = await DocxParser.fromHtml(html.toString());
     final document = DocxBuiltDocument(elements: nodes);
