@@ -105,7 +105,7 @@ class _FormulaParser {
   _FormulaParser(this.source, this.engine, this.visiting) {
     final pattern = RegExp(
       r'\s+|(?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][+-]?\d+)?|[A-Za-z]+[0-9]+|'
-      r'[A-Za-z_][A-Za-z0-9_]*|[()+\-*/^,:]',
+      r'[A-Za-z_][A-Za-z0-9_]*|>=|<=|<>|[=<>()+\-*/^,:]',
     );
     var offset = 0;
     for (final match in pattern.allMatches(source)) {
