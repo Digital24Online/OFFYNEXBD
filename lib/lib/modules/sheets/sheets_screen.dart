@@ -1457,6 +1457,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
 
   void _writeWorksheetToExcel(xlsx.Excel workbook, SheetsWorksheet source) {
     final sheet = workbook[source.name];
+    final engine = SheetsFormulaEngine(source.cells);
     for (final key in {...source.cells.keys, ...source.styles.keys}) {
       final value = source.cells[key] ?? '';
       final cell = sheet.cell(xlsx.CellIndex.indexByString(key.toUpperCase()));
