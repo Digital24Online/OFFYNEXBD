@@ -29,4 +29,28 @@ void main() {
     );
     expect(prefs.getString(documentsKey), damaged);
   });
+
+  test('malformed document content is preserved and blocks library writes', () async {
+    const damaged = '[{"id":"doc-1","title":"Damaged","content":[{"attributes":{"bold":true}}]}]';
+    SharedPreferences.setMockInitialValues({documentsKey: damaged});
+
+    final documents = await loadDocuments();
+    final prefs = await SharedPreferences.getInstance();
+    final recoveryKeys = prefs.getKeys()
+        .where((key) => key.startsWith('offynex_writer_documents_recovery_'))
+        .toList();
+
+    expect(documents, isEmpty);
+    expect(writerLibraryDataBlocked, isTrue);
+    expect(recoveryKeys, hasLength(1));
+    expect(prefs.getString(recoveryKeys.single), damaged);
+    expect(prefs.getString(documentsKey), damaged);
+    await expectLater(
+      storeDocuments([
+        {'id': 'replacement', 'title': 'Replacement', 'content': ''},
+      ]),
+      throwsStateError,
+    );
+    expect(prefs.getString(documentsKey), damaged);
+  });
 }

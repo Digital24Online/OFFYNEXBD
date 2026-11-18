@@ -36,6 +36,10 @@ class WriterDocumentCodec {
     return _validate(documents);
   }
 
+  static List<Map<String, dynamic>> validateLibraryRecords(
+    List<Map<String, dynamic>> documents,
+  ) => _validate(documents);
+
   static List<Map<String, dynamic>> _validate(
     List<Map<String, dynamic>> documents,
   ) {
@@ -46,13 +50,36 @@ class WriterDocumentCodec {
     for (final document in documents) {
       final id = document['id'];
       final title = document['title'];
+      final content = document['content'];
       if (id is! String ||
           id.trim().isEmpty ||
           !ids.add(id) ||
           title is! String ||
           title.trim().isEmpty ||
-          !document.containsKey('content')) {
+          (content is! String && content is! List)) {
         throw const FormatException('Invalid Writer document record.');
+      }
+      if (content is List) {
+        for (final operation in content) {
+          if (operation is! Map || !operation.containsKey('insert')) {
+            throw const FormatException('Writer document contains an invalid text operation.');
+          }
+          final insert = operation['insert'];
+          if (insert is! String && insert is! Map) {
+            throw const FormatException('Writer document contains an unsupported insert operation.');
+          }
+          final attributes = operation['attributes'];
+          if (attributes != null && attributes is! Map) {
+            throw const FormatException('Writer text attributes must be an object.');
+          }
+          if (insert is Map) {
+            final isImage = insert.length == 1 && insert['image'] is String;
+            final isTable = insert.length == 1 && insert['offynexbd-writer-table'] is String;
+            if (!isImage && !isTable) {
+              throw const FormatException('Writer document contains an unsupported embedded object.');
+            }
+          }
+        }
       }
       try {
         jsonEncode(document);

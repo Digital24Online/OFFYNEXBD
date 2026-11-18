@@ -45,6 +45,27 @@ void main() {
     );
   });
 
+  test('Writer document codec rejects malformed rich-text operations', () {
+    expect(
+      () => WriterDocumentCodec.encode([
+        {'id': 'bad-delta', 'title': 'Broken', 'content': [{'attributes': {'bold': true}}]},
+      ]),
+      throwsFormatException,
+    );
+    expect(
+      () => WriterDocumentCodec.encode([
+        {'id': 'bad-embed', 'title': 'Broken', 'content': [{'insert': {'unknown-embed': 'x'}}]},
+      ]),
+      throwsFormatException,
+    );
+    expect(
+      () => WriterDocumentCodec.encode([
+        {'id': 'bad-content', 'title': 'Broken', 'content': 42},
+      ]),
+      throwsFormatException,
+    );
+  });
+
   test('Writer document codec rejects duplicate IDs', () {
     expect(
       () => WriterDocumentCodec.encode([documents.single, documents.single]),

@@ -34,9 +34,15 @@ Future<List<Map<String, dynamic>>> loadDocuments() async {
     if (decoded is! List) {
       throw const FormatException('Writer library root must be a list.');
     }
-    return decoded
-        .map((item) => Map<String, dynamic>.from(item as Map))
-        .toList();
+    final documents = decoded
+        .map((item) {
+          if (item is! Map) {
+            throw const FormatException('Writer document record must be an object.');
+          }
+          return Map<String, dynamic>.from(item);
+        })
+        .toList(growable: false);
+    return WriterDocumentCodec.validateLibraryRecords(documents);
   } catch (error) {
     writerLibraryDataBlocked = true;
     final recoveryKey =
@@ -55,8 +61,10 @@ Future<void> storeDocuments(
   if (writerLibraryDataBlocked) {
     throw StateError('Writer library is damaged; original data is protected from overwrite.');
   }
+  final validated = WriterDocumentCodec.validateLibraryRecords(documents);
   final prefs = await SharedPreferences.getInstance();
-  await prefs.setString(documentsKey, jsonEncode(documents));
+  final saved = await prefs.setString(documentsKey, jsonEncode(validated));
+  if (!saved) throw StateError('Writer library could not be saved.');
 }
 
 class WriterScreen extends StatefulWidget {
