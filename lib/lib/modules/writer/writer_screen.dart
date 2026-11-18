@@ -1624,7 +1624,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   }
 
   Widget buildRibbonTabs() {
-  const tabs = [
+  final tabs = [
     _t('ফাইল', 'File'),
     _t('হোম', 'Home'),
     _t('ইনসার্ট', 'Insert'),
