@@ -42,6 +42,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
   List<Map<String, dynamic>> _items = [];
   bool _loading = true;
   bool _busy = false;
+  String _searchQuery = '';
   final _backupController = TextEditingController();
 
   @override
@@ -441,6 +442,13 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
   Widget build(BuildContext context) {
     final module = _modules[widget.module]!;
     final title = _bn ? module.$1 : module.$2;
+    final query = _searchQuery.trim().toLowerCase();
+    final visibleItems = _items.where((item) {
+      if (query.isEmpty) return true;
+      final title = item['title']?.toString().toLowerCase() ?? '';
+      final content = item['content']?.toString().toLowerCase() ?? '';
+      return title.contains(query) || content.contains(query);
+    }).toList(growable: false);
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
@@ -493,7 +501,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
                   Row(children: [
                     Expanded(child: Text(_bn ? 'সংরক্ষিত আইটেম' : 'Saved items',
                         style: Theme.of(context).textTheme.titleMedium)),
-                    Text('${_items.length}'),
+                    Text('${visibleItems.length} / ${_items.length}'),
                   ]),
                   Wrap(spacing: 8, runSpacing: 8, children: [
                     OutlinedButton.icon(
@@ -507,12 +515,27 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
                       label: Text(_bn ? 'Import JSON' : 'Import JSON'),
                     ),
                   ]),
+                  TextField(
+                    onChanged: (value) => setState(() => _searchQuery = value),
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.search),
+                      hintText: _bn ? 'শিরোনাম বা লেখা খুঁজুন' : 'Search titles or content',
+                      border: const OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   if (_items.isEmpty)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 28),
                       child: Center(child: Text(_bn ? 'এখনো কিছু সংরক্ষণ করা হয়নি।' : 'Nothing saved yet.')),
                     ),
-                  ..._items.map((item) => Card(
+                  if (_items.isNotEmpty && visibleItems.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      child: Center(child: Text(_bn ? 'কোনো মিল পাওয়া যায়নি।' : 'No matching records found.')),
+                    ),
+                  ...visibleItems.map((item) => Card(
                     child: ListTile(
                       leading: Icon(widget.module == 'Slides'
                           ? Icons.slideshow
