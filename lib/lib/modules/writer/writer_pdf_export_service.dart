@@ -151,7 +151,9 @@ class WriterPdfExportService {
                 alignment: pw.Alignment.centerLeft,
                 child: pw.Text(
                   headerText,
-                  style: pw.TextStyle(font: latinFont, fontSize: 9, color: PdfColors.grey700),
+                  style: pw.TextStyle(font: _containsBangla(headerText) ? sansFont : latinFont,
+                    fontFallback: _containsBangla(headerText) ? [latinFont] : const [],
+                    fontSize: 9, color: PdfColors.grey700),
                 ),
               ),
         footer: footerText.trim().isEmpty
@@ -164,7 +166,9 @@ class WriterPdfExportService {
                   alignment: pw.Alignment.center,
                   child: pw.Text(
                     rendered,
-                    style: pw.TextStyle(font: latinFont, fontSize: 9, color: PdfColors.grey700),
+                    style: pw.TextStyle(font: _containsBangla(rendered) ? sansFont : latinFont,
+                      fontFallback: _containsBangla(rendered) ? [latinFont] : const [],
+                      fontSize: 9, color: PdfColors.grey700),
                   ),
                 );
               },
