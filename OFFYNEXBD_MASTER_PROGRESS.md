@@ -930,3 +930,12 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Import/export enforce a 10 MB file limit and a 100,000-row ceiling; the existing database JSON store and recovery path remain unchanged.
 - [x] Added regression tests for Bengali round-trip, quoted/multiline cells, schema mismatch, malformed CSV and invalid rows.
 - [ ] Flutter Analyze, complete automated tests, Android APK build and artifact upload must pass on this integrated commit before this batch is marked CI-verified.
+
+
+## Scan workspace structural repair — Build #357 failure corrected (2026-11-18)
+
+- [x] Build #357 / run `44332125755` on commit `d627f41bae991e4831db6c08370b451a28459911` failed at Flutter Analyze. The Scan UI patch had accidentally duplicated approximately 1,149 lines of the workspace screen, causing duplicate classes and cascading analyzer errors.
+- [x] Restored the workspace screen from the last successful source baseline `46ccbad5303609dd1102e3c7d567d4e741d47b0c` and reapplied the Scan library changes as focused edits, preserving the previous Forms, Database and workspace features.
+- [x] Scan PDFs are stored in the Scan workspace list even if OCR returns no text; share/delete actions operate on the saved PDF path; recognized text is also stored as an editable Writer document.
+- [ ] Build #358 / run `44333893480` on commit `14bc74a78b2b2e986d493da986b11f03a6e873bc` must pass Flutter Analyze, all tests, Android APK build and artifact upload before this repair is CI-verified.
+- [ ] Android physical camera/scanner behavior, PDF persistence after app restart, sharing, deletion and OCR remain unverified on a real device.
