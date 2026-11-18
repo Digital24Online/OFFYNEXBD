@@ -1091,3 +1091,12 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 
 - [x] Archive 4.x renamed ZIP encoding from `encode` to `encodeBytes`; corrected the ODT exporter and its DOCX fixture test to use the current API.
 - [ ] Re-run Analyze and tests to catch any further API mismatches before building the Android APK.
+
+
+## Writer ODT package ordering and import metadata — 2026-11-18
+
+- [x] Corrected ODT package assembly so the uncompressed `mimetype` entry is the first ZIP member, as required by the OpenDocument package format; image files are now queued and appended after it.
+- [x] Corrected PlatformFile size checking to use the repository-supported lengthSync()/length() methods.
+- [x] Replaced all unresolved UI interpolation placeholders with explicit Dart string/path operations.
+- [x] Added a regression assertion that ODT `mimetype` is the first archive entry.
+- [ ] Analyze, tests and Android APK build remain pending for the corrected commit.

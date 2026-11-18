@@ -56,6 +56,7 @@ void main() {
     expect(imported.delta.any((op) => op['insert'] == 'Bold' && (op['attributes'] as Map?)?['bold'] == true), isTrue);
     expect(imported.delta.any((op) => op['insert'] is Map && (op['insert'] as Map).containsKey('offynexbd-writer-table')), isTrue);
     final exportedArchive = ZipDecoder().decodeBytes(bytes);
+    expect(exportedArchive.files.first.name, 'mimetype');
     expect(exportedArchive.findFile('styles.xml'), isNotNull);
     final styles = utf8.decode(exportedArchive.findFile('styles.xml')!.readBytes()!);
     expect(styles, contains('Header'));

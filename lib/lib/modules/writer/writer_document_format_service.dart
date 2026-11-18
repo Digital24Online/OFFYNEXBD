@@ -321,6 +321,7 @@ class WriterDocumentFormatService {
     String footerText = '',
   }) async {
     final archive = Archive();
+    final imageFiles = <ArchiveFile>[];
     final manifestImages = <String>[];
     final content = StringBuffer(
       '<office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" '
@@ -369,7 +370,7 @@ class WriterDocumentFormatService {
         if (data.isEmpty || data.length > maxImageBytes) throw const FormatException('Image exceeds 15 MB.');
         final ext = _safeImageExtension(source.path);
         final name = 'Pictures/image_${imageIndex++}.$ext';
-        archive.addFile(ArchiveFile(name, data.length, data));
+        imageFiles.add(ArchiveFile(name, data.length, data));
         manifestImages.add('<manifest:file-entry manifest:full-path="$name" manifest:media-type="${_imageMime(ext)}"/>');
         content.write('<text:p><draw:frame draw:name="Image${imageIndex}" text:anchor-type="as-char"><draw:image xlink:href="$name" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"/></draw:frame></text:p>');
       } else if (insert is Map && insert['offynexbd-writer-table'] is String) {
@@ -426,6 +427,7 @@ ${manifestImages.join('\n')}
     final styleBytes = utf8.encode(styles);
     final manifestBytes = utf8.encode(manifest);
     archive.addFile(ArchiveFile.noCompress('mimetype', mime.length, mime));
+    for (final imageFile in imageFiles) { archive.addFile(imageFile); }
     archive.addFile(ArchiveFile('content.xml', contentBytes.length, contentBytes));
     archive.addFile(ArchiveFile('styles.xml', styleBytes.length, styleBytes));
     final meta = utf8.encode('<?xml version="1.0" encoding="UTF-8"?><office:document-meta xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:dc="http://purl.org/dc/elements/1.1/" office:version="1.2"><office:meta><dc:title>${_xmlEscape(title)}</dc:title></office:meta></office:document-meta>');
