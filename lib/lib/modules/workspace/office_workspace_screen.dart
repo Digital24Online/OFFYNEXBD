@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
@@ -246,11 +245,17 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
       for (final entry in data.entries) {
         if (!entry.key.startsWith('offynex_')) continue;
         final value = entry.value;
-        if (value is String) await prefs.setString(entry.key, value);
-        else if (value is bool) await prefs.setBool(entry.key, value);
-        else if (value is int) await prefs.setInt(entry.key, value);
-        else if (value is double) await prefs.setDouble(entry.key, value);
-        else if (value is List) await prefs.setStringList(entry.key, value.cast<String>());
+        if (value is String) {
+          await prefs.setString(entry.key, value);
+        } else if (value is bool) {
+          await prefs.setBool(entry.key, value);
+        } else if (value is int) {
+          await prefs.setInt(entry.key, value);
+        } else if (value is double) {
+          await prefs.setDouble(entry.key, value);
+        } else if (value is List) {
+          await prefs.setStringList(entry.key, value.cast<String>());
+        }
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
