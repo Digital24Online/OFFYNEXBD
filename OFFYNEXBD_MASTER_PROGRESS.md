@@ -1063,3 +1063,10 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Enabled GitHub Actions pull-request validation for source, tests, dependencies and asset changes; the existing main-branch and manual triggers remain enabled.
 - [x] ODT package now includes its document title metadata and lists the metadata file in the package manifest.
 - [ ] Pull-request Analyze, full test suite and Android APK build have not yet reported a result; merge remains blocked until the run passes.
+
+
+## Writer CI dependency-resolution correction — 2026-11-18
+
+- Build #378 (run ID 44362647172) reached dependency resolution and failed before Analyze because pdf ^3.13.1 requires xml ^7.0.1 while Writer initially pinned xml ^6.5.0.
+- [x] Updated the direct XML dependency to ^7.0.1 to satisfy the existing PDF package constraint.
+- [ ] Re-run dependency resolution, Analyze, full tests and Android APK build on the corrected branch.
