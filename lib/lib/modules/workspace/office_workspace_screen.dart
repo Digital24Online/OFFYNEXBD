@@ -425,8 +425,8 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
           ? 'বাংলা/ইংরেজি নির্দেশনা ও কাজের খসড়া সংরক্ষণ করুন। প্রকৃত AI উত্তর পেতে নিরাপদ AI service connection প্রয়োজন; এখনো সংযুক্ত নয়।'
           : 'Save Bangla/English prompts and drafts. A secure AI service connection is required for generated answers and is not connected yet.',
       'Forms' => _bn
-          ? 'ফর্মের নাম ও প্রশ্নের তালিকা তৈরি/সম্পাদনা করুন। response collection ও sharing পরবর্তী ধাপ।'
-          : 'Create and edit form names and question lists. Response collection and sharing are next steps.',
+          ? 'ফর্মের নাম ও প্রতি লাইনে একটি করে প্রশ্ন লিখুন। Collect response দিয়ে উত্তর নিন এবং Responses থেকে স্থানীয়ভাবে সংরক্ষিত উত্তর দেখুন। অনলাইন শেয়ারিং এখনো যুক্ত হয়নি।'
+          : 'Create a form with one question per line. Collect responses and review locally saved submissions. Online sharing is not connected yet.',
       'Database' => _bn
           ? 'ডেটা টেবিলের নাম, ফিল্ড ও স্কিমা নোট সংরক্ষণ করুন। প্রকৃত relational database engine এখনো যুক্ত হয়নি।'
           : 'Save table names, fields and schema notes. A relational database engine is not connected yet.',
@@ -441,7 +441,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
 
   Future<void> _collectFormResponse(Map<String, dynamic> form) async {
     final questions = (form['content']?.toString() ?? '')
-        .split(RegExp(r'\\r?\\n'))
+        .split(RegExp(r'\r?\n'))
         .map((value) => value.trim())
         .where((value) => value.isNotEmpty)
         .toList(growable: false);
