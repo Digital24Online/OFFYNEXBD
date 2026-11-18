@@ -447,8 +447,8 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
   Widget _moduleHelp() {
     final help = switch (widget.module) {
       'Slides' => _bn
-          ? 'প্রেজেন্টেশনের শিরোনাম ও স্লাইডের লেখা সংরক্ষণ করুন। PPTX/PDF export ও slideshow renderer পরবর্তী ইন্টিগ্রেশন ধাপ।'
-          : 'Save presentation titles and slide text. PPTX/PDF export and slideshow rendering are next integration steps.',
+          ? 'প্রতি লাইনে একটি স্লাইডের লেখা দিন। Export Slides PDF দিয়ে প্রতিটি স্লাইড আলাদা Landscape PDF পৃষ্ঠায় সংরক্ষণ করুন। PPTX ও পূর্ণ Slideshow renderer এখনো বাকি।'
+          : 'Enter one slide per line. Export Slides PDF saves each slide on a separate landscape PDF page. PPTX and the full slideshow renderer are still pending.',
       'Fonts' => _bn
           ? 'এখানে ফন্টের তালিকা ও নোট রাখা যায়। প্রকৃত TTF/OTF ইনস্টল ও সব এডিটরে প্রয়োগ এখনো যুক্ত হয়নি।'
           : 'Keep a font catalogue and notes here. Actual TTF/OTF installation and editor-wide activation are not connected yet.',
