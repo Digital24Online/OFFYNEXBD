@@ -598,6 +598,14 @@ class _SheetsScreenState extends State<SheetsScreen> {
         ),
       );
       if (replace != true || !mounted) return;
+      // Preserve the current workbook before a destructive replacement.
+      final prefs = await SharedPreferences.getInstance();
+      final previousWorkbook = prefs.getString(_sheetStorageKey);
+      final backupKey = await SheetsImportSafety.preserveCurrentWorkbook(
+        prefs,
+        previousWorkbook,
+      );
+      if (!mounted) return;
       setState(() {
         _cells..clear()..addAll(imported);
         _cellStyles.clear();
@@ -678,6 +686,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
       if (picked == null || !mounted) return;
       final bytes = await picked.readAsBytes();
       if (!mounted) return;
+      SheetsWorkbookLimits.validateImportBytes(bytes.length);
       final workbook = xlsx.Excel.decodeBytes(bytes);
       if (workbook.tables.isEmpty) throw FormatException('Workbook has no worksheets');
       final sheetNames = workbook.tables.keys.toList(growable: false);
@@ -833,7 +842,9 @@ class _SheetsScreenState extends State<SheetsScreen> {
       await _saveWorkbook();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_t('XLSX Import সফল হয়েছে।', 'XLSX imported successfully.'))),
+        SnackBar(content: Text(backupKey == null
+            ? _t('XLSX Import সফল হয়েছে।', 'XLSX imported successfully.')
+            : _t('XLSX Import সফল। আগের Workbook-এর Backup: $backupKey', 'XLSX imported. Previous workbook backup: $backupKey'))),
       );
     } catch (error) {
       if (!mounted) return;
