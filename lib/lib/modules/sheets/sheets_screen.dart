@@ -30,7 +30,17 @@ class _SheetsScreenState extends State<SheetsScreen> {
   static const int _initialRows = 30;
   static const int _initialColumns = 12;
 
-  late SheetsWorkbook _workbook;
+  SheetsWorkbook _workbook = SheetsWorkbook(
+    activeSheetId: 'sheet-1',
+    sheets: [
+      SheetsWorksheet(
+        id: 'sheet-1',
+        name: 'Sheet1',
+        rows: _initialRows,
+        columns: _initialColumns,
+      ),
+    ],
+  );
   SheetsWorksheet get _activeWorksheet => _workbook.activeSheet;
   Map<String, String> get _cells => _activeWorksheet.cells;
   Map<String, Map<String, dynamic>> get _cellStyles => _activeWorksheet.styles;
