@@ -22,7 +22,7 @@ void main() {
 <w:tbl><w:tr><w:tc><w:p><w:r><w:t>Cell A</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Cell B</w:t></w:r></w:p></w:tc></w:tr></w:tbl></w:body></w:document>''';
     final data = utf8.encode(xml);
     archive.addFile(ArchiveFile('word/document.xml', data.length, data));
-    final bytes = Uint8List.fromList(ZipEncoder().encode(archive));
+    final bytes = Uint8List.fromList(ZipEncoder().encodeBytes(archive));
     final imported = await WriterDocumentFormatService.importFile(
       bytes: bytes, extension: 'docx', imageDirectory: temp, title: 'sample.docx',
     );

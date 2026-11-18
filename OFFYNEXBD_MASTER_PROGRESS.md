@@ -1085,3 +1085,9 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Reinserted DOCX/ODT import and ODT export as complete class methods at the correct scope; imports create a separate document and preserve the current one.
 - [x] Re-added File ribbon commands and Bangla/English labels.
 - [ ] Analyze, tests and Android APK build must pass before the Writer format changes are merged.
+
+
+## Writer ZIP encoder API compatibility — 2026-11-18
+
+- [x] Archive 4.x renamed ZIP encoding from `encode` to `encodeBytes`; corrected the ODT exporter and its DOCX fixture test to use the current API.
+- [ ] Re-run Analyze and tests to catch any further API mismatches before building the Android APK.

@@ -431,7 +431,7 @@ ${manifestImages.join('\n')}
     final meta = utf8.encode('<?xml version="1.0" encoding="UTF-8"?><office:document-meta xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:dc="http://purl.org/dc/elements/1.1/" office:version="1.2"><office:meta><dc:title>${_xmlEscape(title)}</dc:title></office:meta></office:document-meta>');
     archive.addFile(ArchiveFile('meta.xml', meta.length, meta));
     archive.addFile(ArchiveFile('META-INF/manifest.xml', manifestBytes.length, manifestBytes));
-    final encoded = ZipEncoder().encode(archive);
+    final encoded = ZipEncoder().encodeBytes(archive);
     if (encoded.isEmpty || encoded.length > maxInputBytes) throw const FormatException('ODT export exceeded the 25 MB limit.');
     return Uint8List.fromList(encoded);
   }
