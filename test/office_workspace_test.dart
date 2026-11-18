@@ -88,6 +88,60 @@ void main() {
     expect(find.text('Address: Rajshahi'), findsOneWidget);
   });
 
+  testWidgets('Database workspace creates and updates offline table rows',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'offynex_workspace_database_v1': jsonEncode([
+        {
+          'id': 'table-1',
+          'title': 'Customers',
+          'content': 'Name, Phone',
+          'updatedAt': '2026-11-18T10:00:00Z',
+        },
+      ]),
+    });
+    await tester.pumpWidget(const MaterialApp(
+      home: OfficeWorkspaceScreen(module: 'Database', isBangla: false),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Manage table rows'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add row'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).at(1), 'Test Customer');
+    await tester.enterText(find.byType(TextField).at(2), '01700000000');
+    await tester.tap(find.text('Save row'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save changes'));
+    await tester.pumpAndSettle();
+
+    var prefs = await SharedPreferences.getInstance();
+    var database = jsonDecode(prefs.getString('offynex_database_rows_v1')!) as Map;
+    var rows = database['table-1'] as List;
+    expect(rows, hasLength(1));
+    expect(rows.single['values'], {
+      'Name': 'Test Customer',
+      'Phone': '01700000000',
+    });
+
+    await tester.tap(find.byTooltip('Manage table rows'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Edit row'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).at(1), 'Updated Customer');
+    await tester.tap(find.text('Save row'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save changes'));
+    await tester.pumpAndSettle();
+
+    prefs = await SharedPreferences.getInstance();
+    database = jsonDecode(prefs.getString('offynex_database_rows_v1')!) as Map;
+    rows = database['table-1'] as List;
+    expect(rows.single['values']['Name'], 'Updated Customer');
+    expect(rows.single['values']['Phone'], '01700000000');
+  });
+
   testWidgets('Database workspace supports editing an existing schema note',
       (tester) async {
     SharedPreferences.setMockInitialValues({
