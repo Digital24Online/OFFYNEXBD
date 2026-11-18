@@ -359,7 +359,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(_t('শিটের নাম', 'Sheet name')),
-        content: TextField(controller: controller, autofocus: true),
+        content: TextField(controller: controller, autofocus: true, maxLength: SheetsWorkbookCodec.maxSheetNameLength),
         actions: [
           TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(_t('বাতিল', 'Cancel'))),
           FilledButton(onPressed: () => Navigator.pop(dialogContext, controller.text.trim()), child: Text(_t('সংরক্ষণ', 'Save'))),
@@ -367,8 +367,99 @@ class _SheetsScreenState extends State<SheetsScreen> {
       ),
     );
     controller.dispose();
-    if (result == null || result.isEmpty || !mounted) return;
-    setState(() => _sheetName = result);
+    if (result == null || !mounted) return;
+    try {
+      SheetsWorkbookCodec.validateSheetName(result);
+      if (_workbook.sheets.any((sheet) =>
+          sheet.id != _workbook.activeSheetId &&
+          sheet.name.toLowerCase() == result.toLowerCase())) {
+        throw const FormatException('A worksheet with this name already exists.');
+      }
+      setState(() => _sheetName = result);
+      await _saveWorkbook();
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_t('শিটের নাম গ্রহণযোগ্য নয়: ', 'Invalid sheet name: ') + error.toString())),
+        );
+      }
+    }
+  }
+
+  Future<void> _addWorksheet() async {
+    if (_workbook.sheets.length >= SheetsWorkbookCodec.maxWorksheets) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t('সর্বোচ্চ ১০০টি Worksheet রাখা যাবে।', 'A workbook can contain up to 100 worksheets.'))),
+      );
+      return;
+    }
+    final names = _workbook.sheets.map((sheet) => sheet.name.toLowerCase()).toSet();
+    var number = 1;
+    while (names.contains('sheet$number')) {
+      number++;
+    }
+    final sheet = SheetsWorksheet(
+      id: 'sheet-\${DateTime.now().microsecondsSinceEpoch}',
+      name: 'Sheet$number',
+      rows: _initialRows,
+      columns: _initialColumns,
+    );
+    setState(() {
+      _workbook.sheets.add(sheet);
+      _workbook.activeSheetId = sheet.id;
+      _selectedCell = null;
+      _viewColumnIndex = null;
+      _filterQuery = null;
+      _formulaBarController.clear();
+    });
+    await _saveWorkbook();
+  }
+
+  Future<void> _selectWorksheet(String id) async {
+    if (id == _workbook.activeSheetId) return;
+    await _saveQueue;
+    if (!mounted) return;
+    setState(() {
+      _workbook.activeSheetId = id;
+      _selectedCell = null;
+      _viewColumnIndex = null;
+      _filterQuery = null;
+      _sortAscending = true;
+      _formulaBarController.clear();
+    });
+  }
+
+  Future<void> _deleteWorksheet() async {
+    if (_workbook.sheets.length <= 1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t('কমপক্ষে একটি Worksheet রাখতে হবে।', 'At least one worksheet must remain.'))),
+      );
+      return;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(_t('Worksheet মুছবেন?', 'Delete worksheet?')),
+        content: Text(_t(
+          '“$_sheetName” এবং এর সব Cell ও Formatting মুছে যাবে।',
+          '“$_sheetName” and all its cells and formatting will be deleted.',
+        )),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(_t('বাতিল', 'Cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text(_t('মুছুন', 'Delete'))),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final removedId = _workbook.activeSheetId;
+    setState(() {
+      _workbook.sheets.removeWhere((sheet) => sheet.id == removedId);
+      _workbook.activeSheetId = _workbook.sheets.first.id;
+      _selectedCell = null;
+      _viewColumnIndex = null;
+      _filterQuery = null;
+      _formulaBarController.clear();
+    });
     await _saveWorkbook();
   }
 
@@ -1473,16 +1564,69 @@ class _SheetsScreenState extends State<SheetsScreen> {
                 Container(
                   width: double.infinity,
                   color: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.grid_on, size: 17, color: Color(0xFF159B68)),
-                      const SizedBox(width: 8),
-                      Text(_sheetName, style: const TextStyle(fontWeight: FontWeight.w600)),
-                      const Spacer(),
-                      Text('$_rowCount × $_columnCount', style: const TextStyle(color: Colors.black54, fontSize: 12)),
-                    ],
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  child: Row(children: [
+                    Expanded(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(children: [
+                          for (final worksheet in _workbook.sheets)
+                            Padding(
+                              padding: const EdgeInsets.only(right: 5),
+                              child: InkWell(
+                                key: ValueKey('worksheet-tab-\${worksheet.id}'),
+                                onTap: () => _selectWorksheet(worksheet.id),
+                                child: Container(
+                                  constraints: const BoxConstraints(maxWidth: 150),
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                                  decoration: BoxDecoration(
+                                    color: worksheet.id == _workbook.activeSheetId
+                                        ? const Color(0xFFE4F1EA)
+                                        : const Color(0xFFF2F4F7),
+                                    border: Border(
+                                      bottom: BorderSide(
+                                        color: worksheet.id == _workbook.activeSheetId
+                                            ? const Color(0xFF159B68)
+                                            : Colors.transparent,
+                                        width: 2,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    worksheet.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontWeight: worksheet.id == _workbook.activeSheetId
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ]),
+                      ),
+                    ),
+                    IconButton(
+                      key: const ValueKey('add-worksheet'),
+                      tooltip: _t('নতুন Worksheet', 'Add worksheet'),
+                      onPressed: _addWorksheet,
+                      icon: const Icon(Icons.add, color: Color(0xFF159B68)),
+                    ),
+                    IconButton(
+                      key: const ValueKey('rename-worksheet'),
+                      tooltip: _t('নাম পরিবর্তন', 'Rename worksheet'),
+                      onPressed: _renameSheet,
+                      icon: const Icon(Icons.drive_file_rename_outline),
+                    ),
+                    IconButton(
+                      key: const ValueKey('delete-worksheet'),
+                      tooltip: _t('Worksheet মুছুন', 'Delete worksheet'),
+                      onPressed: _workbook.sheets.length <= 1 ? null : _deleteWorksheet,
+                      icon: const Icon(Icons.delete_outline),
+                    ),
+                  ]),
                 ),
               ],
             ),
