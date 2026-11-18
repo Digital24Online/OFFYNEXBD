@@ -2,6 +2,36 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:offynexbd/lib/modules/workspace/forms_response_csv_codec.dart';
 
 void main() {
+  test('filters form responses by title, question, answer and date', () {
+    final responses = <Map<String, dynamic>>[
+      {
+        'formId': 'f1',
+        'formTitle': 'গ্রাহক নিবন্ধন',
+        'submittedAt': '2026-11-18T10:00:00.000Z',
+        'answers': [
+          {'question': 'নাম', 'answer': 'রহিম'},
+          {'question': 'এলাকা', 'answer': 'গাজীপুর'},
+        ],
+      },
+      {
+        'formId': 'f2',
+        'formTitle': 'সেবা মতামত',
+        'submittedAt': '2026-11-17T10:00:00.000Z',
+        'answers': [
+          {'question': 'মতামত', 'answer': 'ভালো'},
+        ],
+      },
+    ];
+
+    expect(FormsResponseCsvCodec.filter(responses, 'নিবন্ধন'), [responses[0]]);
+    expect(FormsResponseCsvCodec.filter(responses, 'এলাকা'), [responses[0]]);
+    expect(FormsResponseCsvCodec.filter(responses, 'গাজীপুর'), [responses[0]]);
+    expect(FormsResponseCsvCodec.filter(responses, '2026-11-17'), [responses[1]]);
+    expect(FormsResponseCsvCodec.filter(responses, 'missing'), isEmpty);
+    expect(FormsResponseCsvCodec.filter(responses, '  '), responses);
+  });
+
+
   test('exports Bengali answers and escapes CSV delimiters and quotes', () {
     final csv = FormsResponseCsvCodec.encode([
       {
