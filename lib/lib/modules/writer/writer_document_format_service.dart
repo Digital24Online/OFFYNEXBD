@@ -259,7 +259,7 @@ class WriterDocumentFormatService {
       }
       if (name == 's') {
         final count = (int.tryParse(_attribute(node, 'c') ?? '1') ?? 1).clamp(1, 100).toInt();
-        _addText(delta, ' ' * count, attrs);
+        _addText(delta, List<String>.filled(count, ' ').join(), attrs);
         return;
       }
       if (name == 'tab') { _addText(delta, '\t', attrs); return; }
