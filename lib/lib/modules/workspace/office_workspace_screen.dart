@@ -523,8 +523,41 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
     if (raw != null) {
       try {
         final decoded = jsonDecode(raw);
-        if (decoded is! Map) throw const FormatException('Database store must be an object.');
-        allRows.addAll(Map<String, dynamic>.from(decoded));
+        if (decoded is! Map) {
+          throw const FormatException('Database store must be an object.');
+        }
+        final validated = <String, dynamic>{};
+        for (final entry in decoded.entries) {
+          if (entry.key is! String || entry.value is! List) {
+            throw const FormatException('Invalid database table row collection.');
+          }
+          final rowIds = <String>{};
+          final rows = <Map<String, dynamic>>[];
+          for (final item in entry.value as List) {
+            if (item is! Map) {
+              throw const FormatException('Database row must be an object.');
+            }
+            final row = Map<String, dynamic>.from(item);
+            final id = row['id'];
+            final values = row['values'];
+            if (id is! String ||
+                id.trim().isEmpty ||
+                !rowIds.add(id) ||
+                values is! Map) {
+              throw const FormatException('Database row has an invalid ID or values.');
+            }
+            final safeValues = <String, String>{};
+            for (final value in values.entries) {
+              if (value.key is! String || value.value is! String) {
+                throw const FormatException('Database row fields must contain text values.');
+              }
+              safeValues[value.key as String] = value.value as String;
+            }
+            rows.add({'id': id, 'values': safeValues});
+          }
+          validated[entry.key as String] = rows;
+        }
+        allRows.addAll(validated);
       } catch (error) {
         final recoveryKey =
             'offynex_database_rows_recovery_${DateTime.now().microsecondsSinceEpoch}';
@@ -532,16 +565,21 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(preserved
-              ? (_bn ? 'আগের Database Rows-এর Recovery Copy রাখা হয়েছে।' : 'Original database rows recovery copy saved.')
-              : 'Database recovery copy failed: $error'),
+              ? (_bn
+                  ? 'ক্ষতিগ্রস্ত Database Rows-এর Recovery Copy রাখা হয়েছে। মূল ডেটা অপরিবর্তিত আছে; নিরাপদে পড়া না গেলে সম্পাদনা বন্ধ রাখা হয়েছে।'
+                  : 'Damaged database rows were copied for recovery. Original data is unchanged; editing was stopped.')
+              : (_bn
+                  ? 'Recovery Copy সংরক্ষণ ব্যর্থ হয়েছে। মূল ডেটা অপরিবর্তিত রাখা হয়েছে।'
+                  : 'Recovery copy failed. Original data was left unchanged.')),
         ));
+        return;
       }
     }
     if (!mounted) return;
     final tableId = table['id']?.toString() ?? '';
     final existing = allRows[tableId];
     final initialRows = existing is List
-        ? existing.whereType<Map>().map((row) => Map<String, dynamic>.from(row)).toList()
+        ? existing.map((row) => Map<String, dynamic>.from(row as Map)).toList()
         : <Map<String, dynamic>>[];
     final updated = await showDialog<List<Map<String, dynamic>>>(
       context: context,

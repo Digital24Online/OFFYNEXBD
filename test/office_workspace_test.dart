@@ -233,4 +233,68 @@ void main() {
     expect(find.text('No matching records found.'), findsNothing);
   });
 
+  testWidgets('damaged database row store is preserved and editing is stopped',
+      (tester) async {
+    const damaged = '{"table-1": "not-a-row-list"}';
+    SharedPreferences.setMockInitialValues({
+      'offynex_workspace_database_v1': jsonEncode([
+        {
+          'id': 'table-1',
+          'title': 'Customers',
+          'content': 'Name, Phone',
+          'updatedAt': '2026-11-18T10:00:00Z',
+        },
+      ]),
+      'offynex_database_rows_v1': damaged,
+    });
+    await tester.pumpWidget(const MaterialApp(
+      home: OfficeWorkspaceScreen(module: 'Database', isBangla: false),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Manage table rows'));
+    await tester.pumpAndSettle();
+
+    final prefs = await SharedPreferences.getInstance();
+    final recoveryKeys = prefs.getKeys()
+        .where((key) => key.startsWith('offynex_database_rows_recovery_'))
+        .toList();
+    expect(recoveryKeys, hasLength(1));
+    expect(prefs.getString(recoveryKeys.single), damaged);
+    expect(prefs.getString('offynex_database_rows_v1'), damaged);
+    expect(find.text('Add row'), findsNothing);
+  });
+
+  testWidgets('database row with malformed field values is preserved unchanged',
+      (tester) async {
+    const damaged = '{"table-1":[{"id":"row-1","values":{"Name":7}}]}';
+    SharedPreferences.setMockInitialValues({
+      'offynex_workspace_database_v1': jsonEncode([
+        {
+          'id': 'table-1',
+          'title': 'Customers',
+          'content': 'Name, Phone',
+          'updatedAt': '2026-11-18T10:00:00Z',
+        },
+      ]),
+      'offynex_database_rows_v1': damaged,
+    });
+    await tester.pumpWidget(const MaterialApp(
+      home: OfficeWorkspaceScreen(module: 'Database', isBangla: false),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Manage table rows'));
+    await tester.pumpAndSettle();
+
+    final prefs = await SharedPreferences.getInstance();
+    final recoveryKeys = prefs.getKeys()
+        .where((key) => key.startsWith('offynex_database_rows_recovery_'))
+        .toList();
+    expect(recoveryKeys, hasLength(1));
+    expect(prefs.getString(recoveryKeys.single), damaged);
+    expect(prefs.getString('offynex_database_rows_v1'), damaged);
+    expect(find.text('Add row'), findsNothing);
+  });
+
 }

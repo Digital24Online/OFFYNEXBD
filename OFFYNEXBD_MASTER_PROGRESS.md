@@ -820,3 +820,10 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [ ] Validate Flutter Analyze, all automated tests, Android APK build and artifact upload on the final commit.
 - [ ] Improve phone page-fit behavior after checking actual layout constraints; do not shrink the A4 page to unreadable size merely to show its full height.
 - [ ] Physical phone and printer verification remains outstanding.
+
+
+### Database damaged-row preservation safety — validation pending (2026-11-18)
+- [x] Database row loading now validates the entire stored row collection before opening the editor: table collections, row IDs, row values maps, and text field values.
+- [x] If any stored row is malformed, the original JSON is copied to a timestamped recovery key and the editor stops; it no longer silently filters malformed rows and overwrites the original database store.
+- [x] Added widget regression tests for malformed table row collections and malformed field values, asserting that both the original data and recovery copy remain unchanged.
+- [ ] Validate Flutter Analyze, the complete automated test suite, Android release APK build and artifact upload on the final source commit.
