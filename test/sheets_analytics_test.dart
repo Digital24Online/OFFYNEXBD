@@ -15,9 +15,9 @@ void main() {
 
     test('rejects malformed, oversized and out-of-grid ranges', () {
       expect(() => SheetsAnalytics.parseRange('A0:B2'), throwsFormatException);
-      expect(() => SheetsAnalytics.parseRange('A1:CV2'), throwsFormatException);
+      expect(() => SheetsAnalytics.parseRange('A1:CW2'), throwsFormatException);
       expect(() => SheetsAnalytics.parseRange('A1:B1001'), throwsFormatException);
-      expect(() => SheetsAnalytics.parseRange('A1:B101'), throwsFormatException);
+      expect(() => SheetsAnalytics.parseRange('A1:CV101'), throwsFormatException);
     });
 
     test('applies numeric, text and empty-cell rules only inside their ranges', () {
