@@ -6,6 +6,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../pdf/pdf_to_document_service.dart';
+import 'workspace_backup_codec.dart';
 import '../writer/writer_screen.dart';
 
 /// Offline-first workspaces shared by Slides, Fonts, AI, Cloud, Forms,
@@ -180,22 +181,56 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
         data[key] = value;
       }
     }
-    _backupController.text = const JsonEncoder.withIndent('  ').convert({
-      'format': 'OFFYNEXBD_LOCAL_BACKUP',
-      'version': 1,
-      'createdAt': DateTime.now().toIso8601String(),
-      'data': data,
-    });
+    _backupController.text = WorkspaceBackupCodec.encode(data);
     if (mounted) setState(() {});
+  }
+
+  Future<void> _exportBackup() async {
+    try {
+      await _createBackup();
+      if (!mounted || _backupController.text.trim().isEmpty) return;
+      final bytes = Uint8List.fromList(utf8.encode(_backupController.text));
+      final saved = await FilePicker.saveFile(
+        fileName: 'OFFYNEXBD-backup.json',
+        bytes: bytes,
+        mimeType: 'application/json',
+        dialogTitle: _bn ? 'ব্যাকআপ ফাইল সংরক্ষণ' : 'Save backup file',
+      );
+      if (saved != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(_bn ? 'ব্যাকআপ ফাইল সংরক্ষিত হয়েছে।' : 'Backup file saved.'),
+        ));
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('${_bn ? 'ব্যাকআপ সংরক্ষণ ব্যর্থ' : 'Backup export failed'}: $e'),
+      ));
+    }
+  }
+
+  Future<void> _importBackupFile() async {
+    try {
+      final picked = await FilePicker.pickFile(
+        type: FileType.custom,
+        allowedExtensions: const ['json'],
+      );
+      if (picked == null || !mounted) return;
+      final bytes = await picked.readAsBytes();
+      final source = utf8.decode(bytes, allowMalformed: false);
+      WorkspaceBackupCodec.decode(source);
+      _backupController.text = source;
+      if (mounted) setState(() {});
+      await _restoreBackup();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('${_bn ? 'ব্যাকআপ ফাইল পড়া যায়নি' : 'Could not import backup file'}: $e'),
+      ));
+    }
   }
 
   Future<void> _restoreBackup() async {
     try {
-      final decoded = jsonDecode(_backupController.text) as Map<String, dynamic>;
-      if (decoded['format'] != 'OFFYNEXBD_LOCAL_BACKUP' || decoded['version'] != 1 ||
-          decoded['data'] is! Map) {
-        throw const FormatException('Unsupported OFFYNEXBD backup.');
-      }
+      final data = WorkspaceBackupCodec.decode(_backupController.text);
       final yes = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -211,9 +246,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
       );
       if (yes != true) return;
       final prefs = await SharedPreferences.getInstance();
-      final data = Map<String, dynamic>.from(decoded['data'] as Map);
       for (final entry in data.entries) {
-        if (!entry.key.startsWith('offynex_')) continue;
         final value = entry.value;
         if (value is String) {
           await prefs.setString(entry.key, value);
@@ -249,11 +282,23 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
             ? 'এটি ডিভাইসের OFFYNEXBD ডেটার JSON ব্যাকআপ। অনলাইন Cloud Sync এখনো সংযুক্ত নয়।'
             : 'This is a JSON backup of OFFYNEXBD data on this device. Online Cloud Sync is not connected yet.'),
         const SizedBox(height: 10),
-        OutlinedButton.icon(
-          onPressed: _createBackup,
-          icon: const Icon(Icons.backup),
-          label: Text(_bn ? 'ব্যাকআপ তৈরি' : 'Create backup'),
-        ),
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          OutlinedButton.icon(
+            onPressed: _createBackup,
+            icon: const Icon(Icons.backup),
+            label: Text(_bn ? 'ব্যাকআপ তৈরি' : 'Create backup'),
+          ),
+          OutlinedButton.icon(
+            onPressed: _exportBackup,
+            icon: const Icon(Icons.save_alt),
+            label: Text(_bn ? 'JSON ফাইল সংরক্ষণ' : 'Export JSON file'),
+          ),
+          OutlinedButton.icon(
+            onPressed: _importBackupFile,
+            icon: const Icon(Icons.folder_open),
+            label: Text(_bn ? 'JSON ফাইল খুলুন' : 'Import JSON file'),
+          ),
+        ]),
         TextField(
           controller: _backupController,
           minLines: 3,
