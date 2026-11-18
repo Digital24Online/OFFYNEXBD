@@ -928,7 +928,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
                           : 'Prompt ideas: “Summarize this text”, “Translate to Bengali”, “Draft a formal office letter”. Save prompts for use when AI is connected.'),
                     ),
                   ),
-                if (widget.module != 'Scan' && widget.module != 'Cloud') ...[
+                if (widget.module != 'Scan' && widget.module != 'Cloud' && !_workspaceDataBlocked) ...[
                   const SizedBox(height: 12),
                   Row(children: [
                     Expanded(child: Text(_bn ? 'সংরক্ষিত আইটেম' : 'Saved items',
