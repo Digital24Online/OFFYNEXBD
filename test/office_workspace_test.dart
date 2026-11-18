@@ -78,4 +78,27 @@ void main() {
     expect(data['offynex_writer_documents'], contains('doc-1'));
     expect(data['offynex_sheets_workbook_v1'], contains('Sheet1'));
   });
+  testWidgets('workspace search filters saved records by title and content',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'offynex_workspace_slides_v1': jsonEncode([
+        {'id': '1', 'title': 'Annual Report', 'content': 'Revenue growth', 'updatedAt': '2026-11-18T10:00:00Z'},
+        {'id': '2', 'title': 'Training', 'content': 'New staff onboarding', 'updatedAt': '2026-11-18T11:00:00Z'},
+      ]),
+    });
+    await tester.pumpWidget(const MaterialApp(
+      home: OfficeWorkspaceScreen(module: 'Slides', isBangla: false),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Annual Report'), findsOneWidget);
+    expect(find.text('Training'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).first, 'revenue');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Annual Report'), findsOneWidget);
+    expect(find.text('Training'), findsNothing);
+    expect(find.text('No matching records found.'), findsNothing);
+  });
+
 }
