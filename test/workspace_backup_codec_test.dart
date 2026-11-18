@@ -83,7 +83,7 @@ void main() {
   });
 
   test('backup codec enforces the documented 25 MB limit', () {
-    final oversized = 'x' * (WorkspaceBackupCodec.maxBackupBytes + 1);
+    final oversized = List<String>.filled(WorkspaceBackupCodec.maxBackupBytes + 1, 'x').join();
     expect(() => WorkspaceBackupCodec.decode(oversized), throwsFormatException);
   });
 
