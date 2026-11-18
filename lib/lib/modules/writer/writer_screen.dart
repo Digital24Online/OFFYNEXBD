@@ -1583,11 +1583,39 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
         child: Wrap(spacing: 8, runSpacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: children),
       );
 
+  String _ribbonLabel(String english) {
+    const translations = <String, String>{
+      'Save': 'সংরক্ষণ',
+      'Print Preview': 'প্রিন্ট প্রিভিউ',
+      'Print': 'প্রিন্ট',
+      'Rename': 'নাম পরিবর্তন',
+      'Copy Text': 'লেখা কপি',
+      'Document Info': 'ডকুমেন্টের তথ্য',
+      'Header / Footer': 'হেডার / ফুটার',
+      'Export DOCX': 'DOCX Export',
+      'Clear': 'খালি করুন',
+      'Close': 'বন্ধ',
+      'Reset Design': 'ডিজাইন রিসেট',
+      'Table of Contents': 'সূচিপত্র',
+      'Citation': 'উদ্ধৃতি',
+      'Manage Sources': 'উৎস ব্যবস্থাপনা',
+      'Bibliography': 'তথ্যসূত্র',
+      'Footnote': 'পাদটীকা',
+      'Endnote': 'শেষটীকা',
+      'Caption': 'ক্যাপশন',
+      'New Comment': 'নতুন মন্তব্য',
+      'Comments': 'মন্তব্য',
+      'Find / Replace': 'খুঁজুন / প্রতিস্থাপন',
+      'Revision History': 'সংশোধনের ইতিহাস',
+    };
+    return _t(translations[english] ?? english, english);
+  }
+
   Widget _ribbonButton(IconData icon, String label, VoidCallback action) =>
       OutlinedButton.icon(
         onPressed: action,
         icon: Icon(icon, size: 18),
-        label: Text(label),
+        label: Text(_ribbonLabel(label)),
       );
 
   void selectAllText() {
@@ -2405,25 +2433,25 @@ Future<void> showCustomFontSizeDialog() async {
           ElevatedButton.icon(
             onPressed: () => insertTextAtSelection(currentDate),
             icon: const Icon(Icons.calendar_today),
-            label: const Text('Date'),
+            label: Text(_t('তারিখ', 'Date')),
           ),
           ElevatedButton.icon(
             onPressed: insertWriterTable,
             icon: const Icon(Icons.table_chart),
-            label: const Text('Table'),
+            label: Text(_t('টেবিল', 'Table')),
           ),
           ElevatedButton.icon(
             onPressed: insertWriterImage,
             icon: const Icon(Icons.image),
-            label: const Text('Image'),
+            label: Text(_t('ছবি', 'Image')),
           ),
           ElevatedButton.icon(
             onPressed: insertHyperlink,
             icon: const Icon(Icons.link),
-            label: const Text('Hyperlink'),
+            label: Text(_t('হাইপারলিংক', 'Hyperlink')),
           ),
           PopupMenuButton<String>(
-            tooltip: 'Insert Symbol',
+            tooltip: _t('প্রতীক যোগ করুন', 'Insert Symbol'),
             onSelected: insertTextAtSelection,
             itemBuilder: (context) => const [
               PopupMenuItem(value: '©', child: Text('©  Copyright')),
