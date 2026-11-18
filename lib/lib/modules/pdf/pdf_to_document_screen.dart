@@ -17,7 +17,6 @@ class PdfToDocumentScreen extends StatefulWidget {
 class _PdfToDocumentScreenState extends State<PdfToDocumentScreen> {
   PdfConversionResult? result;
   String? sourceName;
-  String sourceKind = 'pdf_import';
   Map<String, dynamic>? savedDocument;
   String? error;
   bool busy = false;
@@ -51,7 +50,7 @@ class _PdfToDocumentScreenState extends State<PdfToDocumentScreen> {
       documents.add(record);
       await storeDocuments(documents);
       if (!mounted) return;
-      setState(() { sourceName = file.name; sourceKind = 'pdf_import'; savedDocument = record; result = converted; busy = false; });
+      setState(() { sourceName = file.name; savedDocument = record; result = converted; busy = false; });
     } catch (e) {
       if (!mounted) return;
       setState(() { error = e.toString().replaceFirst('Exception: ', ''); busy = false; });
@@ -89,7 +88,6 @@ class _PdfToDocumentScreenState extends State<PdfToDocumentScreen> {
       if (!mounted) return;
       setState(() {
         sourceName = file.name;
-        sourceKind = 'image_import';
         savedDocument = record;
         result = converted;
         busy = false;
