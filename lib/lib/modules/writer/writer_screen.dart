@@ -371,7 +371,7 @@ class _WriterScreenState extends State<WriterScreen> {
                               deleteDocument(document);
                             }
                           },
-                          itemBuilder: (_) => const [
+                          itemBuilder: (_) => [
                             PopupMenuItem(
                               value: 'rename',
                               child: Text(_t('নাম পরিবর্তন', 'Rename')),
