@@ -599,6 +599,9 @@ class _SheetsScreenState extends State<SheetsScreen> {
         ),
       );
       if (replace != true || !mounted) return;
+      // Wait for pending edits so the backup captures the latest saved state.
+      await _saveQueue;
+      if (!mounted) return;
       // Preserve the current workbook before a destructive replacement.
       final prefs = await SharedPreferences.getInstance();
       final previousWorkbook = prefs.getString(_sheetStorageKey);
