@@ -90,7 +90,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
             )
           : SheetsWorkbookCodec.decode(raw);
     } catch (error) {
-      final recoveryKey = 'offynex_sheets_workbook_recovery_\${DateTime.now().microsecondsSinceEpoch}';
+      final recoveryKey = 'offynex_sheets_workbook_recovery_${DateTime.now().microsecondsSinceEpoch}';
       final preserved = raw != null && await prefs.setString(recoveryKey, raw);
       _workbookRecoveryMessage = preserved
           ? _t('Workbook পড়া যায়নি। মূল ডেটার Recovery Copy সংরক্ষিত: $recoveryKey', 'Workbook could not be read. Original data recovery copy saved: $recoveryKey')
@@ -398,7 +398,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
       number++;
     }
     final sheet = SheetsWorksheet(
-      id: 'sheet-\${DateTime.now().microsecondsSinceEpoch}',
+      id: 'sheet-${DateTime.now().microsecondsSinceEpoch}',
       name: 'Sheet$number',
       rows: _initialRows,
       columns: _initialColumns,
@@ -426,6 +426,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
       _sortAscending = true;
       _formulaBarController.clear();
     });
+    await _saveWorkbook();
   }
 
   Future<void> _deleteWorksheet() async {
@@ -739,7 +740,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
         if (cell.value != null) {
           final dynamic value = cell.value;
           final text = value is xlsx.FormulaCellValue
-              ? '=\${value.formula.toString().replaceFirst(RegExp(r'^='), '')}'
+              ? '=${value.formula.toString().replaceFirst(RegExp(r'^='), '')}'
               : value.toString();
           if (text.isNotEmpty) cells[key] = text;
         }
@@ -787,7 +788,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
       }
     }
     return SheetsWorksheet(
-      id: 'import-$index-\${DateTime.now().microsecondsSinceEpoch}',
+      id: 'import-$index-${DateTime.now().microsecondsSinceEpoch}',
       name: name,
       rows: source.maxRows.clamp(1, SheetsWorkbookLimits.maxRows),
       columns: source.maxColumns.clamp(1, SheetsWorkbookLimits.maxColumns),
@@ -815,7 +816,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
       final imported = <SheetsWorksheet>[];
       for (var i = 0; i < names.length; i++) {
         final source = sourceWorkbook.tables[names[i]];
-        if (source == null) throw FormatException('Could not read worksheet \${names[i]}.');
+        if (source == null) throw FormatException('Could not read worksheet ${names[i]}.');
         imported.add(_worksheetFromExcel(names[i], source, i));
       }
       final totalCells = imported.fold<int>(0, (total, sheet) => total + sheet.cells.length);
@@ -825,8 +826,8 @@ class _SheetsScreenState extends State<SheetsScreen> {
         builder: (dialogContext) => AlertDialog(
           title: Text(_t('সব Worksheet Import করবেন?', 'Import all worksheets?')),
           content: Text(_t(
-            '\${imported.length}টি Worksheet এবং $totalCellsটি Cell বর্তমান Workbook-এর জায়গায় আসবে। আগের Workbook-এর Backup রাখা হবে।',
-            '\${imported.length} worksheets and $totalCells cells will replace the current workbook. A backup will be kept.',
+            '${imported.length}টি Worksheet এবং $totalCellsটি Cell বর্তমান Workbook-এর জায়গায় আসবে। আগের Workbook-এর Backup রাখা হবে।',
+            '${imported.length} worksheets and $totalCells cells will replace the current workbook. A backup will be kept.',
           )),
           actions: [
             TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(_t('বাতিল', 'Cancel'))),
@@ -934,7 +935,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
       final bytes = workbook.save();
       if (bytes == null) throw StateError('XLSX encoding failed');
       final safeName = _sheetName.trim().isEmpty ? 'OFFYNEXBD-Workbook' : _sheetName.trim();
-      final fileName = '\${safeName.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_')}.xlsx';
+      final fileName = '${safeName.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_')}.xlsx';
       final saved = await FilePicker.saveFile(
         fileName: fileName,
         bytes: Uint8List.fromList(bytes),
@@ -1525,7 +1526,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
                             Padding(
                               padding: const EdgeInsets.only(right: 5),
                               child: InkWell(
-                                key: ValueKey('worksheet-tab-\${worksheet.id}'),
+                                key: ValueKey('worksheet-tab-${worksheet.id}'),
                                 onTap: () => _selectWorksheet(worksheet.id),
                                 child: Container(
                                   constraints: const BoxConstraints(maxWidth: 150),
