@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 /// Versioned, app-scoped backup format shared by every OFFYNEXBD module.
 class WorkspaceBackupCodec {
   static const format = 'OFFYNEXBD_LOCAL_BACKUP';

@@ -376,9 +376,6 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
       );
       if (picked == null || !mounted) return;
       final bytes = await picked.readAsBytes();
-      if (bytes.isEmpty || bytes.length > 25 * 1024 * 1024) {
-        throw const FormatException('Backup file must be between 1 byte and 25 MB.');
-      }
       final source = utf8.decode(bytes, allowMalformed: false);
       WorkspaceBackupCodec.decode(source);
       _backupController.text = source;
@@ -411,7 +408,20 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
       );
       if (yes != true) return;
       final prefs = await SharedPreferences.getInstance();
-      await WorkspaceBackupRestore.restore(prefs, data);
+      for (final entry in data.entries) {
+        final value = entry.value;
+        if (value is String) {
+          await prefs.setString(entry.key, value);
+        } else if (value is bool) {
+          await prefs.setBool(entry.key, value);
+        } else if (value is int) {
+          await prefs.setInt(entry.key, value);
+        } else if (value is double) {
+          await prefs.setDouble(entry.key, value);
+        } else if (value is List) {
+          await prefs.setStringList(entry.key, value.cast<String>());
+        }
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(_bn ? 'লোকাল ব্যাকআপ পুনরুদ্ধার হয়েছে।' : 'Local backup restored.'),
