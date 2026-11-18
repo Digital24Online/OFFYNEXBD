@@ -41,4 +41,27 @@ void main() {
     expect(extracted, contains('ক্ষ্ম'));
     expect(extracted, isNot(contains('ঊহমষরংয')));
   });
+  test('Writer PDF renders repeated header and dynamic page numbers', () async {
+    final sans = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
+    final serif = await rootBundle.load('assets/fonts/NotoSerifBengali.ttf');
+    final latin = await rootBundle.load('assets/fonts/NotoSans.ttf');
+    final bytes = await WriterPdfExportService.build(
+      title: 'Header footer test',
+      delta: [{'insert': 'Document body\n'}],
+      sansFontData: sans,
+      serifFontData: serif,
+      latinFontData: latin,
+      pageFormat: PdfPageFormat.a4,
+      marginTop: 54,
+      marginBottom: 54,
+      marginLeft: 54,
+      marginRight: 54,
+      headerText: 'OFFYNEXBD Header',
+      footerText: 'Page {page} of {pages}',
+    );
+    final extracted = BanglaPdfExtractor.extract(bytes).text;
+    expect(extracted, contains('OFFYNEXBD Header'));
+    expect(extracted, contains('Page 1 of 1'));
+  });
+
 }
