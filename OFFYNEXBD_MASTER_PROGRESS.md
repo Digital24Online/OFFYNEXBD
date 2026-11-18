@@ -418,3 +418,53 @@
 - [x] Artifact: `OFFYNEXBD-Android-APK`, 50,036,028 bytes; artifact ID `14402816557`; available until 2026-11-25T05:59:46Z.
 - Run URL: https://github.com/Digital24Online/OFFYNEXBD/actions/runs/44247321633
 - [ ] Physical Android/device and printer visual verification remains separate from CI. This feature does not imply full Excel sorting/filtering parity or completion of the Sheets module.
+
+## OFFYNEXBD — Integrated 10-Module Restart and Repository Audit — 2026-11-18
+
+### Binding development instruction
+- The development target is the complete OFFYNEXBD product across all ten modules in one coordinated project-wide programme: Writer, Sheets, Slides, PDF, Fonts, AI Assistant, Cloud, Forms, Scan and Database.
+- Do not return to one-feature-at-a-time work or ask the user to repeat this instruction.
+- Audit and plan all ten modules together; preserve all existing source code, user data, formulas, Writer Quill Delta/table/image records, workbook records and document metadata.
+- A module tile, README plan or placeholder screen is not a completed module. Never report planned or placeholder functionality as implemented.
+- Bangla and English support is required throughout the app. Keep the Android-first workflow and cross-platform architecture.
+- The user works from an Android phone and does not provide source uploads or screenshots. Do not ask for old completed work to be repeated.
+
+### Repository and CI checkpoint
+- Repository: `Digital24Online/OFFYNEXBD`, branch `main`.
+- Repository head at audit start: `56f803f3b29fbb56eb242a3cbda8aed0b0c26d9c`.
+- Build #194 (run ID `44248269429`, source commit `3e2d2cdec22041abd98f533f1dd586a26d5ed98e`) — SUCCESS.
+- Build #194 Analyze, automated tests, Android APK build, signing cleanup, generated-source save and APK upload all succeeded.
+- Artifact: `OFFYNEXBD-Android-APK`, artifact ID `14402527828`, 50,036,037 bytes; not expired at audit time.
+- Build #194 URL: https://github.com/Digital24Online/OFFYNEXBD/actions/runs/44248269429
+- This verifies the source at the build commit only; it does not mean all ten modules are complete.
+
+### Source audit — current implemented reality
+- Home screen lists all ten modules, but `lib/main.dart` routes only Writer, Sheets and PDF. The other seven tiles display a “coming soon” message.
+- Actual module source currently exists for Writer, Sheets and PDF-to-Document conversion. No dedicated production Dart module implementation currently exists for Slides, Fonts, AI Assistant, Cloud, Forms, Scan camera workflow or Database.
+- Writer has a substantial Quill editor, local autosave, page layout, table/image embeds, references, review/comments/revisions, view controls and shaped PDF export foundations. Its README is stale and still says “Planned”; full DOCX/ODT import/export, portable image packaging, real page fidelity, font management and remaining cross-platform verification are not complete.
+- Sheets has a working single-sheet grid, local autosave, cell formatting, XLSX/CSV import/export, 31 formula functions, display-only sort/filter and PDF/print foundations. Multi-sheet management, cross-sheet formulas, charts, pivot tables, data validation, conditional formatting, ODS, advanced print preview and large-workbook performance remain incomplete.
+- PDF currently provides PDF-to-Writer/DOCX conversion and image-to-document OCR workflows. It is not yet a complete PDF reader/editor/organizer; page operations, annotations, signatures, compression, encryption/password handling and full scanned-PDF renderer/OCR coverage remain incomplete.
+- Slides, Fonts, AI, Cloud, Forms, Scan and Database are still planned-only according to their module READMEs.
+- Current dependencies include Flutter, SharedPreferences, Quill, file picker, XLSX, PDF/printing, DOCX reader/export and Tesseract OCR. The current dependency manifest does not yet include a presentation engine, ODS engine, camera/document-edge scanner, local relational database engine or cloud sync/auth backend. Select dependencies only after compatibility/licensing/platform review; do not add pretend online sync or AI without a real configured service.
+
+### Coordinated implementation scope
+- Shared application foundation: persistent Bangla/English language setting, module navigation, shared file/document handling, common storage/backup interfaces, error/progress handling, accessibility and cross-module document handoff.
+- Writer: finish portable editable-document import/export and page/print fidelity while retaining old Quill documents and embeds.
+- Sheets: finish multi-sheet workbook architecture and the remaining spreadsheet/data/print features without changing the existing workbook schema incompatibly.
+- Slides: editable presentation/deck model, layouts/themes, text/images/shapes, notes, transitions/slideshow and supported PPTX/ODP/PDF import/export.
+- PDF: reader/viewer, page management, annotations, forms/signatures where supported, merge/split/compress/protect/print, OCR and conversion.
+- Fonts: real font catalogue/preview/management, supported font import and licensing-safe embedding, Unicode Bengali/English and legacy Bijoy ANSI conversion workflow. Never redistribute proprietary fonts without permission.
+- AI Assistant: Bangla/English writing, translation, summary, formula/data and presentation assistance; disclose online service requirements and privacy. Do not claim offline AI unless a real on-device model is integrated.
+- Cloud: authenticated storage, sync, versioning, sharing, encryption and conflict recovery; do not label local-only storage as cloud sync.
+- Forms: builder, field types, validation, save/edit responses, PDF/CSV/XLSX export and secure sharing.
+- Scan: camera capture, automatic document boundary detection, perspective correction, enhancement, multi-page PDF and Bengali/English OCR with correction/review.
+- Database: offline relational data model, tables/fields/relations, CRUD, query/filter/report, import/export and backup/restore.
+- Cross-module integration: Writer/Sheets/Slides/PDF/Forms/Scan/Fonts/AI/Cloud/Database handoff and shared file formats.
+- Complete automated tests, Analyze, Android release APK/artifact and platform-specific verification must be recorded accurately. Physical device/camera/printer checks must remain explicitly pending until actually performed.
+
+### Audit status
+- [x] Confirmed separate repository and current main branch.
+- [x] Confirmed latest successful Build #194 and its APK artifact.
+- [x] Inspected Home Screen routing, dependency manifest, CI workflow, all ten module READMEs, and current Writer/Sheets/PDF source/test inventory.
+- [ ] Project-wide implementation and integration of all ten modules — NOT COMPLETE.
+- [ ] End-to-end cross-module and platform verification — NOT COMPLETE.
