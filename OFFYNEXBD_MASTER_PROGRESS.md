@@ -711,3 +711,5 @@ Continue development as coordinated batches across Writer, Sheets, Slides, PDF, 
 - [x] Added unit tests for exact backup preservation, no-existing-workbook behavior, and the 20 MB boundary.
 - [ ] Flutter Analyze, complete test suite, Android APK build and artifact upload are pending for the commits ending `eba07fae`, `baff506e`, and `5bb5d991`. Do not mark this feature verified until a successful workflow includes the final screen integration commit.
 - [ ] Multi-worksheet editing inside OFFYNEX Sheets remains future work; current import still imports one selected worksheet at a time.
+
+- [x] Follow-up safety refinement: XLSX replacement now waits for the pending save queue before reading the current workbook, ensuring the backup includes the latest edits (commit `8f51750409b0d139310adb34de8c9a12757ab585`).
