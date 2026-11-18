@@ -506,6 +506,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
         ));
       }
     }
+    if (!mounted) return;
     final tableId = table['id']?.toString() ?? '';
     final existing = allRows[tableId];
     final initialRows = existing is List
