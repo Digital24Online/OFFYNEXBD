@@ -165,11 +165,9 @@ class WriterDocxExportService {
         'w:left="${margin('left')}" w:right="${margin('right')}" w:header="720" w:footer="720" w:gutter="0"/>'
         '</w:sectPr>';
     var documentXml = utf8.decode(files['word/document.xml'] ?? <int>[]);
-    if (RegExp(r'<w:sectPr[\\s\\S]*?</w:sectPr>').hasMatch(documentXml)) {
-      documentXml = documentXml.replaceFirst(
-        RegExp(r'<w:sectPr[\\s\\S]*?</w:sectPr>'),
-        section,
-      );
+    final sectionPattern = RegExp(r'<w:sectPr\\b[\\s\\S]*?</w:sectPr>|<w:sectPr\\b[^>]*/>');
+    if (sectionPattern.hasMatch(documentXml)) {
+      documentXml = documentXml.replaceFirst(sectionPattern, section);
     } else {
       documentXml = documentXml.replaceFirst('</w:body>', '$section</w:body>');
     }

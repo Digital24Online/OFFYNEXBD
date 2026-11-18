@@ -21,6 +21,7 @@ class WriterDocumentBackupService {
     final archive = Archive();
     final seen = <String, String>{};
     var assetIndex = 0;
+    var expandedBytes = 0;
     for (final rawDocument in portable) {
       final document = Map<String, dynamic>.from(rawDocument as Map);
       final content = document['content'];
@@ -33,12 +34,20 @@ class WriterDocumentBackupService {
             final path = insert['image'] as String;
             if (!seen.containsKey(path)) {
               final image = File(path);
+              final allowedRoot = imageDirectory.absolute.path;
+              if (!image.absolute.path.startsWith('$allowedRoot${Platform.pathSeparator}')) {
+                throw StateError('Writer image is outside the app image folder; backup was blocked.');
+              }
               if (!await image.exists()) {
                 throw StateError('Writer image is missing; backup was not created: $path');
               }
               final bytes = await image.readAsBytes();
               if (bytes.isEmpty || bytes.length > maxImageBytes) {
                 throw const FormatException('Writer image is empty or exceeds the 15 MB limit.');
+              }
+              expandedBytes += bytes.length;
+              if (expandedBytes > maxExpandedBytes) {
+                throw const FormatException('Writer backup expands beyond the 60 MB safety limit.');
               }
               final extension = _safeExtension(path);
               final archivePath = 'images/image_${++assetIndex}.$extension';

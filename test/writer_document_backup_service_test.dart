@@ -40,4 +40,23 @@ void main() {
       await target.delete(recursive: true);
     }
   });
+
+  test('portable Writer backup refuses image paths outside the app image directory', () async {
+    final allowed = await Directory.systemTemp.createTemp('writer-backup-allowed-');
+    final outside = await Directory.systemTemp.createTemp('writer-backup-outside-');
+    try {
+      final image = File('${outside.path}/private.png');
+      await image.writeAsBytes([1, 2, 3]);
+      await expectLater(
+        WriterDocumentBackupService.exportArchive([
+          {'id': 'outside', 'title': 'Outside', 'content': [{'insert': {'image': image.path}}]},
+        ], imageDirectory: allowed),
+        throwsA(isA<StateError>()),
+      );
+    } finally {
+      await allowed.delete(recursive: true);
+      await outside.delete(recursive: true);
+    }
+  });
+
 }
