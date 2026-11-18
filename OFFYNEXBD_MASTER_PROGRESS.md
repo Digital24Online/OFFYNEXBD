@@ -690,3 +690,8 @@ Continue development as coordinated batches across Writer, Sheets, Slides, PDF, 
 - [x] Build #243 passed Analyze but the new Database CRUD widget test exposed a controller-lifecycle bug: controllers were disposed immediately after the nested dialog began its closing animation.
 - [x] Moved row-editor controllers into a dedicated stateful dialog so they are disposed only when the dialog widget is actually removed. Fix commit: `24e69adbc861e0f0cd5bd1882de176ee089442a2`.
 - [ ] Re-run the complete tests and Android build for Database row CRUD; do not mark this feature verified until successful.
+
+
+### Database CRUD corrected test checkpoint
+- [x] Build #244 / run `44258247618` passed Flutter Analyze and the complete test suite after moving TextEditingControllers into the nested row-editor widget.
+- [ ] Android NDK setup and APK build were still running at the last check. Wait for artifact upload before marking Database row CRUD fully verified.
