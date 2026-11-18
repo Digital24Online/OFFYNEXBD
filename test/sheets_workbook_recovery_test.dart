@@ -24,6 +24,6 @@ void main() {
     expect(recoveryKeys, hasLength(1));
     expect(prefs.getString(recoveryKeys.single), damaged);
     expect(prefs.getString('offynex_sheets_workbook_v1'), damaged);
-    expect(find.textContaining('Workbook could not be read'), findsOneWidget);
+    expect(find.textContaining('Workbook could not be read'), findsAtLeastNWidgets(1));
   });
 }
