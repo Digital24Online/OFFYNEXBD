@@ -1395,8 +1395,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
     );
   }
 
-  Widget _buildGrid() {
-    final visibleRows = _buildVisibleRowIndices();
+  Widget _buildGrid(List<int> visibleRows) {
     return Scrollbar(
       controller: _horizontalController,
       thumbVisibility: true,
@@ -1428,6 +1427,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final visibleRows = _buildVisibleRowIndices();
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FB),
       appBar: AppBar(
@@ -1466,7 +1466,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
                     ),
                   ]),
                 ),
-                Expanded(child: _buildGrid()),
+                Expanded(child: _buildGrid(visibleRows)),
                 Container(
                   width: double.infinity,
                   color: Colors.white,
