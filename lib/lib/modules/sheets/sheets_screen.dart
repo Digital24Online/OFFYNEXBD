@@ -497,6 +497,9 @@ class _SheetsScreenState extends State<SheetsScreen> {
         _columnCount = columns.clamp(1, SheetsWorkbookLimits.maxColumns);
         _selectedCell = null;
         _formulaBarController.clear();
+        _viewColumnIndex = null;
+        _filterQuery = null;
+        _sortAscending = true;
       });
       await _saveWorkbook();
       if (!mounted) return;
@@ -715,6 +718,9 @@ class _SheetsScreenState extends State<SheetsScreen> {
         _sheetName = sheetName;
         _selectedCell = null;
         _formulaBarController.clear();
+        _viewColumnIndex = null;
+        _filterQuery = null;
+        _sortAscending = true;
       });
       await _saveWorkbook();
       if (!mounted) return;
@@ -1299,6 +1305,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
   }
 
   Widget _buildGrid() {
+    final visibleRows = _visibleRowIndices;
     return Scrollbar(
       controller: _horizontalController,
       thumbVisibility: true,
@@ -1316,9 +1323,9 @@ class _SheetsScreenState extends State<SheetsScreen> {
                 child: ListView.builder(
                   key: const ValueKey('sheets-grid-vertical'),
                   controller: _verticalController,
-                  itemCount: _visibleRowIndices.length,
+                  itemCount: visibleRows.length,
                   itemExtent: 56 * _zoom,
-                  itemBuilder: (context, index) => _buildGridRow(_visibleRowIndices[index]),
+                  itemBuilder: (context, index) => _buildGridRow(visibleRows[index]),
                 ),
               ),
             ),
@@ -1584,6 +1591,9 @@ class _CellEditDialogState extends State<_CellEditDialog> {
         _columnCount = columns.clamp(1, SheetsWorkbookLimits.maxColumns);
         _selectedCell = null;
         _formulaBarController.clear();
+        _viewColumnIndex = null;
+        _filterQuery = null;
+        _sortAscending = true;
       });
       await _saveWorkbook();
       if (!mounted) return;
@@ -1802,6 +1812,9 @@ class _CellEditDialogState extends State<_CellEditDialog> {
         _sheetName = sheetName;
         _selectedCell = null;
         _formulaBarController.clear();
+        _viewColumnIndex = null;
+        _filterQuery = null;
+        _sortAscending = true;
       });
       await _saveWorkbook();
       if (!mounted) return;
