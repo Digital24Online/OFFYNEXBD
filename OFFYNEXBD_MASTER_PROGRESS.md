@@ -1257,6 +1257,8 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Added a portable `.offynex` Writer backup format that packages referenced images with the document library and restores image files to the destination app storage.
 - [x] Writer backup import retains legacy JSON import compatibility; new backup export uses the portable archive format.
 - [x] Localized the Writer View ribbon controls for Bangla and English.
+- [x] Corrected relationship ID allocation in DOCX package post-processing to avoid collisions with existing image relationships.
+- [x] Added a 60 MB expanded-archive safety bound for portable Writer backup extraction and aligned the screen import limit with the 25 MB archive limit.
 - [ ] Run Flutter Analyze, complete automated tests, Android Release APK build and artifact upload on this batch.
 - [ ] Real Microsoft Word / LibreOffice opening and print output must still be checked; CI archive tests do not replace external office application testing.
 - [ ] Remaining Writer gaps: true live pagination, complex DOCX/ODT fidelity, spellcheck, full font management, comprehensive ribbon localization, large-document performance and Android physical-device/printing validation.

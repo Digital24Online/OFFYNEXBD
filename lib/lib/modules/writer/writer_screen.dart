@@ -158,8 +158,8 @@ class _WriterScreenState extends State<WriterScreen> {
       if (!mounted) return;
       final bytes = await picked.readAsBytes();
       if (!mounted) return;
-      if (bytes.isEmpty || bytes.length > 20 * 1024 * 1024) {
-        throw const FormatException('Writer archive must be between 1 byte and 20 MB.');
+      if (bytes.isEmpty || bytes.length > WriterDocumentBackupService.maxArchiveBytes) {
+        throw const FormatException('Writer archive must be between 1 byte and 25 MB.');
       }
       final appDirectory = await getApplicationSupportDirectory();
       final imported = (picked.extension?.toLowerCase() == 'json')

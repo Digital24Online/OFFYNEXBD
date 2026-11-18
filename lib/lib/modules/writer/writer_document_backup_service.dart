@@ -10,6 +10,7 @@ import 'writer_document_codec.dart';
 class WriterDocumentBackupService {
   static const int maxArchiveBytes = 25 * 1024 * 1024;
   static const int maxImageBytes = 15 * 1024 * 1024;
+  static const int maxExpandedBytes = 60 * 1024 * 1024;
   static const String _assetPrefix = 'offynexbd-asset://';
 
   static Future<Uint8List> exportArchive(
@@ -72,6 +73,10 @@ class WriterDocumentBackupService {
     final archive = ZipDecoder().decodeBytes(bytes);
     if (archive.files.length > 2000) {
       throw const FormatException('Writer backup contains too many files.');
+    }
+    final expandedBytes = archive.files.fold<int>(0, (total, file) => total + file.size);
+    if (expandedBytes > maxExpandedBytes) {
+      throw const FormatException('Writer backup expands beyond the 60 MB safety limit.');
     }
     final manifestFile = archive.findFile('manifest.json');
     if (manifestFile == null) {

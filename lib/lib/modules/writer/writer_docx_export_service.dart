@@ -123,7 +123,7 @@ class WriterDocxExportService {
     final contentTypesPath = '[Content_Types].xml';
     var contentTypes = utf8.decode(files[contentTypesPath] ?? <int>[]);
     var nextId = 1;
-    for (final match in RegExp(r'Id="rId(\\d+)"').allMatches(relationships)) {
+    for (final match in RegExp(r'Id="rId(\d+)"').allMatches(relationships)) {
       final value = int.tryParse(match.group(1) ?? '');
       if (value != null && value >= nextId) nextId = value + 1;
     }
