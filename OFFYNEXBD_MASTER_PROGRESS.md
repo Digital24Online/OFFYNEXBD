@@ -475,7 +475,8 @@
 - [x] Home Screen Bangla/English choice is now persisted with `offynex_language_bangla_v1`.
 - [x] Added widget tests for Forms draft persistence, Database schema editing and local Cloud backup generation.
 - [x] Flutter Analyze passed on source commit `dd63993b412fe097248df0d1e3f6e17339ec3927`.
-- [ ] Full test suite and Android release build for the corrected controller lifecycle are pending Build run `44250644711`.
+- [x] Build run `44250644711`: Flutter Analyze — SUCCESS; full automated test suite — SUCCESS (including the new workspace tests).
+- [ ] Android NDK installation, release APK build and artifact upload are still running in Build run `44250644711`.
 - [ ] Physical Android, camera, printer and desktop acceptance tests remain pending.
 
 ### Test correction
