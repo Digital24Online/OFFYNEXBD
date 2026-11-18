@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../pdf/pdf_to_document_service.dart';
@@ -468,6 +470,78 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
     ));
   }
 
+  Future<void> _exportSlidePdf(Map<String, dynamic> slide) async {
+    try {
+      final title = slide['title']?.toString().trim() ?? '';
+      final content = slide['content']?.toString() ?? '';
+      final slideTexts = content
+          .split(RegExp(r'\r?\n'))
+          .map((value) => value.trim())
+          .where((value) => value.isNotEmpty)
+          .toList(growable: false);
+      if (slideTexts.isEmpty) {
+        throw const FormatException('Add one slide topic or text per line first.');
+      }
+      if (slideTexts.length > 200) {
+        throw const FormatException('A PDF presentation can contain up to 200 slides.');
+      }
+      final fontData = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
+      final font = pw.Font.ttf(fontData);
+      final pdf = pw.Document();
+      pdf.addPage(pw.MultiPage(
+        pageFormat: PdfPageFormat.a4.landscape,
+        theme: pw.ThemeData.withFont(base: font),
+        margin: const pw.EdgeInsets.all(30),
+        build: (context) => [
+          for (var index = 0; index < slideTexts.length; index++) ...[
+            if (index > 0) pw.NewPage(),
+            pw.Container(
+              width: double.infinity,
+              padding: const pw.EdgeInsets.all(28),
+              decoration: pw.BoxDecoration(
+                border: pw.Border.all(color: PdfColors.blueGrey300, width: 1.2),
+                borderRadius: pw.BorderRadius.circular(12),
+              ),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(title.isEmpty ? 'OFFYNEXBD Presentation' : title,
+                      style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold)),
+                  pw.SizedBox(height: 12),
+                  pw.Text('SLIDE ${index + 1} / ${slideTexts.length}',
+                      style: const pw.TextStyle(fontSize: 10, color: PdfColors.blueGrey600)),
+                  pw.Divider(color: PdfColors.blueGrey300),
+                  pw.SizedBox(height: 12),
+                  pw.Text(slideTexts[index], style: const pw.TextStyle(fontSize: 25, lineSpacing: 8)),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ));
+      final bytes = Uint8List.fromList(await pdf.save());
+      final safeName = (title.isEmpty ? 'OFFYNEXBD-Slides' : title)
+          .replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+      final saved = await FilePicker.saveFile(
+        fileName: '$safeName.pdf',
+        bytes: bytes,
+        mimeType: 'application/pdf',
+        dialogTitle: _bn ? 'স্লাইড PDF সংরক্ষণ' : 'Export slides as PDF',
+      );
+      if (saved != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(_bn ? 'স্লাইড PDF তৈরি হয়েছে।' : 'Slides PDF exported.'),
+        ));
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('${_bn ? 'PDF Export ব্যর্থ' : 'PDF export failed'}: $error'),
+        ));
+      }
+    }
+  }
+
   Future<void> _collectFormResponse(Map<String, dynamic> form) async {
     final questions = (form['content']?.toString() ?? '')
         .split(RegExp(r'\r?\n'))
@@ -760,11 +834,27 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
                                 ),
                               ],
                             )
-                          : IconButton(
-                              tooltip: _bn ? 'মুছুন' : 'Delete',
-                              icon: const Icon(Icons.delete_outline),
-                              onPressed: () => _deleteItem(item),
-                            ),
+                          : widget.module == 'Slides'
+                              ? Wrap(
+                                  spacing: 0,
+                                  children: [
+                                    IconButton(
+                                      tooltip: _bn ? 'PDF Export' : 'Export Slides PDF',
+                                      icon: const Icon(Icons.picture_as_pdf_outlined),
+                                      onPressed: () => _exportSlidePdf(item),
+                                    ),
+                                    IconButton(
+                                      tooltip: _bn ? 'মুছুন' : 'Delete',
+                                      icon: const Icon(Icons.delete_outline),
+                                      onPressed: () => _deleteItem(item),
+                                    ),
+                                  ],
+                                )
+                              : IconButton(
+                                  tooltip: _bn ? 'মুছুন' : 'Delete',
+                                  icon: const Icon(Icons.delete_outline),
+                                  onPressed: () => _deleteItem(item),
+                                ),
                     ),
                   )),
                 ],
