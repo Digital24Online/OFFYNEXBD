@@ -88,6 +88,85 @@ void main() {
     expect(find.text('Address: Rajshahi'), findsOneWidget);
   });
 
+  testWidgets('Forms preserves a partially malformed response archive and blocks a new submission',
+      (tester) async {
+    final damaged = jsonEncode([
+      {
+        'id': 'response-1',
+        'formId': 'form-1',
+        'formTitle': 'Customer Registration',
+        'submittedAt': '2026-11-18T10:00:00Z',
+        'answers': [
+          {'question': 'Name', 'answer': 'Existing user'},
+        ],
+      },
+      'malformed-response',
+    ]);
+    SharedPreferences.setMockInitialValues({
+      'offynex_workspace_forms_v1': jsonEncode([
+        {
+          'id': 'form-1',
+          'title': 'Customer Registration',
+          'content': 'Name',
+          'updatedAt': '2026-11-18T10:00:00Z',
+        },
+      ]),
+      'offynex_forms_responses_v1': damaged,
+    });
+
+    await tester.pumpWidget(const MaterialApp(
+      home: OfficeWorkspaceScreen(module: 'Forms', isBangla: false),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Collect response'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, 'New submission');
+    await tester.tap(find.text('Save response'));
+    await tester.pumpAndSettle();
+
+    final prefs = await SharedPreferences.getInstance();
+    final recoveryKeys = prefs.getKeys()
+        .where((key) => key.startsWith('offynex_forms_responses_recovery_'))
+        .toList();
+    expect(recoveryKeys, hasLength(1));
+    expect(prefs.getString(recoveryKeys.single), damaged);
+    expect(prefs.getString('offynex_forms_responses_v1'), damaged);
+    expect(find.textContaining('response archive is damaged'), findsOneWidget);
+  });
+
+  testWidgets('Forms preserves a non-list response archive and does not show it as empty',
+      (tester) async {
+    const damaged = '{"unexpected":"object"}';
+    SharedPreferences.setMockInitialValues({
+      'offynex_workspace_forms_v1': jsonEncode([
+        {
+          'id': 'form-1',
+          'title': 'Customer Registration',
+          'content': 'Name',
+          'updatedAt': '2026-11-18T10:00:00Z',
+        },
+      ]),
+      'offynex_forms_responses_v1': damaged,
+    });
+
+    await tester.pumpWidget(const MaterialApp(
+      home: OfficeWorkspaceScreen(module: 'Forms', isBangla: false),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Responses'));
+    await tester.pumpAndSettle();
+
+    final prefs = await SharedPreferences.getInstance();
+    final recoveryKeys = prefs.getKeys()
+        .where((key) => key.startsWith('offynex_forms_responses_recovery_'))
+        .toList();
+    expect(recoveryKeys, hasLength(1));
+    expect(prefs.getString(recoveryKeys.single), damaged);
+    expect(prefs.getString('offynex_forms_responses_v1'), damaged);
+    expect(find.text('No responses yet.'), findsNothing);
+    expect(find.textContaining('response archive is damaged'), findsOneWidget);
+  });
+
   testWidgets('Database workspace creates and updates offline table rows',
       (tester) async {
     SharedPreferences.setMockInitialValues({

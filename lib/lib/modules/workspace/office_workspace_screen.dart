@@ -670,6 +670,72 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
     }
   }
 
+  Future<List<Map<String, dynamic>>?> _readFormResponses() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('offynex_forms_responses_v1');
+    if (raw == null) return <Map<String, dynamic>>[];
+
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) {
+        throw const FormatException('Forms response archive must be a list.');
+      }
+      final ids = <String>{};
+      return decoded.map((item) {
+        if (item is! Map) {
+          throw const FormatException('Forms response entry must be an object.');
+        }
+        final response = Map<String, dynamic>.from(item);
+        final id = response['id'];
+        final formId = response['formId'];
+        final formTitle = response['formTitle'];
+        final submittedAt = response['submittedAt'];
+        final answers = response['answers'];
+        if (id is! String ||
+            id.trim().isEmpty ||
+            !ids.add(id) ||
+            formId is! String ||
+            formId.trim().isEmpty ||
+            formTitle is! String ||
+            submittedAt is! String ||
+            DateTime.tryParse(submittedAt) == null ||
+            answers is! List) {
+          throw const FormatException('Forms response entry has invalid fields.');
+        }
+        for (final answer in answers) {
+          if (answer is! Map ||
+              answer['question'] is! String ||
+              answer['answer'] is! String) {
+            throw const FormatException('Forms response contains an invalid answer.');
+          }
+        }
+        return response;
+      }).toList(growable: true);
+    } catch (error) {
+      final key =
+          'offynex_forms_responses_recovery_${DateTime.now().microsecondsSinceEpoch}';
+      var preserved = false;
+      try {
+        preserved = await prefs.setString(key, raw);
+      } catch (_) {
+        preserved = false;
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          duration: const Duration(seconds: 10),
+          content: Text(preserved
+              ? (_bn
+                  ? 'ফর্মের পুরোনো উত্তর ক্ষতিগ্রস্ত। মূল ডেটা অপরিবর্তিত রেখে Recovery Copy রাখা হয়েছে: $key'
+                  : 'The Forms response archive is damaged. Original data is unchanged; a recovery copy was saved: $key')
+              : (_bn
+                  ? 'ফর্মের উত্তর যাচাই করা যায়নি এবং Recovery Copy সংরক্ষণ ব্যর্থ। মূল ডেটা সুরক্ষায় কাজ বন্ধ রাখা হয়েছে।'
+                  : 'Forms responses could not be validated and the recovery copy failed. The operation was stopped to protect the original data.')),
+        ));
+      }
+      return null;
+    }
+  }
+
   Future<void> _collectFormResponse(Map<String, dynamic> form) async {
     final questions = (form['content']?.toString() ?? '')
         .split(RegExp(r'\r?\n'))
@@ -692,22 +758,8 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
     );
     if (answers == null || !mounted) return;
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString('offynex_forms_responses_v1');
-    final responses = <Map<String, dynamic>>[];
-    if (raw != null) {
-      try {
-        final decoded = jsonDecode(raw);
-        if (decoded is List) {
-          for (final item in decoded) {
-            if (item is Map) responses.add(Map<String, dynamic>.from(item));
-          }
-        }
-      } catch (_) {
-        // Preserve a malformed response archive before starting a new one.
-        final key = 'offynex_forms_responses_recovery_${DateTime.now().microsecondsSinceEpoch}';
-        await prefs.setString(key, raw);
-      }
-    }
+    final responses = await _readFormResponses();
+    if (responses == null) return;
     responses.add({
       'id': DateTime.now().microsecondsSinceEpoch.toString(),
       'formId': form['id']?.toString() ?? '',
@@ -726,12 +778,8 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
 
   Future<void> _exportFormResponses() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString('offynex_forms_responses_v1');
-      final decoded = raw == null ? <dynamic>[] : jsonDecode(raw);
-      if (decoded is! List) {
-        throw const FormatException('Forms response archive must be a list.');
-      }
+      final decoded = await _readFormResponses();
+      if (decoded == null) return;
       if (decoded.isEmpty) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -767,20 +815,8 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
   }
 
   Future<void> _showFormResponses() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString('offynex_forms_responses_v1');
-    final responses = <Map<String, dynamic>>[];
-    if (raw != null) {
-      try {
-        final decoded = jsonDecode(raw);
-        if (decoded is List) {
-          for (final item in decoded) {
-            if (item is Map) responses.add(Map<String, dynamic>.from(item));
-          }
-        }
-      } catch (_) {}
-    }
-    if (!mounted) return;
+    final responses = await _readFormResponses();
+    if (responses == null || !mounted) return;
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
