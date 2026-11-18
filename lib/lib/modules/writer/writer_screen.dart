@@ -2007,7 +2007,7 @@ Future<void> showCustomFontSizeDialog() async {
       builder: (dialogContext) => _WriterHeaderFooterDialog(
         initialHeader: headerText,
         initialFooter: footerText,
-        isBangla: _bn,
+        isBangla: widget.isBangla,
       ),
     );
     if (result == null || !mounted) return;
