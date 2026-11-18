@@ -1583,9 +1583,9 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   
   Widget _ribbonPanel(List<Widget> children) => Container(
         width: double.infinity,
-        color: const Color(0xFFEFF2F0),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
         decoration: const BoxDecoration(
+          color: Color(0xFFEFF2F0),
           border: Border(bottom: BorderSide(color: Color(0xFFD2DAD5))),
         ),
         child: Wrap(
@@ -1626,8 +1626,8 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
 
   Widget _ribbonButton(IconData icon, String label, VoidCallback action) =>
       SizedBox(
-        width: 78,
-        height: 68,
+        width: 96,
+        height: 72,
         child: Tooltip(
           message: _ribbonLabel(label),
           child: TextButton(
@@ -1647,8 +1647,8 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
                 Text(
                   _ribbonLabel(label),
                   textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                  maxLines: 3,
+                  overflow: TextOverflow.visible,
                   style: const TextStyle(fontSize: 10, height: 1.1),
                 ),
               ],

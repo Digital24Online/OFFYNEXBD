@@ -802,3 +802,11 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Unified shared workspace shell styling for Slides, Fonts, AI Assistant, Cloud, Forms, Scan and Database: canvas, app bar, module identity panel, record cards, search field and primary action now use OFFYNEX theme tokens. Existing module-specific actions and local records are unchanged.
 - [x] PDF-to-Document conversion screen uses the shared professional app shell and clean card surfaces. PDF/image selection, OCR conversion, Writer handoff and DOCX export logic remain unchanged.
 - [ ] Run Analyze, all tests and Android release build for the expanded workspace/PDF visual batch before marking it verified.
+
+
+## Writer Office Ribbon refinement — 2026-11-18
+- [x] Applied classic green Microsoft Office-inspired tab bar and a compact icon-and-label ribbon to Writer while preserving existing editor actions and document workflows.
+- [x] Build #320 (commit 251082b1341c9a654df9e67677c71080f24f964f) passed Flutter Analyze but failed an existing Writer Header/Footer widget test because the ribbon panel Container specified both color and decoration; the test could not complete its UI interaction.
+- [x] Corrected the Container by moving its surface color into BoxDecoration and widened ribbon commands to improve Bangla label visibility. Existing tests were preserved unchanged.
+- [ ] Re-run Analyze, all automated tests and Android APK build for the correction commit; do not call the Writer redesign verified until CI succeeds.
+- [ ] Physical Android visual and interaction checks remain outstanding.
