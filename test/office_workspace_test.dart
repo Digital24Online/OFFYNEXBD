@@ -32,6 +32,51 @@ void main() {
     expect(items.first['content'], 'নাম\nমোবাইল\nঠিকানা');
   });
 
+  testWidgets('Forms collects answers for each newline-separated question and shows responses',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'offynex_workspace_forms_v1': jsonEncode([
+        {
+          'id': 'form-1',
+          'title': 'Customer Registration',
+          'content': 'Full name\\nMobile number\\nAddress',
+          'updatedAt': '2026-11-18T10:00:00Z',
+        },
+      ]),
+    });
+    await tester.pumpWidget(const MaterialApp(
+      home: OfficeWorkspaceScreen(module: 'Forms', isBangla: false),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Collect response'));
+    await tester.pumpAndSettle();
+    expect(find.text('Customer Registration'), findsOneWidget);
+    expect(find.byType(TextField), findsNWidgets(4));
+
+    await tester.enterText(find.byType(TextField).at(1), 'Test User');
+    await tester.enterText(find.byType(TextField).at(2), '01700000000');
+    await tester.enterText(find.byType(TextField).at(3), 'Rajshahi');
+    await tester.tap(find.text('Save response'));
+    await tester.pumpAndSettle();
+
+    final prefs = await SharedPreferences.getInstance();
+    final saved = jsonDecode(prefs.getString('offynex_forms_responses_v1')!) as List;
+    expect(saved, hasLength(1));
+    expect(saved.single['formId'], 'form-1');
+    expect(saved.single['answers'], [
+      {'question': 'Full name', 'answer': 'Test User'},
+      {'question': 'Mobile number', 'answer': '01700000000'},
+      {'question': 'Address', 'answer': 'Rajshahi'},
+    ]);
+
+    await tester.tap(find.text('Responses'));
+    await tester.pumpAndSettle();
+    expect(find.text('Full name: Test User'), findsOneWidget);
+    expect(find.text('Mobile number: 01700000000'), findsOneWidget);
+    expect(find.text('Address: Rajshahi'), findsOneWidget);
+  });
+
   testWidgets('Database workspace supports editing an existing schema note',
       (tester) async {
     SharedPreferences.setMockInitialValues({
