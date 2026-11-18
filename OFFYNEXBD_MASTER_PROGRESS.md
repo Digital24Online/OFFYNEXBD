@@ -958,3 +958,13 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] APK artifact: `OFFYNEXBD-Android-APK`, artifact ID `14441588470`, 51,264,578 bytes, SHA-256 `658772d794e635a57588d0aa727e518fc75b6e455dc0e3b5383f1e4b989fb1ea`, expires 2026-11-25 15:35:58 UTC.
 - [ ] Real Android device checks are still required for camera permission, auto edge detection, multi-page capture, OCR accuracy, saved PDF persistence after app restart, share and delete behavior. CI success does not prove physical-device behavior.
 - [ ] This verifies the Scan workspace repair only; it does not mean all OFFYNEXBD modules or all previously listed product gaps are complete.
+
+
+## Integrated Sheets Find & Replace — source batch (2026-11-18)
+
+- [x] Added literal Find & Replace across every worksheet, with optional case-sensitive matching and empty replacement support.
+- [x] The operation preserves cell formatting and worksheet metadata, treats regex symbols and replacement dollar signs literally, and reports the number of replacements.
+- [x] Added a Home ribbon command and Bangla/English dialog labels.
+- [x] Added regression tests for multi-worksheet replacement, case sensitivity, formatting preservation, regex-safe literal matching and empty search rejection.
+- [ ] Flutter Analyze, complete automated tests, Android release APK build and artifact upload are pending for this source commit.
+- [ ] This batch does not close the remaining Sheets gaps: charts, pivot tables, data validation, conditional formatting, ODS, advanced Excel compatibility, freeze panes and large-workbook/device testing.

@@ -15,6 +15,7 @@ import 'sheets_import_safety.dart';
 import 'sheets_workbook_codec.dart';
 import 'sheets_csv_codec.dart';
 import 'sheets_row_view.dart';
+import 'sheets_find_replace.dart';
 import '../../theme/offynex_theme.dart';
 
 const String _sheetStorageKey = 'offynex_sheets_workbook_v1';
@@ -567,6 +568,113 @@ class _SheetsScreenState extends State<SheetsScreen> {
       _sortAscending = _viewColumnIndex == column ? !_sortAscending : true;
       _viewColumnIndex = column;
     });
+  }
+
+  Future<void> _findAndReplace() async {
+    final findController = TextEditingController();
+    final replaceController = TextEditingController();
+    var matchCase = false;
+    final request = await showDialog<({String find, String replacement, bool matchCase})>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(_t('Find & Replace', 'Find & Replace')),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                key: const ValueKey('sheets-find-text'),
+                controller: findController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: _t('যে লেখা খুঁজবেন', 'Find what'),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                key: const ValueKey('sheets-replace-text'),
+                controller: replaceController,
+                decoration: InputDecoration(
+                  labelText: _t('যে লেখা বসাবেন', 'Replace with'),
+                ),
+              ),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                value: matchCase,
+                controlAffinity: ListTileControlAffinity.leading,
+                title: Text(_t('বড়/ছোট হাতের অক্ষর মিলিয়ে খুঁজুন', 'Match case')),
+                onChanged: (value) => setDialogState(() {
+                  matchCase = value ?? false;
+                }),
+              ),
+              Text(
+                _t(
+                  'সব Worksheet-এর Cell-এ খোঁজা ও পরিবর্তন করা হবে।',
+                  'Search and replace across every worksheet.',
+                ),
+                style: const TextStyle(fontSize: 12, color: Colors.black54),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(_t('বাতিল', 'Cancel')),
+            ),
+            FilledButton(
+              key: const ValueKey('sheets-find-replace-submit'),
+              onPressed: () => Navigator.pop(
+                dialogContext,
+                (
+                  find: findController.text,
+                  replacement: replaceController.text,
+                  matchCase: matchCase,
+                ),
+              ),
+              child: Text(_t('সব পরিবর্তন', 'Replace all')),
+            ),
+          ],
+        ),
+      ),
+    );
+    findController.dispose();
+    replaceController.dispose();
+    if (request == null || !mounted) return;
+    if (request.find.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t('খোঁজার লেখা দিন।', 'Enter text to find.'))),
+      );
+      return;
+    }
+
+    final count = SheetsFindReplace.replaceInWorkbook(
+      _workbook,
+      find: request.find,
+      replacement: request.replacement,
+      matchCase: request.matchCase,
+    );
+    if (count == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t('কোনো মিল পাওয়া যায়নি।', 'No matches found.'))),
+      );
+      return;
+    }
+    setState(() {
+      _selectedCell = null;
+      _formulaBarController.clear();
+      _viewColumnIndex = null;
+      _filterQuery = null;
+      _sortAscending = true;
+    });
+    await _saveWorkbook();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          _bn ? '$countটি পরিবর্তন সংরক্ষণ করা হয়েছে।' : '$count replacements saved.',
+        ),
+      ),
+    );
   }
 
   Future<void> _filterBySelectedColumn() async {
@@ -1237,6 +1345,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
         break;
       case 1:
         commands.addAll([
+          _ribbonCommand(_t('খুঁজুন ও পরিবর্তন', 'Find & Replace'), Icons.find_replace, _findAndReplace),
           _ribbonCommand(_t('সেল সম্পাদনা', 'Edit cell'), Icons.edit, () {
             final key = _selectedCell;
             if (key == null) return;
