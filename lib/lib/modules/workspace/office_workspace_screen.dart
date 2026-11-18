@@ -857,56 +857,133 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
   Future<void> _showFormResponses() async {
     final responses = await _readFormResponses();
     if (responses == null || !mounted) return;
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(_bn ? 'জমা দেওয়া উত্তর' : 'Form responses'),
-        content: SizedBox(
-          width: 520,
-          child: responses.isEmpty
-              ? Text(_bn ? 'এখনো কোনো উত্তর জমা হয়নি।' : 'No responses yet.')
-              : ListView(
-                  shrinkWrap: true,
-                  children: responses.reversed.map((response) {
-                    final answers = response['answers'] is List
-                        ? (response['answers'] as List)
-                        : const [];
-                    return Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(10),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(response['formTitle']?.toString() ?? '',
-                                style: const TextStyle(fontWeight: FontWeight.bold)),
-                            for (final answer in answers)
-                              if (answer is Map)
-                                Text('${answer['question'] ?? ''}: ${answer['answer'] ?? ''}'),
-                            Text(response['submittedAt']?.toString() ?? '',
-                                style: Theme.of(context).textTheme.bodySmall),
-                          ],
+    final searchController = TextEditingController();
+    try {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (context, setDialogState) {
+            final filtered = FormsResponseCsvCodec.filter(
+              responses,
+              searchController.text,
+            ).reversed.toList(growable: false);
+            final formCount = responses
+                .map((response) => response['formId'])
+                .whereType<String>()
+                .toSet()
+                .length;
+            return AlertDialog(
+              title: Text(_bn ? 'জমা দেওয়া উত্তর' : 'Form responses'),
+              content: SizedBox(
+                width: 520,
+                height: MediaQuery.sizeOf(context).height * 0.58,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      _bn
+                          ? 'মোট উত্তর: ${responses.length}  •  ফর্ম: $formCount'
+                          : 'Responses: ${responses.length}  •  Forms: $formCount',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: searchController,
+                      onChanged: (_) => setDialogState(() {}),
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(Icons.search),
+                        hintText: _bn
+                            ? 'ফর্ম, প্রশ্ন বা উত্তর খুঁজুন'
+                            : 'Search forms, questions or answers',
+                        border: const OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Expanded(
+                      child: responses.isEmpty
+                          ? Center(
+                              child: Text(_bn
+                                  ? 'এখনো কোনো উত্তর জমা হয়নি।'
+                                  : 'No responses yet.'),
+                            )
+                          : filtered.isEmpty
+                              ? Center(
+                                  child: Text(_bn
+                                      ? 'কোনো মিল পাওয়া যায়নি।'
+                                      : 'No matching responses.'),
+                                )
+                              : ListView.builder(
+                                  itemCount: filtered.length,
+                                  itemBuilder: (context, index) {
+                                    final response = filtered[index];
+                                    final answers = response['answers'] is List
+                                        ? response['answers'] as List
+                                        : const [];
+                                    return Card(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(10),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              response['formTitle']?.toString() ?? '',
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            for (final answer in answers)
+                                              if (answer is Map)
+                                                Text(
+                                                  '${answer['question'] ?? ''}: ${answer['answer'] ?? ''}',
+                                                ),
+                                            Text(
+                                              response['submittedAt']?.toString() ?? '',
+                                              style: Theme.of(context)
+                                                  .textTheme.bodySmall,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                    ),
+                    if (searchController.text.trim().isNotEmpty)
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          _bn
+                              ? '${filtered.length}টি উত্তর পাওয়া গেছে'
+                              : '${filtered.length} matching responses',
+                          style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ),
-                    );
-                  }).toList(),
+                  ],
                 ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: _exportFormResponses,
+                  child: const Text('Export JSON'),
+                ),
+                TextButton(
+                  onPressed: _exportFormResponsesCsv,
+                  child: const Text('Export CSV'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: Text(_bn ? 'বন্ধ' : 'Close'),
+                ),
+              ],
+            );
+          },
         ),
-        actions: [
-          TextButton(
-            onPressed: _exportFormResponses,
-            child: Text(_bn ? 'Export JSON' : 'Export JSON'),
-          ),
-          TextButton(
-            onPressed: _exportFormResponsesCsv,
-            child: const Text('Export CSV'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text(_bn ? 'বন্ধ' : 'Close'),
-          ),
-        ],
-      ),
-    );
+      );
+    } finally {
+      searchController.dispose();
+    }
   }
 
   @override
