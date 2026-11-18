@@ -584,6 +584,9 @@ class _SheetsScreenState extends State<SheetsScreen> {
         _rowCount = rows.length.clamp(1, SheetsWorkbookLimits.maxRows);
         _columnCount = columns.clamp(1, SheetsWorkbookLimits.maxColumns);
         _selectedCell = null;
+        _viewColumnIndex = null;
+        _filterQuery = null;
+        _sortAscending = true;
         _formulaBarController.clear();
       });
       await _saveWorkbook();
@@ -802,6 +805,9 @@ class _SheetsScreenState extends State<SheetsScreen> {
         _columnCount = sheet.maxColumns.clamp(1, 100);
         _sheetName = sheetName;
         _selectedCell = null;
+        _viewColumnIndex = null;
+        _filterQuery = null;
+        _sortAscending = true;
         _formulaBarController.clear();
       });
       await _saveWorkbook();
@@ -963,6 +969,9 @@ class _SheetsScreenState extends State<SheetsScreen> {
       _cells.clear();
       _cellStyles.clear();
       _selectedCell = null;
+      _viewColumnIndex = null;
+      _filterQuery = null;
+      _sortAscending = true;
       _formulaBarController.clear();
     });
     await _saveWorkbook();
