@@ -29,6 +29,11 @@ class ScanDocumentService {
   static const int maxPages = 50;
   static const int maxPdfBytes = 50 * 1024 * 1024;
 
+  static String combineRecognizedPages(Iterable<String> pages) => pages
+      .map((page) => page.trim())
+      .where((page) => page.isNotEmpty)
+      .join('\\n\\n');
+
   static Future<ScanCaptureResult?> captureAndroid() async {
     if (!Platform.isAndroid) {
       throw UnsupportedError(
