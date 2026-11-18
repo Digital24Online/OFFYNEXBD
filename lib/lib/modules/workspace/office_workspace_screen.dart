@@ -1,9 +1,12 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:printing/printing.dart';
 import 'slides_pdf_export_service.dart';
+import 'scan_document_service.dart';
 import 'database_rows_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -251,6 +254,42 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
     if (_busy) return;
     setState(() => _busy = true);
     try {
+      if (Platform.isAndroid) {
+        final captured = await ScanDocumentService.captureAndroid();
+        if (captured.recognizedText.trim().isNotEmpty) {
+          final documents = await loadDocuments();
+          documents.add({
+            'id': DateTime.now().microsecondsSinceEpoch.toString(),
+            'title': captured.fileName.replaceFirst(RegExp(r'\\.pdf$', caseSensitive: false), ''),
+            'content': PdfToDocumentService.plainTextToDelta(captured.recognizedText),
+            'updated': DateTime.now().toIso8601String(),
+            'source': 'native_document_scan',
+            'scanPdfPath': captured.pdfPath,
+            'pageCount': captured.pageCount,
+            'ocrLanguage': 'ben+eng',
+          });
+          await storeDocuments(documents);
+        }
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(_bn
+              ? '${captured.pageCount} পৃষ্ঠা স্ক্যান PDF হিসেবে সংরক্ষিত হয়েছে। ${captured.recognizedText.trim().isEmpty ? 'OCR লেখা পাওয়া যায়নি।' : 'লেখা Writer-এও সংরক্ষিত হয়েছে।'}'
+              : '${captured.pageCount} pages saved as a scanned PDF. ${captured.recognizedText.trim().isEmpty ? 'No OCR text was detected.' : 'Recognized text was also saved to Writer.'}'),
+          action: SnackBarAction(
+            label: _bn ? 'PDF শেয়ার' : 'Share PDF',
+            onPressed: () {
+              Printing.sharePdf(
+                bytes: captured.pdfBytes,
+                filename: captured.fileName,
+              );
+            },
+          ),
+          duration: const Duration(seconds: 8),
+        ));
+        return;
+      }
+
+      // Keep the existing gallery OCR route on platforms without the Android scanner.
       final file = await FilePicker.pickFile(
         type: FileType.custom,
         allowedExtensions: const ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'tif', 'tiff'],
