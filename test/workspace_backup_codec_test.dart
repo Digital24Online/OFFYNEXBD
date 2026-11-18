@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:offynexbd/lib/modules/workspace/workspace_backup_codec.dart';
 
 void main() {
@@ -55,3 +56,36 @@ void main() {
     );
   });
 }
+
+  test('restore replaces only included keys and preserves unrelated data', () async {
+    SharedPreferences.setMockInitialValues({
+      'offynex_writer_documents': 'old',
+      'offynex_language_bangla_v1': true,
+      'unrelated': 'keep',
+    });
+    final prefs = await SharedPreferences.getInstance();
+    await WorkspaceBackupRestore.restore(prefs, {
+      'offynex_writer_documents': 'new',
+      'offynex_sheets_workbook_v1': 'sheet',
+    });
+    expect(prefs.getString('offynex_writer_documents'), 'new');
+    expect(prefs.getString('offynex_sheets_workbook_v1'), 'sheet');
+    expect(prefs.getBool('offynex_language_bangla_v1'), true);
+    expect(prefs.getString('unrelated'), 'keep');
+  });
+
+  test('restore rejects unsupported runtime values without partial changes', () async {
+    SharedPreferences.setMockInitialValues({
+      'offynex_writer_documents': 'old',
+    });
+    final prefs = await SharedPreferences.getInstance();
+    await expectLater(
+      WorkspaceBackupRestore.restore(prefs, {
+        'offynex_writer_documents': 'new',
+        'offynex_invalid': <int>[1, 2],
+      }),
+      throwsFormatException,
+    );
+    expect(prefs.getString('offynex_writer_documents'), 'old');
+    expect(prefs.containsKey('offynex_invalid'), isFalse);
+  });

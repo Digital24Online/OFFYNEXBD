@@ -56,3 +56,73 @@ class WorkspaceBackupCodec {
     return data;
   }
 }
+
+ 
+/// Applies a backup as one recoverable operation. If any preference write
+/// fails, all touched keys are returned to their pre-restore values.
+class WorkspaceBackupRestore {
+  static Future<void> restore(
+    SharedPreferences prefs,
+    Map<String, Object?> data,
+  ) async {
+    final before = <String, Object?>{
+      for (final key in data.keys)
+        if (prefs.containsKey(key)) key: prefs.get(key),
+    };
+    try {
+      for (final entry in data.entries) {
+        final value = entry.value;
+        final bool saved;
+        if (value is String) {
+          saved = await prefs.setString(entry.key, value);
+        } else if (value is bool) {
+          saved = await prefs.setBool(entry.key, value);
+        } else if (value is int) {
+          saved = await prefs.setInt(entry.key, value);
+        } else if (value is double) {
+          saved = await prefs.setDouble(entry.key, value);
+        } else if (value is List<String>) {
+          saved = await prefs.setStringList(entry.key, value);
+        } else {
+          throw FormatException('Unsupported backup value for ${entry.key}.');
+        }
+        if (!saved) throw StateError('Could not restore ${entry.key}.');
+      }
+    } catch (error) {
+      Object? rollbackError;
+      for (final key in data.keys.toList().reversed) {
+        try {
+          if (!before.containsKey(key)) {
+            final removed = await prefs.remove(key);
+            if (!removed && prefs.containsKey(key)) {
+              throw StateError('Could not remove partially restored $key.');
+            }
+            continue;
+          }
+          final value = before[key];
+          final bool restored;
+          if (value is String) {
+            restored = await prefs.setString(key, value);
+          } else if (value is bool) {
+            restored = await prefs.setBool(key, value);
+          } else if (value is int) {
+            restored = await prefs.setInt(key, value);
+          } else if (value is double) {
+            restored = await prefs.setDouble(key, value);
+          } else if (value is List<String>) {
+            restored = await prefs.setStringList(key, value);
+          } else {
+            throw StateError('Unsupported existing preference type for $key.');
+          }
+          if (!restored) throw StateError('Could not roll back $key.');
+        } catch (rollback) {
+          rollbackError ??= rollback;
+        }
+      }
+      if (rollbackError != null) {
+        throw StateError('Restore failed ($error); rollback also failed ($rollbackError).');
+      }
+      rethrow;
+    }
+  }
+}
