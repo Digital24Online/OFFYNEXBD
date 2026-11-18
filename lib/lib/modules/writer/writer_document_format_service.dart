@@ -119,7 +119,7 @@ class WriterDocumentFormatService {
         return;
       }
       if (name == 'r') {
-        final runAttrs = _docxRunAttributes(_firstChild(node, 'rPr'));
+        final runAttrs = <String, dynamic>{...attrs, ..._docxRunAttributes(_firstChild(node, 'rPr'))};
         for (final child in node.children) { await walk(child, runAttrs); }
         return;
       }
