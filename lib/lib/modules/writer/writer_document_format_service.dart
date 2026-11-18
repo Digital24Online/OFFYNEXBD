@@ -466,7 +466,7 @@ class WriterDocumentFormatService {
       }
     }
     final family = _attribute(props, 'font-family');
-    if (family != null) result['font'] = family.toLowerCase().contains('serif') ? 'serif' : 'sans-serif';
+    if (family != null) result['font'] = _fontFamilyCategory(family);
     return result;
   }
 

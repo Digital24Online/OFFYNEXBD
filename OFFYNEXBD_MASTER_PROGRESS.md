@@ -1282,3 +1282,6 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [ ] This is portable offline backup/restore, not online Cloud Sync. Authentication, remote storage, encryption-at-rest, sharing and conflict resolution remain incomplete.
 
 - CI correction note: Build #402 (run ID 44383735233, source commit `c411f9b8aa226fd105558cde4da28488a222bcb7`) failed at Analyze because of two DOCX string-style infos, one missing mounted guard after an async Writer import, and one unused test import. These findings are being corrected in the integrated batch; no APK was produced by that run.
+
+- Build #405 (run ID 44385365644, source commit `5cedf1b9f27504410c3ba675fb28228d005a0169`) — Analyze SUCCESS; tests 157 passed / 1 failed. The failing regression exposed that the ODT font-family branch still used the old substring check even though the DOCX helper was fixed. Correcting ODT to use the shared sans-first classifier; APK build was skipped because tests failed.
+- Portable backup export/import size accounting now applies the same 100 MB expanded limit including the manifest, and asset extensions are constrained to their matching folder type.

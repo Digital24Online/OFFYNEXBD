@@ -109,6 +109,9 @@ class PortableWorkspaceBackupService {
     }
 
     final manifest = utf8.encode(WorkspaceBackupCodec.encode(data));
+    if (expandedBytes + manifest.length > maxExpandedBytes) {
+      throw const FormatException('Portable backup expands beyond 100 MB.');
+    }
     archive.addFile(ArchiveFile('manifest.json', manifest.length, manifest));
     if (archive.files.length > maxFiles) {
       throw const FormatException('Portable backup contains too many files.');
