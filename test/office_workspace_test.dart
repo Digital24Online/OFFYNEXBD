@@ -100,6 +100,28 @@ void main() {
     expect(items.single['content'], 'name, phone, email');
   });
 
+  testWidgets('damaged workspace records are preserved before recovery',
+      (tester) async {
+    const damaged = '{"records":"not-a-list"}';
+    SharedPreferences.setMockInitialValues({
+      'offynex_workspace_slides_v1': damaged,
+    });
+
+    await tester.pumpWidget(const MaterialApp(
+      home: OfficeWorkspaceScreen(module: 'Slides', isBangla: false),
+    ));
+    await tester.pumpAndSettle();
+
+    final prefs = await SharedPreferences.getInstance();
+    final recoveryKeys = prefs.getKeys()
+        .where((key) => key.startsWith('offynex_workspace_slides_v1_recovery_'))
+        .toList();
+    expect(recoveryKeys, hasLength(1));
+    expect(prefs.getString(recoveryKeys.single), damaged);
+    expect(prefs.getString('offynex_workspace_slides_v1'), damaged);
+    expect(find.text('Nothing saved yet.'), findsOneWidget);
+  });
+
   testWidgets('Cloud backup panel explains local-only status and generates backup',
       (tester) async {
     SharedPreferences.setMockInitialValues({
