@@ -20,7 +20,7 @@ void main() {
         throwsFormatException,
       );
       expect(
-        () => SheetsDataValidation.parseOptions('X' * 201),
+        () => SheetsDataValidation.parseOptions(List.filled(201, 'X').join()),
         throwsFormatException,
       );
     });
