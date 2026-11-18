@@ -439,6 +439,119 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
     ));
   }
 
+  Future<void> _collectFormResponse(Map<String, dynamic> form) async {
+    final questions = (form['content']?.toString() ?? '')
+        .split(RegExp(r'\\r?\\n'))
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty)
+        .toList(growable: false);
+    if (questions.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(_bn ? 'আগে ফর্মে প্রশ্ন যোগ করুন।' : 'Add questions to this form first.'),
+      ));
+      return;
+    }
+    final answers = await showDialog<List<Map<String, String>>>(
+      context: context,
+      builder: (_) => _FormResponseDialog(
+        isBangla: _bn,
+        formTitle: form['title']?.toString() ?? '',
+        questions: questions,
+      ),
+    );
+    if (answers == null || !mounted) return;
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('offynex_forms_responses_v1');
+    final responses = <Map<String, dynamic>>[];
+    if (raw != null) {
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) {
+          for (final item in decoded) {
+            if (item is Map) responses.add(Map<String, dynamic>.from(item));
+          }
+        }
+      } catch (_) {
+        // Preserve a malformed response archive before starting a new one.
+        final key = 'offynex_forms_responses_recovery_${DateTime.now().microsecondsSinceEpoch}';
+        await prefs.setString(key, raw);
+      }
+    }
+    responses.add({
+      'id': DateTime.now().microsecondsSinceEpoch.toString(),
+      'formId': form['id']?.toString() ?? '',
+      'formTitle': form['title']?.toString() ?? '',
+      'submittedAt': DateTime.now().toIso8601String(),
+      'answers': answers,
+    });
+    final saved = await prefs.setString('offynex_forms_responses_v1', jsonEncode(responses));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(saved
+          ? (_bn ? 'উত্তর সংরক্ষণ হয়েছে।' : 'Response saved locally.')
+          : (_bn ? 'উত্তর সংরক্ষণ করা যায়নি।' : 'Could not save response.')),
+    ));
+  }
+
+  Future<void> _showFormResponses() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('offynex_forms_responses_v1');
+    final responses = <Map<String, dynamic>>[];
+    if (raw != null) {
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) {
+          for (final item in decoded) {
+            if (item is Map) responses.add(Map<String, dynamic>.from(item));
+          }
+        }
+      } catch (_) {}
+    }
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(_bn ? 'জমা দেওয়া উত্তর' : 'Form responses'),
+        content: SizedBox(
+          width: 520,
+          child: responses.isEmpty
+              ? Text(_bn ? 'এখনো কোনো উত্তর জমা হয়নি।' : 'No responses yet.')
+              : ListView(
+                  shrinkWrap: true,
+                  children: responses.reversed.map((response) {
+                    final answers = response['answers'] is List
+                        ? (response['answers'] as List)
+                        : const [];
+                    return Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(response['formTitle']?.toString() ?? '',
+                                style: const TextStyle(fontWeight: FontWeight.bold)),
+                            for (final answer in answers)
+                              if (answer is Map)
+                                Text('${answer['question'] ?? ''}: ${answer['answer'] ?? ''}'),
+                            Text(response['submittedAt']?.toString() ?? '',
+                                style: Theme.of(context).textTheme.bodySmall),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(_bn ? 'বন্ধ' : 'Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final module = _modules[widget.module]!;
@@ -505,6 +618,12 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
                     Text('${visibleItems.length} / ${_items.length}'),
                   ]),
                   Wrap(spacing: 8, runSpacing: 8, children: [
+                    if (widget.module == 'Forms')
+                      OutlinedButton.icon(
+                        onPressed: _showFormResponses,
+                        icon: const Icon(Icons.inbox_outlined),
+                        label: Text(_bn ? 'জমা উত্তর' : 'Responses'),
+                      ),
                     OutlinedButton.icon(
                       onPressed: _exportRecords,
                       icon: const Icon(Icons.file_upload_outlined),
@@ -550,11 +669,27 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
                       title: Text(item['title']?.toString() ?? ''),
                       subtitle: Text(item['content']?.toString() ?? '', maxLines: 2, overflow: TextOverflow.ellipsis),
                       onTap: () => _editItem(item: item),
-                      trailing: IconButton(
-                        tooltip: _bn ? 'মুছুন' : 'Delete',
-                        icon: const Icon(Icons.delete_outline),
-                        onPressed: () => _deleteItem(item),
-                      ),
+                      trailing: widget.module == 'Forms'
+                          ? Wrap(
+                              spacing: 0,
+                              children: [
+                                IconButton(
+                                  tooltip: _bn ? 'উত্তর নিন' : 'Collect response',
+                                  icon: const Icon(Icons.assignment_turned_in_outlined),
+                                  onPressed: () => _collectFormResponse(item),
+                                ),
+                                IconButton(
+                                  tooltip: _bn ? 'মুছুন' : 'Delete',
+                                  icon: const Icon(Icons.delete_outline),
+                                  onPressed: () => _deleteItem(item),
+                                ),
+                              ],
+                            )
+                          : IconButton(
+                              tooltip: _bn ? 'মুছুন' : 'Delete',
+                              icon: const Icon(Icons.delete_outline),
+                              onPressed: () => _deleteItem(item),
+                            ),
                     ),
                   )),
                 ],
@@ -572,6 +707,84 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
   }
 }
 
+
+class _FormResponseDialog extends StatefulWidget {
+  const _FormResponseDialog({
+    required this.isBangla,
+    required this.formTitle,
+    required this.questions,
+  });
+
+  final bool isBangla;
+  final String formTitle;
+  final List<String> questions;
+
+  @override
+  State<_FormResponseDialog> createState() => _FormResponseDialogState();
+}
+
+class _FormResponseDialogState extends State<_FormResponseDialog> {
+  late final List<TextEditingController> _controllers;
+
+  @override
+  void initState() {
+    super.initState();
+    _controllers = List.generate(widget.questions.length, (_) => TextEditingController());
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _controllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.formTitle),
+      content: SizedBox(
+        width: 520,
+        height: 360,
+        child: ListView(
+          children: [
+            for (var index = 0; index < widget.questions.length; index++)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: TextField(
+                  controller: _controllers[index],
+                  decoration: InputDecoration(
+                    labelText: widget.questions[index],
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(widget.isBangla ? 'বাতিল' : 'Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(
+            context,
+            List<Map<String, String>>.generate(
+              widget.questions.length,
+              (index) => {
+                'question': widget.questions[index],
+                'answer': _controllers[index].text,
+              },
+            ),
+          ),
+          child: Text(widget.isBangla ? 'উত্তর সংরক্ষণ' : 'Save response'),
+        ),
+      ],
+    );
+  }
+}
 
 class _WorkspaceItemDialog extends StatefulWidget {
   const _WorkspaceItemDialog({
