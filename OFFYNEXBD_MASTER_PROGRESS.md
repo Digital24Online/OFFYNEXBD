@@ -1006,3 +1006,14 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Clear-sheet and CSV replacement remove obsolete validation rules; row/column shrink is blocked if it would discard a rule.
 - [x] Added bounded option parsing, duplicate/length checks, codec validation, persistence and widget regression tests.
 - [ ] XLSX native data-validation import/export, CI Analyze/tests/APK and physical-device verification remain pending.
+
+
+## Sheets interactive cell-write integrity — integrated correction (2026-11-18)
+
+- [x] Cell editor, formula bar, dropdown selection and formula picker now share one guarded interactive write path.
+- [x] Formula picker functions, including the direct PI() shortcut, cannot bypass an existing exact-value Dropdown Validation rule.
+- [x] Rejected writes leave the stored cell value unchanged and display the same Bangla/English validation message; blank values remain allowed.
+- [x] Added regression assertions for formula strings against dropdown options.
+- [ ] Flutter Analyze, complete automated tests, Android APK build and artifact upload are pending for this integrated correction.
+- [ ] Native XLSX data-validation import/export remains unsupported by the current mapping; not claimed complete.
+- [ ] Charts, pivot tables, conditional formatting, named ranges, ODS import/export, advanced print setup, freeze columns/panes, large-workbook performance and physical-device validation remain open.
