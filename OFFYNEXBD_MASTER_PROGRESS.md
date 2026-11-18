@@ -668,3 +668,8 @@ Continue development as coordinated batches across Writer, Sheets, Slides, PDF, 
 - [x] Build #233 / run `44256457158` passed Analyze, complete tests, Android APK build/upload. Artifact ID `14407125344`, size 50,205,363 bytes. This source includes Forms response JSON export, exact PDF conversion record navigation, and initial Slides PDF export UI.
 - [x] Build #234 / run `44256512065` passed Analyze, complete tests, Android APK build/upload. Artifact ID `14406243473`, size 50,204,851 bytes.
 - [ ] Later refactor of Slides PDF generation into a separately tested service initially exposed one redundant import lint; corrected in commit `05274986d428301a38046e48e69e78645ebd6ffb`. Build #238 passed Analyze and tests; APK build still pending.
+
+
+### Database row CRUD analyzer correction
+- [x] First Analyze run for Database row CRUD found a BuildContext async-gap warning before opening the row editor. Added a mounted guard after asynchronous preference/recovery work in commit `8564cb71b42724be374550b6bf3b4bdf1e427af3`.
+- [ ] Revalidate Database row CRUD and tests in the next CI run.
