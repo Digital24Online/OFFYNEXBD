@@ -19,7 +19,11 @@ void main() {
 <w:body>
 <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Heading</w:t></w:r></w:p>
 <w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Bold text</w:t></w:r></w:p>
+<w:p><w:hyperlink r:id="rLink"><w:r><w:t>Open link</w:t></w:r></w:hyperlink></w:p>
 <w:tbl><w:tr><w:tc><w:p><w:r><w:t>Cell A</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Cell B</w:t></w:r></w:p></w:tc></w:tr></w:tbl></w:body></w:document>''';
+    const rels = '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rLink" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="https://example.com/docs" TargetMode="External"/></Relationships>';
+    final relBytes = utf8.encode(rels);
+    archive.addFile(ArchiveFile('word/_rels/document.xml.rels', relBytes.length, relBytes));
     final data = utf8.encode(xml);
     archive.addFile(ArchiveFile('word/document.xml', data.length, data));
     final bytes = Uint8List.fromList(ZipEncoder().encodeBytes(archive));
@@ -31,6 +35,7 @@ void main() {
     expect(imported.delta.any((op) => op['insert'] == 'Heading'), isTrue);
     expect(imported.delta.any((op) => (op['attributes'] as Map?)?['header'] == 1), isTrue);
     expect(imported.delta.any((op) => op['insert'] == 'Bold text' && (op['attributes'] as Map?)?['bold'] == true), isTrue);
+    expect(imported.delta.any((op) => op['insert'] == 'Open link' && (op['attributes'] as Map?)?['link'] == 'https://example.com/docs'), isTrue);
     expect(imported.delta.any((op) => op['insert'] is Map && (op['insert'] as Map).containsKey('offynexbd-writer-table')), isTrue);
   });
 
@@ -39,6 +44,7 @@ void main() {
       {'insert': 'Hello বাংলা'},
       {'insert': '\n', 'attributes': {'header': 1}},
       {'insert': 'Bold', 'attributes': {'bold': true}},
+      {'insert': 'Linked', 'attributes': {'link': 'https://example.com/docs'}},
       {'insert': '\n'},
       {'insert': {'offynexbd-writer-table': jsonEncode({'rows': [['A', 'B'], ['1', '2']], 'headerRow': true})}},
       {'insert': '\n'},
@@ -54,6 +60,7 @@ void main() {
     expect(imported.format, 'ODT');
     expect(imported.delta.any((op) => op['insert'] == 'Hello বাংলা'), isTrue);
     expect(imported.delta.any((op) => op['insert'] == 'Bold' && (op['attributes'] as Map?)?['bold'] == true), isTrue);
+    expect(imported.delta.any((op) => op['insert'] == 'Linked' && (op['attributes'] as Map?)?['link'] == 'https://example.com/docs'), isTrue);
     expect(imported.delta.any((op) => op['insert'] is Map && (op['insert'] as Map).containsKey('offynexbd-writer-table')), isTrue);
     final exportedArchive = ZipDecoder().decodeBytes(bytes);
     expect(exportedArchive.files.first.name, 'mimetype');
@@ -61,6 +68,8 @@ void main() {
     final styles = utf8.decode(exportedArchive.findFile('styles.xml')!.readBytes()!);
     expect(styles, contains('Header'));
     expect(styles, contains('Footer'));
+    final content = utf8.decode(exportedArchive.findFile('content.xml')!.readBytes()!);
+    expect(content, contains('<text:a xlink:href="https://example.com/docs">Linked</text:a>'));
     expect(styles, contains('fo:page-width="21.00cm"'));
   });
 

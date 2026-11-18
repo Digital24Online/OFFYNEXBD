@@ -57,9 +57,11 @@ class WriterDocumentFormatService {
         final id = _attribute(rel, 'Id');
         final target = _attribute(rel, 'Target');
         if (id != null && target != null) {
-          relationships[id] = _normalizeZipPath(
-            target.startsWith('/') ? target.substring(1) : 'word/$target',
-          );
+          relationships[id] = _attribute(rel, 'TargetMode') == 'External'
+              ? target
+              : _normalizeZipPath(
+                  target.startsWith('/') ? target.substring(1) : 'word/$target',
+                );
         }
       }
     }
@@ -84,7 +86,7 @@ class WriterDocumentFormatService {
     final delta = <Map<String, dynamic>>[];
     for (final child in _elementChildren(body)) {
       if (child.name.local == 'p') {
-        await _appendDocxParagraph(child, _docxParagraphAttributes(child), delta, saveImage);
+        await _appendDocxParagraph(child, _docxParagraphAttributes(child), delta, saveImage, relationships);
       } else if (child.name.local == 'tbl') {
         final rows = _docxTable(child);
         if (rows.isNotEmpty) {
@@ -103,11 +105,19 @@ class WriterDocumentFormatService {
     Map<String, dynamic> block,
     List<Map<String, dynamic>> delta,
     Future<String?> Function(String) saveImage,
+    Map<String, String> relationships,
   ) async {
     Future<void> walk(XmlNode node, Map<String, dynamic> attrs) async {
       if (node is! XmlElement) return;
       final name = node.name.local;
       if (name == 'rPr' || name == 'pPr') return;
+      if (name == 'hyperlink') {
+        final id = _attribute(node, 'id');
+        final target = id == null ? null : _safeLink(relationships[id]);
+        final linked = <String, dynamic>{...attrs, if (target != null) 'link': target};
+        for (final child in node.children) { await walk(child, linked); }
+        return;
+      }
       if (name == 'r') {
         final runAttrs = _docxRunAttributes(_firstChild(node, 'rPr'));
         for (final child in node.children) { await walk(child, runAttrs); }
@@ -251,6 +261,12 @@ class WriterDocumentFormatService {
       if (node is XmlText) { _addText(delta, node.value, attrs); return; }
       if (node is! XmlElement) return;
       final name = node.name.local;
+      if (name == 'a') {
+        final target = _safeLink(_attribute(node, 'href'));
+        final linked = <String, dynamic>{...attrs, if (target != null) 'link': target};
+        for (final child in node.children) { await walk(child, linked); }
+        return;
+      }
       if (name == 'span') {
         final style = _attribute(node, 'style-name');
         final merged = <String, dynamic>{...attrs, if (style != null && styles.containsKey(style)) ...styles[style]!};
@@ -358,6 +374,8 @@ class WriterDocumentFormatService {
             if (attrs['bold'] == true) value = '<text:span text:style-name="T_Bold">$value</text:span>';
             if (attrs['italic'] == true) value = '<text:span text:style-name="T_Italic">$value</text:span>';
             if (attrs['underline'] == true) value = '<text:span text:style-name="T_Underline">$value</text:span>';
+            final link = _safeLink(attrs['link']?.toString());
+            if (link != null) value = '<text:a xlink:href="${_xmlEscape(link)}">$value</text:a>';
             paragraph.write(value);
           }
           if (i < parts.length - 1) flushParagraph(attrs);
@@ -503,6 +521,19 @@ ${manifestImages.join('\n')}
       if (value is! Map || value['rows'] is! List) return [];
       return (value['rows'] as List).take(20).whereType<List>().map((row) => row.take(10).map((v) => v?.toString() ?? '').toList()).toList();
     } catch (_) { return []; }
+  }
+
+  static String? _safeLink(String? raw) {
+    if (raw == null || raw.length > 2048) return null;
+    final uri = Uri.tryParse(raw.trim());
+    if (uri == null || !uri.hasScheme) return null;
+    if (uri.scheme == 'http' || uri.scheme == 'https') {
+      return uri.host.isEmpty ? null : uri.toString();
+    }
+    if (uri.scheme == 'mailto') {
+      return uri.path.isEmpty || uri.path.contains(RegExp(r'[\\r\\n]')) ? null : uri.toString();
+    }
+    return null;
   }
 
   static String _xmlEscape(String value) => value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&apos;');
