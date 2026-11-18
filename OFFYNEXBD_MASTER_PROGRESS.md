@@ -684,3 +684,9 @@ Continue development as coordinated batches across Writer, Sheets, Slides, PDF, 
 - [x] Build #238 / run `44256863470` passed Flutter Analyze, complete tests (including Bangla/English Slides PDF generation and 200-slide limit checks), Android APK build and upload.
 - [x] Artifact `OFFYNEXBD-Android-APK`: ID `14407300215`, size 50,205,409 bytes.
 - [x] Slides export currently creates a landscape PDF, one content line per slide; this is PDF output, not PPTX.
+
+
+### Database row editor lifecycle correction
+- [x] Build #243 passed Analyze but the new Database CRUD widget test exposed a controller-lifecycle bug: controllers were disposed immediately after the nested dialog began its closing animation.
+- [x] Moved row-editor controllers into a dedicated stateful dialog so they are disposed only when the dialog widget is actually removed. Fix commit: `24e69adbc861e0f0cd5bd1882de176ee089442a2`.
+- [ ] Re-run the complete tests and Android build for Database row CRUD; do not mark this feature verified until successful.
