@@ -18,8 +18,8 @@ void main() {
     await tester.tap(find.text('নতুন তৈরি'));
     await tester.pumpAndSettle();
     final fields = find.byType(TextField);
-    await tester.enterText(fields.at(0), 'গ্রাহক ফরম');
-    await tester.enterText(fields.at(1), 'নাম\nমোবাইল\nঠিকানা');
+    await tester.enterText(fields.at(1), 'গ্রাহক ফরম');
+    await tester.enterText(fields.at(2), 'নাম\nমোবাইল\nঠিকানা');
     await tester.tap(find.text('সংরক্ষণ'));
     await tester.pumpAndSettle();
 
