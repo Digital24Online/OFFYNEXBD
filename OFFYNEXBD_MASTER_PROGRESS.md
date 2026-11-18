@@ -662,3 +662,9 @@ Continue development as coordinated batches across Writer, Sheets, Slides, PDF, 
 - [x] Added widget test for creating a customer row and editing its values while preserving the other field.
 - [x] Updated Database help text to distinguish offline row CRUD from the still-unimplemented SQL/relational query engine.
 - [ ] Validate commits `1f1a41945bd28e23a74db63a4b3ff14a32ae1367`, `307d3ffdd6bfae6e4ef49739a35e029d7376331f`, `9c9533fb7f20c17c755f5f2881d627be977493fa`, and `7e26c33081e465d4b99c40243e2abea61c486961` in CI before marking verified.
+
+
+### Forms response export + Slides PDF UI — verified base builds
+- [x] Build #233 / run `44256457158` passed Analyze, complete tests, Android APK build/upload. Artifact ID `14407125344`, size 50,205,363 bytes. This source includes Forms response JSON export, exact PDF conversion record navigation, and initial Slides PDF export UI.
+- [x] Build #234 / run `44256512065` passed Analyze, complete tests, Android APK build/upload. Artifact ID `14406243473`, size 50,204,851 bytes.
+- [ ] Later refactor of Slides PDF generation into a separately tested service initially exposed one redundant import lint; corrected in commit `05274986d428301a38046e48e69e78645ebd6ffb`. Build #238 passed Analyze and tests; APK build still pending.
