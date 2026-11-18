@@ -2002,60 +2002,18 @@ Future<void> showCustomFontSizeDialog() async {
   }
 
   Future<void> editHeaderFooter() async {
-    final header = TextEditingController(text: headerText);
-    final footer = TextEditingController(text: footerText);
     final result = await showDialog<List<String>>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(_t('Header ও Footer', 'Header and Footer')),
-        content: SingleChildScrollView(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextField(
-              controller: header,
-              maxLength: 180,
-              decoration: InputDecoration(
-                labelText: _t('Header লেখা', 'Header text'),
-                hintText: _t('প্রতিটি পৃষ্ঠার উপরে', 'Top of each page'),
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: footer,
-              maxLength: 180,
-              decoration: InputDecoration(
-                labelText: _t('Footer লেখা', 'Footer text'),
-                hintText: _t('পৃষ্ঠা নম্বর: {page} / মোট: {pages}', 'Page {page} of {pages}'),
-              ),
-            ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                _t('পৃষ্ঠা নম্বরের জন্য {page} এবং মোট পৃষ্ঠার জন্য {pages} লিখুন।', 'Use {page} for the current page and {pages} for total pages.'),
-                style: const TextStyle(fontSize: 12, color: Colors.black54),
-              ),
-            ),
-          ]),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text(_t('বাতিল', 'Cancel')),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, [header.text.trim(), footer.text.trim()]),
-            child: Text(_t('সংরক্ষণ', 'Save')),
-          ),
-        ],
+      builder: (dialogContext) => _WriterHeaderFooterDialog(
+        initialHeader: headerText,
+        initialFooter: footerText,
+        isBangla: _bn,
       ),
     );
-    final nextHeader = header.text.trim();
-    final nextFooter = footer.text.trim();
-    header.dispose();
-    footer.dispose();
     if (result == null || !mounted) return;
     setState(() {
-      headerText = nextHeader;
-      footerText = nextFooter;
+      headerText = result[0];
+      footerText = result[1];
     });
     await saveDocument();
     _showMessage(_t('Header ও Footer সংরক্ষিত হয়েছে।', 'Header and footer saved.'));
@@ -2898,6 +2856,92 @@ Future<void> insertWriterImage() async {
 }
 
     
+class _WriterHeaderFooterDialog extends StatefulWidget {
+  final String initialHeader;
+  final String initialFooter;
+  final bool isBangla;
+
+  const _WriterHeaderFooterDialog({
+    required this.initialHeader,
+    required this.initialFooter,
+    required this.isBangla,
+  });
+
+  @override
+  State<_WriterHeaderFooterDialog> createState() =>
+      _WriterHeaderFooterDialogState();
+}
+
+class _WriterHeaderFooterDialogState
+    extends State<_WriterHeaderFooterDialog> {
+  late final TextEditingController _headerController;
+  late final TextEditingController _footerController;
+
+  String _t(String bn, String en) => widget.isBangla ? bn : en;
+
+  @override
+  void initState() {
+    super.initState();
+    _headerController = TextEditingController(text: widget.initialHeader);
+    _footerController = TextEditingController(text: widget.initialFooter);
+  }
+
+  @override
+  void dispose() {
+    _headerController.dispose();
+    _footerController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(_t('Header ও Footer', 'Header and Footer')),
+      content: SingleChildScrollView(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(
+            controller: _headerController,
+            maxLength: 180,
+            decoration: InputDecoration(
+              labelText: _t('Header লেখা', 'Header text'),
+              hintText: _t('প্রতিটি পৃষ্ঠার উপরে', 'Top of each page'),
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _footerController,
+            maxLength: 180,
+            decoration: InputDecoration(
+              labelText: _t('Footer লেখা', 'Footer text'),
+              hintText: _t('পৃষ্ঠা নম্বর: {page} / মোট: {pages}', 'Page {page} of {pages}'),
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              _t('পৃষ্ঠা নম্বরের জন্য {page} এবং মোট পৃষ্ঠার জন্য {pages} লিখুন।', 'Use {page} for the current page and {pages} for total pages.'),
+              style: const TextStyle(fontSize: 12, color: Colors.black54),
+            ),
+          ),
+        ]),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(_t('বাতিল', 'Cancel')),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, [
+            _headerController.text.trim(),
+            _footerController.text.trim(),
+          ]),
+          child: Text(_t('সংরক্ষণ', 'Save')),
+        ),
+      ],
+    );
+  }
+}
+
 class _WriterPagesPainter extends CustomPainter {
   final double pageWidth;
   final double pageHeight;
