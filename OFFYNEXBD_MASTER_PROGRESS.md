@@ -713,3 +713,10 @@ Continue development as coordinated batches across Writer, Sheets, Slides, PDF, 
 - [ ] Multi-worksheet editing inside OFFYNEX Sheets remains future work; current import still imports one selected worksheet at a time.
 
 - [x] Follow-up safety refinement: XLSX replacement now waits for the pending save queue before reading the current workbook, ensuring the backup includes the latest edits (commit `8f51750409b0d139310adb34de8c9a12757ab585`).
+
+
+### Sheets XLSX import safety integration correction — 2026-11-18
+- [x] CI runs #249–#251 exposed that the first automated edit placed the backup block in the CSV import method and left its variable out of scope in XLSX import. Those runs failed at Flutter Analyze; no APK was produced from those source revisions.
+- [x] Corrected the code in commit `cc1d2677eebd134279213479ca776584fc0e37d2`: CSV import restored to its original flow; backup logic now lives only in XLSX replacement and the backup key is used in its success message.
+- [x] Manually inspected both import paths and confirmed the XLSX path waits for pending saves, preserves the previous workbook, then replaces the active worksheet.
+- [ ] Build #252 / run `44260743427` is the first workflow on the corrected integration commit; wait for Analyze, full tests, APK build and artifact upload before marking verified.
