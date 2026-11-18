@@ -71,63 +71,33 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
   }
 
   Future<void> _editItem({Map<String, dynamic>? item}) async {
-    final title = TextEditingController(text: item?['title']?.toString() ?? '');
-    final content = TextEditingController(text: item?['content']?.toString() ?? '');
-    final result = await showDialog<bool>(
+    final result = await showDialog<Map<String, String>>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(item == null
-            ? (_bn ? 'নতুন তৈরি করুন' : 'Create new')
-            : (_bn ? 'সম্পাদনা' : 'Edit')),
-        content: SizedBox(
-          width: 520,
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextField(
-              controller: title,
-              autofocus: true,
-              decoration: InputDecoration(labelText: _bn ? 'নাম / শিরোনাম' : 'Name / title'),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: content,
-              minLines: 4,
-              maxLines: 9,
-              decoration: InputDecoration(
-                labelText: _contentLabel,
-                alignLabelWithHint: true,
-                border: const OutlineInputBorder(),
-              ),
-            ),
-          ]),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false),
-              child: Text(_bn ? 'বাতিল' : 'Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, true),
-              child: Text(_bn ? 'সংরক্ষণ' : 'Save')),
-        ],
+      builder: (_) => _WorkspaceItemDialog(
+        isBangla: _bn,
+        title: item?['title']?.toString() ?? '',
+        content: item?['content']?.toString() ?? '',
+        contentLabel: _contentLabel,
+        isNew: item == null,
       ),
     );
-    if (result == true && title.text.trim().isNotEmpty) {
-      final now = DateTime.now().toIso8601String();
-      setState(() {
-        if (item == null) {
-          _items.insert(0, {
-            'id': DateTime.now().microsecondsSinceEpoch.toString(),
-            'title': title.text.trim(),
-            'content': content.text,
-            'updatedAt': now,
-          });
-        } else {
-          item['title'] = title.text.trim();
-          item['content'] = content.text;
-          item['updatedAt'] = now;
-        }
-      });
-      await _save();
-    }
-    title.dispose();
-    content.dispose();
+    if (result == null || result['title']!.trim().isEmpty) return;
+    final now = DateTime.now().toIso8601String();
+    setState(() {
+      if (item == null) {
+        _items.insert(0, {
+          'id': DateTime.now().microsecondsSinceEpoch.toString(),
+          'title': result['title']!.trim(),
+          'content': result['content'] ?? '',
+          'updatedAt': now,
+        });
+      } else {
+        item['title'] = result['title']!.trim();
+        item['content'] = result['content'] ?? '';
+        item['updatedAt'] = now;
+      }
+    });
+    await _save();
   }
 
   String get _contentLabel {
@@ -429,6 +399,91 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
               icon: const Icon(Icons.add),
               label: Text(_bn ? 'নতুন তৈরি' : 'Create new'),
             ),
+    );
+  }
+}
+
+
+class _WorkspaceItemDialog extends StatefulWidget {
+  const _WorkspaceItemDialog({
+    required this.isBangla,
+    required this.title,
+    required this.content,
+    required this.contentLabel,
+    required this.isNew,
+  });
+
+  final bool isBangla;
+  final String title;
+  final String content;
+  final String contentLabel;
+  final bool isNew;
+
+  @override
+  State<_WorkspaceItemDialog> createState() => _WorkspaceItemDialogState();
+}
+
+class _WorkspaceItemDialogState extends State<_WorkspaceItemDialog> {
+  late final TextEditingController _titleController;
+  late final TextEditingController _contentController;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController(text: widget.title);
+    _contentController = TextEditingController(text: widget.content);
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _contentController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bn = widget.isBangla;
+    return AlertDialog(
+      title: Text(widget.isNew
+          ? (bn ? 'নতুন তৈরি করুন' : 'Create new')
+          : (bn ? 'সম্পাদনা' : 'Edit')),
+      content: SizedBox(
+        width: 520,
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(
+            controller: _titleController,
+            autofocus: true,
+            decoration: InputDecoration(
+              labelText: bn ? 'নাম / শিরোনাম' : 'Name / title',
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _contentController,
+            minLines: 4,
+            maxLines: 9,
+            decoration: InputDecoration(
+              labelText: widget.contentLabel,
+              alignLabelWithHint: true,
+              border: const OutlineInputBorder(),
+            ),
+          ),
+        ]),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(bn ? 'বাতিল' : 'Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, {
+            'title': _titleController.text,
+            'content': _contentController.text,
+          }),
+          child: Text(bn ? 'সংরক্ষণ' : 'Save'),
+        ),
+      ],
     );
   }
 }
