@@ -177,7 +177,7 @@ void openModule(OfficeModule module) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const WriterScreen(),
+        builder: (context) => WriterScreen(isBangla: isBangla),
       ),
     );
     return;
