@@ -8,6 +8,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter/services.dart';
 import 'writer_table.dart';
 import 'writer_pdf_export_service.dart';
+import 'writer_document_codec.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -64,6 +65,90 @@ class _WriterScreenState extends State<WriterScreen> {
       documents = result;
       isLoading = false;
     });
+  }
+
+  Future<void> exportDocuments() async {
+    try {
+      final json = WriterDocumentCodec.encode(documents);
+      final saved = await FilePicker.saveFile(
+        fileName: 'OFFYNEXBD-Writer-documents.json',
+        bytes: Uint8List.fromList(utf8.encode(json)),
+        mimeType: 'application/json',
+        dialogTitle: 'Export Writer documents',
+      );
+      if (saved != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Writer documents exported successfully.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Writer export failed: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> importDocuments() async {
+    try {
+      final picked = await FilePicker.pickFile(
+        type: FileType.custom,
+        allowedExtensions: const ['json'],
+      );
+      if (picked == null || !mounted) return;
+      final bytes = await picked.readAsBytes();
+      if (!mounted) return;
+      if (bytes.isEmpty || bytes.length > 20 * 1024 * 1024) {
+        throw const FormatException('Writer archive must be between 1 byte and 20 MB.');
+      }
+      final imported = WriterDocumentCodec.decode(
+        utf8.decode(bytes, allowMalformed: false),
+      );
+      final existingIds = documents.map((item) => item['id']?.toString()).toSet();
+      final additions = imported
+          .where((item) => !existingIds.contains(item['id']))
+          .toList(growable: false);
+      final yes = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Import Writer documents?'),
+          content: Text(
+            '${imported.length} documents found. ${additions.length} are new. Existing documents with the same ID will be kept unchanged.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Import'),
+            ),
+          ],
+        ),
+      );
+      if (yes != true || !mounted) return;
+      if (additions.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No new Writer documents to import.')),
+        );
+        return;
+      }
+      final updated = [...documents, ...additions];
+      await storeDocuments(updated);
+      if (!mounted) return;
+      setState(() => documents = updated);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${additions.length} Writer documents imported.')),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Writer import failed: $e')),
+        );
+      }
+    }
   }
 
   Future<void> addDocument() async {
@@ -196,6 +281,18 @@ class _WriterScreenState extends State<WriterScreen> {
           'OFFYNEX Writer',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Import documents',
+            onPressed: importDocuments,
+            icon: const Icon(Icons.file_download_outlined),
+          ),
+          IconButton(
+            tooltip: 'Export documents',
+            onPressed: exportDocuments,
+            icon: const Icon(Icons.file_upload_outlined),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: addDocument,
