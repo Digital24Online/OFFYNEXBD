@@ -1268,3 +1268,15 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 
 - Latest source branch head at 2026-11-19 checkpoint: `53f9cca97fbb4c7580a4275163fae8229248beab` (Writer backup path guard and CI-trigger marker).
 - Current PR #3 still points to this branch. Build #401 (`44383179935`) analyzed and tested commit `3a92f365db04f4e1cc31c177ad1f2fc6dcd283f4`, which predates the Writer reliability batch; Android APK build is still in progress. No CI result is yet available for the current source head, so do not mark this batch verified.
+
+
+## Integrated Portable Backup — All Modules, Writer Assets and Scan PDFs (2026-11-19)
+
+- [x] Replaced Cloud workspace's primary backup export with a portable `.offynex` ZIP archive containing all supported `offynex_*` preferences used by Writer, Sheets and the other module workspaces.
+- [x] Writer embedded image files are packaged from the app-managed `offynexbd_images` directory and their paths are rewritten in the backup manifest.
+- [x] Scan PDF files are packaged from the app-managed `OFFYNEXBD/Scans` directory; Scan workspace records and Writer references are rewritten and restored to new device-local paths.
+- [x] Legacy JSON backup import and manual JSON copy/paste restore remain supported.
+- [x] Import validates the app-specific manifest, archive size/file count/expanded size, asset paths and managed storage roots; extraction is rolled back if restore preparation fails.
+- [x] Added regression tests for Writer image + Scan PDF cross-device restoration, unrelated local-path rejection and invalid archive rejection.
+- [ ] Current source branch CI Analyze/tests/Android APK/artifact verification is pending.
+- [ ] This is portable offline backup/restore, not online Cloud Sync. Authentication, remote storage, encryption-at-rest, sharing and conflict resolution remain incomplete.

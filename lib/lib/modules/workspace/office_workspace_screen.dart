@@ -9,6 +9,8 @@ import 'slides_pdf_export_service.dart';
 import 'scan_document_service.dart';
 import 'database_rows_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path_provider/path_provider.dart';
+import 'portable_workspace_backup_service.dart';
 
 import '../pdf/pdf_to_document_service.dart';
 import 'workspace_backup_codec.dart';
@@ -431,18 +433,25 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
 
   Future<void> _exportBackup() async {
     try {
-      await _createBackup();
-      if (!mounted || _backupController.text.trim().isEmpty) return;
-      final bytes = Uint8List.fromList(utf8.encode(_backupController.text));
+      final prefs = await SharedPreferences.getInstance();
+      final keys = prefs.getKeys().where((key) => key.startsWith('offynex_')).toList()..sort();
+      final data = <String, Object?>{for (final key in keys) key: prefs.get(key)};
+      final support = await getApplicationSupportDirectory();
+      final documents = await getApplicationDocumentsDirectory();
+      final bytes = await PortableWorkspaceBackupService.exportArchive(
+        data,
+        writerImageDirectory: Directory('${support.path}/offynexbd_images'),
+        scanDirectory: Directory('${documents.path}/OFFYNEXBD/Scans'),
+      );
       final saved = await FilePicker.saveFile(
-        fileName: 'OFFYNEXBD-backup.json',
+        fileName: 'OFFYNEXBD-Portable-Backup.offynex',
         bytes: bytes,
-        mimeType: 'application/json',
-        dialogTitle: _bn ? 'ব্যাকআপ ফাইল সংরক্ষণ' : 'Save backup file',
+        mimeType: 'application/zip',
+        dialogTitle: _bn ? 'সম্পূর্ণ ব্যাকআপ সংরক্ষণ' : 'Save portable backup',
       );
       if (saved != null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(_bn ? 'ব্যাকআপ ফাইল সংরক্ষিত হয়েছে।' : 'Backup file saved.'),
+          content: Text(_bn ? 'ডকুমেন্ট, স্ক্যান ও অ্যাপ ডেটাসহ ব্যাকআপ সংরক্ষিত হয়েছে।' : 'Backup saved with documents, scans and app data.'),
         ));
       }
     } catch (e) {
@@ -458,18 +467,29 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
     try {
       final picked = await FilePicker.pickFile(
         type: FileType.custom,
-        allowedExtensions: const ['json'],
+        allowedExtensions: const ['offynex', 'zip', 'json'],
       );
       if (picked == null || !mounted) return;
       final bytes = await picked.readAsBytes();
-      if (bytes.isEmpty || bytes.length > 25 * 1024 * 1024) {
+      if (bytes.isEmpty || bytes.length > WorkspaceBackupCodec.maxBackupBytes) {
         throw const FormatException('Backup file must be between 1 byte and 25 MB.');
       }
-      final source = utf8.decode(bytes, allowMalformed: false);
-      WorkspaceBackupCodec.decode(source);
-      _backupController.text = source;
-      if (mounted) setState(() {});
-      await _restoreBackup();
+      Map<String, Object?> data;
+      if (picked.extension?.toLowerCase() == 'json') {
+        final source = utf8.decode(bytes, allowMalformed: false);
+        data = WorkspaceBackupCodec.decode(source);
+        _backupController.text = source;
+      } else {
+        final support = await getApplicationSupportDirectory();
+        final documents = await getApplicationDocumentsDirectory();
+        data = await PortableWorkspaceBackupService.importArchive(
+          bytes,
+          writerImageDirectory: Directory('${support.path}/offynexbd_images'),
+          scanDirectory: Directory('${documents.path}/OFFYNEXBD/Scans'),
+        );
+      }
+      if (!mounted) return;
+      await _restoreBackupData(data);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -482,20 +502,28 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
   Future<void> _restoreBackup() async {
     try {
       final data = WorkspaceBackupCodec.decode(_backupController.text);
-      final yes = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text(_bn ? 'ব্যাকআপ পুনরুদ্ধার?' : 'Restore backup?'),
-          content: Text(_bn
-              ? 'শুধু OFFYNEXBD-এর সংরক্ষিত ডেটা পুনরুদ্ধার হবে। একই কী থাকলে সেটি প্রতিস্থাপিত হবে।'
-              : 'Only OFFYNEXBD app data will be restored. Matching keys will be replaced.'),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(_bn ? 'বাতিল' : 'Cancel')),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(_bn ? 'পুনরুদ্ধার' : 'Restore')),
-          ],
-        ),
-      );
-      if (yes != true) return;
+      await _restoreBackupData(data);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${_bn ? 'ব্যাকআপ ত্রুটি' : 'Backup error'}: $e')));
+    }
+  }
+
+  Future<void> _restoreBackupData(Map<String, Object?> data) async {
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(_bn ? 'ব্যাকআপ পুনরুদ্ধার?' : 'Restore backup?'),
+        content: Text(_bn
+            ? 'শুধু OFFYNEXBD-এর সংরক্ষিত ডেটা পুনরুদ্ধার হবে। একই কী থাকলে সেটি প্রতিস্থাপিত হবে।'
+            : 'Only OFFYNEXBD app data will be restored. Matching keys will be replaced.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(_bn ? 'বাতিল' : 'Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(_bn ? 'পুনরুদ্ধার' : 'Restore')),
+        ],
+      ),
+    );
+    if (yes != true || !mounted) return;
+    try {
       final prefs = await SharedPreferences.getInstance();
       await WorkspaceBackupRestore.restore(prefs, data);
       if (mounted) {
@@ -529,12 +557,12 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
           OutlinedButton.icon(
             onPressed: _exportBackup,
             icon: const Icon(Icons.save_alt),
-            label: Text(_bn ? 'JSON ফাইল সংরক্ষণ' : 'Export JSON file'),
+            label: Text(_bn ? 'সম্পূর্ণ ব্যাকআপ (.offynex)' : 'Portable backup (.offynex)'),
           ),
           OutlinedButton.icon(
             onPressed: _importBackupFile,
             icon: const Icon(Icons.folder_open),
-            label: Text(_bn ? 'JSON ফাইল খুলুন' : 'Import JSON file'),
+            label: Text(_bn ? 'ব্যাকআপ ফাইল খুলুন' : 'Import backup file'),
           ),
         ]),
         TextField(
