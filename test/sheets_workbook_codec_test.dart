@@ -171,6 +171,99 @@ void main() {
       expect(() => SheetsWorkbookCodec.decode(oversized), throwsFormatException);
     });
 
+    test('round-trips charts, conditional formatting and Pivot source metadata', () {
+      final workbook = SheetsWorkbook(
+        activeSheetId: 'pivot',
+        sheets: [
+          SheetsWorksheet(
+            id: 'source',
+            name: 'Source',
+            rows: 20,
+            columns: 5,
+            cells: {'A1': 'Region', 'B1': 'Sales'},
+            conditionalFormats: [
+              {
+                'range': 'B2:B20',
+                'operator': 'greaterThan',
+                'value': '100',
+                'fillColor': 'D9EAD3',
+                'fontColor': '1B5E20',
+              },
+            ],
+            charts: [
+              {'type': 'bar', 'title': 'Sales by region', 'range': 'A1:B20'},
+              {'type': 'line', 'title': 'Trend', 'range': 'A1:C20'},
+            ],
+          ),
+          SheetsWorksheet(
+            id: 'pivot',
+            name: 'Pivot Table',
+            rows: 3,
+            columns: 2,
+            cells: {'A1': 'Region', 'B1': 'SUM of Sales'},
+            pivotConfig: {
+              'sourceSheetId': 'source',
+              'range': 'A1:B20',
+              'groupColumn': 'A',
+              'valueColumn': 'B',
+              'aggregation': 'sum',
+            },
+          ),
+        ],
+      );
+
+      final decoded = SheetsWorkbookCodec.decode(
+        SheetsWorkbookCodec.encode(workbook),
+      );
+      expect(decoded.sheets.first.conditionalFormats, hasLength(1));
+      expect(decoded.sheets.first.charts, hasLength(2));
+      expect(decoded.activeSheet.pivotConfig?['sourceSheetId'], 'source');
+      expect(decoded.activeSheet.pivotConfig?['aggregation'], 'sum');
+    });
+
+    test('rejects invalid chart and Pivot metadata during workbook decode', () {
+      final invalidChart = SheetsWorkbook(
+        activeSheetId: 'one',
+        sheets: [
+          SheetsWorksheet(
+            id: 'one',
+            name: 'One',
+            rows: 10,
+            columns: 5,
+            charts: [{'type': 'pie', 'title': 'Bad', 'range': 'A1:B5'}],
+          ),
+        ],
+      );
+      expect(() => SheetsWorkbookCodec.encode(invalidChart), returnsNormally);
+      expect(
+        () => SheetsWorkbookCodec.decode(SheetsWorkbookCodec.encode(invalidChart)),
+        throwsFormatException,
+      );
+
+      final invalidPivot = SheetsWorkbook(
+        activeSheetId: 'pivot',
+        sheets: [
+          SheetsWorksheet(
+            id: 'pivot',
+            name: 'Pivot',
+            rows: 2,
+            columns: 2,
+            pivotConfig: {
+              'sourceSheetId': 'source',
+              'range': 'A1:B5',
+              'groupColumn': 'A',
+              'valueColumn': 'B',
+              'aggregation': 'median',
+            },
+          ),
+        ],
+      );
+      expect(
+        () => SheetsWorkbookCodec.decode(SheetsWorkbookCodec.encode(invalidPivot)),
+        throwsFormatException,
+      );
+    });
+
     test('rejects oversized workbook exports without changing the source', () {
       final workbook = SheetsWorkbook(
         activeSheetId: 'one',
