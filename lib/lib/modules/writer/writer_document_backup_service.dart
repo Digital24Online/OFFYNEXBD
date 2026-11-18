@@ -133,3 +133,5 @@ class WriterDocumentBackupService {
     return const {'png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'}.contains(raw) ? raw : 'png';
   }
 }
+
+// Archive assets are constrained to the app-owned Writer image directory.
