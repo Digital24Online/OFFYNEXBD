@@ -39,7 +39,7 @@ void main() {
         {
           'id': 'form-1',
           'title': 'Customer Registration',
-          'content': 'Full name\\nMobile number\\nAddress',
+          'content': 'Full name\nMobile number\nAddress',
           'updatedAt': '2026-11-18T10:00:00Z',
         },
       ]),
