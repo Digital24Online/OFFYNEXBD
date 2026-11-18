@@ -56,6 +56,37 @@ void main() {
     );
   });
  
+  test('backup export refuses to silently omit unsupported OFFYNEXBD data', () {
+    expect(
+      () => WorkspaceBackupCodec.encode({
+        'offynex_supported': 'keep',
+        'offynex_unsupported': <int>[1, 2, 3],
+      }),
+      throwsFormatException,
+    );
+  });
+
+  test('restore rejects foreign keys before changing any stored data', () async {
+    SharedPreferences.setMockInitialValues({
+      'offynex_writer_documents': 'original',
+    });
+    final prefs = await SharedPreferences.getInstance();
+    await expectLater(
+      WorkspaceBackupRestore.restore(prefs, {
+        'offynex_writer_documents': 'replacement',
+        'another_app_private_data': 'must not be written',
+      }),
+      throwsFormatException,
+    );
+    expect(prefs.getString('offynex_writer_documents'), 'original');
+    expect(prefs.containsKey('another_app_private_data'), isFalse);
+  });
+
+  test('backup codec enforces the documented 25 MB limit', () {
+    final oversized = 'x' * (WorkspaceBackupCodec.maxBackupBytes + 1);
+    expect(() => WorkspaceBackupCodec.decode(oversized), throwsFormatException);
+  });
+
   test('restore replaces only included keys and preserves unrelated data', () async {
     SharedPreferences.setMockInitialValues({
       'offynex_writer_documents': 'old',

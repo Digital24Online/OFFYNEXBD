@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class WorkspaceBackupCodec {
   static const format = 'OFFYNEXBD_LOCAL_BACKUP';
   static const version = 1;
+  static const maxBackupBytes = 25 * 1024 * 1024;
 
   static String encode(Map<String, Object?> data, {DateTime? createdAt}) {
     final safeData = <String, Object?>{};
@@ -16,17 +17,26 @@ class WorkspaceBackupCodec {
         safeData[entry.key] = value;
       } else if (value is List<String>) {
         safeData[entry.key] = value;
+      } else {
+        throw FormatException('Unsupported OFFYNEXBD backup value for ${entry.key}.');
       }
     }
-    return const JsonEncoder.withIndent('  ').convert({
+    final encoded = const JsonEncoder.withIndent('  ').convert({
       'format': format,
       'version': version,
       'createdAt': (createdAt ?? DateTime.now()).toIso8601String(),
       'data': safeData,
     });
+    if (utf8.encode(encoded).length > maxBackupBytes) {
+      throw const FormatException('OFFYNEXBD backup exceeds the 25 MB limit.');
+    }
+    return encoded;
   }
 
   static Map<String, Object?> decode(String source) {
+    if (utf8.encode(source).length > maxBackupBytes) {
+      throw const FormatException('OFFYNEXBD backup exceeds the 25 MB limit.');
+    }
     final dynamic decoded;
     try {
       decoded = jsonDecode(source);
@@ -67,6 +77,19 @@ class WorkspaceBackupRestore {
     SharedPreferences prefs,
     Map<String, Object?> data,
   ) async {
+    for (final entry in data.entries) {
+      if (!entry.key.startsWith('offynex_')) {
+        throw const FormatException('Restore contains a foreign application key.');
+      }
+      final value = entry.value;
+      if (value is! String &&
+          value is! bool &&
+          value is! int &&
+          value is! double &&
+          value is! List<String>) {
+        throw FormatException('Unsupported backup value for ${entry.key}.');
+      }
+    }
     final before = <String, Object?>{
       for (final key in data.keys)
         if (prefs.containsKey(key)) key: prefs.get(key),
