@@ -1042,6 +1042,7 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Chart rendering supports positive and negative values and retains valid zero-only data series.
 - [x] Added Pivot Table summary worksheets grouped by a selected column, with Sum, Count, Average, Minimum and Maximum aggregation; formulas in source cells are evaluated.
 - [x] Pivot source/range/fields/aggregation are persisted; a Refresh Pivot command rebuilds the summary from the original source worksheet.
+- [x] Pivot output is capped to the 1,000-row worksheet limit; oversized group counts fail safely rather than producing an invalid workbook.
 - [x] Prevented deletion of a source worksheet while a dependent Pivot Table still references it; deleting the Pivot worksheet first releases the dependency.
 - [x] Added workbook codec validation and regression tests for chart/conditional/Pivot persistence, invalid metadata and missing Pivot sources.
 - [ ] Flutter Analyze, full automated tests, Android release APK build and artifact upload are pending on this branch and must be verified before merging.
