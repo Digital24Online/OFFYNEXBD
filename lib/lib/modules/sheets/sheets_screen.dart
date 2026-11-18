@@ -35,6 +35,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
   final ScrollController _verticalController = ScrollController();
   bool _loading = true;
   bool _saved = true;
+  String? _workbookRecoveryMessage;
   Future<void> _saveQueue = Future<void>.value();
   int _rowCount = _initialRows;
   int _columnCount = _initialColumns;
@@ -77,33 +78,61 @@ class _SheetsScreenState extends State<SheetsScreen> {
     final raw = prefs.getString(_sheetStorageKey);
     if (raw != null) {
       try {
-        final data = jsonDecode(raw) as Map<String, dynamic>;
+        final decoded = jsonDecode(raw);
+        if (decoded is! Map) {
+          throw const FormatException('Workbook root must be an object.');
+        }
+        final data = Map<String, dynamic>.from(decoded);
+        final loadedCells = <String, String>{};
         final storedCells = data['cells'];
         if (storedCells is Map) {
-          _cells.addAll(storedCells.map(
-            (key, value) => MapEntry(key.toString(), value.toString()),
-          ));
+          for (final entry in storedCells.entries) {
+            loadedCells[entry.key.toString()] = entry.value.toString();
+          }
         }
+        final loadedStyles = <String, Map<String, dynamic>>{};
         final storedStyles = data['styles'];
         if (storedStyles is Map) {
           for (final entry in storedStyles.entries) {
             if (entry.value is Map) {
-              _cellStyles[entry.key.toString()] = Map<String, dynamic>.from(entry.value as Map);
+              loadedStyles[entry.key.toString()] =
+                  Map<String, dynamic>.from(entry.value as Map);
             }
           }
         }
-        _sheetName = data['name']?.toString() ?? 'Sheet1';
-        _rowCount = (data['rows'] as num?)?.toInt() ?? _initialRows;
-        _columnCount = (data['columns'] as num?)?.toInt() ?? _initialColumns;
-        // Preserve intentionally reduced dimensions from previously saved workbooks.
-        _rowCount = _rowCount.clamp(1, 1000);
-        _columnCount = _columnCount.clamp(1, 100);
-      } catch (_) {
-        // Ignore a damaged workbook and keep a fresh empty sheet.
+        final loadedName = data['name']?.toString() ?? 'Sheet1';
+        final loadedRows = ((data['rows'] as num?)?.toInt() ?? _initialRows)
+            .clamp(1, SheetsWorkbookLimits.maxRows);
+        final loadedColumns = ((data['columns'] as num?)?.toInt() ?? _initialColumns)
+            .clamp(1, SheetsWorkbookLimits.maxColumns);
+        _cells.addAll(loadedCells);
+        _cellStyles.addAll(loadedStyles);
+        _sheetName = loadedName;
+        _rowCount = loadedRows;
+        _columnCount = loadedColumns;
+      } catch (error) {
+        final recoveryKey =
+            'offynex_sheets_workbook_recovery_${DateTime.now().microsecondsSinceEpoch}';
+        final preserved = await prefs.setString(recoveryKey, raw);
+        _workbookRecoveryMessage = preserved
+            ? _t(
+                'Workbook পড়া যায়নি। মূল ডেটার Recovery Copy সংরক্ষিত: $recoveryKey',
+                'Workbook could not be read. Original data recovery copy saved: $recoveryKey',
+              )
+            : _t(
+                'Workbook পড়া যায়নি এবং Recovery Copy সংরক্ষণ ব্যর্থ হয়েছে: $error',
+                'Workbook could not be read and recovery copy failed: $error',
+              );
       }
     }
     if (!mounted) return;
     setState(() => _loading = false);
+    final recoveryMessage = _workbookRecoveryMessage;
+    if (recoveryMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(recoveryMessage), duration: const Duration(seconds: 10)),
+      );
+    }
   }
 
   Future<void> _saveWorkbook() async {
