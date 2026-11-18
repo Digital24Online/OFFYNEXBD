@@ -337,8 +337,7 @@ class _WriterScreenState extends State<WriterScreen> {
                         Text(_t('আপনার প্রথম ডকুমেন্ট তৈরি করুন', 'Create your first document'), textAlign: TextAlign.center, style: const TextStyle(color: OFFYNEXTheme.ink, fontSize: 19, fontWeight: FontWeight.w800)),
                         const SizedBox(height: 8),
                         Text(_t('সব লেখা ও ডকুমেন্ট এখানে নিরাপদে সংরক্ষিত থাকবে।', 'Your writing and documents will be saved securely on this device.'), textAlign: TextAlign.center, style: const TextStyle(color: OFFYNEXTheme.muted, fontSize: 13, height: 1.5)),
-                        const SizedBox(height: 22),
-                        FilledButton.icon(onPressed: addDocument, icon: const Icon(Icons.add_rounded), label: Text(_t('নতুন ডকুমেন্ট', 'New Document'))),
+
                       ]),
                     ),
                   ),
