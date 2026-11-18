@@ -1030,3 +1030,17 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Added regression coverage for multi-cell/multi-area import, unsupported rules, grid/expansion limits, grouped export and XLSX save/reopen round-trip.
 - [ ] Flutter Analyze, full automated tests, Android release APK build and artifact upload must pass on the integrated commit before CI verification.
 - [ ] Formula/range-backed dropdowns and non-list Excel validation types remain unsupported; they are rejected with an explicit import error, not silently dropped.
+
+
+## Writer mobile page viewport and touch zoom — implementation batch (2026-11-18)
+
+- [x] Added a shared, testable viewport scale calculator for Full Page, Page Width and Actual (100%) modes; layout recalculates when device/window dimensions change.
+- [x] Added a mobile-visible zoom strip with zoom-out, zoom-in, slider, percentage, Full Page, Page Width and 100% controls.
+- [x] Added two-finger pinch zoom and pan to the Writer page canvas using InteractiveViewer; pinch scale is committed to the per-document saved zoom setting while preserving pan translation.
+- [x] Expanded the saved zoom range to 50%–300%; existing legacy zoom values remain readable and are safely clamped.
+- [x] Kept the existing Quill Delta, table/image embeds, autosave, PDF generation and print-preview callbacks in place.
+- [x] Added five viewport unit tests for phone Full Page fit, Page Width, 100% scale, zoom limits and invalid page dimensions.
+- [ ] Flutter Analyze, complete automated test suite, Android release APK build and artifact upload must pass on the integrated commit before merge.
+- [ ] This viewport change does not yet provide true rich-content pagination: the existing continuous Quill editor and estimated page backgrounds remain a limitation for exact page breaks around tables/images.
+- [ ] DOCX import, ODT import/export, full-fidelity portable image packaging, advanced pagination, spellcheck and installable font management remain open Writer tasks.
+- [ ] Physical Android pinch/scroll, small-screen and accessibility checks remain pending.
