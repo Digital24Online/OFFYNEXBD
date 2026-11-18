@@ -38,9 +38,13 @@ class SheetsWorkbookCodec {
   static const int formatVersion = 2;
   static const int maxWorksheets = 100;
   static const int maxSheetNameLength = 31;
+  static const int maxWorkbookBytes = 20 * 1024 * 1024;
   static const String legacySheetId = 'legacy-sheet-1';
 
   static SheetsWorkbook decode(String raw) {
+    if (utf8.encode(raw).length > maxWorkbookBytes) {
+      throw const FormatException('Sheets workbook exceeds the 20 MB limit.');
+    }
     final decoded = jsonDecode(raw);
     if (decoded is! Map) {
       throw const FormatException('Workbook root must be an object.');
@@ -186,12 +190,16 @@ class SheetsWorkbookCodec {
     if (!ids.contains(workbook.activeSheetId)) {
       throw const FormatException('Active worksheet does not exist.');
     }
-    return jsonEncode({
+    final encoded = jsonEncode({
       'format': 'OFFYNEXBD_SHEETS_WORKBOOK',
       'version': formatVersion,
       'activeSheetId': workbook.activeSheetId,
       'sheets': encodedSheets,
       'updatedAt': DateTime.now().toIso8601String(),
     });
+    if (utf8.encode(encoded).length > maxWorkbookBytes) {
+      throw const FormatException('Sheets workbook exceeds the 20 MB limit.');
+    }
+    return encoded;
   }
 }

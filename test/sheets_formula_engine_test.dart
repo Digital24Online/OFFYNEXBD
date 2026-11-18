@@ -318,5 +318,15 @@ void main() {
       }
     });
 
+
+    test('rejects formulas that exceed safe length or token limits', () {
+      final tooLong = SheetsFormulaEngine({
+        'A1': '=${'1+'.repeat(2100)}1',
+        'A2': '=${'1+'.repeat(1100)}1',
+      });
+      expect(tooLong.evaluateCell('A1'), isNull);
+      expect(tooLong.evaluateCell('A2'), isNull);
+    });
+
   });
 }

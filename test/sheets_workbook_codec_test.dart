@@ -100,5 +100,31 @@ void main() {
         throwsFormatException,
       );
     });
+
+    test('rejects oversized workbook input before JSON decoding', () {
+      final oversized = ''.padRight(
+        SheetsWorkbookCodec.maxWorkbookBytes + 1,
+        'x',
+      );
+      expect(() => SheetsWorkbookCodec.decode(oversized), throwsFormatException);
+    });
+
+    test('rejects oversized workbook exports without changing the source', () {
+      final workbook = SheetsWorkbook(
+        activeSheetId: 'one',
+        sheets: [
+          SheetsWorksheet(
+            id: 'one',
+            name: 'One',
+            rows: 10,
+            columns: 5,
+            cells: {'A1': ''.padRight(SheetsWorkbookCodec.maxWorkbookBytes, 'x')},
+          ),
+        ],
+      );
+      expect(() => SheetsWorkbookCodec.encode(workbook), throwsFormatException);
+      expect(workbook.activeSheet.cells['A1']?.length, SheetsWorkbookCodec.maxWorkbookBytes);
+    });
+
   });
 }

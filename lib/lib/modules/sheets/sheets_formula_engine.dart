@@ -4,6 +4,9 @@ import 'dart:math' as math;
 /// Blank cells evaluate as zero; non-numeric text and circular formulas fail.
 /// Aggregate ranges skip blank and non-numeric cells.
 class SheetsFormulaEngine {
+  static const int maxFormulaLength = 4096;
+  static const int maxFormulaTokens = 2048;
+
   SheetsFormulaEngine(this.cells);
 
   final Map<String, String> cells;
@@ -18,6 +21,7 @@ class SheetsFormulaEngine {
       return number != null && number.isFinite ? number : null;
     }
 
+    if (raw.length > maxFormulaLength) return null;
     final active = visiting ?? <String>{};
     if (!active.add(key)) return null;
     try {
@@ -114,6 +118,9 @@ class _FormulaParser {
     }
     if (offset != source.length) {
       throw const FormatException('Invalid formula token');
+    }
+    if (tokens.length > SheetsFormulaEngine.maxFormulaTokens) {
+      throw const FormatException('Formula contains too many tokens');
     }
   }
 
