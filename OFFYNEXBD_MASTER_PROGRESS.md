@@ -626,3 +626,8 @@ Continue development as coordinated batches across Writer, Sheets, Slides, PDF, 
 - [x] Slides now has a landscape PDF export: one non-empty content line becomes one slide page; Bangla font is embedded; export is capped at 200 slides.
 - [x] Extracted PDF generation into `slides_pdf_export_service.dart` and added tests for Bangla/English PDF output and slide-count limits.
 - [ ] Validate latest Forms response export, PDF navigation and Slides PDF export commits with Flutter Analyze, full test suite and Android APK build/upload. No claim of PPTX or full slideshow support: those remain future work.
+
+
+### Slides PDF service lint correction
+- [x] First Analyze runs for the extracted Slides PDF service identified one redundant `dart:typed_data` import (Flutter services already exposes `Uint8List`). Removed in commit `05274986d428301a38046e48e69e78645ebd6ffb`.
+- [ ] Revalidate the corrected Slides PDF service and test in the next CI workflow; do not mark Slides PDF export complete until the full Android build succeeds.
