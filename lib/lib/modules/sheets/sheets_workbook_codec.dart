@@ -89,6 +89,14 @@ class SheetsWorkbookCodec {
       }
       sheets.add(sheet);
     }
+    for (final sheet in sheets) {
+      final pivot = sheet.pivotConfig;
+      if (pivot == null) continue;
+      final sourceId = pivot['sourceSheetId']?.toString() ?? '';
+      if (!ids.contains(sourceId) || sourceId == sheet.id) {
+        throw const FormatException('Pivot source worksheet is missing or invalid.');
+      }
+    }
     final activeId = data['activeSheetId']?.toString() ?? '';
     if (!ids.contains(activeId)) {
       throw const FormatException('Active worksheet does not exist.');
