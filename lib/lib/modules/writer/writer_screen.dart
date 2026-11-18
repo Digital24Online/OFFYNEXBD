@@ -10,6 +10,7 @@ import 'writer_table.dart';
 import 'writer_pdf_export_service.dart';
 import 'writer_document_codec.dart';
 import 'writer_docx_export_service.dart';
+import 'writer_viewport.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -475,6 +476,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   // Writer-এর অতিরিক্ত নথি, রিভিউ ও ভিউ সেটিংস।
   double zoomLevel = 1.0;
   String viewFit = 'Page';
+  final TransformationController _pageTransformController = TransformationController();
   bool showRuler = true;
   bool showStatusBar = true;
   bool showPageBorder = true;
@@ -503,7 +505,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
         selectedFontFamily = savedFontFamily!;
       }
       zoomLevel = (savedMeta['zoom'] is num)
-          ? (savedMeta['zoom'] as num).toDouble().clamp(0.6, 1.5).toDouble()
+          ? (savedMeta['zoom'] as num).toDouble().clamp(0.5, 3.0).toDouble()
           : 1.0;
       viewFit = ['Page', 'Width', 'Actual'].contains(savedMeta['viewFit'])
           ? savedMeta['viewFit'] as String
@@ -1597,10 +1599,10 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
             Text('Zoom ${(zoomLevel * 100).round()}%'),
             Slider(
               value: zoomLevel,
-              min: 0.6,
-              max: 1.5,
-              divisions: 18,
-              onChanged: (value) => setState(() => zoomLevel = value),
+              min: WriterViewportLayout.minimumZoom,
+              max: WriterViewportLayout.maximumZoom,
+              divisions: 25,
+              onChanged: (value) => _setZoomLevel(value, save: false),
               onChangeEnd: (_) => scheduleSave(),
             ),
           ]),
@@ -2123,11 +2125,116 @@ Future<void> showCustomFontSizeDialog() async {
     }
   }
 
+
+  void _setZoomLevel(double value, {bool save = true}) {
+    setState(() {
+      zoomLevel = value.clamp(
+        WriterViewportLayout.minimumZoom,
+        WriterViewportLayout.maximumZoom,
+      ).toDouble();
+    });
+    _pageTransformController.value = Matrix4.identity();
+    if (save) scheduleSave();
+  }
+
+  void _adjustZoom(double amount) {
+    _setZoomLevel(zoomLevel + amount);
+  }
+
+  void _handlePageInteractionEnd(ScaleEndDetails details) {
+    final matrix = _pageTransformController.value;
+    final gestureScale = matrix.getMaxScaleOnAxis();
+    if (!gestureScale.isFinite || (gestureScale - 1).abs() < 0.015) return;
+
+    final translateX = matrix.storage[12];
+    final translateY = matrix.storage[13];
+    setState(() {
+      zoomLevel = (zoomLevel * gestureScale)
+          .clamp(
+            WriterViewportLayout.minimumZoom,
+            WriterViewportLayout.maximumZoom,
+          )
+          .toDouble();
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _pageTransformController.value = Matrix4.identity()
+        ..translate(translateX, translateY);
+    });
+    scheduleSave();
+  }
+
+  Widget _buildViewportControls() {
+    return Container(
+      height: 48,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(color: OFFYNEXTheme.border),
+          bottom: BorderSide(color: OFFYNEXTheme.border),
+        ),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: Row(
+          children: [
+            IconButton(
+              tooltip: _t('ছোট করুন', 'Zoom out'),
+              visualDensity: VisualDensity.compact,
+              onPressed: () => _adjustZoom(-0.1),
+              icon: const Icon(Icons.remove_circle_outline, size: 20),
+            ),
+            SizedBox(
+              width: 112,
+              child: Slider(
+                value: zoomLevel,
+                min: WriterViewportLayout.minimumZoom,
+                max: WriterViewportLayout.maximumZoom,
+                divisions: 25,
+                onChanged: (value) => _setZoomLevel(value, save: false),
+                onChangeEnd: (_) => scheduleSave(),
+              ),
+            ),
+            SizedBox(
+              width: 48,
+              child: Text(
+                '${(zoomLevel * 100).round()}%',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+              ),
+            ),
+            IconButton(
+              tooltip: _t('বড় করুন', 'Zoom in'),
+              visualDensity: VisualDensity.compact,
+              onPressed: () => _adjustZoom(0.1),
+              icon: const Icon(Icons.add_circle_outline, size: 20),
+            ),
+            const VerticalDivider(width: 12, indent: 9, endIndent: 9),
+            TextButton(
+              onPressed: () => _setViewFit('Page'),
+              child: Text(_t('সম্পূর্ণ পৃষ্ঠা', 'Full Page')),
+            ),
+            TextButton(
+              onPressed: () => _setViewFit('Width'),
+              child: Text(_t('পৃষ্ঠার প্রস্থ', 'Page Width')),
+            ),
+            TextButton(
+              onPressed: () => _setViewFit('Actual'),
+              child: const Text('100%'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _setViewFit(String mode) {
     setState(() {
       viewFit = mode;
       zoomLevel = 1.0;
     });
+    _pageTransformController.value = Matrix4.identity();
     scheduleSave();
   }
 
@@ -2682,6 +2789,7 @@ Future<void> insertWriterImage() async {
         })
         .catchError((Object error) {});
 
+    _pageTransformController.dispose();
     editorFocusNode.dispose();
     titleController.dispose();
     quillController.dispose();
@@ -2787,17 +2895,16 @@ Future<void> insertWriterImage() async {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final page = _pageDimensions;
-                final availableWidth = math.max(1.0, constraints.maxWidth - 24);
-                final fitScale = math.min(
-                  availableWidth / page.width,
-                  constraints.maxHeight / page.height,
+                final layout = WriterViewportLayout.calculate(
+                  pageWidth: page.width,
+                  pageHeight: page.height,
+                  viewportWidth: constraints.maxWidth,
+                  viewportHeight: constraints.maxHeight,
+                  viewFit: viewFit,
+                  zoom: zoomLevel,
                 );
-                final baseScale = viewFit == 'Width'
-                    ? availableWidth / page.width
-                    : viewFit == 'Actual'
-                        ? 1.0
-                        : fitScale;
-                final scale = (baseScale * zoomLevel).clamp(0.15, 2.0).toDouble();
+                final availableWidth = layout.availableWidth;
+                final scale = layout.scale;
                 final displayWidth = page.width * scale;
                 final displayHeight = page.height * scale;
                 final plainText = quillController.document.toPlainText();
@@ -2824,19 +2931,27 @@ Future<void> insertWriterImage() async {
                 final documentCanvasHeight =
                     displayHeight * estimatedPageCount;
 
-                return SingleChildScrollView(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: SizedBox(
-                      width: math.max(availableWidth, displayWidth),
-                      height: documentCanvasHeight + 24,
-                      child: Center(
-                        child: Container(
-                          width: displayWidth,
-                          height: documentCanvasHeight,
-                          margin: const EdgeInsets.symmetric(vertical: 12),
-                          child: Stack(
-                            children: [
+                return InteractiveViewer(
+                  transformationController: _pageTransformController,
+                  minScale: 0.5,
+                  maxScale: 4.0,
+                  constrained: false,
+                  panEnabled: true,
+                  scaleEnabled: true,
+                  boundaryMargin: const EdgeInsets.all(120),
+                  alignment: Alignment.topCenter,
+                  clipBehavior: Clip.hardEdge,
+                  onInteractionEnd: _handlePageInteractionEnd,
+                  child: SizedBox(
+                    width: math.max(availableWidth, displayWidth),
+                    height: documentCanvasHeight + 24,
+                    child: Center(
+                      child: Container(
+                        width: displayWidth,
+                        height: documentCanvasHeight,
+                        margin: const EdgeInsets.symmetric(vertical: 12),
+                        child: Stack(
+                          children: [
                               Positioned.fill(
                                 child: CustomPaint(
                                   painter: _WriterPagesPainter(
@@ -2873,8 +2988,7 @@ Future<void> insertWriterImage() async {
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
+                          ],
                         ),
                       ),
                     ),
@@ -2883,6 +2997,7 @@ Future<void> insertWriterImage() async {
               },
             ),
           ),
+          _buildViewportControls(),
           if (showStatusBar) Container(
             width: double.infinity,
             decoration: const BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: OFFYNEXTheme.border))),
