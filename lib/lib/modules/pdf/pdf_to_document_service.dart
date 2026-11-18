@@ -31,6 +31,9 @@ class PdfConversionResult {
 }
 
 class PdfToDocumentService {
+  static const int maxPdfBytes = 50 * 1024 * 1024;
+  static const int maxPdfPages = 1000;
+
   static List<Map<String, dynamic>> plainTextToDelta(String text) {
     final normalized = text.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
     final value = normalized.isEmpty || normalized.endsWith('\n')
@@ -44,12 +47,18 @@ class PdfToDocumentService {
     required String sourceName,
     bool runOcr = true,
   }) async {
+    if (bytes.length > maxPdfBytes) {
+      throw const FormatException('PDF exceeds the 50 MB conversion limit.');
+    }
     if (bytes.length < 8 || String.fromCharCodes(bytes.take(5)) != '%PDF-') {
       throw const FormatException('নির্বাচিত ফাইলটি সঠিক PDF নয়।');
     }
     final dynamic pdf = await dc.PdfReader.loadFromBytes(bytes);
     final text = (pdf.text as String? ?? '').trim();
     final pageCount = (pdf.pageCount as int?) ?? 0;
+    if (pageCount > maxPdfPages) {
+      throw const FormatException('PDF exceeds the 1000-page conversion limit.');
+    }
     final images = ((pdf.images as Iterable?) ?? const []).toList();
     final dynamic docx = pdf.toDocx();
     final dynamic exported = await dc.DocxExporter().exportToBytes(docx);

@@ -1,9 +1,14 @@
+import 'dart:convert';
+
 import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 /// Creates a portable landscape PDF presentation from one-line-per-slide text.
 class SlidesPdfExportService {
+  static const int maxSlides = 200;
+  static const int maxTextBytes = 5 * 1024 * 1024;
+
   static Future<Uint8List> build({
     required String title,
     required List<String> slideTexts,
@@ -15,8 +20,12 @@ class SlidesPdfExportService {
     if (slides.isEmpty) {
       throw const FormatException('A presentation needs at least one slide.');
     }
-    if (slides.length > 200) {
+    if (slides.length > maxSlides) {
       throw const FormatException('A presentation can contain up to 200 slides.');
+    }
+    final textBytes = utf8.encode('${title}\n${slides.join('\n')}').length;
+    if (textBytes > maxTextBytes) {
+      throw const FormatException('Presentation text exceeds the 5 MB limit.');
     }
     final fontData = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
     final font = pw.Font.ttf(fontData);

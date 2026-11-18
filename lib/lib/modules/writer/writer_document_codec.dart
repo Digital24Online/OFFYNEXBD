@@ -5,21 +5,29 @@ class WriterDocumentCodec {
   static const format = 'OFFYNEXBD_WRITER_DOCUMENTS';
   static const version = 1;
   static const maxDocuments = 10000;
+  static const int maxArchiveBytes = 25 * 1024 * 1024;
 
   static String encode(
     List<Map<String, dynamic>> documents, {
     DateTime? createdAt,
   }) {
     final safe = _validate(documents);
-    return const JsonEncoder.withIndent('  ').convert({
+    final encoded = const JsonEncoder.withIndent('  ').convert({
       'format': format,
       'version': version,
       'createdAt': (createdAt ?? DateTime.now()).toIso8601String(),
       'documents': safe,
     });
+    if (utf8.encode(encoded).length > maxArchiveBytes) {
+      throw const FormatException('Writer archive exceeds the 25 MB limit.');
+    }
+    return encoded;
   }
 
   static List<Map<String, dynamic>> decode(String source) {
+    if (utf8.encode(source).length > maxArchiveBytes) {
+      throw const FormatException('Writer archive exceeds the 25 MB limit.');
+    }
     final dynamic decoded = jsonDecode(source);
     if (decoded is! Map ||
         decoded['format'] != format ||

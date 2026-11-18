@@ -53,5 +53,18 @@ void main() {
     test('creates an empty editable paragraph for empty input', () {
       expect(PdfToDocumentService.plainTextToDelta('').single['insert'], '\n');
     });
+
+    test('rejects PDFs larger than the conversion safety limit before parsing', () async {
+      final oversized = Uint8List(PdfToDocumentService.maxPdfBytes + 1);
+      await expectLater(
+        PdfToDocumentService.convert(
+          oversized,
+          sourceName: 'oversized.pdf',
+          runOcr: false,
+        ),
+        throwsFormatException,
+      );
+    });
+
   });
 }

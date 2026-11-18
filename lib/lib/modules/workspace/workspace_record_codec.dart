@@ -4,6 +4,7 @@ import 'dart:convert';
 class WorkspaceRecordCodec {
   static const format = 'OFFYNEXBD_WORKSPACE_RECORDS';
   static const version = 1;
+  static const int maxFileBytes = 10 * 1024 * 1024;
   static const supportedModules = <String>{
     'Slides',
     'Fonts',
@@ -22,19 +23,26 @@ class WorkspaceRecordCodec {
     if (!supportedModules.contains(module)) {
       throw ArgumentError.value(module, 'module', 'Unsupported workspace module');
     }
-    return const JsonEncoder.withIndent('  ').convert({
+    final encoded = const JsonEncoder.withIndent('  ').convert({
       'format': format,
       'version': version,
       'module': module,
       'createdAt': (createdAt ?? DateTime.now()).toIso8601String(),
       'records': _validateRecords(records),
     });
+    if (utf8.encode(encoded).length > maxFileBytes) {
+      throw const FormatException('Workspace export exceeds the 10 MB limit.');
+    }
+    return encoded;
   }
 
   static List<Map<String, dynamic>> decode(
     String source, {
     required String expectedModule,
   }) {
+    if (utf8.encode(source).length > maxFileBytes) {
+      throw const FormatException('Workspace import exceeds the 10 MB limit.');
+    }
     if (!supportedModules.contains(expectedModule)) {
       throw ArgumentError.value(expectedModule, 'expectedModule');
     }

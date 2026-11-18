@@ -71,5 +71,18 @@ void main() {
       () => WriterDocumentCodec.encode([documents.single, documents.single]),
       throwsFormatException,
     );
+
+  test('Writer document codec enforces the 25 MB archive limit', () {
+    final largeText = ''.padRight(WriterDocumentCodec.maxArchiveBytes, 'x');
+    expect(
+      () => WriterDocumentCodec.encode([
+        {'id': 'large', 'title': 'Large', 'content': largeText},
+      ]),
+      throwsFormatException,
+    );
+    final oversized = ''.padRight(WriterDocumentCodec.maxArchiveBytes + 1, 'x');
+    expect(() => WriterDocumentCodec.decode(oversized), throwsFormatException);
+  });
+
   });
 }

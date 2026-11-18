@@ -72,5 +72,26 @@ void main() {
       () => WorkspaceRecordCodec.encode('Unknown Module', records),
       throwsArgumentError,
     );
+
+  test('workspace record codec enforces the 10 MB import and export limit', () {
+    final oversizedContent = ''.padRight(WorkspaceRecordCodec.maxFileBytes, 'x');
+    expect(
+      () => WorkspaceRecordCodec.encode('Slides', [
+        {
+          'id': 'large',
+          'title': 'Large record',
+          'content': oversizedContent,
+          'updatedAt': '2026-11-18T10:30:00.000Z',
+        },
+      ]),
+      throwsFormatException,
+    );
+    final oversizedFile = ''.padRight(WorkspaceRecordCodec.maxFileBytes + 1, 'x');
+    expect(
+      () => WorkspaceRecordCodec.decode(oversizedFile, expectedModule: 'Slides'),
+      throwsFormatException,
+    );
+  });
+
   });
 }
