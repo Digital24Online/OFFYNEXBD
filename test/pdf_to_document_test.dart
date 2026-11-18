@@ -36,7 +36,7 @@ void main() {
 
     test('builds a real editable DOCX from Bangla and English OCR text', () async {
       final bytes = await PdfToDocumentService.buildDocxFromPlainText(
-        'বাংলা OCR লেখা\\nEnglish OCR text',
+        'বাংলা OCR লেখা\nEnglish OCR text',
       );
       expect(bytes, isNotEmpty);
       expect(bytes[0], 0x50);

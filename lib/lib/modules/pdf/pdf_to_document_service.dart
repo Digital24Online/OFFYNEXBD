@@ -104,17 +104,15 @@ class PdfToDocumentService {
   /// Builds an editable DOCX from OCR text, retaining paragraph breaks.
   /// This is used when the source PDF contains only page images.
   static Future<Uint8List> buildDocxFromPlainText(String text) async {
-    final normalized = text.replaceAll('\\r\\n', '\\n').replaceAll('\\r', '\\n');
-    final paragraphs = normalized.split('\\n');
+    final normalized = text.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
+    final paragraphs = normalized.split('\n');
     final html = paragraphs
         .map((paragraph) => '<p>${_escapeHtml(paragraph)}</p>')
         .join();
     final nodes = await dc.DocxParser.fromHtml(html);
     final document = dc.DocxBuiltDocument(elements: nodes);
-    final exported = await dc.DocxExporter().exportToBytes(document);
-    final bytes = exported is Uint8List
-        ? exported
-        : Uint8List.fromList(List<int>.from(exported as List));
+    final Uint8List bytes =
+        await dc.DocxExporter().exportToBytes(document);
     if (bytes.length < 4 || bytes[0] != 0x50 || bytes[1] != 0x4B) {
       throw StateError('OCR DOCX export did not produce a valid DOCX file.');
     }
