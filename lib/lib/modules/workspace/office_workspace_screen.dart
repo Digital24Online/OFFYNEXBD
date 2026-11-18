@@ -522,6 +522,48 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
     ));
   }
 
+  Future<void> _exportFormResponses() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('offynex_forms_responses_v1');
+      final decoded = raw == null ? <dynamic>[] : jsonDecode(raw);
+      if (decoded is! List) {
+        throw const FormatException('Forms response archive must be a list.');
+      }
+      if (decoded.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(_bn ? 'Export করার মতো কোনো উত্তর নেই।' : 'There are no responses to export.'),
+          ));
+        }
+        return;
+      }
+      final archive = const JsonEncoder.withIndent('  ').convert({
+        'format': 'OFFYNEXBD_FORMS_RESPONSES',
+        'version': 1,
+        'exportedAt': DateTime.now().toIso8601String(),
+        'responses': decoded,
+      });
+      final saved = await FilePicker.saveFile(
+        fileName: 'OFFYNEXBD-Forms-responses.json',
+        bytes: Uint8List.fromList(utf8.encode(archive)),
+        mimeType: 'application/json',
+        dialogTitle: _bn ? 'ফর্মের উত্তর Export' : 'Export form responses',
+      );
+      if (saved != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(_bn ? 'ফর্মের উত্তর Export হয়েছে।' : 'Form responses exported.'),
+        ));
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('${_bn ? 'Export ব্যর্থ' : 'Export failed'}: $error'),
+        ));
+      }
+    }
+  }
+
   Future<void> _showFormResponses() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString('offynex_forms_responses_v1');
@@ -572,6 +614,10 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
                 ),
         ),
         actions: [
+          TextButton(
+            onPressed: _exportFormResponses,
+            child: Text(_bn ? 'Export JSON' : 'Export JSON'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
             child: Text(_bn ? 'বন্ধ' : 'Close'),
