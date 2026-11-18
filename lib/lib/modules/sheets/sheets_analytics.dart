@@ -265,7 +265,8 @@ class SheetsAnalytics {
       if (label.isEmpty) continue;
       final raw = cells['${columnName(valueIndex)}$row']?.trim() ?? '';
       if (aggregation == 'count') {
-        groups.putIfAbsent(label, () => <double>[]).add(raw.isEmpty ? 0 : 1);
+        final values = groups.putIfAbsent(label, () => <double>[]);
+        if (raw.isNotEmpty) values.add(1);
         continue;
       }
       if (raw.isEmpty) continue;
@@ -283,7 +284,7 @@ class SheetsAnalytics {
     for (final key in keys) {
       final values = groups[key]!;
       final total = values.fold<double>(0, (sum, value) => sum + value);
-      final aggregate = switch (aggregation) {
+      final aggregate = values.isEmpty ? 0.0 : switch (aggregation) {
         'count' => values.length.toDouble(),
         'average' => total / values.length,
         'min' => values.reduce(math.min),
@@ -296,7 +297,7 @@ class SheetsAnalytics {
     }
     final grandValues = groups.values.expand((values) => values).toList();
     final grandTotal = grandValues.fold<double>(0, (sum, value) => sum + value);
-    final grand = switch (aggregation) {
+    final grand = grandValues.isEmpty ? 0.0 : switch (aggregation) {
       'count' => grandValues.length.toDouble(),
       'average' => grandTotal / grandValues.length,
       'min' => grandValues.reduce(math.min),
