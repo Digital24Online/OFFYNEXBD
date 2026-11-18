@@ -13,6 +13,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../pdf/pdf_to_document_service.dart';
 import 'workspace_backup_codec.dart';
 import 'workspace_record_codec.dart';
+import 'forms_response_csv_codec.dart';
 import '../writer/writer_screen.dart';
 import '../../theme/offynex_theme.dart';
 
@@ -820,6 +821,39 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
     }
   }
 
+  Future<void> _exportFormResponsesCsv() async {
+    try {
+      final decoded = await _readFormResponses();
+      if (decoded == null) return;
+      if (decoded.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(_bn ? 'Export করার মতো কোনো উত্তর নেই।' : 'There are no responses to export.'),
+          ));
+        }
+        return;
+      }
+      final csv = FormsResponseCsvCodec.encode(decoded);
+      final saved = await FilePicker.saveFile(
+        fileName: 'OFFYNEXBD-Forms-responses.csv',
+        bytes: Uint8List.fromList(utf8.encode(csv)),
+        mimeType: 'text/csv',
+        dialogTitle: _bn ? 'ফর্মের উত্তর CSV Export' : 'Export form responses as CSV',
+      );
+      if (saved != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(_bn ? 'ফর্মের উত্তর CSV Export হয়েছে।' : 'Form responses exported as CSV.'),
+        ));
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('\${_bn ? 'CSV Export ব্যর্থ' : 'CSV export failed'}: $error'),
+        ));
+      }
+    }
+  }
+
   Future<void> _showFormResponses() async {
     final responses = await _readFormResponses();
     if (responses == null || !mounted) return;
@@ -861,6 +895,10 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
           TextButton(
             onPressed: _exportFormResponses,
             child: Text(_bn ? 'Export JSON' : 'Export JSON'),
+          ),
+          TextButton(
+            onPressed: _exportFormResponsesCsv,
+            child: const Text('Export CSV'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
