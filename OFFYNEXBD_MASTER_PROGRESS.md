@@ -976,3 +976,13 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Added an explicit “Include formulas” option for users who intentionally need formula text changed.
 - [x] Added regression coverage for default formula protection and opt-in formula replacement across worksheet cells.
 - [ ] Flutter Analyze, full tests, Android APK build and upload must pass on this correction commit before CI verification.
+
+
+## Sheets Freeze Top Row — implementation batch (2026-11-18)
+
+- [x] Added a View-ribbon Freeze Top Row / Unfreeze Top Row toggle for the active worksheet.
+- [x] The first currently visible row remains pinned below the column headers while the remaining rows scroll; horizontal scrolling remains shared.
+- [x] Freeze state is saved per worksheet and round-trips through the existing workbook format without changing its version; old and legacy workbooks default to unfrozen.
+- [x] Added codec validation and regression tests for persistence, legacy defaults, invalid metadata and the ribbon toggle.
+- [ ] Flutter Analyze, full automated tests, Android APK build and artifact upload are pending on this source batch.
+- [ ] Physical-device scrolling and imported/exported XLSX freeze-pane compatibility remain to be validated; this feature currently applies to the OFFYNEXBD Sheets workspace view.

@@ -101,6 +101,40 @@ void main() {
       );
     });
 
+    test('round-trips Freeze Top Row and defaults it off for old workbooks', () {
+      final workbook = SheetsWorkbook(
+        activeSheetId: 'one',
+        sheets: [
+          SheetsWorksheet(
+            id: 'one',
+            name: 'One',
+            rows: 10,
+            columns: 5,
+            freezeTopRow: true,
+          ),
+        ],
+      );
+      final decoded = SheetsWorkbookCodec.decode(SheetsWorkbookCodec.encode(workbook));
+      expect(decoded.activeSheet.freezeTopRow, isTrue);
+
+      final legacy = SheetsWorkbookCodec.decode(
+        '{"name":"Old","rows":10,"columns":5,"cells":{},"styles":{}}',
+      );
+      expect(legacy.activeSheet.freezeTopRow, isFalse);
+    });
+
+    test('rejects an invalid Freeze Top Row setting without losing workbook data', () {
+      expect(
+        () => SheetsWorkbookCodec.decode(
+          '{"format":"OFFYNEXBD_SHEETS_WORKBOOK","version":2,'
+          '"activeSheetId":"one","sheets":[{"id":"one","name":"One",'
+          '"rows":10,"columns":5,"cells":{},"styles":{},'
+          '"freezeTopRow":"yes"}]}',
+        ),
+        throwsFormatException,
+      );
+    });
+
     test('rejects oversized workbook input before JSON decoding', () {
       final oversized = ''.padRight(
         SheetsWorkbookCodec.maxWorkbookBytes + 1,

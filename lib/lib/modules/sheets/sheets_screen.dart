@@ -336,6 +336,13 @@ class _SheetsScreenState extends State<SheetsScreen> {
     if (selected != null) await _applyCellStyle('numberFormat', selected);
   }
 
+  Future<void> _toggleFreezeTopRow() async {
+    setState(() {
+      _activeWorksheet.freezeTopRow = !_activeWorksheet.freezeTopRow;
+    });
+    await _saveWorkbook();
+  }
+
   Future<void> _toggleCellBorder() async {
     final key = _selectedCell;
     await _applyCellStyle('border', key == null || _cellStyles[key]?['border'] != true);
@@ -1424,6 +1431,13 @@ class _SheetsScreenState extends State<SheetsScreen> {
         ]);
         break;
       case 5:
+        commands.add(_ribbonCommand(
+          _activeWorksheet.freezeTopRow
+              ? _t('প্রথম Row ছাড়ুন', 'Unfreeze Top Row')
+              : _t('প্রথম Row স্থির', 'Freeze Top Row'),
+          _activeWorksheet.freezeTopRow ? Icons.vertical_align_bottom : Icons.vertical_align_top,
+          _toggleFreezeTopRow,
+        ));
         commands.add(Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -1587,8 +1601,9 @@ class _SheetsScreenState extends State<SheetsScreen> {
     );
   }
 
-  Widget _buildGridRow(int row) {
+  Widget _buildGridRow(int row, {bool frozen = false}) {
     return SizedBox(
+      key: frozen ? const ValueKey('sheets-frozen-top-row') : ValueKey('sheets-grid-row-$row'),
       height: 56 * _zoom,
       child: Row(children: [
         SizedBox(
@@ -1607,6 +1622,12 @@ class _SheetsScreenState extends State<SheetsScreen> {
   }
 
   Widget _buildGrid(List<int> visibleRows) {
+    final frozenRow = _activeWorksheet.freezeTopRow && visibleRows.isNotEmpty
+        ? visibleRows.first
+        : null;
+    final scrollingRows = frozenRow == null
+        ? visibleRows
+        : visibleRows.skip(1).toList(growable: false);
     return Scrollbar(
       controller: _horizontalController,
       thumbVisibility: true,
@@ -1617,6 +1638,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
           width: _gridWidth,
           child: Column(children: [
             _buildGridHeader(),
+            if (frozenRow != null) _buildGridRow(frozenRow, frozen: true),
             Expanded(
               child: Scrollbar(
                 controller: _verticalController,
@@ -1624,9 +1646,9 @@ class _SheetsScreenState extends State<SheetsScreen> {
                 child: ListView.builder(
                   key: const ValueKey('sheets-grid-vertical'),
                   controller: _verticalController,
-                  itemCount: visibleRows.length,
+                  itemCount: scrollingRows.length,
                   itemExtent: 56 * _zoom,
-                  itemBuilder: (context, index) => _buildGridRow(visibleRows[index]),
+                  itemBuilder: (context, index) => _buildGridRow(scrollingRows[index]),
                 ),
               ),
             ),

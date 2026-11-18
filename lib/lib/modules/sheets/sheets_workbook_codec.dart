@@ -10,6 +10,7 @@ class SheetsWorksheet {
     required this.columns,
     Map<String, String>? cells,
     Map<String, Map<String, dynamic>>? styles,
+    this.freezeTopRow = false,
   })  : cells = cells ?? <String, String>{},
         styles = styles ?? <String, Map<String, dynamic>>{};
 
@@ -19,6 +20,7 @@ class SheetsWorksheet {
   int columns;
   final Map<String, String> cells;
   final Map<String, Map<String, dynamic>> styles;
+  bool freezeTopRow;
 }
 
 class SheetsWorkbook {
@@ -111,6 +113,10 @@ class SheetsWorkbookCodec {
     }
     final rawCells = data['cells'];
     final rawStyles = data['styles'];
+    final rawFreezeTopRow = data['freezeTopRow'];
+    if (rawFreezeTopRow != null && rawFreezeTopRow is! bool) {
+      throw const FormatException('Invalid freeze top row setting.');
+    }
     if (rawCells is! Map || rawStyles is! Map) {
       throw const FormatException('Invalid worksheet cell data.');
     }
@@ -137,6 +143,7 @@ class SheetsWorkbookCodec {
       columns: columns,
       cells: cells,
       styles: styles,
+      freezeTopRow: rawFreezeTopRow == true,
     );
   }
 
@@ -185,6 +192,7 @@ class SheetsWorkbookCodec {
         'columns': sheet.columns,
         'cells': sheet.cells,
         'styles': sheet.styles,
+        'freezeTopRow': sheet.freezeTopRow,
       });
     }
     if (!ids.contains(workbook.activeSheetId)) {
