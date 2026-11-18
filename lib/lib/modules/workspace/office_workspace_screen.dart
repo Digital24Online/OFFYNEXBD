@@ -3,8 +3,7 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
+import 'slides_pdf_export_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../pdf/pdf_to_document_service.dart';
@@ -473,53 +472,15 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
   Future<void> _exportSlidePdf(Map<String, dynamic> slide) async {
     try {
       final title = slide['title']?.toString().trim() ?? '';
-      final content = slide['content']?.toString() ?? '';
-      final slideTexts = content
+      final slideTexts = (slide['content']?.toString() ?? '')
           .split(RegExp(r'\r?\n'))
           .map((value) => value.trim())
           .where((value) => value.isNotEmpty)
           .toList(growable: false);
-      if (slideTexts.isEmpty) {
-        throw const FormatException('Add one slide topic or text per line first.');
-      }
-      if (slideTexts.length > 200) {
-        throw const FormatException('A PDF presentation can contain up to 200 slides.');
-      }
-      final fontData = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
-      final font = pw.Font.ttf(fontData);
-      final pdf = pw.Document();
-      pdf.addPage(pw.MultiPage(
-        pageFormat: PdfPageFormat.a4.landscape,
-        theme: pw.ThemeData.withFont(base: font),
-        margin: const pw.EdgeInsets.all(30),
-        build: (context) => [
-          for (var index = 0; index < slideTexts.length; index++) ...[
-            if (index > 0) pw.NewPage(),
-            pw.Container(
-              width: double.infinity,
-              padding: const pw.EdgeInsets.all(28),
-              decoration: pw.BoxDecoration(
-                border: pw.Border.all(color: PdfColors.blueGrey300, width: 1.2),
-                borderRadius: pw.BorderRadius.circular(12),
-              ),
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text(title.isEmpty ? 'OFFYNEXBD Presentation' : title,
-                      style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold)),
-                  pw.SizedBox(height: 12),
-                  pw.Text('SLIDE ${index + 1} / ${slideTexts.length}',
-                      style: const pw.TextStyle(fontSize: 10, color: PdfColors.blueGrey600)),
-                  pw.Divider(color: PdfColors.blueGrey300),
-                  pw.SizedBox(height: 12),
-                  pw.Text(slideTexts[index], style: const pw.TextStyle(fontSize: 25, lineSpacing: 8)),
-                ],
-              ),
-            ),
-          ],
-        ],
-      ));
-      final bytes = Uint8List.fromList(await pdf.save());
+      final bytes = await SlidesPdfExportService.build(
+        title: title,
+        slideTexts: slideTexts,
+      );
       final safeName = (title.isEmpty ? 'OFFYNEXBD-Slides' : title)
           .replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
       final saved = await FilePicker.saveFile(
