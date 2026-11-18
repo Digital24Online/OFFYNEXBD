@@ -1,12 +1,25 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:offynexbd/lib/modules/writer/writer_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+Widget _writerTestApp(Widget home) => MaterialApp(
+      localizationsDelegates: [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        ...FlutterQuillLocalizations.localizationsDelegates,
+      ],
+      supportedLocales: FlutterQuillLocalizations.supportedLocales,
+      home: home,
+    );
+
 void main() {
   testWidgets('Writer ribbon follows Bangla and English app language', (tester) async {
     SharedPreferences.setMockInitialValues({});
-    await tester.pumpWidget(const MaterialApp(home: WriterScreen(isBangla: true)));
+    await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: true)));
     await tester.pumpAndSettle();
 
     expect(find.text('নতুন ডকুমেন্ট'), findsOneWidget);
@@ -20,7 +33,7 @@ void main() {
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpAndSettle();
-    await tester.pumpWidget(const MaterialApp(home: WriterScreen(isBangla: false)));
+    await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: false)));
     await tester.pumpAndSettle();
 
     expect(find.text('New Document'), findsOneWidget);
