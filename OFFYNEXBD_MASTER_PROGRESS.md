@@ -1030,3 +1030,14 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Added regression coverage for multi-cell/multi-area import, unsupported rules, grid/expansion limits, grouped export and XLSX save/reopen round-trip.
 - [ ] Flutter Analyze, full automated tests, Android release APK build and artifact upload must pass on the integrated commit before CI verification.
 - [ ] Formula/range-backed dropdowns and non-list Excel validation types remain unsupported; they are rejected with an explicit import error, not silently dropped.
+
+
+## OFFYNEX Writer — Mobile Page Fit and Zoom Batch (2026-11-19)
+
+- Added a mobile-safe Full Page fit calculation that reserves the page canvas spacing before fitting both page width and height to the available editor viewport.
+- Expanded the persisted zoom range from 60–150% to 50–200%, added direct Zoom Out / Zoom In controls, and retained the slider for precise adjustment.
+- Added stable widget keys and an automated mobile-sized widget test covering zoom bounds, zoom-in interaction, and persistence of zoom plus the selected Page view mode.
+- Removed a duplicate `@override` annotation in the Writer library screen.
+- Preserved the existing Quill Delta content, table/image embeds, autosave, page layout and PDF/print pipeline.
+- Important limitation remains: the continuous editor canvas currently estimates page count from plain text; rich-content-aware Word-style pagination (including images, tables and formatting) is not yet implemented. This batch does not mark true pagination complete.
+- Status: source and test changes committed on `writer-mobile-page-zoom`; Analyze, all tests, Android APK build/upload and device visual verification are pending.

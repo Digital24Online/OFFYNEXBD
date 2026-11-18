@@ -332,7 +332,6 @@ class _WriterScreenState extends State<WriterScreen> {
   }
 
   @override
-  @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     final horizontalPadding = width >= 900 ? 32.0 : 18.0;
@@ -503,7 +502,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
         selectedFontFamily = savedFontFamily!;
       }
       zoomLevel = (savedMeta['zoom'] is num)
-          ? (savedMeta['zoom'] as num).toDouble().clamp(0.6, 1.5).toDouble()
+          ? (savedMeta['zoom'] as num).toDouble().clamp(0.5, 2.0).toDouble()
           : 1.0;
       viewFit = ['Page', 'Width', 'Actual'].contains(savedMeta['viewFit'])
           ? savedMeta['viewFit'] as String
@@ -1592,16 +1591,35 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
           ChoiceChip(label: const Text('100%'), selected: viewFit == 'Actual', onSelected: (_) => _setViewFit('Actual')),
         ]),
         SizedBox(
-          width: 180,
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text('Zoom ${(zoomLevel * 100).round()}%'),
-            Slider(
-              value: zoomLevel,
-              min: 0.6,
-              max: 1.5,
-              divisions: 18,
-              onChanged: (value) => setState(() => zoomLevel = value),
-              onChangeEnd: (_) => scheduleSave(),
+          width: 230,
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            IconButton(
+              key: const ValueKey('writer-zoom-out'),
+              tooltip: _t('ছোট করুন', 'Zoom out'),
+              visualDensity: VisualDensity.compact,
+              onPressed: () => _zoomBy(-0.1),
+              icon: const Icon(Icons.remove_circle_outline),
+            ),
+            Expanded(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Text('Zoom ${(zoomLevel * 100).round()}%'),
+                Slider(
+                  key: const ValueKey('writer-zoom-slider'),
+                  value: zoomLevel,
+                  min: 0.5,
+                  max: 2.0,
+                  divisions: 30,
+                  onChanged: (value) => setState(() => zoomLevel = value),
+                  onChangeEnd: (_) => scheduleSave(),
+                ),
+              ]),
+            ),
+            IconButton(
+              key: const ValueKey('writer-zoom-in'),
+              tooltip: _t('বড় করুন', 'Zoom in'),
+              visualDensity: VisualDensity.compact,
+              onPressed: () => _zoomBy(0.1),
+              icon: const Icon(Icons.add_circle_outline),
             ),
           ]),
         ),
@@ -2121,6 +2139,13 @@ Future<void> showCustomFontSizeDialog() async {
     } catch (error) {
       _showMessage('প্রিন্ট তৈরি করা যায়নি: $error');
     }
+  }
+
+  void _zoomBy(double amount) {
+    setState(() {
+      zoomLevel = (zoomLevel + amount).clamp(0.5, 2.0).toDouble();
+    });
+    scheduleSave();
   }
 
   void _setViewFit(String mode) {
@@ -2787,10 +2812,12 @@ Future<void> insertWriterImage() async {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final page = _pageDimensions;
+                // Reserve the canvas breathing room before fitting the complete page.
                 final availableWidth = math.max(1.0, constraints.maxWidth - 24);
+                final availableHeight = math.max(1.0, constraints.maxHeight - 24);
                 final fitScale = math.min(
                   availableWidth / page.width,
-                  constraints.maxHeight / page.height,
+                  availableHeight / page.height,
                 );
                 final baseScale = viewFit == 'Width'
                     ? availableWidth / page.width
