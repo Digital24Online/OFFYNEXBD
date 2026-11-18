@@ -5,8 +5,16 @@ class SheetsRowView {
 
   static int? columnIndexFromCellKey(String? key) {
     if (key == null) return null;
-    final match = RegExp(r'^([A-Z]+)[1-9]\\d*').firstMatch(key);
-    if (match == null || match.end != key.length) return null;
+    final match = RegExp(r'^([A-Z]+)').firstMatch(key);
+    if (match == null) return null;
+    final rowText = key.substring(match.end);
+    if (rowText.isEmpty ||
+        rowText.codeUnitAt(0) == 48 ||
+        rowText.codeUnits.any((unit) => unit < 48 || unit > 57)) {
+      return null;
+    }
+    final rowNumber = int.tryParse(rowText);
+    if (rowNumber == null || rowNumber < 1) return null;
     var column = 0;
     for (final rune in match.group(1)!.runes) {
       column = column * 26 + rune - 64;
