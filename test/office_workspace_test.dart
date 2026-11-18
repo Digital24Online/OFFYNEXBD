@@ -51,7 +51,7 @@ void main() {
 
     await tester.tap(find.byTooltip('Collect response'));
     await tester.pumpAndSettle();
-    expect(find.text('Customer Registration'), findsOneWidget);
+    expect(find.text('Full name'), findsOneWidget);
     expect(find.byType(TextField), findsNWidgets(4));
 
     await tester.enterText(find.byType(TextField).at(1), 'Test User');
