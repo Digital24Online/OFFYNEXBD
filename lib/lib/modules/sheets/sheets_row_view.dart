@@ -5,7 +5,7 @@ class SheetsRowView {
 
   static int? columnIndexFromCellKey(String? key) {
     if (key == null) return null;
-    final match = RegExp(r'^([A-Z]+)[1-9]\\d*
+    final match = RegExp(r'^([A-Z]+)[1-9]\d*
     required int rowCount,
     required String Function(int row) valueForRow,
     String? filter,
