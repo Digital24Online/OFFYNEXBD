@@ -8,6 +8,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_localizations/flutter_localizations.dart'
     hide GlobalMaterialLocalizations, GlobalCupertinoLocalizations;
 import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(const OFFYNEXBDApp());
@@ -67,6 +68,25 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool isBangla = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLanguagePreference();
+  }
+
+  Future<void> _loadLanguagePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getBool('offynex_language_bangla_v1');
+    if (saved != null && mounted) setState(() => isBangla = saved);
+  }
+
+  Future<void> _toggleLanguage() async {
+    final next = !isBangla;
+    setState(() => isBangla = next);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('offynex_language_bangla_v1', next);
+  }
 
   final List<OfficeModule> modules = const [
     OfficeModule(
@@ -235,11 +255,7 @@ void openModule(OfficeModule module) {
         ),
         actions: [
           TextButton(
-            onPressed: () {
-              setState(() {
-                isBangla = !isBangla;
-              });
-            },
+            onPressed: _toggleLanguage,
             child: Text(
               isBangla ? 'English' : 'বাংলা',
               style: const TextStyle(fontWeight: FontWeight.bold),
