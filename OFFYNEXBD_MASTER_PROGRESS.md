@@ -546,3 +546,10 @@ Continue development as coordinated batches across Writer, Sheets, Slides, PDF, 
 - [x] Build #210 Flutter Analyze passed. The test suite found that adding the workspace search box changed TextField ordering in two older widget tests; the product UI behaved as intended, but tests still targeted the old field indices.
 - [x] Updated the Forms test to target dialog title/content fields after the search field, and the Database test to target the dialog content field explicitly.
 - [ ] Re-run validation for commit `bbc6bd7a2cc9e81eb250515b6815388391e880d6`; full tests and APK build are still pending.
+
+
+### Build #211 Forms test finding and correction
+- [x] Flutter Analyze passed.
+- [x] Search regression test passed.
+- [x] The Forms widget test still used field indices from before the search field was added. Corrected it to target dialog title/content fields (indices 1 and 2 after the search field).
+- [ ] Revalidate commit `fccd1f4006b52f6d004734d6bdadcc71a1e4dc6d` in the next workflow; Build #211 test failure was limited to the stale Forms test selector.
