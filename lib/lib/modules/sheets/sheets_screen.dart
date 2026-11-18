@@ -641,6 +641,9 @@ class _SheetsScreenState extends State<SheetsScreen> {
       if (picked == null || !mounted) return;
       final bytes = await picked.readAsBytes();
       if (!mounted) return;
+      if (bytes.isEmpty || bytes.length > 20 * 1024 * 1024) {
+        throw const FormatException('CSV file must be between 1 byte and 20 MB.');
+      }
       final rows = SheetsCsvCodec.decode(utf8.decode(bytes, allowMalformed: false));
       if (rows.isEmpty) throw const FormatException('CSV file is empty');
       final columns = rows.fold<int>(
@@ -678,6 +681,15 @@ class _SheetsScreenState extends State<SheetsScreen> {
         ),
       );
       if (replace != true || !mounted) return;
+      // Wait for pending edits, then preserve the complete workbook before
+      // replacing this worksheet with imported CSV data.
+      await _saveQueue;
+      final preferences = await SharedPreferences.getInstance();
+      final backupKey = await SheetsImportSafety.preserveCurrentWorkbook(
+        preferences,
+        preferences.getString(_sheetStorageKey),
+      );
+      if (!mounted) return;
       setState(() {
         _cells..clear()..addAll(imported);
         _cellStyles.clear();
@@ -690,9 +702,14 @@ class _SheetsScreenState extends State<SheetsScreen> {
         _formulaBarController.clear();
       });
       await _saveWorkbook();
+      if (!_saved) {
+        throw StateError('CSV data could not be saved. The previous workbook backup was preserved.');
+      }
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_t('CSV Import সফল হয়েছে।', 'CSV imported successfully.'))),
+        SnackBar(content: Text(backupKey == null
+            ? _t('CSV Import সফল হয়েছে।', 'CSV imported successfully.')
+            : _t('CSV Import সফল। আগের Workbook Backup: $backupKey', 'CSV imported. Previous workbook backup: $backupKey'))),
       );
     } catch (error) {
       if (!mounted) return;
