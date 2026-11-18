@@ -2,6 +2,16 @@
 class SheetsWorkbookLimits {
   static const int maxRows = 1000;
   static const int maxColumns = 100;
+  static const int maxImportBytes = 20 * 1024 * 1024;
+
+  static void validateImportBytes(int bytes) {
+    if (bytes < 0 || bytes > maxImportBytes) {
+      throw FormatException(
+        'XLSX file exceeds the OFFYNEX Sheets import limit (20 MB). '
+        'The existing workbook was not changed.',
+      );
+    }
+  }
 
   static void validate(int rows, int columns) {
     if (rows > maxRows || columns > maxColumns) {
