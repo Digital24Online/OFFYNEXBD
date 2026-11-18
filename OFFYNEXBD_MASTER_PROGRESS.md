@@ -826,4 +826,15 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Database row loading now validates the entire stored row collection before opening the editor: table collections, row IDs, row values maps, and text field values.
 - [x] If any stored row is malformed, the original JSON is copied to a timestamped recovery key and the editor stops; it no longer silently filters malformed rows and overwrites the original database store.
 - [x] Added widget regression tests for malformed table row collections and malformed field values, asserting that both the original data and recovery copy remain unchanged.
-- [ ] Validate Flutter Analyze, the complete automated test suite, Android release APK build and artifact upload on the final source commit.
+- [x] Build #328 / run `44304003563` on commit `84feaa34e1682c672324b5ba3f9010d2dddd7b42` passed Flutter Analyze, the complete automated test suite, Android release APK build and artifact upload.
+
+
+## Database damaged-row preservation — Build #328 verified (2026-11-18)
+
+- [x] Commit: `84feaa34e1682c672324b5ba3f9010d2dddd7b42` — Preserve damaged database rows before editing.
+- [x] Build #328 / run ID `44304003563` completed successfully on this exact commit.
+- [x] Flutter Analyze — SUCCESS; full automated test suite — SUCCESS; Android release APK build — SUCCESS; signing cleanup and APK upload — SUCCESS.
+- [x] Regression tests confirm malformed row collections and malformed field values are copied to a recovery key, original stored JSON remains unchanged, and editing is stopped.
+- [x] APK artifact: `OFFYNEXBD-Android-APK`, ID `14428305759`, size 51,174,989 bytes; expires 2026-11-25T12:35:52Z.
+- [ ] Physical Android device validation remains outstanding; CI success does not replace real-device verification.
+
