@@ -673,3 +673,8 @@ Continue development as coordinated batches across Writer, Sheets, Slides, PDF, 
 ### Database row CRUD analyzer correction
 - [x] First Analyze run for Database row CRUD found a BuildContext async-gap warning before opening the row editor. Added a mounted guard after asynchronous preference/recovery work in commit `8564cb71b42724be374550b6bf3b4bdf1e427af3`.
 - [ ] Revalidate Database row CRUD and tests in the next CI run.
+
+
+### Forms response JSON export — Build #231 verified
+- [x] Build #231 / run `44256187962` passed Analyze, full tests, Android APK build and upload. Artifact ID `14405339663`, size 50,178,656 bytes.
+- [x] This validates the separate versioned JSON export of locally collected Forms responses.
