@@ -459,8 +459,8 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
           ? 'ফর্মের নাম ও প্রতি লাইনে একটি করে প্রশ্ন লিখুন। Collect response দিয়ে উত্তর নিন এবং Responses থেকে স্থানীয়ভাবে সংরক্ষিত উত্তর দেখুন। অনলাইন শেয়ারিং এখনো যুক্ত হয়নি।'
           : 'Create a form with one question per line. Collect responses and review locally saved submissions. Online sharing is not connected yet.',
       'Database' => _bn
-          ? 'ডেটা টেবিলের নাম, ফিল্ড ও স্কিমা নোট সংরক্ষণ করুন। প্রকৃত relational database engine এখনো যুক্ত হয়নি।'
-          : 'Save table names, fields and schema notes. A relational database engine is not connected yet.',
+          ? 'টেবিলের নাম ও কমা দিয়ে Field লিখুন। Manage table rows দিয়ে Offline-এ Row তৈরি, সম্পাদনা ও মুছতে পারবেন। SQL/relational query engine এখনো যুক্ত হয়নি।'
+          : 'Define table names and comma-separated fields. Manage table rows to create, edit and delete offline records. A SQL/relational query engine is not connected yet.',
       _ => '',
     };
     if (help.isEmpty) return const SizedBox.shrink();
