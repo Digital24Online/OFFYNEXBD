@@ -281,6 +281,9 @@ class SheetsAnalytics {
       [groupHeader.isEmpty ? 'Row' : groupHeader, '${aggregation.toUpperCase()} of ${valueHeader.isEmpty ? 'Value' : valueHeader}'],
     ];
     final keys = groups.keys.toList()..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    if (keys.length > SheetsWorkbookLimits.maxRows - 2) {
+      throw const FormatException('Pivot result would exceed the supported worksheet row limit.');
+    }
     for (final key in keys) {
       final values = groups[key]!;
       final total = values.fold<double>(0, (sum, value) => sum + value);
