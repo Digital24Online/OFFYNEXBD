@@ -220,7 +220,7 @@ class _WriterScreenState extends State<WriterScreen> {
           controller: controller,
           autofocus: true,
           decoration: const InputDecoration(
-            hintText: 'Document name',
+            hintText: _t('ডকুমেন্টের নাম', 'Document name'),
           ),
         ),
         actions: [
@@ -299,18 +299,18 @@ class _WriterScreenState extends State<WriterScreen> {
       backgroundColor: const Color(0xFFF3F6FA),
       appBar: AppBar(
         backgroundColor: Colors.white,
-        title: const Text(
-          'OFFYNEX Writer',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          _t('OFFYNEX Writer', 'OFFYNEX Writer'),
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
           IconButton(
-            tooltip: 'Import documents',
+            tooltip: _t('ডকুমেন্ট Import', 'Import documents'),
             onPressed: importDocuments,
             icon: const Icon(Icons.file_download_outlined),
           ),
           IconButton(
-            tooltip: 'Export documents',
+            tooltip: _t('ডকুমেন্ট Export', 'Export documents'),
             onPressed: exportDocuments,
             icon: const Icon(Icons.file_upload_outlined),
           ),
@@ -319,12 +319,12 @@ class _WriterScreenState extends State<WriterScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: addDocument,
         icon: const Icon(Icons.add),
-        label: const Text('New Document'),
+        label: Text(_t('নতুন ডকুমেন্ট', 'New Document')),
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : documents.isEmpty
-              ? const Center(
+              ? Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -334,8 +334,8 @@ class _WriterScreenState extends State<WriterScreen> {
                         color: Colors.grey,
                       ),
                       SizedBox(height: 12),
-                      Text('এখনো কোনো ডকুমেন্ট নেই'),
-                      Text('নতুন ডকুমেন্ট তৈরি করুন'),
+                      Text(_t('এখনো কোনো ডকুমেন্ট নেই', 'No documents yet')),
+                      Text(_t('নতুন ডকুমেন্ট তৈরি করুন', 'Create a new document')),
                     ],
                   ),
                 )
@@ -361,7 +361,7 @@ class _WriterScreenState extends State<WriterScreen> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        subtitle: const Text('Saved on device'),
+                        subtitle: Text(_t('ডিভাইসে সংরক্ষিত', 'Saved on device')),
                         onTap: () => openDocument(document),
                         trailing: PopupMenuButton<String>(
                           onSelected: (value) {
@@ -374,11 +374,11 @@ class _WriterScreenState extends State<WriterScreen> {
                           itemBuilder: (_) => const [
                             PopupMenuItem(
                               value: 'rename',
-                              child: Text('Rename'),
+                              child: Text(_t('নাম পরিবর্তন', 'Rename')),
                             ),
                             PopupMenuItem(
                               value: 'delete',
-                              child: Text('Delete'),
+                              child: Text(_t('মুছুন', 'Delete')),
                             ),
                           ],
                         ),
@@ -2637,11 +2637,11 @@ Future<void> insertWriterImage() async {
         backgroundColor: Colors.white,
         title: const Text('OFFYNEX Writer'),
         actions: [
-          IconButton(tooltip: 'Select all', onPressed: selectAllText, icon: const Icon(Icons.select_all)),
-          IconButton(tooltip: 'Save', onPressed: () => saveDocument(), icon: const Icon(Icons.save_outlined)),
-          IconButton(tooltip: 'Clear document', onPressed: clearDocument, icon: const Icon(Icons.delete_outline)),
+          IconButton(tooltip: _t('সব নির্বাচন', 'Select all'), onPressed: selectAllText, icon: const Icon(Icons.select_all)),
+          IconButton(tooltip: _t('সংরক্ষণ', 'Save'), onPressed: () => saveDocument(), icon: const Icon(Icons.save_outlined)),
+          IconButton(tooltip: _t('ডকুমেন্ট খালি করুন', 'Clear document'), onPressed: clearDocument, icon: const Icon(Icons.delete_outline)),
           IconButton(
-             tooltip: 'Focus mode',
+             tooltip: _t('ফোকাস মোড', 'Focus mode'),
              onPressed: () {
                setState(() => focusMode = !focusMode);
                scheduleSave();
@@ -2804,7 +2804,7 @@ Future<void> insertWriterImage() async {
                                     config: QuillEditorConfig(
                                       expands: true,
                                       padding: EdgeInsets.zero,
-                                      placeholder: 'এখানে আপনার লেখা শুরু করুন...',
+                                      placeholder: _t('এখানে আপনার লেখা শুরু করুন...', 'Start writing here...'),
                                       embedBuilders: [
                                         WriterTableEmbedBuilder(
                                           onEdit: editWriterTable,
@@ -2841,7 +2841,7 @@ Future<void> insertWriterImage() async {
                 ),
                 const SizedBox(width: 7),
                 Text(
-                  'Words: $wordCount',
+                  _t('শব্দ: $wordCount', 'Words: $wordCount'),
                   style: const TextStyle(fontSize: 12),
                 ),
                 const Spacer(),
@@ -2852,7 +2852,7 @@ Future<void> insertWriterImage() async {
                 ),
                 const SizedBox(width: 5),
                 Text(
-                  isSaved ? 'Saved on device' : 'Saving...',
+                  isSaved ? _t('ডিভাইসে সংরক্ষিত', 'Saved on device') : _t('সংরক্ষণ হচ্ছে...', 'Saving...'),
                   style: const TextStyle(fontSize: 11),
                 ),
               ],
