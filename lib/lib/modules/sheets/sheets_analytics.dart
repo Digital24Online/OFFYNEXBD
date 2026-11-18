@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'sheets_workbook_limits.dart';
 
 class SheetsCellRange {
@@ -102,10 +100,10 @@ class SheetsAnalytics {
         ? firstRow
         : int.parse(match.group(4)!);
     final range = SheetsCellRange(
-      firstRow: math.min(firstRow, lastRow),
-      firstColumn: math.min(firstColumn, lastColumn),
-      lastRow: math.max(firstRow, lastRow),
-      lastColumn: math.max(firstColumn, lastColumn),
+      firstRow: firstRow < lastRow ? firstRow : lastRow,
+      firstColumn: firstColumn < lastColumn ? firstColumn : lastColumn,
+      lastRow: firstRow > lastRow ? firstRow : lastRow,
+      lastColumn: firstColumn > lastColumn ? firstColumn : lastColumn,
     );
     if (range.lastRow > SheetsWorkbookLimits.maxRows ||
         range.lastColumn > SheetsWorkbookLimits.maxColumns ||
@@ -289,8 +287,8 @@ class SheetsAnalytics {
       final aggregate = values.isEmpty ? 0.0 : switch (aggregation) {
         'count' => values.length.toDouble(),
         'average' => total / values.length,
-        'min' => values.reduce(math.min),
-        'max' => values.reduce(math.max),
+        'min' => values.reduce((left, right) => left < right ? left : right),
+        'max' => values.reduce((left, right) => left > right ? left : right),
         _ => total,
       };
       result.add([key, aggregate == aggregate.roundToDouble()
@@ -302,8 +300,8 @@ class SheetsAnalytics {
     final grand = grandValues.isEmpty ? 0.0 : switch (aggregation) {
       'count' => grandValues.length.toDouble(),
       'average' => grandTotal / grandValues.length,
-      'min' => grandValues.reduce(math.min),
-      'max' => grandValues.reduce(math.max),
+      'min' => grandValues.reduce((left, right) => left < right ? left : right),
+      'max' => grandValues.reduce((left, right) => left > right ? left : right),
       _ => grandTotal,
     };
     result.add(['Grand Total', grand == grand.roundToDouble()
