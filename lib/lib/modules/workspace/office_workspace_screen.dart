@@ -256,6 +256,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
     try {
       if (Platform.isAndroid) {
         final captured = await ScanDocumentService.captureAndroid();
+        if (captured == null) return;
         if (captured.recognizedText.trim().isNotEmpty) {
           final documents = await loadDocuments();
           documents.add({
@@ -277,8 +278,8 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
               : '${captured.pageCount} pages saved as a scanned PDF. ${captured.recognizedText.trim().isEmpty ? 'No OCR text was detected.' : 'Recognized text was also saved to Writer.'}'),
           action: SnackBarAction(
             label: _bn ? 'PDF শেয়ার' : 'Share PDF',
-            onPressed: () {
-              Printing.sharePdf(
+            onPressed: () async {
+              await Printing.sharePdf(
                 bytes: captured.pdfBytes,
                 filename: captured.fileName,
               );
