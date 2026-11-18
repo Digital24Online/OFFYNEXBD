@@ -939,3 +939,11 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Scan PDFs are stored in the Scan workspace list even if OCR returns no text; share/delete actions operate on the saved PDF path; recognized text is also stored as an editable Writer document.
 - [ ] Build #358 / run `44333893480` on commit `14bc74a78b2b2e986d493da986b11f03a6e873bc` must pass Flutter Analyze, all tests, Android APK build and artifact upload before this repair is CI-verified.
 - [ ] Android physical camera/scanner behavior, PDF persistence after app restart, sharing, deletion and OCR remain unverified on a real device.
+
+
+## Correction to Scan status after Build #358 (2026-11-18)
+
+- [x] Build #358 / run `44333893480` also failed at Flutter Analyze. The duplicate workspace tail remained in the resulting file because the attempted replacement was not a safe, bounded edit.
+- [x] Reverted the entire workspace screen to the exact last successful Build #355 version (`46ccbad5303609dd1102e3c7d567d4e741d47b0c`) in commit `cf0bb22b5b273eafa62c31d5b595dbaaa57d15f9`. This removes the faulty duplicate code and restores the previously verified Forms, Database, and other workspace functionality.
+- [ ] Scan PDF library listing/share/delete enhancement is NOT present in the restored source and remains incomplete. Do not describe it as implemented until a clean focused patch passes CI.
+- [ ] Build #359 / run `44334365915` validates the restored source; Analyze, full tests, APK build and upload are pending.
