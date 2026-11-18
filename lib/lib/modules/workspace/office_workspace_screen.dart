@@ -14,6 +14,7 @@ import '../pdf/pdf_to_document_service.dart';
 import 'workspace_backup_codec.dart';
 import 'workspace_record_codec.dart';
 import '../writer/writer_screen.dart';
+import '../../theme/offynex_theme.dart';
 
 /// Offline-first workspaces shared by Slides, Fonts, AI, Cloud, Forms,
 /// Scan and Database. Each module stores its own versioned records.
@@ -777,8 +778,11 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
       return title.contains(query) || content.contains(query);
     }).toList(growable: false);
     return Scaffold(
+      backgroundColor: OFFYNEXTheme.canvas,
       appBar: AppBar(
-        title: Text(title),
+        backgroundColor: OFFYNEXTheme.canvas,
+        surfaceTintColor: Colors.transparent,
+        title: Text(title, style: const TextStyle(color: OFFYNEXTheme.ink, fontWeight: FontWeight.w800)),
         actions: [
           if (widget.module != 'Scan' && widget.module != 'Cloud')
             IconButton(
@@ -794,14 +798,23 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
               padding: const EdgeInsets.all(16),
               children: [
                 Card(
+                  color: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22), side: const BorderSide(color: OFFYNEXTheme.border)),
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(18),
                     child: Row(children: [
-                      Icon(module.$3, size: 34, color: Theme.of(context).colorScheme.primary),
+                      Container(
+                        width: 58,
+                        height: 58,
+                        decoration: BoxDecoration(color: OFFYNEXTheme.blueSoft, borderRadius: BorderRadius.circular(17)),
+                        child: Icon(module.$3, size: 30, color: OFFYNEXTheme.blue),
+                      ),
                       const SizedBox(width: 12),
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(title, style: Theme.of(context).textTheme.titleLarge),
-                        Text(_bn ? 'অফলাইন-প্রথম কর্মক্ষেত্র' : 'Offline-first workspace'),
+                        Text(title, style: const TextStyle(color: OFFYNEXTheme.ink, fontSize: 19, fontWeight: FontWeight.w800)),
+                        const SizedBox(height: 4),
+                        Text(_bn ? 'অফলাইন-প্রথম কর্মক্ষেত্র' : 'Offline-first workspace', style: const TextStyle(color: OFFYNEXTheme.muted, fontSize: 12)),
                       ])),
                     ]),
                   ),
@@ -853,7 +866,10 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
                     decoration: InputDecoration(
                       prefixIcon: const Icon(Icons.search),
                       hintText: _bn ? 'শিরোনাম বা লেখা খুঁজুন' : 'Search titles or content',
-                      border: const OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(13), borderSide: const BorderSide(color: OFFYNEXTheme.border)),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(13), borderSide: const BorderSide(color: OFFYNEXTheme.border)),
                       isDense: true,
                     ),
                   ),
@@ -869,6 +885,9 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
                       child: Center(child: Text(_bn ? 'কোনো মিল পাওয়া যায়নি।' : 'No matching records found.')),
                     ),
                   ...visibleItems.map((item) => Card(
+                    color: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(17), side: const BorderSide(color: OFFYNEXTheme.border)),
                     child: ListTile(
                       leading: Icon(widget.module == 'Slides'
                           ? Icons.slideshow
@@ -944,6 +963,8 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
       floatingActionButton: widget.module == 'Scan' || widget.module == 'Cloud'
           ? null
           : FloatingActionButton.extended(
+              backgroundColor: OFFYNEXTheme.blue,
+              foregroundColor: Colors.white,
               onPressed: () => _editItem(),
               icon: const Icon(Icons.add),
               label: Text(_bn ? 'নতুন তৈরি' : 'Create new'),

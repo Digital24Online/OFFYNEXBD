@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../writer/writer_screen.dart';
 import 'pdf_to_document_service.dart';
+import '../theme/offynex_theme.dart';
 
 class PdfToDocumentScreen extends StatefulWidget {
   const PdfToDocumentScreen({super.key, required this.isBangla});
@@ -145,12 +146,17 @@ class _PdfToDocumentScreenState extends State<PdfToDocumentScreen> {
   Widget build(BuildContext context) {
     final bn = widget.isBangla;
     return Scaffold(
-      appBar: AppBar(title: Text(bn ? 'PDF থেকে Document' : 'PDF to Document')),
+      backgroundColor: OFFYNEXTheme.canvas,
+      appBar: AppBar(
+        backgroundColor: OFFYNEXTheme.canvas,
+        surfaceTintColor: Colors.transparent,
+        title: Text(bn ? 'PDF থেকে Document' : 'PDF to Document', style: const TextStyle(color: OFFYNEXTheme.ink, fontWeight: FontWeight.w800)),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Card(child: Padding(
-            padding: const EdgeInsets.all(18),
+          Card(color: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22), side: const BorderSide(color: OFFYNEXTheme.border)), child: Padding(
+            padding: const EdgeInsets.all(20),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               const Icon(Icons.picture_as_pdf, size: 42, color: Color(0xFFE34B50)),
               const SizedBox(height: 12),
@@ -190,8 +196,8 @@ class _PdfToDocumentScreenState extends State<PdfToDocumentScreen> {
             color: Theme.of(context).colorScheme.errorContainer,
             child: Padding(padding: const EdgeInsets.all(14), child: Text(error!)),
           ),
-          if (result != null) Card(child: Padding(
-            padding: const EdgeInsets.all(18),
+          if (result != null) Card(color: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22), side: const BorderSide(color: OFFYNEXTheme.border)), child: Padding(
+            padding: const EdgeInsets.all(20),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
                 const Icon(Icons.check_circle, color: Colors.green),
