@@ -532,3 +532,11 @@ Continue development as coordinated batches across Writer, Sheets, Slides, PDF, 
 - [x] Added a widget regression test confirming title/content filtering.
 - [x] CI exposed an async BuildContext lint issue after the workspace JSON file read; added a mounted guard immediately after the await.
 - [ ] Latest source after the mounted-guard correction is commit `5a6512be200f49023f1d311af1f6106679fa8938`; wait for its own workflow to pass before marking the search/import batch verified.
+
+
+### Portable Cloud backup validation result — Build #204
+- [x] Corrected backup file export/import source commit `0f94cb4f78b6fd892071dedb47f36e94cc8660ba` passed Flutter Analyze and the full automated test suite.
+- [x] Android APK build and upload succeeded.
+- [x] Artifact: `OFFYNEXBD-Android-APK`, ID `14403898235`, 50,116,699 bytes; run `44251710031`.
+- [x] Run: https://github.com/Digital24Online/OFFYNEXBD/actions/runs/44251710031
+- [ ] This artifact validates the backup feature only; later workspace record import/export and search commits are being tested separately.
