@@ -709,7 +709,7 @@ Continue development as coordinated batches across Writer, Sheets, Slides, PDF, 
 - [x] If the backup cannot be saved, the import is cancelled before the in-memory workbook is replaced. The original primary workbook key is left intact until the normal save after import.
 - [x] XLSX import now rejects files larger than 20 MB before decoding; the existing workbook remains unchanged.
 - [x] Added unit tests for exact backup preservation, no-existing-workbook behavior, and the 20 MB boundary.
-- [ ] Flutter Analyze, complete test suite, Android APK build and artifact upload are pending for the commits ending `eba07fae`, `baff506e`, and `5bb5d991`. Do not mark this feature verified until a successful workflow includes the final screen integration commit.
+- [x] Build #252 / run `44260743427`, source commit `cc1d2677eebd134279213479ca776584fc0e37d2`, passed Flutter Analyze, complete test suite, Android release APK build and artifact upload. Artifact `OFFYNEXBD-Android-APK`: ID `14408226617`, size 50,234,182 bytes. The corrected XLSX import backup integration is verified.
 - [ ] Multi-worksheet editing inside OFFYNEX Sheets remains future work; current import still imports one selected worksheet at a time.
 
 - [x] Follow-up safety refinement: XLSX replacement now waits for the pending save queue before reading the current workbook, ensuring the backup includes the latest edits (commit `8f51750409b0d139310adb34de8c9a12757ab585`).
@@ -719,7 +719,7 @@ Continue development as coordinated batches across Writer, Sheets, Slides, PDF, 
 - [x] CI runs #249–#251 exposed that the first automated edit placed the backup block in the CSV import method and left its variable out of scope in XLSX import. Those runs failed at Flutter Analyze; no APK was produced from those source revisions.
 - [x] Corrected the code in commit `cc1d2677eebd134279213479ca776584fc0e37d2`: CSV import restored to its original flow; backup logic now lives only in XLSX replacement and the backup key is used in its success message.
 - [x] Manually inspected both import paths and confirmed the XLSX path waits for pending saves, preserves the previous workbook, then replaces the active worksheet.
-- [ ] Build #252 / run `44260743427` is the first workflow on the corrected integration commit; wait for Analyze, full tests, APK build and artifact upload before marking verified.
+- [x] Build #252 / run `44260743427` completed successfully on the corrected integration commit; Analyze, full tests, Android APK and artifact upload all passed.
 
 
 ### Native Android Document Scanner — implementation pending CI (2026-11-18)
@@ -733,3 +733,15 @@ Continue development as coordinated batches across Writer, Sheets, Slides, PDF, 
 - [x] Added workflow concurrency control so rapid source commits cancel superseded builds and preserve resources for validating the newest main-branch source.
 
 Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea3832466fa15dcb73804b4cc626591695d743` (scanner service), `613ca21812ef23fafe4ecd028ce84b2a60ce9c97` (reusable OCR), `df1e074d12c49d050a62a05631868e68d99bb578` (screen integration), `324cd19aec79219a71594fcf8671eb9a28330d8a` (cancellation/path correction), `d3e82d4b4c559f1b4addd59216137f2d77b53c78` (tests), `aa9b8a1936ed0663df8616c7d853abcda9fa4149` (CI concurrency).
+
+
+### Sheets XLSX import safety — Build #252 verified
+- [x] Build #252 / run `44260743427`, source `cc1d2677eebd134279213479ca776584fc0e37d2`: Analyze, full tests, Android APK and artifact upload passed.
+- [x] Artifact `OFFYNEXBD-Android-APK`: ID `14408226617`, size 50,234,182 bytes.
+- [x] The pre-import backup, pending-save queue ordering, backup failure abort behavior, and 20 MB XLSX file-size boundary are now covered by the verified source/test suite.
+
+### Scan integration corrections after first CI attempt
+- [x] Build #257 exposed a malformed source splice in the workspace screen; the duplicate tail was removed and the Scan method was restored as one bounded method in commit `c7dec759456f7b232608a95d3d9f8b5f0a38b860`, then interpolation and extension regex were corrected in `8552a0f2922480cdc4ea694adf0fe7506c1ffd2f`.
+- [x] Native scanner service now handles Android cancellation and uses the local file paths returned by the plugin. The native Android plugin returns filesystem paths for the PDF and page images.
+- [x] Multi-page OCR separators now use real newline characters. The scanned PDF is saved to app documents before OCR begins, so OCR failure cannot discard the captured PDF (commit `b06e579c11edfe3e61f086ac912feb4589ee9617`).
+- [ ] Latest-source Build #267 / run `44261674201` is pending; its Analyze, full tests, Android APK and artifact upload must all pass before the native scanner is marked verified.
