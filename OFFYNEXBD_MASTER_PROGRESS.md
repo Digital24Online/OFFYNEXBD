@@ -506,7 +506,8 @@
 - [x] Added a versioned backup codec with strict format/version checks, OFFYNEXBD-only key validation and supported SharedPreferences value validation.
 - [x] Added JSON file export and import using the existing file picker; restore remains confirmation-gated.
 - [x] Added codec tests for supported-value round trip, unsupported versions, foreign keys and invalid value types.
-- [ ] Latest validation is running in workflow #203 (run ID 44251489785). Do not mark this improvement verified until Analyze, all tests and Android APK build/upload pass.
+- [ ] Workflow #203 (run ID 44251489785) exposed two curly-brace lint findings in the new backup error handlers; both were corrected in commit `0f94cb4f78b6fd892071dedb47f36e94cc8660ba`.
+- [ ] Latest validation is running in workflow #204 (run ID 44251710031). Do not mark this improvement verified until Analyze, all tests and Android APK build/upload pass.
 - [ ] Online cloud sync remains unimplemented; do not describe local backup as cloud sync.
 
 ### Integrated development rule
