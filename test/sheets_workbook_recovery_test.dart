@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:offynexbd/lib/modules/sheets/sheets_screen.dart';
+import 'package:offynexbd/lib/modules/sheets/sheets_workbook_codec.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -23,6 +24,11 @@ void main() {
         .toList();
     expect(recoveryKeys, hasLength(1));
     expect(prefs.getString(recoveryKeys.single), damaged);
-    expect(prefs.getString('offynex_sheets_workbook_v1'), damaged);
+    final savedWorkbook = SheetsWorkbookCodec.decode(
+      prefs.getString('offynex_sheets_workbook_v1')!,
+    );
+    expect(savedWorkbook.sheets, hasLength(1));
+    expect(savedWorkbook.activeSheet.name, 'Sheet1');
+    expect(savedWorkbook.activeSheet.cells, isEmpty);
   });
 }
