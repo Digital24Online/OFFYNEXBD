@@ -810,3 +810,13 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Corrected the Container by moving its surface color into BoxDecoration and widened ribbon commands to improve Bangla label visibility. Existing tests were preserved unchanged.
 - [ ] Re-run Analyze, all automated tests and Android APK build for the correction commit; do not call the Writer redesign verified until CI succeeds.
 - [ ] Physical Android visual and interaction checks remain outstanding.
+
+
+## Writer Editable Print Preview — implementation in progress (2026-11-18)
+
+- [x] Rechecked the current main branch and confirmed the existing Print Preview was a read-only `PdfPreview`; the original Quill document editor remained separate.
+- [x] Added an Edit action inside the Print Preview screen. It opens the same live Quill document controller, so text and existing table/image embeds can be edited without leaving the preview route.
+- [x] Added Save and Preview actions. Saving writes through the existing document save queue before rebuilding the PDF preview, so edits are retained in the original Writer document.
+- [ ] Validate Flutter Analyze, all automated tests, Android APK build and artifact upload on the final commit.
+- [ ] Improve phone page-fit behavior after checking actual layout constraints; do not shrink the A4 page to unreadable size merely to show its full height.
+- [ ] Physical phone and printer verification remains outstanding.

@@ -2060,6 +2060,11 @@ Future<void> showCustomFontSizeDialog() async {
               : titleController.text.trim(),
           initialPageFormat: _selectedPdfFormat,
           buildPdf: _buildWriterPdf,
+          controller: quillController,
+          focusNode: editorFocusNode,
+          isBangla: widget.isBangla,
+          onSave: saveDocument,
+          onEditTable: editWriterTable,
         ),
       ),
     );
@@ -3019,31 +3024,181 @@ class _WriterPagesPainter extends CustomPainter {
   }
 }
 
-class _WriterPrintPreviewScreen extends StatelessWidget {
+class _WriterPrintPreviewScreen extends StatefulWidget {
   final String fileName;
   final PdfPageFormat initialPageFormat;
   final Future<Uint8List> Function(PdfPageFormat) buildPdf;
+  final QuillController controller;
+  final FocusNode focusNode;
+  final bool isBangla;
+  final Future<void> Function() onSave;
+  final Future<void> Function(
+    BuildContext,
+    Map<String, dynamic>,
+    int,
+  ) onEditTable;
 
   const _WriterPrintPreviewScreen({
     required this.fileName,
     required this.initialPageFormat,
     required this.buildPdf,
+    required this.controller,
+    required this.focusNode,
+    required this.isBangla,
+    required this.onSave,
+    required this.onEditTable,
   });
+
+  @override
+  State<_WriterPrintPreviewScreen> createState() =>
+      _WriterPrintPreviewScreenState();
+}
+
+class _WriterPrintPreviewScreenState
+    extends State<_WriterPrintPreviewScreen> {
+  bool _editing = false;
+  bool _saving = false;
+  int _previewRevision = 0;
+
+  String _t(String bn, String en) => widget.isBangla ? bn : en;
+
+  Future<void> _saveAndPreview() async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      await widget.onSave();
+      if (!mounted) return;
+      setState(() {
+        _editing = false;
+        _saving = false;
+        _previewRevision++;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Save failed: $error')),
+      );
+    }
+  }
+
+  void _openEditor() {
+    setState(() => _editing = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) widget.focusNode.requestFocus();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Print Preview')),
-      body: PdfPreview(
-        build: buildPdf,
-        initialPageFormat: initialPageFormat,
-        canChangePageFormat: true,
-        canChangeOrientation: true,
-        allowPrinting: true,
-        allowSharing: true,
-        pdfFileName: '$fileName.pdf',
-        maxPageWidth: 700,
+      backgroundColor: const Color(0xFFE9EDF2),
+      appBar: AppBar(
+        title: Text(_editing
+            ? _t('প্রিভিউ থেকে সম্পাদনা', 'Edit from preview')
+            : _t('প্রিন্ট প্রিভিউ', 'Print Preview')),
+        actions: [
+          if (_editing)
+            IconButton(
+              tooltip: _t('সংরক্ষণ করে প্রিভিউ', 'Save and preview'),
+              onPressed: _saving ? null : _saveAndPreview,
+              icon: _saving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.save_outlined),
+            )
+          else
+            IconButton(
+              tooltip: _t('ডকুমেন্ট সম্পাদনা', 'Edit document'),
+              onPressed: _openEditor,
+              icon: const Icon(Icons.edit_outlined),
+            ),
+          const SizedBox(width: 6),
+        ],
       ),
+      body: _editing
+          ? Column(
+              children: [
+                Material(
+                  color: Colors.white,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.edit_document, color: Color(0xFF185C3B)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _t(
+                              'এখানকার পরিবর্তন মূল ডকুমেন্টে সংরক্ষিত হবে',
+                              'Changes here are made to the original document',
+                            ),
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed: _saving ? null : _saveAndPreview,
+                          icon: const Icon(Icons.visibility_outlined),
+                          label: Text(_t('প্রিভিউ', 'Preview')),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Container(
+                    margin: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x18000000),
+                          blurRadius: 12,
+                          offset: Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: QuillEditor.basic(
+                      controller: widget.controller,
+                      focusNode: widget.focusNode,
+                      config: QuillEditorConfig(
+                        expands: true,
+                        padding: EdgeInsets.zero,
+                        placeholder: _t(
+                          'এখানে সম্পাদনা করুন...',
+                          'Edit your document here...',
+                        ),
+                        embedBuilders: [
+                          WriterTableEmbedBuilder(
+                            onEdit: widget.onEditTable,
+                          ),
+                          WriterImageEmbedBuilder(),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            )
+          : PdfPreview(
+              key: ValueKey(_previewRevision),
+              build: widget.buildPdf,
+              initialPageFormat: widget.initialPageFormat,
+              canChangePageFormat: true,
+              canChangeOrientation: true,
+              allowPrinting: true,
+              allowSharing: true,
+              pdfFileName: '${widget.fileName}.pdf',
+              maxPageWidth: 700,
+            ),
     );
   }
 }
