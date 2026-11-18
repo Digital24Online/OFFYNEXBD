@@ -702,3 +702,12 @@ Continue development as coordinated batches across Writer, Sheets, Slides, PDF, 
 - [x] Artifact `OFFYNEXBD-Android-APK`: ID `14406877998`, size 50,231,735 bytes.
 - [x] Database offline row create/edit/delete workflow and controller-lifecycle regression test are verified by this build.
 - [x] Build #239 / run `44257520506`, source commit `1f1a41945bd28e23a74db63a4b3ff14a32ae1367`, also passed all CI stages; artifact ID `14406612497`, size 50,205,416 bytes.
+
+
+### Sheets destructive XLSX import safety — validation pending (2026-11-18)
+- [x] Before replacing the active Sheets workbook with an imported XLSX worksheet, the app now saves the exact previous workbook JSON under a timestamped `offynex_sheets_import_backup_*` SharedPreferences key.
+- [x] If the backup cannot be saved, the import is cancelled before the in-memory workbook is replaced. The original primary workbook key is left intact until the normal save after import.
+- [x] XLSX import now rejects files larger than 20 MB before decoding; the existing workbook remains unchanged.
+- [x] Added unit tests for exact backup preservation, no-existing-workbook behavior, and the 20 MB boundary.
+- [ ] Flutter Analyze, complete test suite, Android APK build and artifact upload are pending for the commits ending `eba07fae`, `baff506e`, and `5bb5d991`. Do not mark this feature verified until a successful workflow includes the final screen integration commit.
+- [ ] Multi-worksheet editing inside OFFYNEX Sheets remains future work; current import still imports one selected worksheet at a time.
