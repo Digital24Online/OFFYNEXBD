@@ -399,4 +399,22 @@
 - [x] Android APK build, signing-file cleanup, generated-source save and APK upload — SUCCESS.
 - [x] Artifact: `OFFYNEXBD-Android-APK`, 50,028,708 bytes; artifact ID `14363800988`; available until 2026-11-24T19:42:58Z.
 - Run URL: https://github.com/Digital24Online/OFFYNEXBD/actions/runs/44160413539
-- [ ] Remaining Sheets features: multi-sheet workbook management, charts, sorting/filtering, pivot tables, data validation, conditional formatting, ODS import/export, advanced print-preview controls, larger-workbook performance and physical Android/printer visual verification.
+- [ ] Remaining Sheets features: multi-sheet workbook management, charts, pivot tables, data validation, conditional formatting, ODS import/export, advanced print-preview controls, larger-workbook performance and physical Android/printer visual verification.
+
+
+## OFFYNEX Sheets — Display-only Sorting and Filtering Verified — 2026-11-18
+
+- [x] Added selected-column A→Z / Z→A sorting; selecting the same column toggles direction.
+- [x] Added case-insensitive substring filtering and combined sort + filter.
+- [x] Blank cells remain at the bottom; equal values retain their original row order.
+- [x] Sorting/filtering changes only the displayed row order. Underlying worksheet cells, formulas, styles and formula references remain in their original positions.
+- [x] Clear sort/filter restores the original row order. CSV import, XLSX import and Clear Sheet reset the view state.
+- [x] Bangla and English ribbon labels are provided.
+- [x] Automated tests cover alphabetical/numeric sorting, blank-last, case-insensitive filtering, combined operations, original-order restoration and selected-cell column parsing.
+- [x] Build #193 (run ID `44247321633`; commit `66c8d1caa8bc702d77c8b70d4a62bc9c5257e5d9`) completed SUCCESS.
+- [x] Flutter Analyze — SUCCESS.
+- [x] Full automated test suite — SUCCESS.
+- [x] Android APK build, signing-file cleanup, generated-source save and APK upload — SUCCESS.
+- [x] Artifact: `OFFYNEXBD-Android-APK`, 50,036,028 bytes; artifact ID `14402816557`; available until 2026-11-25T05:59:46Z.
+- Run URL: https://github.com/Digital24Online/OFFYNEXBD/actions/runs/44247321633
+- [ ] Physical Android/device and printer visual verification remains separate from CI. This feature does not imply full Excel sorting/filtering parity or completion of the Sheets module.
