@@ -135,6 +135,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
       );
       if (picked == null || !mounted) return;
       final bytes = await picked.readAsBytes();
+      if (!mounted) return;
       if (bytes.isEmpty || bytes.length > 10 * 1024 * 1024) {
         throw const FormatException('Workspace file must be between 1 byte and 10 MB.');
       }
