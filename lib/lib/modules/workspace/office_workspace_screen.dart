@@ -301,9 +301,11 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
           await file.delete();
         }
       } catch (error) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text((_bn ? 'তালিকা থেকে সরানো হয়েছে; PDF মুছতে পারেনি: ' : 'Removed from list; PDF delete failed: ') + error.toString()),
-        ));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text((_bn ? 'তালিকা থেকে সরানো হয়েছে; PDF মুছতে পারেনি: ' : 'Removed from list; PDF delete failed: ') + error.toString()),
+          ));
+        }
       }
     }
   }
