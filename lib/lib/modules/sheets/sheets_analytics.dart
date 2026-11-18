@@ -210,6 +210,7 @@ class SheetsAnalytics {
       final header = cells['${columnName(column)}${range.firstRow}']?.trim() ?? '';
       final name = header.isEmpty ? 'Series ${column - range.firstColumn}' : header;
       final values = <double>[];
+      var hasNumericValue = false;
       for (var row = range.firstRow + 1; row <= range.lastRow; row++) {
         final raw = cells['${columnName(range.firstColumn)}$row']?.trim() ?? '';
         if (column == range.firstColumn + 1) {
@@ -224,9 +225,10 @@ class SheetsAnalytics {
             throw FormatException('Chart value in ${columnName(column)}$row is not numeric.');
           }
           values.add(numeric);
+          hasNumericValue = true;
         }
       }
-      if (values.any((value) => value != 0)) {
+      if (hasNumericValue) {
         series.add(SheetsChartSeries(name: name, values: values));
       }
     }
