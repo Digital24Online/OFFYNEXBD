@@ -568,3 +568,12 @@ Continue development as coordinated batches across Writer, Sheets, Slides, PDF, 
 ### Writer archive static analysis correction
 - [x] The first Writer archive Analyze run found one redundant `dart:typed_data` import (the existing Flutter services import already exposes `Uint8List`). Removed it in commit `9a8600c39a357b7fbcf65afa3473365c30d9e8c8`.
 - [ ] Re-run Analyze, Writer codec tests, complete tests and APK build against the corrected source.
+
+
+## Data Recovery Safety — Writer + Sheets (2026-11-18, validation pending)
+
+- [x] Writer: malformed document-library JSON is copied to a timestamped `offynex_writer_documents_recovery_*` SharedPreferences key before the library is shown as empty; the user receives a warning.
+- [x] Sheets: malformed workbook JSON is parsed into temporary collections first, preventing partial state mutation; on failure the original raw workbook is copied to `offynex_sheets_workbook_recovery_*` before a fresh sheet is shown.
+- [x] Both recovery keys remain OFFYNEXBD-prefixed, so they are included in the local Cloud backup.
+- [x] Added tests proving the original raw data remains stored and a recovery copy is created.
+- [ ] Revalidate all Writer archive and recovery changes plus Sheets recovery changes in CI before marking complete.
