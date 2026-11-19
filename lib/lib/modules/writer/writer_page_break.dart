@@ -14,19 +14,27 @@ class WriterPageBreakEmbedBuilder extends EmbedBuilder {
 
   @override
   Widget build(BuildContext context, EmbedContext embedContext) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 8),
-      child: Row(children: [
-        Expanded(child: Divider(color: Color(0xFF8A98AA), thickness: 1)),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 10),
-          child: Text('PAGE BREAK', style: TextStyle(
-            color: Color(0xFF52647A), fontSize: 10,
-            fontWeight: FontWeight.w700, letterSpacing: 1.1,
-          )),
+    return Container(
+      height: 28,
+      alignment: Alignment.center,
+      margin: const EdgeInsets.symmetric(vertical: 7),
+      decoration: const BoxDecoration(
+        border: Border.symmetric(
+          horizontal: BorderSide(color: Color(0xFF8A98AA), width: 1),
         ),
-        Expanded(child: Divider(color: Color(0xFF8A98AA), thickness: 1)),
-      ]),
+      ),
+      child: const FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          'PAGE BREAK',
+          style: TextStyle(
+            color: Color(0xFF52647A),
+            fontSize: 9,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.8,
+          ),
+        ),
+      ),
     );
   }
 }
