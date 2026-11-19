@@ -18,7 +18,7 @@ void main() {
     expect(find.text('OFFYNEXBD'), findsOneWidget);
     expect(find.text('MD PIYARUL ISLAM'), findsOneWidget);
     expect(find.text('Founder & Original Creator'), findsOneWidget);
-    expect(find.text('Rajshahi, Bangladesh'), findsOneWidget);
+    expect(find.text('Rajshahi, Bangladesh'), findsNothing);
 
     final scrollable = find.byType(Scrollable).first;
     await tester.scrollUntilVisible(
