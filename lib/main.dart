@@ -622,15 +622,7 @@ class AppInfoScreen extends StatelessWidget {
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.location_on_outlined, size: 16, color: muted),
-                      SizedBox(width: 4),
-                      Text('Rajshahi, Bangladesh', style: TextStyle(color: muted, fontSize: 12)),
-                    ],
-                  ),
+
                 ],
               ),
             ),
