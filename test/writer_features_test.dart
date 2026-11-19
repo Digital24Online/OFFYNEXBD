@@ -166,6 +166,7 @@ void main() {
     expect(raw, contains('{page}'));
     expect(raw, contains('{pages}'));
   });
+
   testWidgets('Writer View ribbon has direct zoom controls within supported zoom bounds', (tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: true)));
@@ -206,7 +207,6 @@ void main() {
     final page = tester.getSize(find.byKey(const ValueKey('writer-page-canvas')));
     expect(page.width, greaterThanOrEqualTo(380));
   });
-}
 
   testWidgets('Writer Home exposes working undo, redo, paragraph alignment and list controls', (tester) async {
     SharedPreferences.setMockInitialValues({});
@@ -236,4 +236,4 @@ void main() {
       await tester.pumpAndSettle();
     }
   });
-
+}
