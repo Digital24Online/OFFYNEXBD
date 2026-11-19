@@ -1000,7 +1000,12 @@ class _SheetsScreenState extends State<SheetsScreen> {
         rowCount,
         (row) => List<String>.generate(
           columnCount,
-          (column) => _cells[_cellKey(row, column)] ?? '',
+          (column) {
+            final key = _cellKey(row, column);
+            final raw = _cells[key] ?? '';
+            // CSV is a value export: emit formula results, not executable formulas.
+            return raw.startsWith('=') ? _displayValue(key) : raw;
+          },
         ),
       );
       final bytes = Uint8List.fromList(utf8.encode(SheetsCsvCodec.encode(values)));

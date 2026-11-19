@@ -38,4 +38,14 @@ void main() {
       expect(() => SheetsCsvCodec.decode('"ok"x'), throwsA(isA<FormatException>()));
     });
   });
+
+    test('neutralizes formula-like text in CSV exports', () {
+      expect(
+        SheetsCsvCodec.encode([
+          ['=HYPERLINK("https://bad.example")', '  @SUM(A1:A2)', '+cmd', '-1'],
+        ]),
+        "'=HYPERLINK("https://bad.example"),'  @SUM(A1:A2),'+cmd,'-1",
+      );
+    });
+  }
 }

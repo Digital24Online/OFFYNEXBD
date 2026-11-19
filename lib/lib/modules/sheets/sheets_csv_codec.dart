@@ -84,7 +84,9 @@ class SheetsCsvCodec {
 
   static String encode(List<List<String>> rows) {
     String encodeField(String value) {
-      if (value.contains(',') ||
+      final trimmed = value.trimLeft();
+      final safe = trimmed.isNotEmpty && '=+-@'.contains(trimmed[0]) ? "'$value" : value;
+      if (safe.contains(',') ||
           value.contains('"') ||
           value.contains('\r') ||
           value.contains('\n')) {
