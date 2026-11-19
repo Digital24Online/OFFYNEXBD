@@ -23,7 +23,7 @@ class WriterDocxExportService {
     for (final operation in delta) {
       final insert = operation['insert'];
       if (insert is String && !firstParagraphEnded) {
-        final newline = insert.indexOf('\\n');
+        final newline = insert.indexOf('\n');
         firstParagraph.write(newline < 0 ? insert : insert.substring(0, newline));
         if (newline >= 0) firstParagraphEnded = true;
       } else if (insert is Map && !firstParagraphEnded) {

@@ -107,8 +107,8 @@ void main() {
     final bytes = await WriterDocxExportService.build(
       title: 'Annual Report',
       delta: [
-        {'insert': 'Annual Report\\n', 'attributes': {'header': 1}},
-        {'insert': 'Body text\\n'},
+        {'insert': 'Annual Report\n', 'attributes': {'header': 1}},
+        {'insert': 'Body text\n'},
       ],
     );
     final archive = ZipDecoder().decodeBytes(bytes);
@@ -120,7 +120,7 @@ void main() {
   test('DOCX export still adds the document title when the body starts with different text', () async {
     final bytes = await WriterDocxExportService.build(
       title: 'Annual Report',
-      delta: [{'insert': 'Introduction\\n'}],
+      delta: [{'insert': 'Introduction\n'}],
     );
     final archive = ZipDecoder().decodeBytes(bytes);
     final document = utf8.decode(archive.findFile('word/document.xml')!.readBytes()!);
