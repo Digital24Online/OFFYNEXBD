@@ -20,12 +20,13 @@ class DatabaseRowsCsvCodec {
     }
     String safeCell(String value) {
       final trimmed = value.trimLeft();
-      if (trimmed.isNotEmpty && '=+-@'.contains(trimmed[0])) return "'" + value;
+      if (trimmed.isNotEmpty && '=+-@'.contains(trimmed[0])) return "'$value";
       return value;
     }
     String quote(String value) {
       final safe = safeCell(value);
-      return '"' + safe.replaceAll('"', '""') + '"';
+      final escaped = safe.replaceAll('"', '""');
+      return '"$escaped"';
     }
     final lines = <String>[
       fields.map(quote).join(','),
