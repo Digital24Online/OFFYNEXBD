@@ -183,7 +183,7 @@ class _WriterScreenState extends State<WriterScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Cancel'),
+              child: Text(_ribbonLabel('Cancel')),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(dialogContext, true),
@@ -1687,6 +1687,26 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
       'Comments': 'মন্তব্য',
       'Find / Replace': 'খুঁজুন / প্রতিস্থাপন',
       'Revision History': 'সংশোধনের ইতিহাস',
+      'Page Size': 'পৃষ্ঠার আকার',
+      'Orientation': 'দিকনির্দেশ',
+      'Margins': 'মার্জিন',
+      'Letter': 'লেটার',
+      'Legal': 'লিগ্যাল',
+      'Portrait': 'পোর্ট্রেট',
+      'Landscape': 'ল্যান্ডস্কেপ',
+      'Normal': 'স্বাভাবিক',
+      'Narrow': 'সরু',
+      'Moderate': 'মাঝারি',
+      'Wide': 'প্রশস্ত',
+      'Custom Margins...': 'নিজস্ব মার্জিন...',
+      'Custom Margins (inches)': 'নিজস্ব মার্জিন (ইঞ্চি)',
+      'Top': 'উপর',
+      'Bottom': 'নিচে',
+      'Left': 'বামে',
+      'Right': 'ডানে',
+      'Apply': 'প্রয়োগ',
+      'Reset': 'রিসেট',
+      'Page Margins': 'পৃষ্ঠার মার্জিন',
     };
     return _t(translations[english] ?? english, english);
   }
@@ -1839,7 +1859,7 @@ Future<void> showCustomFontSizeDialog() async {
               }
               Navigator.pop(dialogContext, parsed);
             },
-            child: const Text('Apply'),
+            child: Text(_ribbonLabel('Apply')),
           ),
         ],
       ),
@@ -2440,7 +2460,7 @@ Future<void> showCustomFontSizeDialog() async {
     final values = await showDialog<List<double>>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Custom Margins (inches)'),
+        title: Text(_ribbonLabel('Custom Margins (inches)')),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -2448,22 +2468,22 @@ Future<void> showCustomFontSizeDialog() async {
               TextField(
                 controller: topController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Top'),
+                decoration: InputDecoration(labelText: _ribbonLabel('Top')),
               ),
               TextField(
                 controller: bottomController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Bottom'),
+                decoration: InputDecoration(labelText: _ribbonLabel('Bottom')),
               ),
               TextField(
                 controller: leftController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Left'),
+                decoration: InputDecoration(labelText: _ribbonLabel('Left')),
               ),
               TextField(
                 controller: rightController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Right'),
+                decoration: InputDecoration(labelText: _ribbonLabel('Right')),
               ),
               const SizedBox(height: 8),
               const Text(
@@ -2546,14 +2566,14 @@ Future<void> showCustomFontSizeDialog() async {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Page Size', style: TextStyle(fontSize: 11)),
+              Text(_ribbonLabel('Page Size'), style: const TextStyle(fontSize: 11)),
               DropdownButton<String>(
                 value: pageSize,
-                items: const [
-                  DropdownMenuItem(value: 'A4', child: Text('A4')),
-                  DropdownMenuItem(value: 'A5', child: Text('A5')),
-                  DropdownMenuItem(value: 'Letter', child: Text('Letter')),
-                  DropdownMenuItem(value: 'Legal', child: Text('Legal')),
+                items: [
+                  const DropdownMenuItem(value: 'A4', child: Text('A4')),
+                  const DropdownMenuItem(value: 'A5', child: Text('A5')),
+                  DropdownMenuItem(value: 'Letter', child: Text('লেটার')),
+                  const DropdownMenuItem(value: 'Legal', child: Text('লিগ্যাল')),
                 ],
                 onChanged: (value) {
                   if (value == null) return;
@@ -2566,12 +2586,12 @@ Future<void> showCustomFontSizeDialog() async {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Orientation', style: TextStyle(fontSize: 11)),
+              Text(_ribbonLabel('Orientation'), style: const TextStyle(fontSize: 11)),
               DropdownButton<String>(
                 value: pageOrientation,
-                items: const [
-                  DropdownMenuItem(value: 'Portrait', child: Text('Portrait')),
-                  DropdownMenuItem(value: 'Landscape', child: Text('Landscape')),
+                items: [
+                  DropdownMenuItem(value: 'Portrait', child: Text(_ribbonLabel('Portrait'))),
+                  DropdownMenuItem(value: 'Landscape', child: Text(_ribbonLabel('Landscape'))),
                 ],
                 onChanged: (value) {
                   if (value == null) return;
@@ -2584,9 +2604,9 @@ Future<void> showCustomFontSizeDialog() async {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Margins', style: TextStyle(fontSize: 11)),
+              Text(_ribbonLabel('Margins'), style: const TextStyle(fontSize: 11)),
               PopupMenuButton<String>(
-                tooltip: 'Page Margins',
+                tooltip: _ribbonLabel('Page Margins'),
                 onSelected: (value) {
                   if (value == 'Custom') {
                     _showCustomMarginsDialog();
@@ -2594,17 +2614,17 @@ Future<void> showCustomFontSizeDialog() async {
                     _applyMarginPreset(value);
                   }
                 },
-                itemBuilder: (context) => const [
-                  PopupMenuItem(value: 'Normal', child: Text('Normal — 1.00"')),
-                  PopupMenuItem(value: 'Narrow', child: Text('Narrow — 0.50"')),
-                  PopupMenuItem(value: 'Moderate', child: Text('Moderate — 0.75"')),
-                  PopupMenuItem(value: 'Wide', child: Text('Wide — 1.25"')),
-                  PopupMenuDivider(),
-                  PopupMenuItem(value: 'Custom', child: Text('Custom Margins...')),
+                itemBuilder: (context) => [
+                  PopupMenuItem(value: 'Normal', child: Text('${_ribbonLabel('Normal')} — 1.00"')),
+                  PopupMenuItem(value: 'Narrow', child: Text('${_ribbonLabel('Narrow')} — 0.50"')),
+                  PopupMenuItem(value: 'Moderate', child: Text('${_ribbonLabel('Moderate')} — 0.75"')),
+                  PopupMenuItem(value: 'Wide', child: Text('${_ribbonLabel('Wide')} — 1.25"')),
+                  const PopupMenuDivider(),
+                  PopupMenuItem(value: 'Custom', child: Text(_ribbonLabel('Custom Margins...'))),
                 ],
                 child: Chip(
                   avatar: const Icon(Icons.border_outer, size: 17),
-                  label: Text(marginPreset),
+                  label: Text(_ribbonLabel(marginPreset)),
                 ),
               ),
             ],
@@ -2622,7 +2642,7 @@ Future<void> showCustomFontSizeDialog() async {
               });
             },
             icon: const Icon(Icons.restart_alt),
-            label: const Text('Reset'),
+            label: Text(_ribbonLabel('Reset')),
           ),
         ],
       ),
