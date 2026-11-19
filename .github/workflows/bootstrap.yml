@@ -74,8 +74,18 @@ jobs:
           curl --fail --location --retry 3 --output assets/tessdata/eng.traineddata 'https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/main/eng.traineddata'
           test -s assets/tessdata/eng.traineddata
 
+      - name: Prepare App Branding
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y librsvg2-bin
+          rsvg-convert --width 1024 --height 1024 assets/branding/offynexbd_logo.svg > assets/branding/offynexbd_app_icon.png
+          test -s assets/branding/offynexbd_app_icon.png
+
       - name: Get Dependencies
         run: flutter pub get
+
+      - name: Generate Platform Launcher Icons
+        run: dart run flutter_launcher_icons
 
       - name: Analyze Project
         run: flutter analyze
