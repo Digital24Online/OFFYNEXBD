@@ -259,6 +259,14 @@ void openModule(OfficeModule module) {
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: isBangla ? 'অ্যাপ ইনফো' : 'App Info',
+            icon: const Icon(Icons.info_outline_rounded, color: OFFYNEXTheme.ink),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => AppInfoScreen(isBangla: isBangla)),
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 14),
             child: OutlinedButton.icon(
@@ -469,6 +477,201 @@ void openModule(OfficeModule module) {
                 ]),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+class AppInfoScreen extends StatelessWidget {
+  const AppInfoScreen({super.key, required this.isBangla});
+
+  final bool isBangla;
+
+  @override
+  Widget build(BuildContext context) {
+    const ink = Color(0xFF14233B);
+    const muted = Color(0xFF66758B);
+    const blue = Color(0xFF1769B5);
+    return Scaffold(
+      backgroundColor: const Color(0xFFF4F7FC),
+      appBar: AppBar(
+        title: Text(isBangla ? 'অ্যাপ ইনফো' : 'App Info'),
+        backgroundColor: Colors.white,
+        foregroundColor: ink,
+        elevation: 0,
+      ),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            Container(
+              padding: const EdgeInsets.fromLTRB(22, 26, 22, 24),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF082B68), Color(0xFF0877C9)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(26),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    width: 104,
+                    height: 104,
+                    padding: const EdgeInsets.all(7),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: SvgPicture.asset(
+                      'assets/branding/offynexbd_logo.svg',
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  const SizedBox(height: 15),
+                  const Text(
+                    'OFFYNEXBD',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 25,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Work Smart, Be Productive',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Color(0xFFFFD66B),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    isBangla
+                        ? 'একটি সমন্বিত অফিস প্রোডাক্টিভিটি প্ল্যাটফর্ম'
+                        : 'An integrated office productivity platform',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 18),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: const Color(0xFFE3EAF3)),
+              ),
+              child: Column(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(80),
+                    child: Image.asset(
+                      'assets/branding/founder_profile.jpg',
+                      width: 116,
+                      height: 116,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        width: 116,
+                        height: 116,
+                        alignment: Alignment.center,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Color(0xFFE7F0FC),
+                        ),
+                        child: const Text(
+                          'MD',
+                          style: TextStyle(
+                            color: blue,
+                            fontSize: 30,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'MD PIYARUL ISLAM',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: ink,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.25,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    isBangla ? 'প্রতিষ্ঠাতা ও মূল নির্মাতা' : 'Founder & Original Creator',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: blue,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.location_on_outlined, size: 16, color: muted),
+                      SizedBox(width: 4),
+                      Text('Rajshahi, Bangladesh', style: TextStyle(color: muted, fontSize: 12)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFE3EAF3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.verified_user_outlined, color: blue, size: 20),
+                      const SizedBox(width: 9),
+                      Text(
+                        isBangla ? 'নির্মাতার ঘোষণা' : 'Creator Statement',
+                        style: const TextStyle(color: ink, fontSize: 15, fontWeight: FontWeight.w800),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    isBangla
+                        ? 'OFFYNEXBD-এর মূল ধারণা, পরিকল্পনা ও নির্মাণ উদ্যোগের স্রষ্টা MD PIYARUL ISLAM। এই পরিচয় অ্যাপের নির্মাতা-স্বীকৃতি হিসেবে সংরক্ষিত।'
+                        : 'MD PIYARUL ISLAM is the originator of the OFFYNEXBD concept and the initiative behind its planning and development. This in-app statement records the declared creator attribution.',
+                    style: const TextStyle(color: muted, fontSize: 13, height: 1.6),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 18),
+            const Center(
+              child: Text(
+                '© 2026 OFFYNEXBD. All Rights Reserved.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: muted, fontSize: 11, fontWeight: FontWeight.w600),
+              ),
+            ),
+            const SizedBox(height: 8),
           ],
         ),
       ),
