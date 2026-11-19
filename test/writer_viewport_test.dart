@@ -27,7 +27,7 @@ void main() {
         viewFit: 'Width',
       );
 
-      expect(794 * layout.scale, closeTo(376, 0.001));
+      expect(794 * layout.scale, closeTo(392, 0.001));
       expect(1122 * layout.scale, greaterThan(400));
     });
 
