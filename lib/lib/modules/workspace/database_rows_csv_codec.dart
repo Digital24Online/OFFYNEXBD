@@ -18,15 +18,7 @@ class DatabaseRowsCsvCodec {
     if (rows.length > maxRows) {
       throw const FormatException('Database CSV exceeds the 100,000-row limit.');
     }
-    String safeCell(String value) {
-      final trimmed = value.trimLeft();
-      if (trimmed.isNotEmpty && '=+-@'.contains(trimmed[0])) return "'$value";
-      return value;
-    }
-    String quote(String value) {
-      final safe = safeCell(value);
-      return '"${safe.replaceAll('"', '""')}"';
-    }
+    String quote(String value) => '"${value.replaceAll('"', '""')}"';
     final lines = <String>[
       fields.map(quote).join(','),
       for (final row in rows)
