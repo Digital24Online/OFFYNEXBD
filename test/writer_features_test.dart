@@ -19,6 +19,43 @@ Widget _writerTestApp(Widget home) => MaterialApp(
     );
 
 void main() {
+  testWidgets('Writer table editor follows Bangla and English language settings', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: true)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('নতুন ডকুমেন্ট'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('ইনসার্ট'));
+    await tester.tap(find.text('ইনসার্ট'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('টেবিল'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('টেবিল তৈরি করুন'), findsOneWidget);
+    expect(find.text('সারি যোগ'), findsOneWidget);
+    expect(find.text('কলাম যোগ'), findsOneWidget);
+    expect(find.text('টেবিল প্রয়োগ'), findsOneWidget);
+    await tester.tap(find.text('বাতিল'));
+    await tester.pumpAndSettle();
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: false)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('New Document'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Insert'));
+    await tester.tap(find.text('Insert'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Table'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Create Table'), findsOneWidget);
+    expect(find.text('Add Row'), findsOneWidget);
+    expect(find.text('Add Column'), findsOneWidget);
+    expect(find.text('Apply Table'), findsOneWidget);
+  });
+
   testWidgets('Writer ribbon follows Bangla and English app language', (tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: true)));
