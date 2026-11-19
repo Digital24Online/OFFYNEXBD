@@ -86,10 +86,11 @@ class WriterDocumentFormatService {
       return path;
     }
 
+    final numberingFormats = _docxNumberingFormats(archive);
     final delta = <Map<String, dynamic>>[];
     for (final child in _elementChildren(body)) {
       if (child.name.local == 'p') {
-        await _appendDocxParagraph(child, _docxParagraphAttributes(child), delta, saveImage, relationships);
+        await _appendDocxParagraph(child, _docxParagraphAttributes(child, numberingFormats), delta, saveImage, relationships);
       } else if (child.name.local == 'tbl') {
         final rows = _docxTable(child);
         if (rows.isNotEmpty) {
@@ -148,7 +149,38 @@ class WriterDocumentFormatService {
     delta.add({'insert': '\n', if (block.isNotEmpty) 'attributes': block});
   }
 
-  static Map<String, dynamic> _docxParagraphAttributes(XmlElement paragraph) {
+  static Map<String, String> _docxNumberingFormats(Archive archive) {
+    final file = archive.findFile('word/numbering.xml');
+    if (file == null) return const {};
+    final document = XmlDocument.parse(utf8.decode(_fileBytes(file)));
+    final abstractFormats = <String, String>{};
+    for (final abstractNum in _descendants(document, 'abstractNum')) {
+      final abstractId = _attribute(abstractNum, 'abstractNumId');
+      final level = _descendants(abstractNum, 'lvl').firstOrNull;
+      final numFmt = level == null ? null : _firstChild(level, 'numFmt');
+      final format = numFmt == null ? null : _attribute(numFmt, 'val');
+      if (abstractId != null && format != null) abstractFormats[abstractId] = format;
+    }
+    final result = <String, String>{};
+    for (final num in _descendants(document, 'num')) {
+      final numId = _attribute(num, 'numId');
+      final abstract = _firstChild(num, 'abstractNumId');
+      final abstractId = abstract == null ? null : _attribute(abstract, 'val');
+      final format = abstractId == null ? null : abstractFormats[abstractId];
+      if (numId == null || format == null) continue;
+      if (format == 'bullet') {
+        result[numId] = 'bullet';
+      } else if (const {'decimal', 'decimalZero', 'lowerLetter', 'upperLetter', 'lowerRoman', 'upperRoman'}.contains(format)) {
+        result[numId] = 'ordered';
+      }
+    }
+    return result;
+  }
+
+  static Map<String, dynamic> _docxParagraphAttributes(
+    XmlElement paragraph,
+    Map<String, String> numberingFormats,
+  ) {
     final props = _firstChild(paragraph, 'pPr');
     if (props == null) return {};
     final result = <String, dynamic>{};
@@ -160,7 +192,11 @@ class WriterDocumentFormatService {
     final align = jc == null ? null : _attribute(jc, 'val');
     const aligns = {'center': 'center', 'right': 'right', 'both': 'justify'};
     if (aligns.containsKey(align)) result['align'] = aligns[align];
-    if (_firstChild(props, 'numPr') != null) result['list'] = 'bullet';
+    final numbering = _firstChild(props, 'numPr');
+    final numIdElement = numbering == null ? null : _firstChild(numbering, 'numId');
+    final numId = numIdElement == null ? null : _attribute(numIdElement, 'val');
+    final listKind = numId == null ? null : numberingFormats[numId];
+    if (listKind != null) result['list'] = listKind;
     return result;
   }
 
@@ -366,10 +402,11 @@ class WriterDocumentFormatService {
         await _appendOdtParagraph(child, styles, delta, archive, imageDirectory, () => imageIndex++);
         delta.add({'insert': '\n', if (block.isNotEmpty) 'attributes': block});
       } else if (child.name.local == 'list') {
+        final listKind = _odtListKind(stylesFile, _attribute(child, 'style-name'));
         for (final item in _elementChildren(child).where((e) => e.name.local == 'list-item')) {
           for (final p in _elementChildren(item).where((e) => e.name.local == 'p' || e.name.local == 'h')) {
             await _appendOdtParagraph(p, styles, delta, archive, imageDirectory, () => imageIndex++);
-            delta.add({'insert': '\n', 'attributes': {'list': 'bullet'}});
+            delta.add({'insert': '\n', 'attributes': {'list': listKind}});
           }
         }
       } else if (child.name.local == 'table') {
@@ -440,6 +477,22 @@ class WriterDocumentFormatService {
       for (final child in node.children) { await walk(child, attrs); }
     }
     for (final child in paragraph.children) { await walk(child, const <String, dynamic>{}); }
+  }
+
+  static String _odtListKind(ArchiveFile? stylesFile, String? styleName) {
+    if (stylesFile == null || styleName == null) return 'bullet';
+    try {
+      final document = XmlDocument.parse(utf8.decode(_fileBytes(stylesFile)));
+      for (final listStyle in _descendants(document, 'list-style')) {
+        if (_attribute(listStyle, 'name') != styleName) continue;
+        return _firstDescendant(listStyle, 'list-level-style-number') == null
+            ? 'bullet'
+            : 'ordered';
+      }
+    } catch (_) {
+      return 'bullet';
+    }
+    return 'bullet';
   }
 
   static Map<String, dynamic> _odtTextAttributes(XmlElement props) {
@@ -522,6 +575,13 @@ class WriterDocumentFormatService {
       return inlineTextStyles.putIfAbsent(key, () => 'T_Inline${inlineTextStyles.length + 1}');
     }
     var imageIndex = 0;
+    String? openListKind;
+    void closeList() {
+      if (openListKind == null) return;
+      content.write('</text:list>');
+      openListKind = null;
+    }
+
     void flushParagraph([Map<String, dynamic> block = const {}]) {
       final value = paragraph.toString();
       paragraph.clear();
@@ -529,9 +589,17 @@ class WriterDocumentFormatService {
       final tag = heading is int && heading >= 1 && heading <= 3 ? 'text:h' : 'text:p';
       final level = heading is int ? ' text:outline-level="$heading"' : '';
       final element = '<$tag$level>$value</$tag>';
-      if (block['list'] == 'bullet') {
-        content.write('<text:list><text:list-item>$element</text:list-item></text:list>');
+      final listKind = block['list'];
+      if (listKind == 'bullet' || listKind == 'ordered') {
+        if (openListKind != listKind) {
+          closeList();
+          openListKind = listKind as String;
+          final styleName = listKind == 'ordered' ? 'L_Numbered' : 'L_Bullet';
+          content.write('<text:list text:style-name="$styleName">');
+        }
+        content.write('<text:list-item>$element</text:list-item>');
       } else {
+        closeList();
         content.write(element);
       }
     }
@@ -581,6 +649,7 @@ class WriterDocumentFormatService {
       }
     }
     if (paragraph.isNotEmpty || delta.isEmpty) flushParagraph();
+    closeList();
     content.write('</office:text></office:body></office:document-content>');
 
     const sizes = <String, List<double>>{
@@ -598,6 +667,8 @@ class WriterDocumentFormatService {
     final styles = '''<?xml version="1.0" encoding="UTF-8"?>
 <office:document-styles xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0" xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0" office:version="1.2">
 <office:styles>
+<text:list-style style:name="L_Bullet"><text:list-level-style-bullet text:level="1" text:bullet-char="•"/></text:list-style>
+<text:list-style style:name="L_Numbered"><text:list-level-style-number text:level="1" style:num-format="1"/></text:list-style>
 <style:style style:name="T_Bold" style:family="text"><style:text-properties fo:font-weight="bold"/></style:style>
 <style:style style:name="T_Italic" style:family="text"><style:text-properties fo:font-style="italic"/></style:style>
 <style:style style:name="T_Underline" style:family="text"><style:text-properties style:text-underline-style="solid"/></style:style>
