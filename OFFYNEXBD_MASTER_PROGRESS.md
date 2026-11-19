@@ -1467,3 +1467,11 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 3. Add regression tests for each integrated correction and run Analyze, the complete test suite, Android release build, signature/package verification and Actions artifact upload on the final head.
 4. Update this handoff with the exact new commit and CI evidence.
 5. Keep PR #3 open until the user explicitly approves merging.
+
+## Writer Master Requirements Contract — 2026-11-19
+
+- Added `WRITER_MASTER_REQUIREMENTS.md` as the consolidated, binding A–Z Writer requirements and acceptance contract. It captures the user's requested desktop-style ribbon, mobile page viewport/zoom, true multi-page flow, rich text/tables/images, DOCX/ODT/PDF fidelity, Bangla fonts/spellcheck, storage/recovery, localization, accessibility, preservation rules and mandatory verification gates.
+- The contract is a requirements baseline, **not** a claim that all features are implemented. In particular, current painted-page/continuous-Quill layout remains estimated pagination, not true page-flow pagination.
+- Added a PDF export regression test covering explicit page-break content on both sides of the break.
+- New commits: requirements contract `bd04b329b3ef6b1bd786081793e37abd5549e8a5`; PDF page-break test `d6e79b6eecdb49bd9f7bbeebbfee7b77b7e0d7f5`.
+- These commits require a fresh CI run. Do not mark Writer complete until the full contract is implemented and all automated/manual acceptance gates have evidence. PR #3 remains open and must not be merged without explicit user approval.
