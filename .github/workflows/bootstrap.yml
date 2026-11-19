@@ -146,15 +146,19 @@ jobs:
           test -d "$NDK_DIR"
 
       - name: Build Android APK
-        run: flutter build apk --release
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: flutter build apk --release --build-number="$BUILD_NUMBER"
 
       - name: Verify Release APK Signature and Install Metadata
         run: |
           set -euo pipefail
           APK="build/app/outputs/flutter-apk/app-release.apk"
           test -s "$APK"
-          APKSIGNER="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
-          AAPT="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools" -type f -name aapt | sort -V | tail -n 1)"
+          ANDROID_SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          test -n "$ANDROID_SDK"
+          APKSIGNER="$(find "$ANDROID_SDK/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          AAPT="$(find "$ANDROID_SDK/build-tools" -type f -name aapt | sort -V | tail -n 1)"
           test -x "$APKSIGNER"
           test -x "$AAPT"
           "$APKSIGNER" verify --verbose --print-certs "$APK" | tee build/app/outputs/flutter-apk/APK_SIGNATURE.txt
@@ -178,10 +182,22 @@ jobs:
             git push origin "HEAD:${GITHUB_REF_NAME}"
           fi
 
+      - name: Verify Download Package Contents
+        run: |
+          set -euo pipefail
+          OUTPUT="build/app/outputs/flutter-apk"
+          test -s "$OUTPUT/app-release.apk"
+          test -s "$OUTPUT/APK_SIGNATURE.txt"
+          test -s "$OUTPUT/APK_INSTALL_INFO.txt"
+          test -s "$OUTPUT/APK_SHA256.txt"
+          grep -q 'com.offynexbd.offynexbd' "$OUTPUT/APK_INSTALL_INFO.txt"
+          grep -q 'Signer #1 certificate SHA-256 digest' "$OUTPUT/APK_SIGNATURE.txt"
+          ls -lh "$OUTPUT"
+
       - name: Upload Android APK
         uses: actions/upload-artifact@v4
         with:
           name: OFFYNEXBD-Android-APK
           path: build/app/outputs/flutter-apk/
-          retention-days: 7
+          retention-days: 14
           
