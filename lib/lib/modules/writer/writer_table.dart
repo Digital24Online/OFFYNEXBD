@@ -37,18 +37,23 @@ typedef WriterTableEditCallback = Future<void> Function(
 Future<Map<String, dynamic>?> showWriterTableEditor(
   BuildContext context, {
   Map<String, dynamic>? initialData,
+  bool isBangla = false,
 }) {
   return showDialog<Map<String, dynamic>>(
     context: context,
     barrierDismissible: false,
-    builder: (_) => _WriterTableDialog(initialData: initialData),
+    builder: (_) => _WriterTableDialog(
+      initialData: initialData,
+      isBangla: isBangla,
+    ),
   );
 }
 
 class _WriterTableDialog extends StatefulWidget {
-  const _WriterTableDialog({this.initialData});
+  const _WriterTableDialog({this.initialData, required this.isBangla});
 
   final Map<String, dynamic>? initialData;
+  final bool isBangla;
 
   @override
   State<_WriterTableDialog> createState() => _WriterTableDialogState();
@@ -56,6 +61,7 @@ class _WriterTableDialog extends StatefulWidget {
 
 class _WriterTableDialogState extends State<_WriterTableDialog> {
   late List<List<TextEditingController>> cells;
+  String _t(String bn, String en) => widget.isBangla ? bn : en;
   int borderColor = 0xFF333333;
   int backgroundColor = 0xFFFFFFFF;
 
@@ -159,7 +165,9 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
     final selected = await showDialog<int>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text(chooseBorder ? 'Border Color' : 'Background Color'),
+        title: Text(chooseBorder
+            ? _t('বর্ডারের রং', 'Border Color')
+            : _t('পটভূমির রং', 'Background Color')),
         content: Wrap(
           spacing: 12,
           runSpacing: 12,
@@ -219,7 +227,9 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       scrollable: false,
-      title: Text(widget.initialData == null ? 'Create Table' : 'Edit Table'),
+      title: Text(widget.initialData == null
+          ? _t('টেবিল তৈরি করুন', 'Create Table')
+          : _t('টেবিল সম্পাদনা', 'Edit Table')),
       content: SizedBox(
         width: (MediaQuery.sizeOf(context).width * 0.88).clamp(280.0, 720.0),
         height: (MediaQuery.sizeOf(context).height * 0.62).clamp(260.0, 620.0),
@@ -233,35 +243,35 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
                 OutlinedButton.icon(
                   onPressed: cells.length >= 20 ? null : addRow,
                   icon: const Icon(Icons.add),
-                  label: const Text('Add Row'),
+                  label: Text(_t('সারি যোগ', 'Add Row')),
                 ),
                 OutlinedButton.icon(
                   onPressed: cells.length <= 1 ? null : removeRow,
                   icon: const Icon(Icons.remove),
-                  label: const Text('Remove Row'),
+                  label: Text(_t('সারি সরান', 'Remove Row')),
                 ),
                 OutlinedButton.icon(
                   onPressed: columnCount >= 10 ? null : addColumn,
                   icon: const Icon(Icons.add),
-                  label: const Text('Add Column'),
+                  label: Text(_t('কলাম যোগ', 'Add Column')),
                 ),
                 OutlinedButton.icon(
                   onPressed: columnCount <= 1 ? null : removeColumn,
                   icon: const Icon(Icons.remove),
-                  label: const Text('Remove Column'),
+                  label: Text(_t('কলাম সরান', 'Remove Column')),
                 ),
                 OutlinedButton(
                   onPressed: () => chooseColor(chooseBorder: true),
-                  child: const Text('Border Color'),
+                  child: Text(_t('বর্ডারের রং', 'Border Color')),
                 ),
                 OutlinedButton(
                   onPressed: () => chooseColor(chooseBorder: false),
-                  child: const Text('Cell Fill'),
+                  child: Text(_t('ঘরের রং', 'Cell Fill')),
                 ),
               ],
             ),
             const SizedBox(height: 10),
-            Text('${cells.length} rows  ·  $columnCount columns'),
+            Text(_t('${cells.length} সারি  ·  $columnCount কলাম', '${cells.length} rows  ·  $columnCount columns')),
             const SizedBox(height: 8),
             Expanded(
               child: SingleChildScrollView(
@@ -300,12 +310,12 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(_t('বাতিল', 'Cancel')),
         ),
         FilledButton.icon(
           onPressed: saveTable,
           icon: const Icon(Icons.check),
-          label: const Text('Apply Table'),
+          label: Text(_t('টেবিল প্রয়োগ', 'Apply Table')),
         ),
       ],
     );
@@ -314,9 +324,12 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
 
 /// Renders and edits a table block in the Quill document.
 class WriterTableEmbedBuilder extends EmbedBuilder {
-  WriterTableEmbedBuilder({required this.onEdit});
+  WriterTableEmbedBuilder({required this.onEdit, this.isBangla = false});
 
   final WriterTableEditCallback onEdit;
+  final bool isBangla;
+
+  String _t(String bn, String en) => isBangla ? bn : en;
 
   @override
   String get key => WriterTableBlockEmbed.embedType;
@@ -378,11 +391,11 @@ class WriterTableEmbedBuilder extends EmbedBuilder {
                         embedContext.node.documentOffset,
                       ),
               icon: const Icon(Icons.edit, size: 16),
-              label: const Text('Edit Table'),
+              label: Text(_t('টেবিল সম্পাদনা', 'Edit Table')),
             ),
           ),
           if (rows.isEmpty)
-            const Text('Empty table')
+            Text(_t('টেবিল খালি', 'Empty table'))
           else
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
