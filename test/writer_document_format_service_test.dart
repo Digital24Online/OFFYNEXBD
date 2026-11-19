@@ -76,7 +76,7 @@ void main() {
     expect(first['attributes']['list'], 'ordered');
     expect(second, 2);
     expect(imported.delta.any((op) => op['insert'] == '\n' && (op['attributes'] as Map?)?['list'] == 'bullet'), isTrue);
-    final nested = imported.delta.firstWhere((op) => op['insert'] == '\n' && (op['attributes'] as Map?)?['indent'] == '1');
+    final nested = imported.delta.firstWhere((op) => op['insert'] == '\n' && (op['attributes'] as Map?)?['indent'] == 1);
     expect(nested['attributes']['list'], 'bullet');
   });
 
