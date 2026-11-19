@@ -1865,7 +1865,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
               onTap: () => setState(() => selectedRibbonTab = index),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 160),
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: selected ? const Color(0xFFE8F1EB) : Colors.transparent,
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(5)),
@@ -1880,7 +1880,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
                   tabs[index],
                   style: TextStyle(
                     color: selected ? const Color(0xFF174B30) : Colors.white,
-                    fontSize: 11,
+                    fontSize: 10,
                     fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                   ),
                 ),
@@ -3103,7 +3103,24 @@ Future<void> insertWriterImage() async {
         backgroundColor: const Color(0xFF185C3B),
         foregroundColor: Colors.white,
         elevation: 0,
-        title: const Text('OFFYNEX Writer', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+        title: TextField(
+          controller: titleController,
+          onChanged: (_) => scheduleSave(),
+          maxLines: 1,
+          textInputAction: TextInputAction.done,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+          ),
+          decoration: InputDecoration(
+            isDense: true,
+            border: InputBorder.none,
+            hintText: _t('ডকুমেন্টের নাম', 'Document name'),
+            hintStyle: const TextStyle(color: Colors.white70, fontSize: 14),
+            contentPadding: const EdgeInsets.symmetric(vertical: 5),
+          ),
+        ),
         actions: [
           IconButton(tooltip: _t('সব নির্বাচন', 'Select all'), onPressed: selectAllText, icon: const Icon(Icons.select_all)),
           IconButton(tooltip: _t('সংরক্ষণ', 'Save'), onPressed: () => saveDocument(), icon: const Icon(Icons.save_outlined)),
@@ -3120,28 +3137,50 @@ Future<void> insertWriterImage() async {
       ),
       body: Column(
         children: [
-          if (!focusMode && !keyboardVisible) Container(
-            margin: const EdgeInsets.fromLTRB(4, 2, 4, 0),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), border: Border.all(color: OFFYNEXTheme.border)),
-            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-            child: TextField(
-              controller: titleController,
-              onChanged: (_) => scheduleSave(),
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                hintText: _t('ডকুমেন্টের নাম', 'Document name'),
-                prefixIcon: Icon(Icons.description_outlined),
-              ),
-              style: const TextStyle(color: OFFYNEXTheme.ink, fontSize: 14, fontWeight: FontWeight.w800),
-            ),
-          ),
           if (!focusMode) Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               buildRibbonTabs(),
               if (keyboardVisible) ...[
+                // তিন লাইনের কমপ্যাক্ট এডিটিং হেডার: ডকুমেন্ট নাম, ট্যাব, টুল।
+                Container(
+                  height: 30,
+                  color: const Color(0xFF185C3B),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  alignment: Alignment.centerLeft,
+                  child: TextField(
+                    controller: titleController,
+                    onChanged: (_) => scheduleSave(),
+                    maxLines: 1,
+                    textInputAction: TextInputAction.done,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    decoration: InputDecoration(
+                      isDense: true,
+                      border: InputBorder.none,
+                      hintText: _t('ডকুমেন্টের নাম', 'Document name'),
+                      hintStyle: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                      ),
+                      contentPadding: EdgeInsets.zero,
+                      prefixIcon: const Icon(
+                        Icons.description_outlined,
+                        color: Colors.white70,
+                        size: 16,
+                      ),
+                      prefixIconConstraints: const BoxConstraints(
+                        minWidth: 25,
+                        minHeight: 24,
+                      ),
+                    ),
+                  ),
+                ),
                 SizedBox(
-                  height: 40,
+                  height: 32,
                   child: ClipRect(
                     child: QuillSimpleToolbar(
                       controller: quillController,
