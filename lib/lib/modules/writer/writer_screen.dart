@@ -112,7 +112,7 @@ class _WriterScreenState extends State<WriterScreen> {
   Future<void> exportDocuments() async {
     if (isDataBlocked) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Writer library is damaged. Original data has been preserved for recovery.')),
+        SnackBar(content: Text(_t('Writer লাইব্রেরিতে সমস্যা হয়েছে। মূল ডেটা পুনরুদ্ধারের জন্য সংরক্ষিত আছে।', 'Writer library is damaged. Original data has been preserved for recovery.'))),
       );
       return;
     }
@@ -126,17 +126,17 @@ class _WriterScreenState extends State<WriterScreen> {
         fileName: 'OFFYNEXBD-Writer-backup.offynex',
         bytes: archive,
         mimeType: 'application/zip',
-        dialogTitle: 'Export Writer backup',
+        dialogTitle: _t('Writer ব্যাকআপ রপ্তানি', 'Export Writer backup'),
       );
       if (saved != null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Writer documents exported successfully.')),
+          SnackBar(content: Text(_t('Writer ডকুমেন্ট সফলভাবে রপ্তানি হয়েছে।', 'Writer documents exported successfully.'))),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Writer export failed: $e')),
+          SnackBar(content: Text(_t('Writer Export ব্যর্থ হয়েছে: $e', 'Writer export failed: $e'))),
         );
       }
     }
@@ -145,7 +145,7 @@ class _WriterScreenState extends State<WriterScreen> {
   Future<void> importDocuments() async {
     if (isDataBlocked) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Writer library is damaged. Import is blocked to protect the original data.')),
+        SnackBar(content: Text(_t('মূল ডেটা সুরক্ষার জন্য Import বন্ধ রাখা হয়েছে।', 'Writer library is damaged. Import is blocked to protect the original data.'))),
       );
       return;
     }
@@ -176,7 +176,7 @@ class _WriterScreenState extends State<WriterScreen> {
       final yes = await showDialog<bool>(
         context: context,
         builder: (dialogContext) => AlertDialog(
-          title: const Text('Import Writer documents?'),
+          title: Text(_t('Writer ডকুমেন্ট Import করবেন?', 'Import Writer documents?')),
           content: Text(
             '${imported.length} documents found. ${additions.length} are new. Existing documents with the same ID will be kept unchanged.',
           ),
@@ -187,7 +187,7 @@ class _WriterScreenState extends State<WriterScreen> {
             ),
             FilledButton(
               onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('Import'),
+              child: Text(_t('Import করুন', 'Import')),
             ),
           ],
         ),
@@ -195,7 +195,7 @@ class _WriterScreenState extends State<WriterScreen> {
       if (yes != true || !mounted) return;
       if (additions.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No new Writer documents to import.')),
+          SnackBar(content: Text(_t('Import করার মতো নতুন Writer ডকুমেন্ট নেই।', 'No new Writer documents to import.'))),
         );
         return;
       }
@@ -204,12 +204,12 @@ class _WriterScreenState extends State<WriterScreen> {
       if (!mounted) return;
       setState(() => documents = updated);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${additions.length} Writer documents imported.')),
+        SnackBar(content: Text(_t('${additions.length}টি Writer ডকুমেন্ট Import হয়েছে।', '${additions.length} Writer documents imported.'))),
       );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Writer import failed: $e')),
+          SnackBar(content: Text(_t('Writer Import ব্যর্থ হয়েছে: $e', 'Writer import failed: $e'))),
         );
       }
     }
@@ -218,7 +218,7 @@ class _WriterScreenState extends State<WriterScreen> {
   Future<void> addDocument() async {
     if (isDataBlocked) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Writer library is damaged. New documents are blocked until recovery.')),
+        SnackBar(content: Text(_t('পুনরুদ্ধার না হওয়া পর্যন্ত নতুন ডকুমেন্ট তৈরি বন্ধ থাকবে।', 'Writer library is damaged. New documents are blocked until recovery.'))),
       );
       return;
     }
@@ -265,7 +265,7 @@ class _WriterScreenState extends State<WriterScreen> {
     final newTitle = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Rename document'),
+        title: Text(_t('ডকুমেন্টের নাম পরিবর্তন', 'Rename document')),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -276,14 +276,14 @@ class _WriterScreenState extends State<WriterScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text(_t('বাতিল', 'Cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(
               dialogContext,
               controller.text.trim(),
             ),
-            child: const Text('Save'),
+            child: Text(_t('সংরক্ষণ', 'Save')),
           ),
         ],
       ),
@@ -316,9 +316,9 @@ class _WriterScreenState extends State<WriterScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete document?'),
+        title: Text(_t('ডকুমেন্ট মুছে ফেলবেন?', 'Delete document?')),
         content: const Text(
-          'এই ডকুমেন্টটি স্থায়ীভাবে মুছে যাবে।',
+          _t('এই ডকুমেন্টটি স্থায়ীভাবে মুছে যাবে।', 'This document will be permanently deleted.'),
         ),
         actions: [
           TextButton(
@@ -327,7 +327,7 @@ class _WriterScreenState extends State<WriterScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Delete'),
+            child: Text(_t('মুছুন', 'Delete')),
           ),
         ],
       ),
@@ -794,7 +794,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(labelText: 'Document name'),
+          decoration: InputDecoration(labelText: _t('ডকুমেন্টের নাম', 'Document name')),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(_ribbonLabel('Cancel'))),
@@ -947,7 +947,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
           maxLines: 5,
           decoration: const InputDecoration(
             hintText: 'নোট লিখুন',
-            labelText: 'Note',
+            labelText: _t('নোট', 'Note'),
           ),
         ),
         actions: [
@@ -1051,7 +1051,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(labelText: 'Caption'),
+          decoration: InputDecoration(labelText: _t('ক্যাপশন', 'Caption')),
         ),
         actions: [
           TextButton(
@@ -1103,7 +1103,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
               controller: controller,
               minLines: 2,
               maxLines: 5,
-              decoration: const InputDecoration(labelText: 'Comment'),
+              decoration: InputDecoration(labelText: _t('মন্তব্য', 'Comment')),
             ),
           ],
         ),
@@ -1244,12 +1244,12 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
           children: [
             TextField(
               controller: findController,
-              decoration: const InputDecoration(labelText: 'Find'),
+              decoration: InputDecoration(labelText: _t('খুঁজুন', 'Find')),
             ),
             TextField(
               controller: replaceController,
               decoration:
-                  const InputDecoration(labelText: 'Replace with'),
+                  InputDecoration(labelText: _t('এর বদলে লিখুন', 'Replace with')),
             ),
           ],
         ),
@@ -1739,6 +1739,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
       'Size in points (8–72)': 'সাইজ (৮–৭২ পয়েন্ট)',
       'Insert Endnote': 'শেষটীকা যোগ করুন',
       'Insert Footnote': 'পাদটীকা যোগ করুন',
+      'Symbols': 'প্রতীক',
     };
     return _t(translations[english] ?? english, english);
   }
@@ -2817,7 +2818,7 @@ Future<void> showCustomFontSizeDialog() async {
             ],
             child: const Chip(
               avatar: Icon(Icons.functions),
-              label: Text('Symbols'),
+              label: Text(_ribbonLabel('Symbols')),
             ),
           ),
         ],
@@ -3047,7 +3048,7 @@ Future<void> insertWriterImage() async {
               onChanged: (_) => scheduleSave(),
               decoration: const InputDecoration(
                 border: InputBorder.none,
-                hintText: 'Document name',
+                hintText: _t('ডকুমেন্টের নাম', 'Document name'),
                 prefixIcon: Icon(Icons.description_outlined),
               ),
               style: const TextStyle(color: OFFYNEXTheme.ink, fontSize: 17, fontWeight: FontWeight.w800),
