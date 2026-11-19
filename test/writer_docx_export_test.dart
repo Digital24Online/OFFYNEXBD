@@ -52,9 +52,9 @@ void main() {
     final bytes = await WriterDocxExportService.build(
       title: 'Nested list',
       delta: [
-        {'insert': 'Parent one\\n', 'attributes': {'list': 'ordered'}},
-        {'insert': 'Nested child\\n', 'attributes': {'list': 'bullet', 'indent': 1}},
-        {'insert': 'Parent two\\n', 'attributes': {'list': 'ordered'}},
+        {'insert': 'Parent one\n', 'attributes': {'list': 'ordered'}},
+        {'insert': 'Nested child\n', 'attributes': {'list': 'bullet', 'indent': 1}},
+        {'insert': 'Parent two\n', 'attributes': {'list': 'ordered'}},
       ],
     );
     final archive = ZipDecoder().decodeBytes(bytes);
