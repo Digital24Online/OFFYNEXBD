@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'writer_page_break.dart';
+
 /// Validated interchange format for complete Writer document records.
 class WriterDocumentCodec {
   static const format = 'OFFYNEXBD_WRITER_DOCUMENTS';
@@ -83,7 +85,9 @@ class WriterDocumentCodec {
           if (insert is Map) {
             final isImage = insert.length == 1 && insert['image'] is String;
             final isTable = insert.length == 1 && insert['offynexbd-writer-table'] is String;
-            if (!isImage && !isTable) {
+            final isPageBreak = insert.length == 1 &&
+                insert[WriterPageBreakEmbed.embedType] is String;
+            if (!isImage && !isTable && !isPageBreak) {
               throw const FormatException('Writer document contains an unsupported embedded object.');
             }
           }

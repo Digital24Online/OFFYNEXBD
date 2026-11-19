@@ -1407,3 +1407,12 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - Expanded DOCX export regression coverage to verify both fields in both header and footer parts.
 - Localized remaining high-visibility Writer feedback and dialog text in Bangla/English: document statistics, margin validation, hyperlink selection/URL validation, image import outcomes, and Print Preview save errors.
 - This does not yet implement section-specific/first/even-page headers or Writer's on-screen page-number field rendering. Analyze, full tests and Android release artifact verification are pending.
+
+
+## Writer page-break persistence correction — 2026-11-19
+
+- Fixed the Writer document codec allow-list so the existing `offynexbd-writer-page-break` Quill embed is accepted and preserved during library validation, portable backup encoding, and restore decoding.
+- Added regression tests for a Bangla document containing a page break and for rejecting malformed page-break payloads.
+- This fixes persistence/backup compatibility for explicit page breaks only. It does **not** implement automatic rich-content pagination, page-flow layout for images/tables, or section-specific page formatting.
+- Build #495 (run ID `44540926439`) completed successfully on the previous checkpoint: Analyze, full configured test suite, Android release APK, signature/package validation, and artifact upload all succeeded.
+- The page-break codec correction and its regression tests are new and require a fresh full CI run before verification.
