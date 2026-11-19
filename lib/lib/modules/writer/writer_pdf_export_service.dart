@@ -38,6 +38,7 @@ class WriterPdfExportService {
         ..add(pw.SizedBox(height: 14));
     }
     final spans = <pw.TextSpan>[];
+    var orderedListNumber = 0;
 
     pw.Font fontFor(Map<String, dynamic> attributes, String text) {
       if (!_containsBangla(text)) return latinFont;
@@ -68,22 +69,77 @@ class WriterPdfExportService {
     }
 
     void flushParagraph([Map<String, dynamic>? paragraphAttributes]) {
-      if (spans.isEmpty) {
+      final attributes = paragraphAttributes ?? const <String, dynamic>{};
+      final listType = attributes['list']?.toString();
+      final isBullet = listType == 'bullet';
+      final isOrdered = listType == 'ordered';
+      final rawIndent = attributes['indent'];
+      final indentLevel = (rawIndent is num
+              ? rawIndent.toInt()
+              : int.tryParse(rawIndent?.toString() ?? '') ?? 0)
+          .clamp(0, 8)
+          .toInt();
+      if (isOrdered) {
+        orderedListNumber++;
+      } else if (!isBullet) {
+        orderedListNumber = 0;
+      }
+
+      if (spans.isEmpty && !isBullet && !isOrdered) {
         widgets.add(pw.SizedBox(height: 8));
       } else {
-        final alignment = switch (paragraphAttributes?['align']?.toString()) {
+        final alignment = switch (attributes['align']?.toString()) {
           'center' => pw.TextAlign.center,
           'right' => pw.TextAlign.right,
           'justify' => pw.TextAlign.justify,
           _ => pw.TextAlign.left,
         };
+        final paragraphSpans = <pw.TextSpan>[];
+        if (isBullet || isOrdered) {
+          final marker = isBullet ? '•  ' : '$orderedListNumber.  ';
+          paragraphSpans.add(
+            pw.TextSpan(
+              text: marker,
+              style: pw.TextStyle(
+                font: latinFont,
+                fontSize: 12,
+                fontWeight: isBullet || isOrdered
+                    ? pw.FontWeight.bold
+                    : pw.FontWeight.normal,
+              ),
+            ),
+          );
+        }
+        paragraphSpans.addAll(spans);
+        final headingLevel = attributes['header'];
+        final headingSize = headingLevel == 1
+            ? 20.0
+            : headingLevel == 2
+                ? 17.0
+                : headingLevel == 3
+                    ? 14.0
+                    : null;
+        final paragraphWidget = pw.RichText(
+          text: pw.TextSpan(children: paragraphSpans),
+          textAlign: alignment,
+        );
         widgets.add(
           pw.Padding(
-            padding: const pw.EdgeInsets.only(bottom: 5),
-            child: pw.RichText(
-              text: pw.TextSpan(children: List<pw.TextSpan>.from(spans)),
-              textAlign: alignment,
+            padding: pw.EdgeInsets.only(
+              bottom: headingSize == null ? 5 : 8,
+              left: indentLevel * 18.0,
+              top: headingSize == null ? 0 : 5,
             ),
+            child: headingSize == null
+                ? paragraphWidget
+                : pw.DefaultTextStyle(
+                    style: pw.TextStyle(
+                      font: latinFont,
+                      fontSize: headingSize,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                    child: paragraphWidget,
+                  ),
           ),
         );
       }
