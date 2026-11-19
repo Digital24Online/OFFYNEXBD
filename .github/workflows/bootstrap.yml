@@ -162,6 +162,7 @@ jobs:
           test -x "$APKSIGNER"
           test -x "$AAPT"
           "$APKSIGNER" verify --verbose --print-certs "$APK" | tee build/app/outputs/flutter-apk/APK_SIGNATURE.txt
+          grep -qi "Signer #1 certificate SHA-256 digest: ACD9A46009CF653AC633BBBCF4C3DB10532745B4DA0557D638DAFCCCDC71B70F" build/app/outputs/flutter-apk/APK_SIGNATURE.txt
           "$AAPT" dump badging "$APK" | grep -E "^(package:|sdkVersion:|targetSdkVersion:)" | tee build/app/outputs/flutter-apk/APK_INSTALL_INFO.txt
           sha256sum "$APK" | tee build/app/outputs/flutter-apk/APK_SHA256.txt
 
