@@ -1845,8 +1845,8 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   Widget buildRibbonTabs() {
     final tabs = [
       _t('ফাইল', 'File'), _t('হোম', 'Home'), _t('ইনসার্ট', 'Insert'),
-      _t('ডিজাইন', 'Design'), _t('লেআউট', 'Layout'),
-      _t('রেফারেন্স', 'References'), _t('রিভিউ', 'Review'), _t('ভিউ', 'View'),
+      _t('লেআউট', 'Layout'), _t('রেফারেন্স', 'References'),
+      _t('রিভিউ', 'Review'), _t('ভিউ', 'View'),
     ];
     return Container(
       padding: const EdgeInsets.fromLTRB(5, 2, 5, 0),
@@ -3231,24 +3231,14 @@ Future<void> insertWriterImage() async {
               ] else if (selectedRibbonTab == 2) ...[
                 buildInsertRibbon(),
               ] else if (selectedRibbonTab == 3) ...[
+                buildLayoutRibbon(),
                 buildDesignRibbon(),
               ] else if (selectedRibbonTab == 4) ...[
-                buildLayoutRibbon(),
-              ] else if (selectedRibbonTab == 5) ...[
                 buildReferencesRibbon(),
-              ] else if (selectedRibbonTab == 6) ...[
+              ] else if (selectedRibbonTab == 5) ...[
                 buildReviewRibbon(),
-              ] else if (selectedRibbonTab == 7) ...[
+              ] else if (selectedRibbonTab == 6) ...[
                 buildViewRibbon(),
-              ] else ...[
-                const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Center(
-                    child: Text(
-                      'এই ট্যাবে এখন কোনো অতিরিক্ত টুল নেই।',
-                    ),
-                  ),
-                ),
               ],
               ],
             ],
