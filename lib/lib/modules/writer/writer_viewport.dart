@@ -32,7 +32,7 @@ class WriterViewportLayout {
       );
     }
 
-    final availableWidth = math.max(1.0, viewportWidth - 24);
+    final availableWidth = math.max(1.0, viewportWidth - 8);
     final safeHeight = math.max(1.0, viewportHeight);
     final fitScale = math.min(
       availableWidth / pageWidth,
