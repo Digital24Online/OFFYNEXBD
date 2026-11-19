@@ -417,7 +417,7 @@ void main() {
         {
           'id': 'slides-1',
           'title': 'Project Overview',
-          'content': 'Introduction\\nProject goals\\nNext steps',
+          'content': 'Introduction\nProject goals\nNext steps',
           'updatedAt': '2026-11-19T10:00:00Z',
         },
       ]),
