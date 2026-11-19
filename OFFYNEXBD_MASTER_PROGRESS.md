@@ -1548,3 +1548,16 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - Build #526 / run `44580491288` caught a missing closing collection bracket in the compact-header branch during Flutter Analyze; no test, APK or artifact was produced by that failed run.
 - Corrected the nested collection structure while retaining the intended keyboard-open order (document name → ribbon tabs → compact formatting toolbar) and the normal keyboard-closed ribbon layout.
 - A fresh CI run on this exact follow-up commit is required. The previous Build #525 result applies only to its earlier parent commit.
+
+
+## Writer table localization correction — 2026-11-20
+
+- [x] Passed the selected Bangla/English setting into the Insert Table dialog and the table embed editor in both the main Writer editor and editable Print Preview.
+- [x] Localized table creation/edit titles, add/remove row and column actions, row/column count, border/fill color labels, cancel/apply actions, empty-table message and edit-table action.
+- [x] Added a bilingual Writer widget regression test for the table editor.
+- [x] Source committed on active PR #6 branch. Commits: `12f18a984d35983bd9f6bfd3f1539e36505495a0`, `61a91d73c4361da5948daec781d5666565cdea9c`, `2a4e8fe3a8c156bb82e4edb12a56cb9533cc19fe`.
+- [x] Build #536 / run `44591359648`: Flutter Analyze SUCCESS and full automated Tests SUCCESS.
+- [ ] Android release APK build, signing/package verification and Actions artifact upload are still running/pending at the time of this note.
+- [ ] This localization fix does not close the major Writer requirements still open: true content-aware pagination, rich/merged DOCX/ODT tables, section-aware headers/footers, real Bangla spellcheck, user font management, long-document recovery, full ribbon/dialog localization, bottom-toolbar overlap and physical device/printer/interoperability checks.
+- [ ] PR #6 remains OPEN and Draft. Do not merge without explicit user approval.
+- [x] Build #534 artifact archive was independently downloaded and checked with `unzip -t`; all five entries passed CRC checks and archive SHA-256 matched GitHub artifact metadata. This proves the archive itself is valid, not the cause of Files by Google's device-specific extraction error.
