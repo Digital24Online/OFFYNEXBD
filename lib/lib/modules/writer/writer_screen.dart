@@ -1562,7 +1562,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
           ],
           child: const Chip(
             avatar: Icon(Icons.palette_outlined, size: 18),
-            label: Text('Page Color'),
+            label: Text(_ribbonLabel('Page Color')),
           ),
         ),
         FilterChip(
