@@ -3093,9 +3093,13 @@ Future<void> insertWriterImage() async {
 
   @override
   Widget build(BuildContext context) {
+    // কিবোর্ড খোলা থাকলে লেখার জায়গা সর্বোচ্চ রাখতে উপরের ও নিচের
+    // অপ্রয়োজনীয় বার সরিয়ে শুধু ছোট ribbon ও formatting toolbar রাখা হয়।
+    final keyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: OFFYNEXTheme.canvas,
-      appBar: focusMode ? null : AppBar(
+      appBar: (focusMode || keyboardVisible) ? null : AppBar(
         backgroundColor: const Color(0xFF185C3B),
         foregroundColor: Colors.white,
         elevation: 0,
@@ -3116,7 +3120,7 @@ Future<void> insertWriterImage() async {
       ),
       body: Column(
         children: [
-          if (!focusMode) Container(
+          if (!focusMode && !keyboardVisible) Container(
             margin: const EdgeInsets.fromLTRB(4, 2, 4, 0),
             decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), border: Border.all(color: OFFYNEXTheme.border)),
             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
@@ -3135,7 +3139,30 @@ Future<void> insertWriterImage() async {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               buildRibbonTabs(),
-              if (selectedRibbonTab == 0) ...[
+              if (keyboardVisible) ...[
+                SizedBox(
+                  height: 40,
+                  child: ClipRect(
+                    child: QuillSimpleToolbar(
+                      controller: quillController,
+                      config: const QuillSimpleToolbarConfig(
+                        multiRowsDisplay: false,
+                        showFontFamily: false,
+                        showFontSize: false,
+                        showBoldButton: true,
+                        showItalicButton: true,
+                        showUnderLineButton: true,
+                        showAlignmentButtons: true,
+                        showListNumbers: true,
+                        showListBullets: true,
+                        showIndent: true,
+                        showUndo: true,
+                        showRedo: true,
+                      ),
+                    ),
+                  ),
+                ),
+              ] else if (selectedRibbonTab == 0) ...[
                 buildFileRibbon(),
                 ] else if (selectedRibbonTab == 1) ...[
                 buildHomeRibbon(),
@@ -3183,7 +3210,7 @@ Future<void> insertWriterImage() async {
               ],
             ],
           ),
-          if (showRuler && !focusMode) _rulerWidget(),
+          if (showRuler && !focusMode && !keyboardVisible) _rulerWidget(),
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -3289,8 +3316,8 @@ Future<void> insertWriterImage() async {
               },
             ),
           ),
-          _buildViewportControls(),
-          if (showStatusBar) Container(
+          if (!keyboardVisible) _buildViewportControls(),
+          if (showStatusBar && !keyboardVisible) Container(
             width: double.infinity,
             decoration: const BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: OFFYNEXTheme.border))),
             padding: const EdgeInsets.symmetric(
