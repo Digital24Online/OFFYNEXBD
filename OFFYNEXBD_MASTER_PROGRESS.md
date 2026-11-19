@@ -1516,3 +1516,12 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - Confirmed remaining acceptance work from the Writer contract: genuine editable rich-content page flow for text/images/tables; robust complex table model and round-trip; section-aware headers/footers and fields; real Bangla spellcheck; user font import/management; long-document recovery/stress; bottom toolbar overlap and full localization checks; visual Bangla PDF, physical Android/printer and Word/LibreOffice interoperability.
 - Preserve Quill Delta, existing table/image/page-break embeds, autosave, backup/restore, layout metadata, comments, citations, revisions and export behavior during the next integrated implementation batch.
 - This entry is an audit and CI recovery checkpoint, NOT a declaration that Writer is complete. Every pending acceptance gate remains pending until implemented and verified.
+
+
+## Writer mobile zoom controls — integrated continuation (2026-11-19)
+
+- Carried forward the useful direct Zoom In / Zoom Out controls from stale PR #5 onto the current main-based integrated branch, while preserving the current supported zoom range (50%–300%) rather than importing PR #5's narrower 50%–200% limit.
+- Kept the existing Page / Page Width / Actual modes, persisted zoom, pinch/pan transform behavior and Quill content untouched.
+- Added a Writer widget regression test for the zoom slider bounds and both direct zoom actions.
+- This is a mobile usability improvement only; it does not solve true content-aware pagination or the other open Writer compatibility gaps.
+- CI validation is pending for the integrated branch.

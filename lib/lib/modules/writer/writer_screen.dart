@@ -1615,16 +1615,35 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
           ChoiceChip(label: const Text('100%'), selected: viewFit == 'Actual', onSelected: (_) => _setViewFit('Actual')),
         ]),
         SizedBox(
-          width: 180,
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text('${_t('জুম', 'Zoom')} ${(zoomLevel * 100).round()}%'),
-            Slider(
-              value: zoomLevel,
-              min: WriterViewportLayout.minimumZoom,
-              max: WriterViewportLayout.maximumZoom,
-              divisions: 25,
-              onChanged: (value) => _setZoomLevel(value, save: false),
-              onChangeEnd: (_) => scheduleSave(),
+          width: 250,
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            IconButton(
+              key: const ValueKey('writer-zoom-out'),
+              tooltip: _t('ছোট করুন', 'Zoom out'),
+              visualDensity: VisualDensity.compact,
+              onPressed: () => _adjustZoom(-0.1),
+              icon: const Icon(Icons.remove_circle_outline),
+            ),
+            Expanded(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Text('${_t('জুম', 'Zoom')} ${(zoomLevel * 100).round()}%'),
+                Slider(
+                  key: const ValueKey('writer-zoom-slider'),
+                  value: zoomLevel,
+                  min: WriterViewportLayout.minimumZoom,
+                  max: WriterViewportLayout.maximumZoom,
+                  divisions: 25,
+                  onChanged: (value) => _setZoomLevel(value, save: false),
+                  onChangeEnd: (_) => scheduleSave(),
+                ),
+              ]),
+            ),
+            IconButton(
+              key: const ValueKey('writer-zoom-in'),
+              tooltip: _t('বড় করুন', 'Zoom in'),
+              visualDensity: VisualDensity.compact,
+              onPressed: () => _adjustZoom(0.1),
+              icon: const Icon(Icons.add_circle_outline),
             ),
           ]),
         ),

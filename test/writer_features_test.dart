@@ -159,4 +159,32 @@ void main() {
     expect(raw, contains('{page}'));
     expect(raw, contains('{pages}'));
   });
+  testWidgets('Writer View ribbon has direct zoom controls within supported zoom bounds', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: true)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('নতুন ডকুমেন্ট'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('ভিউ'));
+    await tester.tap(find.text('ভিউ'));
+    await tester.pumpAndSettle();
+
+    final sliderFinder = find.byKey(const ValueKey('writer-zoom-slider'));
+    expect(sliderFinder, findsOneWidget);
+    var slider = tester.widget<Slider>(sliderFinder);
+    expect(slider.min, WriterViewportLayout.minimumZoom);
+    expect(slider.max, WriterViewportLayout.maximumZoom);
+    expect(slider.value, 1.0);
+
+    await tester.tap(find.byKey(const ValueKey('writer-zoom-in')));
+    await tester.pumpAndSettle();
+    slider = tester.widget<Slider>(sliderFinder);
+    expect(slider.value, closeTo(1.1, 0.001));
+
+    await tester.tap(find.byKey(const ValueKey('writer-zoom-out')));
+    await tester.pumpAndSettle();
+    slider = tester.widget<Slider>(sliderFinder);
+    expect(slider.value, closeTo(1.0, 0.001));
+  });
+
 }
