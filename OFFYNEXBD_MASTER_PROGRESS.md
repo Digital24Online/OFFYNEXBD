@@ -1533,3 +1533,11 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - ODT import expands `number-columns-repeated` and `number-rows-repeated` within the existing 20-row / 10-column safety limits. Covered ODT cells remain blank grid slots.
 - Added focused DOCX and ODT archive-import regression tests.
 - This improves grid alignment and repeated-cell fidelity; it does NOT implement visual merged cells, rich cell formatting, nested table editing, or full format round-trip.
+
+
+## Writer compact header order correction — 2026-11-19
+
+- Corrected the keyboard-open Writer header order to match the user's latest instruction: document name first, ribbon tabs second, compact formatting toolbar third.
+- Ribbon tabs are now rendered once in the keyboard-open branch after the document-name field, and once in the keyboard-closed branch before the selected full ribbon. The AppBar remains hidden while the keyboard is open; nonessential ruler, zoom and status controls remain hidden in that state to preserve editing space.
+- This is a targeted layout correction only. It does not claim true Word-style pagination or close the remaining DOCX/ODT, Bangla spellcheck/font-management, recovery, localization or physical-device acceptance gaps.
+- Previous Build #525 / run `44578820556` succeeded on the parent commit `5b751bd6985979f551e851f52dba7cce4d0d24f8` (Analyze, tests, Android release APK, signing/package checks and `OFFYNEXBD-Android-APK` artifact upload). It does not verify this new correction; a fresh PR CI run is required.

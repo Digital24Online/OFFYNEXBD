@@ -3140,7 +3140,6 @@ Future<void> insertWriterImage() async {
           if (!focusMode) Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              buildRibbonTabs(),
               if (keyboardVisible) ...[
                 // তিন লাইনের কমপ্যাক্ট এডিটিং হেডার: ডকুমেন্ট নাম, ট্যাব, টুল।
                 Container(
@@ -3179,6 +3178,8 @@ Future<void> insertWriterImage() async {
                     ),
                   ),
                 ),
+                // Keyboard-open order: document name, ribbon tabs, formatting tools.
+                buildRibbonTabs(),
                 SizedBox(
                   height: 32,
                   child: ClipRect(
@@ -3201,7 +3202,9 @@ Future<void> insertWriterImage() async {
                     ),
                   ),
                 ),
-              ] else if (selectedRibbonTab == 0) ...[
+              ] else ...[
+                buildRibbonTabs(),
+                if (selectedRibbonTab == 0) ...[
                 buildFileRibbon(),
                 ] else if (selectedRibbonTab == 1) ...[
                 buildHomeRibbon(),
