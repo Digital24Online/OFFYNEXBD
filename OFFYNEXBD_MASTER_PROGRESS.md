@@ -1352,3 +1352,16 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - These new changes are committed but are NOT yet verified by CI. Trigger and inspect a fresh PR workflow run against the latest branch head before calling them complete.
 - Still open: true rich-content pagination/page breaks; advanced DOCX/ODT fidelity and section-specific headers/footers/fields; Bangla spellcheck; user font import/management and Bangla shaping validation; full dialog/control localization; large-document stress/recovery; expanded widget tests for editing/scroll/pinch; real Android device and physical printer/Word/LibreOffice acceptance.
 - Keep the previously selected Option 2 logo, App Info creator attribution and portrait work intact. Do not add GitHub work history or release records inside App Info.
+
+
+---
+
+## Writer UI localization continuation — 2026-11-19
+
+- [x] Expanded the Writer translation dictionary for page size, orientation, page margins, margin presets, custom margin fields, reset, and common review/document dialog actions.
+- [x] Applied language-aware labels to the Layout ribbon and its margin menu; stored page-size/orientation/margin values remain unchanged for document compatibility.
+- [x] Localized the custom margins dialog controls and the existing Writer review/document dialogs that use the shared label helper.
+- [x] Added a widget regression test covering the Layout ribbon in Bangla and English.
+- [ ] CI Analyze, full automated tests, Android Release APK build, signing validation and artifact upload must pass on the final latest branch head. Build #472 succeeded for its earlier Slides-preview commit; it does not verify these later Writer changes.
+- [ ] Writer still requires further completion work: true rich-content pagination/page breaks; complex DOCX/ODT fidelity and section-specific headers/footers/fields; Bangla spellcheck; user font import/management and glyph-shaping checks; full localization of remaining validation/error messages; large-document stress/recovery; physical Android/printer and Word/LibreOffice acceptance.
+- [ ] Do not call Writer complete until the remaining items above are implemented or explicitly scoped as platform-dependent, tested, and the final CI run is successful.
