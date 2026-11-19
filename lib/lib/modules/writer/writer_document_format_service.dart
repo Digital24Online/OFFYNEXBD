@@ -212,7 +212,7 @@ class WriterDocumentFormatService {
     } else if (const {'decimal', 'decimalZero', 'lowerLetter', 'upperLetter', 'lowerRoman', 'upperRoman'}.contains(format)) {
       result['list'] = 'ordered';
     }
-    if (level > 0 && result.containsKey('list')) result['indent'] = level.toString();
+    if (level > 0 && result.containsKey('list')) result['indent'] = level;
     return result;
   }
 
