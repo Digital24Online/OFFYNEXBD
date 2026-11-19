@@ -1968,7 +1968,7 @@ Future<void> showCustomFontSizeDialog() async {
         // Font Family
         DropdownButton<String>(
           isDense: true,
-          itemHeight: 36,
+          itemHeight: 48,
           iconSize: 16,
           underline: const SizedBox.shrink(),
           style: const TextStyle(fontSize: 11, color: Colors.black87),
@@ -1997,7 +1997,7 @@ Future<void> showCustomFontSizeDialog() async {
         // Font Size (Points)
         DropdownButton<String>(
           isDense: true,
-          itemHeight: 36,
+          itemHeight: 48,
           iconSize: 16,
           underline: const SizedBox.shrink(),
           style: const TextStyle(fontSize: 12, color: Colors.black87),
