@@ -34,12 +34,15 @@ class WriterDocumentBackupService {
             final path = insert['image'] as String;
             if (!seen.containsKey(path)) {
               final image = File(path);
-              final allowedRoot = imageDirectory.absolute.path;
-              if (!image.absolute.path.startsWith('$allowedRoot${Platform.pathSeparator}')) {
-                throw StateError('Writer image is outside the app image folder; backup was blocked.');
-              }
+              await imageDirectory.create(recursive: true);
+              final allowedRoot = await imageDirectory.resolveSymbolicLinks();
               if (!await image.exists()) {
                 throw StateError('Writer image is missing; backup was not created: $path');
+              }
+              final resolvedImage = await image.resolveSymbolicLinks();
+              final allowedPrefix = '$allowedRoot${Platform.pathSeparator}';
+              if (!resolvedImage.startsWith(allowedPrefix)) {
+                throw StateError('Writer image resolves outside the app image folder; backup was blocked.');
               }
               final bytes = await image.readAsBytes();
               if (bytes.isEmpty || bytes.length > maxImageBytes) {
@@ -98,7 +101,9 @@ class WriterDocumentBackupService {
     final documents = WriterDocumentCodec.decode(utf8.decode(manifestBytes, allowMalformed: false));
     await imageDirectory.create(recursive: true);
     final extracted = <String, String>{};
-    for (final document in documents) {
+    final createdFiles = <File>[];
+    try {
+      for (final document in documents) {
       final content = document['content'];
       if (content is! List) continue;
       for (final rawOperation in content) {
@@ -111,21 +116,32 @@ class WriterDocumentBackupService {
         if (archivePath.startsWith('/') || archivePath.contains('..') || !archivePath.startsWith('images/')) {
           throw const FormatException('Writer backup contains an unsafe image path.');
         }
-        if (!extracted.containsKey(archivePath)) {
-          final file = archive.findFile(archivePath);
-          final data = file?.readBytes();
-          if (data == null || data.isEmpty || data.length > maxImageBytes) {
-            throw const FormatException('Writer backup image is missing or invalid.');
+          if (!extracted.containsKey(archivePath)) {
+            final file = archive.findFile(archivePath);
+            final data = file?.readBytes();
+            if (data == null || data.isEmpty || data.length > maxImageBytes) {
+              throw const FormatException('Writer backup image is missing or invalid.');
+            }
+            final extension = _safeExtension(archivePath);
+            final target = File('${imageDirectory.path}/backup_${DateTime.now().microsecondsSinceEpoch}_${extracted.length}.$extension');
+            await target.writeAsBytes(data, flush: true);
+            createdFiles.add(target);
+            extracted[archivePath] = target.path;
           }
-          final extension = _safeExtension(archivePath);
-          final target = File('${imageDirectory.path}/backup_${DateTime.now().microsecondsSinceEpoch}_${extracted.length}.$extension');
-          await target.writeAsBytes(data, flush: true);
-          extracted[archivePath] = target.path;
+          insert['image'] = extracted[archivePath]!;
         }
-        insert['image'] = extracted[archivePath]!;
       }
+      return documents;
+    } catch (_) {
+      for (final file in createdFiles.reversed) {
+        try {
+          if (await file.exists()) await file.delete();
+        } on FileSystemException {
+          // Preserve the original import error; cleanup is best-effort.
+        }
+      }
+      rethrow;
     }
-    return documents;
   }
 
   static String _safeExtension(String path) {
