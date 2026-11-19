@@ -1486,3 +1486,19 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Added App Info regression assertions for the approved tagline and removal of the outdated tagline.
 - [ ] Flutter Analyze, full tests, Android release build, icon generation and Actions artifact upload must pass on this commit before the branding batch is considered CI-verified.
 - [ ] Visual inspection of launcher icons on a real Android device and cross-platform icon review remain pending.
+
+
+---
+
+## PR #3 Merge and Branding CI verification — 2026-11-19 (authoritative latest status)
+
+- [x] User authorized the pending merge in the conversation; PR #3 was squash-merged successfully.
+- [x] PR #3 is CLOSED and MERGED. Merge commit: `cb6888843763e592508146a644e87504da7fe942`; `main` points to this exact commit.
+- [x] Final PR-head CI Build #510 / run ID `44557074087` completed SUCCESS on source commit `963089cf37f3404e73a7d37eb470ad90cb382f72`.
+- [x] The Build #510 job completed Flutter Analyze, configured automated tests, Android release APK build, APK signature/install metadata verification, download package verification, and Actions artifact upload successfully.
+- [x] Artifact: `OFFYNEXBD-Android-APK`, ID `14547445183`, size 51,778,220 bytes; not expired at verification time.
+- [x] App branding and creator attribution changes in the merged commit passed the Build #510 CI checks. This confirms code/build checks, not visual inspection on a physical phone.
+- [ ] Physical Android launcher/app-info visual inspection remains pending user-side device testing; iOS/Windows/macOS launcher appearance is not physically verified.
+- [ ] Important Writer gap remains: editor still uses one continuous QuillEditor over painted page backgrounds, while page count is estimated from content metrics. True content-aware Word-style page-flow pagination with text/images/tables flowing between pages is NOT implemented or verified. Do not mark Writer complete.
+- [ ] DOCX/ODT complex table fidelity, section-specific headers/footers, Bangla spellcheck and user font management, long-document recovery, physical printer checks and Word/LibreOffice interoperability remain outstanding as described in the requirements contract.
+- PR #3 is merged; do not describe it as open or pending merge in future handoffs.
