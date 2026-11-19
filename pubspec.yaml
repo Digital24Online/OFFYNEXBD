@@ -42,6 +42,7 @@ flutter:
 
   assets:
     - assets/branding/offynexbd_logo.svg
+    - assets/branding/founder_profile.jpg
     - assets/fonts/NotoSansBengali.ttf
     - assets/fonts/NotoSerifBengali.ttf
     - assets/fonts/NotoSans.ttf
