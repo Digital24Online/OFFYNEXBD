@@ -74,7 +74,7 @@ Future<void> storeDocuments(
 
 class WriterScreen extends StatefulWidget {
   final bool isBangla;
-  const WriterScreen({super.key, this.isBangla = true});
+  const WriterScreen({super.key, this.isBangla = false});
 
   @override
   State<WriterScreen> createState() => _WriterScreenState();
@@ -453,7 +453,7 @@ class WriterEditorScreen extends StatefulWidget {
   const WriterEditorScreen({
     super.key,
     required this.document,
-    this.isBangla = true,
+    this.isBangla = false,
   });
 
   @override
