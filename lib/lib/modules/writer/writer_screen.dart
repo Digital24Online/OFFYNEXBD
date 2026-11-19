@@ -1560,8 +1560,8 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
             PopupMenuItem(value: 0xFFEAF7EA, child: Text(_ribbonLabel('Light Green'))),
             PopupMenuItem(value: 0xFFFFF9DB, child: Text(_ribbonLabel('Light Yellow'))),
           ],
-          child: const Chip(
-            avatar: Icon(Icons.palette_outlined, size: 18),
+          child: Chip(
+            avatar: const Icon(Icons.palette_outlined, size: 18),
             label: Text(_ribbonLabel('Page Color')),
           ),
         ),
