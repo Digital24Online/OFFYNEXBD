@@ -1541,3 +1541,10 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - Ribbon tabs are now rendered once in the keyboard-open branch after the document-name field, and once in the keyboard-closed branch before the selected full ribbon. The AppBar remains hidden while the keyboard is open; nonessential ruler, zoom and status controls remain hidden in that state to preserve editing space.
 - This is a targeted layout correction only. It does not claim true Word-style pagination or close the remaining DOCX/ODT, Bangla spellcheck/font-management, recovery, localization or physical-device acceptance gaps.
 - Previous Build #525 / run `44578820556` succeeded on the parent commit `5b751bd6985979f551e851f52dba7cce4d0d24f8` (Analyze, tests, Android release APK, signing/package checks and `OFFYNEXBD-Android-APK` artifact upload). It does not verify this new correction; a fresh PR CI run is required.
+
+
+## Writer header-order syntax correction — 2026-11-19
+
+- Build #526 / run `44580491288` caught a missing closing collection bracket in the compact-header branch during Flutter Analyze; no test, APK or artifact was produced by that failed run.
+- Corrected the nested collection structure while retaining the intended keyboard-open order (document name → ribbon tabs → compact formatting toolbar) and the normal keyboard-closed ribbon layout.
+- A fresh CI run on this exact follow-up commit is required. The previous Build #525 result applies only to its earlier parent commit.

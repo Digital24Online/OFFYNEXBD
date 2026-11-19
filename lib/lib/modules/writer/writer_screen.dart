@@ -3250,6 +3250,7 @@ Future<void> insertWriterImage() async {
                   ),
                 ),
               ],
+              ],
             ],
           ),
           if (showRuler && !focusMode && !keyboardVisible) _rulerWidget(),
