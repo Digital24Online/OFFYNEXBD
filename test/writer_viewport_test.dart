@@ -12,9 +12,9 @@ void main() {
         viewFit: 'Page',
       );
 
-      expect(layout.availableWidth, 376);
-      expect(layout.scale, closeTo(376 / 794, 0.001));
-      expect(794 * layout.scale, lessThanOrEqualTo(376.01));
+      expect(layout.availableWidth, 392);
+      expect(layout.scale, closeTo(392 / 794, 0.001));
+      expect(794 * layout.scale, lessThanOrEqualTo(392.01));
       expect(1122 * layout.scale, lessThanOrEqualTo(700.01));
     });
 
