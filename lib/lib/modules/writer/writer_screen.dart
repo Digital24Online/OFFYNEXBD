@@ -664,12 +664,17 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
         .catchError((Object error) {})
         .then((_) async {
           final documents = await loadDocuments();
+          if (writerLibraryDataBlocked) {
+            throw StateError('Writer library is damaged; the original document is protected.');
+          }
 
           final index = documents.indexWhere(
             (item) => item['id'] == id,
           );
 
-          if (index == -1) return;
+          if (index == -1) {
+            throw StateError('The Writer document could not be found in the library.');
+          }
 
           documents[index] = {
             ...documents[index],
@@ -2235,31 +2240,35 @@ Future<void> showCustomFontSizeDialog() async {
   }
 
   Future<void> openPrintPreview() async {
-    await saveDocument();
-    if (!mounted) return;
-    await Navigator.push<void>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => _WriterPrintPreviewScreen(
-          fileName: titleController.text.trim().isEmpty
-              ? 'OFFYNEXBD-Document'
-              : titleController.text.trim(),
-          initialPageFormat: _selectedPdfFormat,
-          buildPdf: _buildWriterPdf,
-          controller: quillController,
-          focusNode: editorFocusNode,
-          isBangla: widget.isBangla,
-          onSave: () => saveDocument(rethrowOnError: true),
-          onEditTable: editWriterTable,
+    try {
+      await saveDocument(rethrowOnError: true);
+      if (!mounted) return;
+      await Navigator.push<void>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => _WriterPrintPreviewScreen(
+            fileName: titleController.text.trim().isEmpty
+                ? 'OFFYNEXBD-Document'
+                : titleController.text.trim(),
+            initialPageFormat: _selectedPdfFormat,
+            buildPdf: _buildWriterPdf,
+            controller: quillController,
+            focusNode: editorFocusNode,
+            isBangla: widget.isBangla,
+            onSave: () => saveDocument(rethrowOnError: true),
+            onEditTable: editWriterTable,
+          ),
         ),
-      ),
-    );
+      );
+    } catch (error) {
+      if (mounted) _showMessage(_t('সংরক্ষণ ব্যর্থ হওয়ায় প্রিন্ট প্রিভিউ খোলা যায়নি: $error', 'Print Preview could not open because saving failed: $error'));
+    }
   }
 
   Future<void> printDocument() async {
-    await saveDocument(rethrowOnError: true);
-    if (!mounted) return;
     try {
+      await saveDocument(rethrowOnError: true);
+      if (!mounted) return;
       await Printing.layoutPdf(
         name: titleController.text.trim().isEmpty
             ? 'OFFYNEXBD-Document.pdf'
@@ -2268,7 +2277,7 @@ Future<void> showCustomFontSizeDialog() async {
         onLayout: _buildWriterPdf,
       );
     } catch (error) {
-      _showMessage('প্রিন্ট তৈরি করা যায়নি: $error');
+      if (mounted) _showMessage('প্রিন্ট তৈরি করা যায়নি: $error');
     }
   }
 
