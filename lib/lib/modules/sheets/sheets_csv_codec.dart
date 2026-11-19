@@ -85,11 +85,11 @@ class SheetsCsvCodec {
   static String encode(List<List<String>> rows) {
     String encodeField(String value) {
       final trimmed = value.trimLeft();
-      final safe = trimmed.isNotEmpty && '=+-@'.contains(trimmed[0]) ? "'"+value : value;
+      final safe = trimmed.isNotEmpty && '=+-@'.contains(trimmed[0]) ? "'" + value : value;
       if (safe.contains(',') ||
           safe.contains('"') ||
-          safe.contains('\\r') ||
-          safe.contains('\\n')) {
+          safe.contains('\r') ||
+          safe.contains('\n')) {
         return '"' + safe.replaceAll('"', '""') + '"';
       }
       return safe;
@@ -97,6 +97,6 @@ class SheetsCsvCodec {
 
     return rows
         .map((row) => row.map(encodeField).join(','))
-        .join('\\r\\n');
+        .join('\r\n');
   }
 }
