@@ -1550,15 +1550,15 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
 
   Widget buildDesignRibbon() => _ribbonPanel([
         PopupMenuButton<int>(
-          tooltip: 'Page Color',
+          tooltip: _ribbonLabel('Page Color'),
           onSelected: (value) => _saveLayoutChange(() => pageBackgroundColorValue = value),
-          itemBuilder: (context) => const [
-            PopupMenuItem(value: 0xFFFFFFFF, child: Text('White')),
-            PopupMenuItem(value: 0xFFFFF8E7, child: Text('Ivory')),
-            PopupMenuItem(value: 0xFFEAF4FF, child: Text('Light Blue')),
-            PopupMenuItem(value: 0xFFF1F3F5, child: Text('Light Gray')),
-            PopupMenuItem(value: 0xFFEAF7EA, child: Text('Light Green')),
-            PopupMenuItem(value: 0xFFFFF9DB, child: Text('Light Yellow')),
+          itemBuilder: (context) => [
+            PopupMenuItem(value: 0xFFFFFFFF, child: Text(_ribbonLabel('White'))),
+            PopupMenuItem(value: 0xFFFFF8E7, child: Text(_ribbonLabel('Ivory'))),
+            PopupMenuItem(value: 0xFFEAF4FF, child: Text(_ribbonLabel('Light Blue'))),
+            PopupMenuItem(value: 0xFFF1F3F5, child: Text(_ribbonLabel('Light Gray'))),
+            PopupMenuItem(value: 0xFFEAF7EA, child: Text(_ribbonLabel('Light Green'))),
+            PopupMenuItem(value: 0xFFFFF9DB, child: Text(_ribbonLabel('Light Yellow'))),
           ],
           child: const Chip(
             avatar: Icon(Icons.palette_outlined, size: 18),
@@ -1566,7 +1566,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
           ),
         ),
         FilterChip(
-          label: const Text('Page Border'),
+          label: Text(_ribbonLabel('Page Border')),
           selected: showPageBorder,
           onSelected: (value) {
             setState(() => showPageBorder = value);
@@ -1597,7 +1597,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
         _ribbonButton(Icons.search, 'Find / Replace', findAndReplace),
         _ribbonButton(Icons.history, 'Revision History', showRevisionHistory),
         FilterChip(
-          label: const Text('Capture revisions'),
+          label: Text(_ribbonLabel('Capture revisions')),
           selected: captureRevisions,
           onSelected: (value) {
             setState(() => captureRevisions = value);
@@ -1656,6 +1656,13 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
 
   String _ribbonLabel(String english) {
     const translations = <String, String>{
+      'Page Color': 'পৃষ্ঠার রং', 'White': 'সাদা', 'Ivory': 'আইভরি',
+      'Light Blue': 'হালকা নীল', 'Light Gray': 'হালকা ধূসর',
+      'Light Green': 'হালকা সবুজ', 'Light Yellow': 'হালকা হলুদ',
+      'Page Border': 'পৃষ্ঠার বর্ডার', 'Capture revisions': 'সংশোধন সংরক্ষণ',
+      'Custom Size': 'নিজস্ব সাইজ', 'Bold': 'গাঢ়', 'Italic': 'তির্যক',
+      'Underline': 'নিচে দাগ', 'Strikethrough': 'মাঝে দাগ',
+      'Red Text': 'লাল লেখা', 'Yellow Highlight': 'হলুদ হাইলাইট',
       'Save': 'সংরক্ষণ',
       'Print Preview': 'প্রিন্ট প্রিভিউ',
       'Print': 'প্রিন্ট',
@@ -1686,15 +1693,15 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
 
   Widget _ribbonButton(IconData icon, String label, VoidCallback action) =>
       SizedBox(
-        width: 96,
-        height: 72,
+        width: 84,
+        height: 56,
         child: Tooltip(
           message: _ribbonLabel(label),
           child: TextButton(
             onPressed: action,
             style: TextButton.styleFrom(
               foregroundColor: const Color(0xFF26362D),
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(5),
               ),
@@ -1873,10 +1880,10 @@ Future<void> showCustomFontSizeDialog() async {
   return Container(
     width: double.infinity,
     color: const Color(0xFFF3F6FA),
-    padding: const EdgeInsets.all(10),
+    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
     child: Wrap(
-      spacing: 8,
-      runSpacing: 8,
+      spacing: 5,
+      runSpacing: 3,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         // Font Family
@@ -1928,12 +1935,12 @@ Future<void> showCustomFontSizeDialog() async {
         OutlinedButton.icon(
           onPressed: showCustomFontSizeDialog,
           icon: const Icon(Icons.edit, size: 16),
-          label: const Text('Custom Size'),
+          label: Text(_ribbonLabel('Custom Size')),
         ),
 
         // Bold
         IconButton(
-          tooltip: 'Bold',
+          tooltip: _ribbonLabel('Bold'),
           onPressed: () {
             quillController.formatSelection(Attribute.bold);
           },
@@ -1942,7 +1949,7 @@ Future<void> showCustomFontSizeDialog() async {
 
         // Italic
         IconButton(
-          tooltip: 'Italic',
+          tooltip: _ribbonLabel('Italic'),
           onPressed: () {
             quillController.formatSelection(Attribute.italic);
           },
@@ -1951,7 +1958,7 @@ Future<void> showCustomFontSizeDialog() async {
 
         // Underline
         IconButton(
-          tooltip: 'Underline',
+          tooltip: _ribbonLabel('Underline'),
           onPressed: () {
             quillController.formatSelection(Attribute.underline);
           },
@@ -1960,7 +1967,7 @@ Future<void> showCustomFontSizeDialog() async {
 
         // Strikethrough
         IconButton(
-          tooltip: 'Strikethrough',
+          tooltip: _ribbonLabel('Strikethrough'),
           onPressed: () {
             quillController.formatSelection(
               Attribute.strikeThrough,
@@ -1971,7 +1978,7 @@ Future<void> showCustomFontSizeDialog() async {
 
         // Red Text
         IconButton(
-          tooltip: 'Red Text',
+          tooltip: _ribbonLabel('Red Text'),
           onPressed: () {
             quillController.formatSelection(
               Attribute.fromKeyValue('color', '#FF0000'),
@@ -1985,7 +1992,7 @@ Future<void> showCustomFontSizeDialog() async {
 
         // Yellow Highlight
         IconButton(
-          tooltip: 'Yellow Highlight',
+          tooltip: _ribbonLabel('Yellow Highlight'),
           onPressed: () {
             quillController.formatSelection(
               Attribute.fromKeyValue('background', '#FFFF00'),
@@ -3007,7 +3014,7 @@ Future<void> insertWriterImage() async {
                   child: QuillSimpleToolbar(
                     controller: quillController,
                     config: const QuillSimpleToolbarConfig(
-                      multiRowsDisplay: true,
+                      multiRowsDisplay: false,
                       showFontFamily: false,
                       showFontSize: false,
                       showBoldButton: false,
