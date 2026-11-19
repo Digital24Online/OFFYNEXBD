@@ -19,6 +19,7 @@ void main() {
 <w:body>
 <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Heading</w:t></w:r></w:p>
 <w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Bold text</w:t></w:r></w:p>
+<w:p><w:r><w:br w:type="page"/></w:r></w:p>
 <w:p><w:hyperlink r:id="rLink"><w:r><w:t>Open link</w:t></w:r></w:hyperlink></w:p>
 <w:tbl><w:tr><w:tc><w:p><w:r><w:t>Cell A</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Cell B</w:t></w:r></w:p></w:tc></w:tr></w:tbl>
 <w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:bottom="1440" w:left="1440" w:right="1440"/><w:headerReference w:type="default" r:id="rHeader"/><w:footerReference w:type="default" r:id="rFooter"/></w:sectPr></w:body></w:document>''';
@@ -44,6 +45,7 @@ void main() {
     expect(imported.delta.any((op) => op['insert'] == 'Heading'), isTrue);
     expect(imported.delta.any((op) => (op['attributes'] as Map?)?['header'] == 1), isTrue);
     expect(imported.delta.any((op) => op['insert'] == 'Bold text' && (op['attributes'] as Map?)?['bold'] == true), isTrue);
+    expect(imported.delta.any((op) => op['insert'] is Map && (op['insert'] as Map).containsKey('offynexbd-writer-page-break')), isTrue);
     expect(imported.delta.any((op) => op['insert'] == 'Open link' && (op['attributes'] as Map?)?['link'] == 'https://example.com/docs'), isTrue);
     expect(imported.delta.any((op) => op['insert'] is Map && (op['insert'] as Map).containsKey('offynexbd-writer-table')), isTrue);
   });
@@ -196,4 +198,24 @@ void main() {
     expect(imported.delta.any((op) => op['insert'] == 'Sans text' && (op['attributes'] as Map?)?['font'] == 'sans-serif'), isTrue);
   });
 
+  test('ODT round-trip preserves explicit page breaks', () async {
+    final bytes = await WriterDocumentFormatService.exportOdt(
+      title: 'Page break test',
+      delta: [
+        {'insert': 'Before\n'},
+        {'insert': {'offynexbd-writer-page-break': 'page'}},
+        {'insert': 'After\n'},
+      ],
+      imageDirectory: temp,
+      pageLayout: {'pageSize': 'A4', 'orientation': 'Portrait'},
+    );
+    final archive = ZipDecoder().decodeBytes(bytes);
+    final content = utf8.decode(archive.findFile('content.xml')!.readBytes()!);
+    expect(content, contains('OFFYNEXPageBreak'));
+    expect(utf8.decode(archive.findFile('styles.xml')!.readBytes()!), contains('fo:break-before="page"'));
+    final imported = await WriterDocumentFormatService.importFile(
+      bytes: bytes, extension: 'odt', imageDirectory: temp, title: 'page-break.odt',
+    );
+    expect(imported.delta.any((op) => op['insert'] is Map && (op['insert'] as Map).containsKey('offynexbd-writer-page-break')), isTrue);
+  });
 }

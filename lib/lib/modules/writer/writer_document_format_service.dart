@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:xml/xml.dart';
+import 'writer_page_break.dart';
 
 class WriterImportedDocument {
   const WriterImportedDocument({required this.delta, required this.title, required this.format, this.pageLayout, this.headerText = '', this.footerText = ''});
@@ -134,6 +135,10 @@ class WriterDocumentFormatService {
       }
       if (name == 't') { _addText(delta, node.innerText, attrs); return; }
       if (name == 'tab') { _addText(delta, '\t', attrs); return; }
+      if (name == 'br' && _attribute(node, 'type') == 'page') {
+        delta.add({'insert': {WriterPageBreakEmbed.embedType: 'page'}});
+        return;
+      }
       if (name == 'br' || name == 'cr') { _addText(delta, '\n', attrs); return; }
       if (name == 'blip') {
         final id = _attribute(node, 'embed');
@@ -410,6 +415,11 @@ class WriterDocumentFormatService {
     var imageIndex = 0;
     for (final child in _elementChildren(body)) {
       if (child.name.local == 'p' || child.name.local == 'h') {
+        if (_attribute(child, 'style-name') == 'OFFYNEXPageBreak') {
+          delta.add({'insert': {WriterPageBreakEmbed.embedType: 'page'}});
+          delta.add({'insert': '\n'});
+          continue;
+        }
         final block = <String, dynamic>{};
         if (child.name.local == 'h') {
           final level = int.tryParse(_attribute(child, 'outline-level') ?? '1') ?? 1;
@@ -648,6 +658,10 @@ class WriterDocumentFormatService {
         imageFiles.add(ArchiveFile(name, data.length, data));
         manifestImages.add('<manifest:file-entry manifest:full-path="$name" manifest:media-type="${_imageMime(ext)}"/>');
         content.write('<text:p><draw:frame draw:name="Image$imageIndex" text:anchor-type="as-char"><draw:image xlink:href="$name" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"/></draw:frame></text:p>');
+      } else if (insert is Map && insert.containsKey(WriterPageBreakEmbed.embedType)) {
+        flushParagraph();
+        closeList();
+        content.write('<text:p text:style-name="OFFYNEXPageBreak"/>');
       } else if (insert is Map && insert['offynexbd-writer-table'] is String) {
         flushParagraph();
         final rows = _decodeTable(insert['offynexbd-writer-table'] as String);
@@ -690,7 +704,7 @@ class WriterDocumentFormatService {
 <style:style style:name="T_Underline" style:family="text"><style:text-properties style:text-underline-style="solid"/></style:style>
 ${inlineTextStyles.entries.map((entry) => '<style:style style:name="${entry.value}" style:family="text"><style:text-properties ${entry.key}/></style:style>').join('\n')}
 </office:styles>
-<office:automatic-styles><style:page-layout style:name="pm1"><style:page-layout-properties fo:page-width="${page[0].toStringAsFixed(2)}cm" fo:page-height="${page[1].toStringAsFixed(2)}cm" style:print-orientation="${pageLayout['orientation'] == 'Landscape' ? 'landscape' : 'portrait'}" fo:margin-top="${margin('top')}" fo:margin-bottom="${margin('bottom')}" fo:margin-left="${margin('left')}" fo:margin-right="${margin('right')}"/></style:page-layout></office:automatic-styles>
+<office:automatic-styles><style:style style:name="OFFYNEXPageBreak" style:family="paragraph"><style:paragraph-properties fo:break-before="page"/></style:style><style:page-layout style:name="pm1"><style:page-layout-properties fo:page-width="${page[0].toStringAsFixed(2)}cm" fo:page-height="${page[1].toStringAsFixed(2)}cm" style:print-orientation="${pageLayout['orientation'] == 'Landscape' ? 'landscape' : 'portrait'}" fo:margin-top="${margin('top')}" fo:margin-bottom="${margin('bottom')}" fo:margin-left="${margin('left')}" fo:margin-right="${margin('right')}"/></style:page-layout></office:automatic-styles>
 <office:master-styles><style:master-page style:name="Default" style:page-layout-name="pm1"><style:header><text:p>${_xmlEscape(headerText)}</text:p></style:header><style:footer><text:p>${_xmlEscape(footerText)}</text:p></style:footer></style:master-page></office:master-styles>
 </office:document-styles>''';
     final manifest = '''<?xml version="1.0" encoding="UTF-8"?>

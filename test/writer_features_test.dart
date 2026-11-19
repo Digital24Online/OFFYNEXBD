@@ -117,6 +117,21 @@ void main() {
     expect(pageChip.selected, isTrue);
   });
 
+  testWidgets('Writer Insert ribbon offers an explicit page break', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: true)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('নতুন ডকুমেন্ট'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Insert'));
+    await tester.tap(find.text('Insert'));
+    await tester.pumpAndSettle();
+    expect(find.text('পৃষ্ঠা বিরতি'), findsOneWidget);
+    await tester.tap(find.text('পৃষ্ঠা বিরতি'));
+    await tester.pumpAndSettle();
+    expect(find.text('PAGE BREAK'), findsOneWidget);
+  });
+
   testWidgets('Writer header and footer settings persist with document metadata', (tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: true)));

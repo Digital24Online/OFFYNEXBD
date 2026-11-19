@@ -102,4 +102,18 @@ void main() {
     }
   });
 
+  test('DOCX export writes a real Word hard page break', () async {
+    final bytes = await WriterDocxExportService.build(
+      title: 'Page break test',
+      delta: [
+        {'insert': 'Before\n'},
+        {'insert': {'offynexbd-writer-page-break': 'page'}},
+        {'insert': 'After\n'},
+      ],
+    );
+    final archive = ZipDecoder().decodeBytes(bytes);
+    final document = utf8.decode(archive.findFile('word/document.xml')!.readBytes()!);
+    expect(document, contains('<w:br w:type="page"/>'));
+    expect(document, isNot(contains('OFFYNEXBD_WRITER_PAGE_BREAK')));
+  });
 }

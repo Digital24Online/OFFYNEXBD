@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:pdf/pdf.dart';
 import 'package:bangla_pdf/widgets.dart' as pw;
+import 'writer_page_break.dart';
 
 /// Builds Writer print/PDF output with HarfBuzz-compatible OpenType Bengali shaping.
 class WriterPdfExportService {
@@ -126,6 +127,8 @@ class WriterPdfExportService {
               ),
             );
           }
+        } else if (insert.containsKey(WriterPageBreakEmbed.embedType)) {
+          widgets.add(pw.NewPage());
         } else if (insert.containsKey('offynexbd-writer-table')) {
           widgets.add(_tableWidget(
             insert['offynexbd-writer-table']?.toString() ?? '{}',

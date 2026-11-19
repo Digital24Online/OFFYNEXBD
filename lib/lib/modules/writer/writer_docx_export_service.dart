@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:archive/archive.dart';
 import 'package:docx_creator/docx_creator.dart';
+import 'writer_page_break.dart';
 
 /// Converts supported OFFYNEX Writer Quill content into a real DOCX file.
 /// Images are embedded as bytes; device-local file paths are never exported.
@@ -18,6 +19,7 @@ class WriterDocxExportService {
     final line = StringBuffer();
     final listTags = <String>[];
     final listItemOpen = <bool>[];
+    var pageBreakCount = 0;
 
     void closeDeepestListLevel() {
       if (listTags.isEmpty) return;
@@ -104,6 +106,10 @@ class WriterDocxExportService {
           };
           html.write('<p>${line.toString()}<img src="data:$mime;base64:${base64Encode(bytes)}" /></p>');
           line.clear();
+        } else if (insert.containsKey(WriterPageBreakEmbed.embedType)) {
+          closeAllLists();
+          if (line.isNotEmpty) flushLine(const <String, dynamic>{});
+          html.write('<p>OFFYNEXBD_WRITER_PAGE_BREAK_${pageBreakCount++}</p>');
         } else if (insert.containsKey('offynexbd-writer-table')) {
           html.write(line.toString());
           line.clear();
@@ -122,6 +128,7 @@ class WriterDocxExportService {
       pageLayout: pageLayout ?? const {},
       headerText: headerText,
       footerText: footerText,
+      pageBreakCount: pageBreakCount,
     );
     if (bytes.isEmpty || bytes.length < 4 || bytes[0] != 0x50 || bytes[1] != 0x4B) {
       throw StateError('DOCX export did not produce a valid ZIP-based document.');
@@ -135,6 +142,7 @@ class WriterDocxExportService {
     required Map<String, dynamic> pageLayout,
     required String headerText,
     required String footerText,
+    int pageBreakCount = 0,
   }) {
     final input = ZipDecoder().decodeBytes(source);
     final files = <String, List<int>>{};
@@ -207,6 +215,14 @@ class WriterDocxExportService {
         'w:left="${margin('left')}" w:right="${margin('right')}" w:header="720" w:footer="720" w:gutter="0"/>'
         '</w:sectPr>';
     var documentXml = utf8.decode(files['word/document.xml'] ?? <int>[]);
+    for (var index = 0; index < pageBreakCount; index++) {
+      final marker = 'OFFYNEXBD_WRITER_PAGE_BREAK_$index';
+      final markerPattern = RegExp('<w:t(?: [^>]*)?>${RegExp.escape(marker)}</w:t>');
+      if (!markerPattern.hasMatch(documentXml)) {
+        throw StateError('DOCX page break marker $index was not found.');
+      }
+      documentXml = documentXml.replaceFirst(markerPattern, '<w:br w:type="page"/>');
+    }
     final sectionPattern = RegExp(r'<w:sectPr\b[\s\S]*?</w:sectPr>|<w:sectPr\b[^>]*/>');
     if (sectionPattern.hasMatch(documentXml)) {
       documentXml = documentXml.replaceFirst(sectionPattern, section);

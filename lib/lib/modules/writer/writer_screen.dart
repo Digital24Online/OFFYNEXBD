@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter/services.dart';
 import 'writer_table.dart';
+import 'writer_page_break.dart';
 import 'writer_pdf_export_service.dart';
 import 'writer_document_codec.dart';
 import 'writer_document_backup_service.dart';
@@ -2798,6 +2799,11 @@ Future<void> showCustomFontSizeDialog() async {
             label: Text(_t('ছবি', 'Image')),
           ),
           ElevatedButton.icon(
+            onPressed: insertWriterPageBreak,
+            icon: const Icon(Icons.insert_page_break),
+            label: Text(_t('পৃষ্ঠা বিরতি', 'Page Break')),
+          ),
+          ElevatedButton.icon(
             onPressed: insertHyperlink,
             icon: const Icon(Icons.link),
             label: Text(_t('হাইপারলিংক', 'Hyperlink')),
@@ -2824,6 +2830,19 @@ Future<void> showCustomFontSizeDialog() async {
         ],
       ),
     );
+  }
+
+  void insertWriterPageBreak() {
+    final selection = quillController.selection;
+    final start = selection.start;
+    final length = selection.end - selection.start;
+    quillController.replaceText(
+      start,
+      length,
+      BlockEmbed.custom(const WriterPageBreakEmbed()),
+      TextSelection.collapsed(offset: start + 1),
+    );
+    scheduleSave();
   }
 
   Future<void> insertWriterTable() async {
@@ -3199,6 +3218,7 @@ Future<void> insertWriterImage() async {
                                           onEdit: editWriterTable,
                                         ),
                                         WriterImageEmbedBuilder(),
+                                        WriterPageBreakEmbedBuilder(),
                                       ],
                                     ),
                                   ),
@@ -3549,6 +3569,7 @@ class _WriterPrintPreviewScreenState
                             onEdit: widget.onEditTable,
                           ),
                           WriterImageEmbedBuilder(),
+                          WriterPageBreakEmbedBuilder(),
                         ],
                       ),
                     ),
