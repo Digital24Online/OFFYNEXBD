@@ -1297,3 +1297,19 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Corrected the DOCX nested-list export fixture to use actual newline characters rather than literal backslash-n text, so the test exercises separate list paragraphs.
 - [ ] Run Flutter Analyze, full tests, Android release build and artifact upload against the latest branch head; no fresh CI verification is claimed for these latest commits yet.
 - [ ] True rich-content pagination, complex DOCX/ODT fidelity, section-specific/first/even headers and fields, Bangla spellcheck, full font management/shaping, comprehensive localization, large-document stress/recovery and physical Android/printer validation remain open.
+
+---
+
+## Branding and App Info work — 2026-11-19
+
+- [x] Confirmed the user's selected logo is Option 2 (Productivity), featuring the document, four productivity tiles and white orbit/swoosh with the tagline “Work Smart, Be Productive”.
+- [x] Replaced the previous generic placeholder SVG with an Option 2-inspired OFFYNEXBD brand mark used by the Home app bar and App Info.
+- [x] Added an App Info entry point on the Home app bar; creator attribution is inside App Info, not a separate About menu.
+- [x] Added the creator attribution content: MD PIYARUL ISLAM; Founder & Original Creator; Rajshahi, Bangladesh; creator statement; “Work Smart, Be Productive”; © 2026 OFFYNEXBD. All Rights Reserved.
+- [x] Embedded the selected founder portrait in the App Info screen source to avoid a missing external asset dependency.
+- [x] Added an Android vector launcher icon and updated the Android manifest to use it instead of the old mipmap icon.
+- [x] Updated the Android launch background to show OFFYNEXBD branding.
+- [ ] iOS, Windows and macOS launcher icon/splash branding still require platform-specific asset integration and verification.
+- [ ] Verify the embedded portrait decodes correctly and App Info renders on device.
+- [ ] Latest PR #3 CI run #437 (run ID 44484356009) is in progress; Analyze, tests, APK build and artifact upload are not yet verified for these changes.
+- Note: the in-app creator statement is an attribution record; it is not, by itself, a legal certificate of ownership. GitHub commit history and release records remain outside the app as requested.
