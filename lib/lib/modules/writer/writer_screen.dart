@@ -2720,7 +2720,7 @@ Future<void> showCustomFontSizeDialog() async {
           controller: controller,
           autofocus: true,
           keyboardType: TextInputType.url,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             hintText: 'https://example.com',
             labelText: _t('ওয়েবসাইটের ঠিকানা', 'Website URL'),
           ),
