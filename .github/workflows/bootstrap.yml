@@ -74,8 +74,18 @@ jobs:
           curl --fail --location --retry 3 --output assets/tessdata/eng.traineddata 'https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/main/eng.traineddata'
           test -s assets/tessdata/eng.traineddata
 
+      - name: Prepare App Branding
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y librsvg2-bin
+          rsvg-convert --width 1024 --height 1024 assets/branding/offynexbd_icon.svg > assets/branding/offynexbd_app_icon.png
+          test -s assets/branding/offynexbd_app_icon.png
+
       - name: Get Dependencies
         run: flutter pub get
+
+      - name: Generate Platform Launcher Icons
+        run: dart run flutter_launcher_icons
 
       - name: Analyze Project
         run: flutter analyze
@@ -99,6 +109,27 @@ jobs:
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
           printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=upload-keystore.jks\n' "$STORE_PASSWORD" "$KEY_PASSWORD" "$KEY_ALIAS" > android/key.properties
           
+      - name: Verify Android Signing Key Before Build
+        env:
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          KEYSTORE="android/app/upload-keystore.jks"
+          test -s "$KEYSTORE"
+          keytool -list -v -keystore "$KEYSTORE" -alias "$KEY_ALIAS" -storepass "$STORE_PASSWORD" -keypass "$KEY_PASSWORD" > /tmp/offynexbd-signing.txt
+          ACTUAL_CERT_SHA256="$(awk -F': ' '/SHA256:/{gsub(":", "", $2); print tolower($2); exit}' /tmp/offynexbd-signing.txt)"
+          EXPECTED_CERT_SHA256="7a132720dbf3c991e75f530eb095fafa6ad9ccbbe8449283b005eb9367268677"
+          if [ "$ACTUAL_CERT_SHA256" != "$EXPECTED_CERT_SHA256" ]; then
+            echo "ERROR: Android signing certificate does not match the installed OFFYNEXBD app."
+            echo "Expected certificate: $EXPECTED_CERT_SHA256"
+            echo "Actual certificate:   $ACTUAL_CERT_SHA256"
+            exit 1
+          fi
+          echo "Android signing key matches the OFFYNEXBD update certificate."
+
       - name: Install Android NDK (retry on corrupt download)
         shell: bash
         run: |
@@ -136,7 +167,36 @@ jobs:
           test -d "$NDK_DIR"
 
       - name: Build Android APK
-        run: flutter build apk --release
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: flutter build apk --release --build-number="$BUILD_NUMBER"
+
+      - name: Verify Release APK Signature and Install Metadata
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          set -euo pipefail
+          APK="build/app/outputs/flutter-apk/app-release.apk"
+          test -s "$APK"
+          ANDROID_SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          test -n "$ANDROID_SDK"
+          APKSIGNER="$(find "$ANDROID_SDK/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          AAPT="$(find "$ANDROID_SDK/build-tools" -type f -name aapt | sort -V | tail -n 1)"
+          test -x "$APKSIGNER"
+          test -x "$AAPT"
+          "$APKSIGNER" verify --verbose --print-certs "$APK" | tee build/app/outputs/flutter-apk/APK_SIGNATURE.txt
+          grep -Eqi "(Signer #1|V[0-9]+ Signer): certificate SHA-256 digest: 7a132720dbf3c991e75f530eb095fafa6ad9ccbbe8449283b005eb9367268677" build/app/outputs/flutter-apk/APK_SIGNATURE.txt
+          "$AAPT" dump badging "$APK" | tee build/app/outputs/flutter-apk/APK_INSTALL_INFO.txt
+          grep -q "package: name='com.offynexbd.offynexbd'" build/app/outputs/flutter-apk/APK_INSTALL_INFO.txt
+          EXPECTED_VERSION_CODE="$BUILD_NUMBER"
+          ACTUAL_VERSION_CODE="$(sed -n "s/.*versionCode='\\([0-9][0-9]*\\)'.*/\\1/p" build/app/outputs/flutter-apk/APK_INSTALL_INFO.txt | head -n 1)"
+          test -n "$ACTUAL_VERSION_CODE"
+          if [ "$ACTUAL_VERSION_CODE" != "$EXPECTED_VERSION_CODE" ]; then
+            echo "ERROR: APK versionCode ($ACTUAL_VERSION_CODE) does not match this workflow run ($EXPECTED_VERSION_CODE)."
+            exit 1
+          fi
+          echo "Verified update package: package=com.offynexbd.offynexbd versionCode=$ACTUAL_VERSION_CODE"
+          sha256sum "$APK" | tee build/app/outputs/flutter-apk/APK_SHA256.txt
 
       - name: Remove Android Signing Files
         if: always()
@@ -145,19 +205,32 @@ jobs:
           rm -f android/app/upload-keystore.jks
 
       - name: Save Generated Source
+        if: github.event_name != 'pull_request'
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.email "41898282+users.noreply.github.com"
           git add .
           if ! git diff --cached --quiet; then
             git commit -m "Create OFFYNEXBD Flutter foundation"
-            git push
+            git push origin "HEAD:${GITHUB_REF_NAME}"
           fi
+
+      - name: Verify Download Package Contents
+        run: |
+          set -euo pipefail
+          OUTPUT="build/app/outputs/flutter-apk"
+          test -s "$OUTPUT/app-release.apk"
+          test -s "$OUTPUT/APK_SIGNATURE.txt"
+          test -s "$OUTPUT/APK_INSTALL_INFO.txt"
+          test -s "$OUTPUT/APK_SHA256.txt"
+          grep -q 'com.offynexbd.offynexbd' "$OUTPUT/APK_INSTALL_INFO.txt"
+          grep -Eq '(Signer #1|V[0-9]+ Signer): certificate SHA-256 digest' "$OUTPUT/APK_SIGNATURE.txt"
+          ls -lh "$OUTPUT"
 
       - name: Upload Android APK
         uses: actions/upload-artifact@v4
         with:
           name: OFFYNEXBD-Android-APK
-          path: build/app/outputs/flutter-apk/app-release.apk
-          retention-days: 7
+          path: build/app/outputs/flutter-apk/
+          retention-days: 14
           

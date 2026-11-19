@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offynexbd/lib/modules/writer/writer_document_codec.dart';
+import 'package:offynexbd/lib/modules/writer/writer_page_break.dart';
 
 void main() {
   final documents = <Map<String, dynamic>>[
@@ -61,6 +62,40 @@ void main() {
     expect(
       () => WriterDocumentCodec.encode([
         {'id': 'bad-content', 'title': 'Broken', 'content': 42},
+      ]),
+      throwsFormatException,
+    );
+  });
+
+  test('Writer document codec preserves explicit page-break embeds', () {
+    final withPageBreak = <Map<String, dynamic>>[
+      {
+        'id': 'page-break-doc',
+        'title': 'Page break document',
+        'content': [
+          {'insert': 'প্রথম পৃষ্ঠা\\n'},
+          {'insert': {WriterPageBreakEmbed.embedType: 'page'}},
+          {'insert': 'দ্বিতীয় পৃষ্ঠা\\n'},
+        ],
+      },
+    ];
+
+    final decoded = WriterDocumentCodec.decode(
+      WriterDocumentCodec.encode(withPageBreak),
+    );
+    expect(decoded, withPageBreak);
+  });
+
+  test('Writer document codec rejects malformed page-break embeds', () {
+    expect(
+      () => WriterDocumentCodec.encode([
+        {
+          'id': 'bad-page-break',
+          'title': 'Broken page break',
+          'content': [
+            {'insert': {WriterPageBreakEmbed.embedType: 42}},
+          ],
+        },
       ]),
       throwsFormatException,
     );

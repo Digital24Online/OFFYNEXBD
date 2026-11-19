@@ -7,9 +7,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter/services.dart';
 import 'writer_table.dart';
+import 'writer_page_break.dart';
 import 'writer_pdf_export_service.dart';
 import 'writer_document_codec.dart';
+import 'writer_document_backup_service.dart';
 import 'writer_docx_export_service.dart';
+import 'writer_document_format_service.dart';
+import 'writer_viewport.dart';
+import 'writer_content_metrics.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -109,27 +114,31 @@ class _WriterScreenState extends State<WriterScreen> {
   Future<void> exportDocuments() async {
     if (isDataBlocked) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Writer library is damaged. Original data has been preserved for recovery.')),
+        SnackBar(content: Text(_t('Writer লাইব্রেরিতে সমস্যা হয়েছে। মূল ডেটা পুনরুদ্ধারের জন্য সংরক্ষিত আছে।', 'Writer library is damaged. Original data has been preserved for recovery.'))),
       );
       return;
     }
     try {
-      final json = WriterDocumentCodec.encode(documents);
+      final appDirectory = await getApplicationSupportDirectory();
+      final archive = await WriterDocumentBackupService.exportArchive(
+        documents,
+        imageDirectory: Directory('${appDirectory.path}/offynexbd_images'),
+      );
       final saved = await FilePicker.saveFile(
-        fileName: 'OFFYNEXBD-Writer-documents.json',
-        bytes: Uint8List.fromList(utf8.encode(json)),
-        mimeType: 'application/json',
-        dialogTitle: 'Export Writer documents',
+        fileName: 'OFFYNEXBD-Writer-backup.offynex',
+        bytes: archive,
+        mimeType: 'application/zip',
+        dialogTitle: _t('Writer ব্যাকআপ রপ্তানি', 'Export Writer backup'),
       );
       if (saved != null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Writer documents exported successfully.')),
+          SnackBar(content: Text(_t('Writer ডকুমেন্ট সফলভাবে রপ্তানি হয়েছে।', 'Writer documents exported successfully.'))),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Writer export failed: $e')),
+          SnackBar(content: Text(_t('Writer Export ব্যর্থ হয়েছে: $e', 'Writer export failed: $e'))),
         );
       }
     }
@@ -138,24 +147,30 @@ class _WriterScreenState extends State<WriterScreen> {
   Future<void> importDocuments() async {
     if (isDataBlocked) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Writer library is damaged. Import is blocked to protect the original data.')),
+        SnackBar(content: Text(_t('মূল ডেটা সুরক্ষার জন্য Import বন্ধ রাখা হয়েছে।', 'Writer library is damaged. Import is blocked to protect the original data.'))),
       );
       return;
     }
     try {
       final picked = await FilePicker.pickFile(
         type: FileType.custom,
-        allowedExtensions: const ['json'],
+        allowedExtensions: const ['offynex', 'zip', 'json'],
       );
-      if (picked == null || !mounted) return;
+      if (picked == null) return;
+      if (!mounted) return;
       final bytes = await picked.readAsBytes();
       if (!mounted) return;
-      if (bytes.isEmpty || bytes.length > 20 * 1024 * 1024) {
-        throw const FormatException('Writer archive must be between 1 byte and 20 MB.');
+      if (bytes.isEmpty || bytes.length > WriterDocumentBackupService.maxArchiveBytes) {
+        throw const FormatException('Writer archive must be between 1 byte and 25 MB.');
       }
-      final imported = WriterDocumentCodec.decode(
-        utf8.decode(bytes, allowMalformed: false),
-      );
+      final appDirectory = await getApplicationSupportDirectory();
+      final imported = (picked.extension?.toLowerCase() == 'json')
+          ? WriterDocumentCodec.decode(utf8.decode(bytes, allowMalformed: false))
+          : await WriterDocumentBackupService.importArchive(
+              bytes,
+              imageDirectory: Directory('${appDirectory.path}/offynexbd_images'),
+            );
+      if (!mounted) return;
       final existingIds = documents.map((item) => item['id']?.toString()).toSet();
       final additions = imported
           .where((item) => !existingIds.contains(item['id']))
@@ -163,18 +178,18 @@ class _WriterScreenState extends State<WriterScreen> {
       final yes = await showDialog<bool>(
         context: context,
         builder: (dialogContext) => AlertDialog(
-          title: const Text('Import Writer documents?'),
+          title: Text(_t('Writer ডকুমেন্ট Import করবেন?', 'Import Writer documents?')),
           content: Text(
             '${imported.length} documents found. ${additions.length} are new. Existing documents with the same ID will be kept unchanged.',
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Cancel'),
+              child: Text(_t('বাতিল', 'Cancel')),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('Import'),
+              child: Text(_t('Import করুন', 'Import')),
             ),
           ],
         ),
@@ -182,7 +197,7 @@ class _WriterScreenState extends State<WriterScreen> {
       if (yes != true || !mounted) return;
       if (additions.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No new Writer documents to import.')),
+          SnackBar(content: Text(_t('Import করার মতো নতুন Writer ডকুমেন্ট নেই।', 'No new Writer documents to import.'))),
         );
         return;
       }
@@ -191,12 +206,12 @@ class _WriterScreenState extends State<WriterScreen> {
       if (!mounted) return;
       setState(() => documents = updated);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${additions.length} Writer documents imported.')),
+        SnackBar(content: Text(_t('${additions.length}টি Writer ডকুমেন্ট Import হয়েছে।', '${additions.length} Writer documents imported.'))),
       );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Writer import failed: $e')),
+          SnackBar(content: Text(_t('Writer Import ব্যর্থ হয়েছে: $e', 'Writer import failed: $e'))),
         );
       }
     }
@@ -205,7 +220,7 @@ class _WriterScreenState extends State<WriterScreen> {
   Future<void> addDocument() async {
     if (isDataBlocked) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Writer library is damaged. New documents are blocked until recovery.')),
+        SnackBar(content: Text(_t('পুনরুদ্ধার না হওয়া পর্যন্ত নতুন ডকুমেন্ট তৈরি বন্ধ থাকবে।', 'Writer library is damaged. New documents are blocked until recovery.'))),
       );
       return;
     }
@@ -252,7 +267,7 @@ class _WriterScreenState extends State<WriterScreen> {
     final newTitle = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Rename document'),
+        title: Text(_t('ডকুমেন্টের নাম পরিবর্তন', 'Rename document')),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -263,14 +278,14 @@ class _WriterScreenState extends State<WriterScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text(_t('বাতিল', 'Cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(
               dialogContext,
               controller.text.trim(),
             ),
-            child: const Text('Save'),
+            child: Text(_t('সংরক্ষণ', 'Save')),
           ),
         ],
       ),
@@ -303,9 +318,9 @@ class _WriterScreenState extends State<WriterScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete document?'),
-        content: const Text(
-          'এই ডকুমেন্টটি স্থায়ীভাবে মুছে যাবে।',
+        title: Text(_t('ডকুমেন্ট মুছে ফেলবেন?', 'Delete document?')),
+        content: Text(
+          _t('এই ডকুমেন্টটি স্থায়ীভাবে মুছে যাবে।', 'This document will be permanently deleted.'),
         ),
         actions: [
           TextButton(
@@ -314,7 +329,7 @@ class _WriterScreenState extends State<WriterScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Delete'),
+            child: Text(_t('মুছুন', 'Delete')),
           ),
         ],
       ),
@@ -331,7 +346,6 @@ class _WriterScreenState extends State<WriterScreen> {
     setState(() => documents = updated);
   }
 
-  @override
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
@@ -475,6 +489,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   // Writer-এর অতিরিক্ত নথি, রিভিউ ও ভিউ সেটিংস।
   double zoomLevel = 1.0;
   String viewFit = 'Page';
+  final TransformationController _pageTransformController = TransformationController();
   bool showRuler = true;
   bool showStatusBar = true;
   bool showPageBorder = true;
@@ -503,7 +518,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
         selectedFontFamily = savedFontFamily!;
       }
       zoomLevel = (savedMeta['zoom'] is num)
-          ? (savedMeta['zoom'] as num).toDouble().clamp(0.6, 1.5).toDouble()
+          ? (savedMeta['zoom'] as num).toDouble().clamp(0.5, 3.0).toDouble()
           : 1.0;
       viewFit = ['Page', 'Width', 'Actual'].contains(savedMeta['viewFit'])
           ? savedMeta['viewFit'] as String
@@ -638,7 +653,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     );
   }
 
-  Future<void> saveDocument() {
+  Future<void> saveDocument({bool rethrowOnError = false}) {
     final title = titleController.text;
     final content = quillController.document.toDelta().toJson();
     final pageLayout = _pageLayoutToJson();
@@ -651,12 +666,17 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
         .catchError((Object error) {})
         .then((_) async {
           final documents = await loadDocuments();
+          if (writerLibraryDataBlocked) {
+            throw StateError('Writer library is damaged; the original document is protected.');
+          }
 
           final index = documents.indexWhere(
             (item) => item['id'] == id,
           );
 
-          if (index == -1) return;
+          if (index == -1) {
+            throw StateError('The Writer document could not be found in the library.');
+          }
 
           documents[index] = {
             ...documents[index],
@@ -677,6 +697,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
           if (mounted) {
             setState(() => isSaved = false);
           }
+          if (rethrowOnError) throw error;
         });
 
     return saveQueue;
@@ -742,24 +763,24 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Document Information'),
+        title: Text(_ribbonLabel('Document Information')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('নাম: ${titleController.text}'),
-            Text('শব্দ: $wordCount'),
-            Text('অক্ষর: $chars'),
-            Text('অনুচ্ছেদ: $paragraphs'),
-            Text('মন্তব্য: ${writerComments.length}'),
-            Text('উদ্ধৃতি: ${writerCitations.length}'),
-            Text('সর্বশেষ সংরক্ষণ: ${widget.document['updated'] ?? 'এই সেশনে'}'),
+            Text('${_t('নাম', 'Name')}: ${titleController.text}'),
+            Text('${_t('শব্দ', 'Words')}: $wordCount'),
+            Text('${_t('অক্ষর', 'Characters')}: $chars'),
+            Text('${_t('অনুচ্ছেদ', 'Paragraphs')}: $paragraphs'),
+            Text('${_t('মন্তব্য', 'Comments')}: ${writerComments.length}'),
+            Text('${_t('উদ্ধৃতি', 'Citations')}: ${writerCitations.length}'),
+            Text('${_t('সর্বশেষ সংরক্ষণ', 'Last saved')}: ${widget.document['updated'] ?? _t('এই সেশনে', 'This session')}'),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('বন্ধ করুন'),
+            child: Text(_t('বন্ধ করুন', 'Close')),
           ),
         ],
       ),
@@ -771,17 +792,17 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     final value = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Rename Document'),
+        title: Text(_ribbonLabel('Rename Document')),
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(labelText: 'Document name'),
+          decoration: InputDecoration(labelText: _t('ডকুমেন্টের নাম', 'Document name')),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(_ribbonLabel('Cancel'))),
           ElevatedButton(
             onPressed: () => Navigator.pop(dialogContext, controller.text.trim()),
-            child: const Text('Save'),
+            child: Text(_ribbonLabel('Save')),
           ),
         ],
       ),
@@ -800,7 +821,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     final result = await showDialog<List<String>>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Insert Citation'),
+        title: Text(_ribbonLabel('Insert Citation')),
         content: SingleChildScrollView(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             TextField(controller: author, decoration: const InputDecoration(labelText: 'Author / লেখক')),
@@ -809,8 +830,8 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
           ]),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
-          ElevatedButton(onPressed: () => Navigator.pop(dialogContext, [author.text.trim(), title.text.trim(), year.text.trim()]), child: const Text('Insert')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(_ribbonLabel('Cancel'))),
+          ElevatedButton(onPressed: () => Navigator.pop(dialogContext, [author.text.trim(), title.text.trim(), year.text.trim()]), child: Text(_ribbonLabel('Insert'))),
         ],
       ),
     );
@@ -853,7 +874,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, refreshDialog) => AlertDialog(
-          title: const Text('Citation Sources / উদ্ধৃতির উৎস'),
+          title: Text(_ribbonLabel('Citation Sources / উদ্ধৃতির উৎস')),
           content: SizedBox(
             width: 460,
             child: writerCitations.isEmpty
@@ -872,24 +893,24 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
                         title: Text('$author ($year)'),
                         subtitle: Text(title),
                         trailing: IconButton(
-                          tooltip: 'Remove source',
+                          tooltip: _ribbonLabel('Remove source'),
                           icon: const Icon(Icons.delete_outline),
                           onPressed: () async {
                             final confirmed = await showDialog<bool>(
                               context: context,
                               builder: (confirmContext) => AlertDialog(
-                                title: const Text('Remove citation source?'),
+                                title: Text(_ribbonLabel('Remove citation source?')),
                                 content: const Text(
                                   'উৎসটি তালিকা ও ভবিষ্যৎ Bibliography থেকে বাদ যাবে। ডকুমেন্টের আগে বসানো citation text মুছবে না।',
                                 ),
                                 actions: [
                                   TextButton(
                                     onPressed: () => Navigator.pop(confirmContext, false),
-                                    child: const Text('Cancel'),
+                                    child: Text(_ribbonLabel('Cancel')),
                                   ),
                                   ElevatedButton(
                                     onPressed: () => Navigator.pop(confirmContext, true),
-                                    child: const Text('Remove'),
+                                    child: Text(_ribbonLabel('Remove')),
                                   ),
                                 ],
                               ),
@@ -908,7 +929,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Close / বন্ধ'),
+              child: Text(_ribbonLabel('Close / বন্ধ')),
             ),
           ],
         ),
@@ -921,25 +942,25 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     final note = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text(endnote ? 'Insert Endnote' : 'Insert Footnote'),
+        title: Text(endnote ? _ribbonLabel('Insert Endnote') : _ribbonLabel('Insert Footnote')),
         content: TextField(
           controller: controller,
           minLines: 2,
           maxLines: 5,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             hintText: 'নোট লিখুন',
-            labelText: 'Note',
+            labelText: _t('নোট', 'Note'),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text(_ribbonLabel('Cancel')),
           ),
           ElevatedButton(
             onPressed: () =>
                 Navigator.pop(dialogContext, controller.text.trim()),
-            child: const Text('Insert'),
+            child: Text(_ribbonLabel('Insert')),
           ),
         ],
       ),
@@ -1028,21 +1049,21 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     final caption = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Insert Caption'),
+        title: Text(_ribbonLabel('Insert Caption')),
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(labelText: 'Caption'),
+          decoration: InputDecoration(labelText: _t('ক্যাপশন', 'Caption')),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text(_ribbonLabel('Cancel')),
           ),
           ElevatedButton(
             onPressed: () =>
                 Navigator.pop(dialogContext, controller.text.trim()),
-            child: const Text('Insert'),
+            child: Text(_ribbonLabel('Insert')),
           ),
         ],
       ),
@@ -1070,7 +1091,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     final comment = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('New Comment'),
+        title: Text(_ribbonLabel('New Comment')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1084,19 +1105,19 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
               controller: controller,
               minLines: 2,
               maxLines: 5,
-              decoration: const InputDecoration(labelText: 'Comment'),
+              decoration: InputDecoration(labelText: _t('মন্তব্য', 'Comment')),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text(_ribbonLabel('Cancel')),
           ),
           ElevatedButton(
             onPressed: () =>
                 Navigator.pop(dialogContext, controller.text.trim()),
-            child: const Text('Add'),
+            child: Text(_ribbonLabel('Add')),
           ),
         ],
       ),
@@ -1121,7 +1142,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Document Comments'),
+        title: Text(_ribbonLabel('Document Comments')),
         content: SizedBox(
           width: 420,
           child: writerComments.isEmpty
@@ -1190,7 +1211,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
                         Navigator.pop(dialogContext);
                       },
                       trailing: IconButton(
-                        tooltip: 'Delete comment',
+                        tooltip: _ribbonLabel('Delete comment'),
                         icon: const Icon(Icons.delete_outline),
                         onPressed: () {
                           setState(() => writerComments.removeAt(index));
@@ -1205,7 +1226,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Close'),
+            child: Text(_ribbonLabel('Close')),
           ),
         ],
       ),
@@ -1219,33 +1240,33 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     final action = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Find and Replace'),
+        title: Text(_ribbonLabel('Find and Replace')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: findController,
-              decoration: const InputDecoration(labelText: 'Find'),
+              decoration: InputDecoration(labelText: _t('খুঁজুন', 'Find')),
             ),
             TextField(
               controller: replaceController,
               decoration:
-                  const InputDecoration(labelText: 'Replace with'),
+                  InputDecoration(labelText: _t('এর বদলে লিখুন', 'Replace with')),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, 'find'),
-            child: const Text('Find Next'),
+            child: Text(_ribbonLabel('Find Next')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, 'replace'),
-            child: const Text('Replace'),
+            child: Text(_ribbonLabel('Replace')),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(dialogContext, 'all'),
-            child: const Text('Replace All'),
+            child: Text(_ribbonLabel('Replace All')),
           ),
         ],
       ),
@@ -1320,7 +1341,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, refreshDialog) => AlertDialog(
-          title: const Text('Revision Snapshots'),
+          title: Text(_ribbonLabel('Revision Snapshots')),
           content: SizedBox(
             width: 420,
             child: writerRevisions.isEmpty
@@ -1352,7 +1373,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
                           final confirm = await showDialog<bool>(
                             context: context,
                             builder: (confirmContext) => AlertDialog(
-                              title: const Text('Restore this snapshot?'),
+                              title: Text(_ribbonLabel('Restore this snapshot?')),
                               content: const Text(
                                 'বর্তমান লেখা প্রতিস্থাপিত হবে।',
                               ),
@@ -1362,14 +1383,14 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
                                     confirmContext,
                                     false,
                                   ),
-                                  child: const Text('Cancel'),
+                                  child: Text(_ribbonLabel('Cancel')),
                                 ),
                                 ElevatedButton(
                                   onPressed: () => Navigator.pop(
                                     confirmContext,
                                     true,
                                   ),
-                                  child: const Text('Restore'),
+                                  child: Text(_ribbonLabel('Restore')),
                                 ),
                               ],
                             ),
@@ -1417,13 +1438,13 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
                           }
                         },
                         trailing: IconButton(
-                          tooltip: 'Delete snapshot',
+                          tooltip: _ribbonLabel('Delete snapshot'),
                           icon: const Icon(Icons.delete_outline),
                           onPressed: () async {
                             final confirm = await showDialog<bool>(
                               context: context,
                               builder: (confirmContext) => AlertDialog(
-                                title: const Text('Delete snapshot?'),
+                                title: Text(_ribbonLabel('Delete snapshot?')),
                                 content: const Text(
                                   'এই Revision স্থায়ীভাবে মুছে যাবে।',
                                 ),
@@ -1433,14 +1454,14 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
                                       confirmContext,
                                       false,
                                     ),
-                                    child: const Text('Cancel'),
+                                    child: Text(_ribbonLabel('Cancel')),
                                   ),
                                   ElevatedButton(
                                     onPressed: () => Navigator.pop(
                                       confirmContext,
                                       true,
                                     ),
-                                    child: const Text('Delete'),
+                                    child: Text(_ribbonLabel('Delete')),
                                   ),
                                 ],
                               ),
@@ -1465,7 +1486,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
                   final confirm = await showDialog<bool>(
                     context: context,
                     builder: (confirmContext) => AlertDialog(
-                      title: const Text('Clear revision history?'),
+                      title: Text(_ribbonLabel('Clear revision history?')),
                       content: const Text(
                         'সব সংরক্ষিত Revision মুছে যাবে। ডকুমেন্টের বর্তমান লেখা মুছবে না।',
                       ),
@@ -1473,12 +1494,12 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
                         TextButton(
                           onPressed: () =>
                               Navigator.pop(confirmContext, false),
-                          child: const Text('Cancel'),
+                          child: Text(_ribbonLabel('Cancel')),
                         ),
                         ElevatedButton(
                           onPressed: () =>
                               Navigator.pop(confirmContext, true),
-                          child: const Text('Clear History'),
+                          child: Text(_ribbonLabel('Clear History')),
                         ),
                       ],
                     ),
@@ -1489,11 +1510,11 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
                     refreshDialog(() {});
                   }
                 },
-                child: const Text('Clear History'),
+                child: Text(_ribbonLabel('Clear History')),
               ),
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Close'),
+              child: Text(_ribbonLabel('Close')),
             ),
           ],
         ),
@@ -1522,30 +1543,32 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
         _ribbonButton(Icons.copy, 'Copy Text', copyDocumentText),
         _ribbonButton(Icons.info_outline, 'Document Info', showDocumentInfo),
         _ribbonButton(Icons.article_outlined, 'Header / Footer', editHeaderFooter),
+        _ribbonButton(Icons.file_open_outlined, 'Import DOCX / ODT', importWriterDocument),
         _ribbonButton(Icons.description_outlined, 'Export DOCX', exportDocx),
+        _ribbonButton(Icons.file_download_outlined, 'Export ODT', exportOdt),
         _ribbonButton(Icons.delete_outline, 'Clear', clearDocument),
         _ribbonButton(Icons.close, 'Close', () => Navigator.maybePop(context)),
       ]);
 
   Widget buildDesignRibbon() => _ribbonPanel([
         PopupMenuButton<int>(
-          tooltip: 'Page Color',
+          tooltip: _ribbonLabel('Page Color'),
           onSelected: (value) => _saveLayoutChange(() => pageBackgroundColorValue = value),
-          itemBuilder: (context) => const [
-            PopupMenuItem(value: 0xFFFFFFFF, child: Text('White')),
-            PopupMenuItem(value: 0xFFFFF8E7, child: Text('Ivory')),
-            PopupMenuItem(value: 0xFFEAF4FF, child: Text('Light Blue')),
-            PopupMenuItem(value: 0xFFF1F3F5, child: Text('Light Gray')),
-            PopupMenuItem(value: 0xFFEAF7EA, child: Text('Light Green')),
-            PopupMenuItem(value: 0xFFFFF9DB, child: Text('Light Yellow')),
+          itemBuilder: (context) => [
+            PopupMenuItem(value: 0xFFFFFFFF, child: Text(_ribbonLabel('White'))),
+            PopupMenuItem(value: 0xFFFFF8E7, child: Text(_ribbonLabel('Ivory'))),
+            PopupMenuItem(value: 0xFFEAF4FF, child: Text(_ribbonLabel('Light Blue'))),
+            PopupMenuItem(value: 0xFFF1F3F5, child: Text(_ribbonLabel('Light Gray'))),
+            PopupMenuItem(value: 0xFFEAF7EA, child: Text(_ribbonLabel('Light Green'))),
+            PopupMenuItem(value: 0xFFFFF9DB, child: Text(_ribbonLabel('Light Yellow'))),
           ],
-          child: const Chip(
-            avatar: Icon(Icons.palette_outlined, size: 18),
-            label: Text('Page Color'),
+          child: Chip(
+            avatar: const Icon(Icons.palette_outlined, size: 18),
+            label: Text(_ribbonLabel('Page Color')),
           ),
         ),
         FilterChip(
-          label: const Text('Page Border'),
+          label: Text(_ribbonLabel('Page Border')),
           selected: showPageBorder,
           onSelected: (value) {
             setState(() => showPageBorder = value);
@@ -1576,7 +1599,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
         _ribbonButton(Icons.search, 'Find / Replace', findAndReplace),
         _ribbonButton(Icons.history, 'Revision History', showRevisionHistory),
         FilterChip(
-          label: const Text('Capture revisions'),
+          label: Text(_ribbonLabel('Capture revisions')),
           selected: captureRevisions,
           onSelected: (value) {
             setState(() => captureRevisions = value);
@@ -1587,29 +1610,29 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
 
   Widget buildViewRibbon() => _ribbonPanel([
         Wrap(spacing: 6, children: [
-          ChoiceChip(label: const Text('Full Page'), selected: viewFit == 'Page', onSelected: (_) => _setViewFit('Page')),
-          ChoiceChip(label: const Text('Page Width'), selected: viewFit == 'Width', onSelected: (_) => _setViewFit('Width')),
+          ChoiceChip(label: Text(_t('সম্পূর্ণ পৃষ্ঠা', 'Full Page')), selected: viewFit == 'Page', onSelected: (_) => _setViewFit('Page')),
+          ChoiceChip(label: Text(_t('পৃষ্ঠার প্রস্থ', 'Page Width')), selected: viewFit == 'Width', onSelected: (_) => _setViewFit('Width')),
           ChoiceChip(label: const Text('100%'), selected: viewFit == 'Actual', onSelected: (_) => _setViewFit('Actual')),
         ]),
         SizedBox(
           width: 180,
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text('Zoom ${(zoomLevel * 100).round()}%'),
+            Text('${_t('জুম', 'Zoom')} ${(zoomLevel * 100).round()}%'),
             Slider(
               value: zoomLevel,
-              min: 0.6,
-              max: 1.5,
-              divisions: 18,
-              onChanged: (value) => setState(() => zoomLevel = value),
+              min: WriterViewportLayout.minimumZoom,
+              max: WriterViewportLayout.maximumZoom,
+              divisions: 25,
+              onChanged: (value) => _setZoomLevel(value, save: false),
               onChangeEnd: (_) => scheduleSave(),
             ),
           ]),
         ),
-        FilterChip(label: const Text('Ruler'), selected: showRuler, onSelected: (v) { setState(() => showRuler = v); scheduleSave(); }),
-        FilterChip(label: const Text('Page Border'), selected: showPageBorder, onSelected: (v) { setState(() => showPageBorder = v); scheduleSave(); }),
-        FilterChip(label: const Text('Status Bar'), selected: showStatusBar, onSelected: (v) { setState(() => showStatusBar = v); scheduleSave(); }),
+        FilterChip(label: Text(_t('রুলার', 'Ruler')), selected: showRuler, onSelected: (v) { setState(() => showRuler = v); scheduleSave(); }),
+        FilterChip(label: Text(_t('পৃষ্ঠার বর্ডার', 'Page Border')), selected: showPageBorder, onSelected: (v) { setState(() => showPageBorder = v); scheduleSave(); }),
+        FilterChip(label: Text(_t('স্ট্যাটাস বার', 'Status Bar')), selected: showStatusBar, onSelected: (v) { setState(() => showStatusBar = v); scheduleSave(); }),
         FilterChip(
-           label: const Text('Focus Mode'),
+           label: Text(_t('ফোকাস মোড', 'Focus Mode')),
            selected: focusMode,
            onSelected: (value) {
              setState(() => focusMode = value);
@@ -1635,6 +1658,13 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
 
   String _ribbonLabel(String english) {
     const translations = <String, String>{
+      'Page Color': 'পৃষ্ঠার রং', 'White': 'সাদা', 'Ivory': 'আইভরি',
+      'Light Blue': 'হালকা নীল', 'Light Gray': 'হালকা ধূসর',
+      'Light Green': 'হালকা সবুজ', 'Light Yellow': 'হালকা হলুদ',
+      'Page Border': 'পৃষ্ঠার বর্ডার', 'Capture revisions': 'সংশোধন সংরক্ষণ',
+      'Custom Size': 'নিজস্ব সাইজ', 'Bold': 'গাঢ়', 'Italic': 'তির্যক',
+      'Underline': 'নিচে দাগ', 'Strikethrough': 'মাঝে দাগ',
+      'Red Text': 'লাল লেখা', 'Yellow Highlight': 'হলুদ হাইলাইট',
       'Save': 'সংরক্ষণ',
       'Print Preview': 'প্রিন্ট প্রিভিউ',
       'Print': 'প্রিন্ট',
@@ -1642,7 +1672,9 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
       'Copy Text': 'লেখা কপি',
       'Document Info': 'ডকুমেন্টের তথ্য',
       'Header / Footer': 'হেডার / ফুটার',
+      'Import DOCX / ODT': 'DOCX / ODT Import',
       'Export DOCX': 'DOCX Export',
+      'Export ODT': 'ODT Export',
       'Clear': 'খালি করুন',
       'Close': 'বন্ধ',
       'Reset Design': 'ডিজাইন রিসেট',
@@ -1657,21 +1689,74 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
       'Comments': 'মন্তব্য',
       'Find / Replace': 'খুঁজুন / প্রতিস্থাপন',
       'Revision History': 'সংশোধনের ইতিহাস',
+      'Page Size': 'পৃষ্ঠার আকার',
+      'Orientation': 'দিকনির্দেশ',
+      'Margins': 'মার্জিন',
+      'Letter': 'লেটার',
+      'Legal': 'লিগ্যাল',
+      'Portrait': 'পোর্ট্রেট',
+      'Landscape': 'ল্যান্ডস্কেপ',
+      'Normal': 'স্বাভাবিক',
+      'Narrow': 'সরু',
+      'Moderate': 'মাঝারি',
+      'Wide': 'প্রশস্ত',
+      'Custom Margins...': 'নিজস্ব মার্জিন...',
+      'Custom Margins (inches)': 'নিজস্ব মার্জিন (ইঞ্চি)',
+      'Top': 'উপর',
+      'Bottom': 'নিচে',
+      'Left': 'বামে',
+      'Right': 'ডানে',
+      'Apply': 'প্রয়োগ',
+      'Reset': 'রিসেট',
+      'Cancel': 'বাতিল',
+      'Page Margins': 'পৃষ্ঠার মার্জিন',
+      'Document Information': 'ডকুমেন্টের তথ্য',
+      'Rename Document': 'ডকুমেন্টের নাম পরিবর্তন',
+      'Insert Citation': 'উদ্ধৃতি যোগ করুন',
+      'Citation Sources / উদ্ধৃতির উৎস': 'উদ্ধৃতির উৎস',
+      'Remove citation source?': 'উদ্ধৃতির উৎস সরাবেন?',
+      'Remove': 'সরান',
+      'Close / বন্ধ': 'বন্ধ',
+      'Insert Caption': 'ক্যাপশন যোগ করুন',
+      'Add': 'যোগ করুন',
+      'Document Comments': 'ডকুমেন্টের মন্তব্য',
+      'Find and Replace': 'খুঁজুন ও প্রতিস্থাপন',
+      'Find Next': 'পরবর্তীটি খুঁজুন',
+      'Replace': 'প্রতিস্থাপন',
+      'Replace All': 'সব প্রতিস্থাপন',
+      'Revision Snapshots': 'সংশোধনের সংস্করণ',
+      'Restore this snapshot?': 'এই সংস্করণটি পুনরুদ্ধার করবেন?',
+      'Restore': 'পুনরুদ্ধার',
+      'Delete snapshot?': 'সংস্করণ মুছবেন?',
+      'Delete': 'মুছুন',
+      'Clear revision history?': 'সংশোধনের ইতিহাস মুছবেন?',
+      'Clear History': 'ইতিহাস মুছুন',
+      'Clear document?': 'ডকুমেন্ট খালি করবেন?',
+      'Custom Font Size': 'নিজস্ব ফন্ট সাইজ',
+      'Insert Hyperlink': 'হাইপারলিংক যোগ করুন',
+      'Remove source': 'উৎস সরান',
+      'Delete comment': 'মন্তব্য মুছুন',
+      'Delete snapshot': 'সংস্করণ মুছুন',
+      'Website URL': 'ওয়েবসাইটের ঠিকানা',
+      'Size in points (8–72)': 'সাইজ (৮–৭২ পয়েন্ট)',
+      'Insert Endnote': 'শেষটীকা যোগ করুন',
+      'Insert Footnote': 'পাদটীকা যোগ করুন',
+      'Symbols': 'প্রতীক',
     };
     return _t(translations[english] ?? english, english);
   }
 
   Widget _ribbonButton(IconData icon, String label, VoidCallback action) =>
       SizedBox(
-        width: 96,
-        height: 72,
+        width: 84,
+        height: 56,
         child: Tooltip(
           message: _ribbonLabel(label),
           child: TextButton(
             onPressed: action,
             style: TextButton.styleFrom(
               foregroundColor: const Color(0xFF26362D),
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(5),
               ),
@@ -1679,14 +1764,14 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(icon, size: 21, color: const Color(0xFF315D43)),
-                const SizedBox(height: 4),
+                Icon(icon, size: 18, color: const Color(0xFF315D43)),
+                const SizedBox(height: 2),
                 Text(
                   _ribbonLabel(label),
                   textAlign: TextAlign.center,
-                  maxLines: 3,
-                  overflow: TextOverflow.visible,
-                  style: const TextStyle(fontSize: 10, height: 1.1),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 9, height: 1.0),
                 ),
               ],
             ),
@@ -1709,16 +1794,16 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Clear document?'),
+        title: Text(_ribbonLabel('Clear document?')),
         content: const Text('সব লেখা মুছে ফেলতে চান?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
+            child: Text(_ribbonLabel('Cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Clear'),
+            child: Text(_ribbonLabel('Clear')),
           ),
         ],
       ),
@@ -1789,7 +1874,7 @@ Future<void> showCustomFontSizeDialog() async {
     final value = await showDialog<double>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Custom Font Size'),
+        title: Text(_ribbonLabel('Custom Font Size')),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -1797,7 +1882,7 @@ Future<void> showCustomFontSizeDialog() async {
           decoration: const InputDecoration(labelText: 'Size in points (8–72)'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(_ribbonLabel('Cancel'))),
           ElevatedButton(
             onPressed: () {
               final parsed = double.tryParse(controller.text.trim());
@@ -1809,7 +1894,7 @@ Future<void> showCustomFontSizeDialog() async {
               }
               Navigator.pop(dialogContext, parsed);
             },
-            child: const Text('Apply'),
+            child: Text(_ribbonLabel('Apply')),
           ),
         ],
       ),
@@ -1850,10 +1935,10 @@ Future<void> showCustomFontSizeDialog() async {
   return Container(
     width: double.infinity,
     color: const Color(0xFFF3F6FA),
-    padding: const EdgeInsets.all(10),
+    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
     child: Wrap(
-      spacing: 8,
-      runSpacing: 8,
+      spacing: 5,
+      runSpacing: 3,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         // Font Family
@@ -1905,12 +1990,12 @@ Future<void> showCustomFontSizeDialog() async {
         OutlinedButton.icon(
           onPressed: showCustomFontSizeDialog,
           icon: const Icon(Icons.edit, size: 16),
-          label: const Text('Custom Size'),
+          label: Text(_ribbonLabel('Custom Size')),
         ),
 
         // Bold
         IconButton(
-          tooltip: 'Bold',
+          tooltip: _ribbonLabel('Bold'),
           onPressed: () {
             quillController.formatSelection(Attribute.bold);
           },
@@ -1919,7 +2004,7 @@ Future<void> showCustomFontSizeDialog() async {
 
         // Italic
         IconButton(
-          tooltip: 'Italic',
+          tooltip: _ribbonLabel('Italic'),
           onPressed: () {
             quillController.formatSelection(Attribute.italic);
           },
@@ -1928,7 +2013,7 @@ Future<void> showCustomFontSizeDialog() async {
 
         // Underline
         IconButton(
-          tooltip: 'Underline',
+          tooltip: _ribbonLabel('Underline'),
           onPressed: () {
             quillController.formatSelection(Attribute.underline);
           },
@@ -1937,7 +2022,7 @@ Future<void> showCustomFontSizeDialog() async {
 
         // Strikethrough
         IconButton(
-          tooltip: 'Strikethrough',
+          tooltip: _ribbonLabel('Strikethrough'),
           onPressed: () {
             quillController.formatSelection(
               Attribute.strikeThrough,
@@ -1948,7 +2033,7 @@ Future<void> showCustomFontSizeDialog() async {
 
         // Red Text
         IconButton(
-          tooltip: 'Red Text',
+          tooltip: _ribbonLabel('Red Text'),
           onPressed: () {
             quillController.formatSelection(
               Attribute.fromKeyValue('color', '#FF0000'),
@@ -1962,7 +2047,7 @@ Future<void> showCustomFontSizeDialog() async {
 
         // Yellow Highlight
         IconButton(
-          tooltip: 'Yellow Highlight',
+          tooltip: _ribbonLabel('Yellow Highlight'),
           onPressed: () {
             quillController.formatSelection(
               Attribute.fromKeyValue('background', '#FFFF00'),
@@ -2036,6 +2121,134 @@ Future<void> showCustomFontSizeDialog() async {
     );
   }
 
+
+  Future<void> importWriterDocument() async {
+    try {
+      final picked = await FilePicker.pickFile(
+        type: FileType.custom,
+        allowedExtensions: ['docx', 'odt'],
+      );
+      if (picked == null) return;
+      if (!mounted) return;
+      final fileSize = picked.lengthSync() ?? await picked.length() ?? 0;
+      if (!mounted) return;
+      if (fileSize <= 0 || fileSize > WriterDocumentFormatService.maxInputBytes) {
+        _showMessage(_t('ফাইল খালি অথবা ২৫ MB-এর বেশি।', 'File is empty or exceeds 25 MB.'));
+        return;
+      }
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(_t('ডকুমেন্ট Import', 'Import document')),
+          content: Text(_t(
+            'মূল ডকুমেন্ট অপরিবর্তিত রেখে নতুন Writer ডকুমেন্ট তৈরি হবে।',
+            'A new Writer document will be created. Your current document will remain unchanged.',
+          )),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text(_t('বাতিল', 'Cancel')),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: Text(_t('Import', 'Import')),
+            ),
+          ],
+        ),
+      );
+      if (confirm != true || !mounted) return;
+      await saveDocument();
+      final bytes = await picked.readAsBytes();
+      if (!mounted) return;
+      final appDirectory = await getApplicationSupportDirectory();
+      final name = picked.name;
+      final dot = name.lastIndexOf('.');
+      final fileTitle = dot > 0 ? name.substring(0, dot) : name;
+      final imported = await WriterDocumentFormatService.importFile(
+        bytes: bytes,
+        extension: picked.extension ?? '',
+        imageDirectory: Directory('${appDirectory.path}/offynexbd_images'),
+        title: fileTitle,
+      );
+      if (!mounted) return;
+      final now = DateTime.now().toIso8601String();
+      final newDocument = <String, dynamic>{
+        'id': 'writer_import_${DateTime.now().microsecondsSinceEpoch}',
+        'title': imported.title,
+        'content': imported.delta,
+        'created': now,
+        'updated': now,
+        'pageLayout': {
+          ...?imported.pageLayout,
+          'pageBackgroundColor': 0xFFFFFFFF,
+        },
+        'writerMeta': {
+          'zoom': 1.0,
+          'fontFamily': 'sans-serif',
+          'viewFit': 'Page',
+          'showRuler': true,
+          'showStatusBar': true,
+          'showPageBorder': true,
+          'captureRevisions': false,
+          'focusMode': false,
+          'comments': <Map<String, dynamic>>[],
+          'citations': <Map<String, dynamic>>[],
+          'revisions': <Map<String, dynamic>>[],
+          'headerText': imported.headerText,
+          'footerText': imported.footerText,
+        },
+      };
+      final documents = await loadDocuments();
+      if (writerLibraryDataBlocked) {
+        throw StateError('Writer library is protected because its saved data could not be read.');
+      }
+      await storeDocuments([...documents, newDocument]);
+      if (!mounted) return;
+      _showMessage(_t(
+        '${imported.format} Import সম্পন্ন। নতুন ডকুমেন্ট তালিকায় যোগ হয়েছে.',
+        '${imported.format} import completed. The new document is in your library.',
+      ));
+      Navigator.of(context).pop(true);
+    } catch (error) {
+      if (mounted) {
+        _showMessage(_t('ডকুমেন্ট Import করা যায়নি: $error', 'Could not import document: $error'));
+      }
+    }
+  }
+
+  Future<void> exportOdt() async {
+    try {
+      await saveDocument();
+      final appDirectory = await getApplicationSupportDirectory();
+      final delta = quillController.document.toDelta().toJson()
+          .map((item) => Map<String, dynamic>.from(item as Map))
+          .toList();
+      final bytes = await WriterDocumentFormatService.exportOdt(
+        title: titleController.text.trim().isEmpty ? 'Untitled Document' : titleController.text.trim(),
+        delta: delta,
+        imageDirectory: Directory('${appDirectory.path}/offynexbd_images'),
+        pageLayout: _pageLayoutToJson(),
+        headerText: headerText,
+        footerText: footerText,
+      );
+      if (!mounted) return;
+      final rawName = titleController.text.trim().isEmpty ? 'OFFYNEXBD-Document' : titleController.text.trim();
+      final safeName = rawName.replaceAll(' ', '_').replaceAll('/', '_').replaceAll('\\\\', '_');
+      final saved = await FilePicker.saveFile(
+        fileName: '$safeName.odt',
+        bytes: bytes,
+        mimeType: 'application/vnd.oasis.opendocument.text',
+        dialogTitle: _t('ODT ফাইল সংরক্ষণ', 'Save ODT document'),
+      );
+      if (saved == null || !mounted) return;
+      _showMessage(_t('ODT Export সম্পন্ন হয়েছে।', 'ODT export completed.'));
+    } catch (error) {
+      if (mounted) {
+        _showMessage(_t('ODT তৈরি করা যায়নি: $error', 'Could not create ODT: $error'));
+      }
+    }
+  }
+
   Future<void> exportDocx() async {
     try {
       await saveDocument();
@@ -2047,6 +2260,9 @@ Future<void> showCustomFontSizeDialog() async {
             ? 'Untitled Document'
             : titleController.text.trim(),
         delta: delta,
+        pageLayout: _pageLayoutToJson(),
+        headerText: headerText,
+        footerText: footerText,
       );
       if (!mounted) return;
       final baseName = titleController.text.trim().isEmpty
@@ -2086,31 +2302,35 @@ Future<void> showCustomFontSizeDialog() async {
   }
 
   Future<void> openPrintPreview() async {
-    await saveDocument();
-    if (!mounted) return;
-    await Navigator.push<void>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => _WriterPrintPreviewScreen(
-          fileName: titleController.text.trim().isEmpty
-              ? 'OFFYNEXBD-Document'
-              : titleController.text.trim(),
-          initialPageFormat: _selectedPdfFormat,
-          buildPdf: _buildWriterPdf,
-          controller: quillController,
-          focusNode: editorFocusNode,
-          isBangla: widget.isBangla,
-          onSave: saveDocument,
-          onEditTable: editWriterTable,
+    try {
+      await saveDocument(rethrowOnError: true);
+      if (!mounted) return;
+      await Navigator.push<void>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => _WriterPrintPreviewScreen(
+            fileName: titleController.text.trim().isEmpty
+                ? 'OFFYNEXBD-Document'
+                : titleController.text.trim(),
+            initialPageFormat: _selectedPdfFormat,
+            buildPdf: _buildWriterPdf,
+            controller: quillController,
+            focusNode: editorFocusNode,
+            isBangla: widget.isBangla,
+            onSave: () => saveDocument(rethrowOnError: true),
+            onEditTable: editWriterTable,
+          ),
         ),
-      ),
-    );
+      );
+    } catch (error) {
+      if (mounted) _showMessage(_t('সংরক্ষণ ব্যর্থ হওয়ায় প্রিন্ট প্রিভিউ খোলা যায়নি: $error', 'Print Preview could not open because saving failed: $error'));
+    }
   }
 
   Future<void> printDocument() async {
-    await saveDocument();
-    if (!mounted) return;
     try {
+      await saveDocument(rethrowOnError: true);
+      if (!mounted) return;
       await Printing.layoutPdf(
         name: titleController.text.trim().isEmpty
             ? 'OFFYNEXBD-Document.pdf'
@@ -2119,8 +2339,112 @@ Future<void> showCustomFontSizeDialog() async {
         onLayout: _buildWriterPdf,
       );
     } catch (error) {
-      _showMessage('প্রিন্ট তৈরি করা যায়নি: $error');
+      if (mounted) _showMessage('প্রিন্ট তৈরি করা যায়নি: $error');
     }
+  }
+
+
+  void _setZoomLevel(double value, {bool save = true}) {
+    setState(() {
+      zoomLevel = value.clamp(
+        WriterViewportLayout.minimumZoom,
+        WriterViewportLayout.maximumZoom,
+      ).toDouble();
+    });
+    _pageTransformController.value = Matrix4.identity();
+    if (save) scheduleSave();
+  }
+
+  void _adjustZoom(double amount) {
+    _setZoomLevel(zoomLevel + amount);
+  }
+
+  void _handlePageInteractionEnd(ScaleEndDetails details) {
+    final matrix = _pageTransformController.value;
+    final gestureScale = matrix.getMaxScaleOnAxis();
+    if (!gestureScale.isFinite || (gestureScale - 1).abs() < 0.015) return;
+
+    final translateX = matrix.storage[12];
+    final translateY = matrix.storage[13];
+    setState(() {
+      zoomLevel = (zoomLevel * gestureScale)
+          .clamp(
+            WriterViewportLayout.minimumZoom,
+            WriterViewportLayout.maximumZoom,
+          )
+          .toDouble();
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _pageTransformController.value = Matrix4.identity()
+        ..translateByDouble(translateX, translateY, 0, 1);
+    });
+    scheduleSave();
+  }
+
+  Widget _buildViewportControls() {
+    return Container(
+      height: 48,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(color: OFFYNEXTheme.border),
+          bottom: BorderSide(color: OFFYNEXTheme.border),
+        ),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: Row(
+          children: [
+            IconButton(
+              tooltip: _t('ছোট করুন', 'Zoom out'),
+              visualDensity: VisualDensity.compact,
+              onPressed: () => _adjustZoom(-0.1),
+              icon: const Icon(Icons.remove_circle_outline, size: 20),
+            ),
+            SizedBox(
+              width: 112,
+              child: Slider(
+                value: zoomLevel,
+                min: WriterViewportLayout.minimumZoom,
+                max: WriterViewportLayout.maximumZoom,
+                divisions: 25,
+                onChanged: (value) => _setZoomLevel(value, save: false),
+                onChangeEnd: (_) => scheduleSave(),
+              ),
+            ),
+            SizedBox(
+              width: 48,
+              child: Text(
+                '${(zoomLevel * 100).round()}%',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+              ),
+            ),
+            IconButton(
+              tooltip: _t('বড় করুন', 'Zoom in'),
+              visualDensity: VisualDensity.compact,
+              onPressed: () => _adjustZoom(0.1),
+              icon: const Icon(Icons.add_circle_outline, size: 20),
+            ),
+            const VerticalDivider(width: 12, indent: 9, endIndent: 9),
+            TextButton(
+              onPressed: () => _setViewFit('Page'),
+              child: Text(_t('সম্পূর্ণ পৃষ্ঠা', 'Full Page')),
+            ),
+            TextButton(
+              onPressed: () => _setViewFit('Width'),
+              child: Text(_t('পৃষ্ঠার প্রস্থ', 'Page Width')),
+            ),
+            TextButton(
+              onPressed: () => _setViewFit('Actual'),
+              child: const Text('100%'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _setViewFit(String mode) {
@@ -2128,6 +2452,7 @@ Future<void> showCustomFontSizeDialog() async {
       viewFit = mode;
       zoomLevel = 1.0;
     });
+    _pageTransformController.value = Matrix4.identity();
     scheduleSave();
   }
 
@@ -2170,7 +2495,7 @@ Future<void> showCustomFontSizeDialog() async {
     final values = await showDialog<List<double>>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Custom Margins (inches)'),
+        title: Text(_ribbonLabel('Custom Margins (inches)')),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -2178,22 +2503,22 @@ Future<void> showCustomFontSizeDialog() async {
               TextField(
                 controller: topController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Top'),
+                decoration: InputDecoration(labelText: _ribbonLabel('Top')),
               ),
               TextField(
                 controller: bottomController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Bottom'),
+                decoration: InputDecoration(labelText: _ribbonLabel('Bottom')),
               ),
               TextField(
                 controller: leftController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Left'),
+                decoration: InputDecoration(labelText: _ribbonLabel('Left')),
               ),
               TextField(
                 controller: rightController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Right'),
+                decoration: InputDecoration(labelText: _ribbonLabel('Right')),
               ),
               const SizedBox(height: 8),
               const Text(
@@ -2205,7 +2530,7 @@ Future<void> showCustomFontSizeDialog() async {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text(_ribbonLabel('Cancel')),
           ),
           ElevatedButton(
             onPressed: () {
@@ -2221,13 +2546,13 @@ Future<void> showCustomFontSizeDialog() async {
               });
               if (hasInvalidMargin) {
                 ScaffoldMessenger.of(dialogContext).showSnackBar(
-                  const SnackBar(content: Text('সঠিক মার্জিনের মান দিন।')),
+                  SnackBar(content: Text(_t('সঠিক মার্জিনের মান দিন।', 'Enter valid margin values.'))),
                 );
                 return;
               }
               Navigator.pop(dialogContext, parsed.cast<double>());
             },
-            child: const Text('Apply'),
+            child: Text(_ribbonLabel('Apply')),
           ),
         ],
       ),
@@ -2246,8 +2571,8 @@ Future<void> showCustomFontSizeDialog() async {
     if (values[0] + values[1] >= pageHeightInches - 1 ||
         values[2] + values[3] >= pageWidthInches - 1) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('মার্জিনের যোগফল পৃষ্ঠার আকারের তুলনায় বেশি।'),
+        SnackBar(
+          content: Text(_t('মার্জিনের যোগফল পৃষ্ঠার আকারের তুলনায় বেশি।', 'The combined margins are too large for this page size.')),
         ),
       );
       return;
@@ -2276,14 +2601,14 @@ Future<void> showCustomFontSizeDialog() async {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Page Size', style: TextStyle(fontSize: 11)),
+              Text(_ribbonLabel('Page Size'), style: const TextStyle(fontSize: 11)),
               DropdownButton<String>(
                 value: pageSize,
-                items: const [
-                  DropdownMenuItem(value: 'A4', child: Text('A4')),
-                  DropdownMenuItem(value: 'A5', child: Text('A5')),
-                  DropdownMenuItem(value: 'Letter', child: Text('Letter')),
-                  DropdownMenuItem(value: 'Legal', child: Text('Legal')),
+                items: [
+                  const DropdownMenuItem(value: 'A4', child: Text('A4')),
+                  const DropdownMenuItem(value: 'A5', child: Text('A5')),
+                  DropdownMenuItem(value: 'Letter', child: Text(_ribbonLabel('Letter'))),
+                  DropdownMenuItem(value: 'Legal', child: Text(_ribbonLabel('Legal'))),
                 ],
                 onChanged: (value) {
                   if (value == null) return;
@@ -2296,12 +2621,12 @@ Future<void> showCustomFontSizeDialog() async {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Orientation', style: TextStyle(fontSize: 11)),
+              Text(_ribbonLabel('Orientation'), style: const TextStyle(fontSize: 11)),
               DropdownButton<String>(
                 value: pageOrientation,
-                items: const [
-                  DropdownMenuItem(value: 'Portrait', child: Text('Portrait')),
-                  DropdownMenuItem(value: 'Landscape', child: Text('Landscape')),
+                items: [
+                  DropdownMenuItem(value: 'Portrait', child: Text(_ribbonLabel('Portrait'))),
+                  DropdownMenuItem(value: 'Landscape', child: Text(_ribbonLabel('Landscape'))),
                 ],
                 onChanged: (value) {
                   if (value == null) return;
@@ -2314,9 +2639,9 @@ Future<void> showCustomFontSizeDialog() async {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Margins', style: TextStyle(fontSize: 11)),
+              Text(_ribbonLabel('Margins'), style: const TextStyle(fontSize: 11)),
               PopupMenuButton<String>(
-                tooltip: 'Page Margins',
+                tooltip: _ribbonLabel('Page Margins'),
                 onSelected: (value) {
                   if (value == 'Custom') {
                     _showCustomMarginsDialog();
@@ -2324,17 +2649,17 @@ Future<void> showCustomFontSizeDialog() async {
                     _applyMarginPreset(value);
                   }
                 },
-                itemBuilder: (context) => const [
-                  PopupMenuItem(value: 'Normal', child: Text('Normal — 1.00"')),
-                  PopupMenuItem(value: 'Narrow', child: Text('Narrow — 0.50"')),
-                  PopupMenuItem(value: 'Moderate', child: Text('Moderate — 0.75"')),
-                  PopupMenuItem(value: 'Wide', child: Text('Wide — 1.25"')),
-                  PopupMenuDivider(),
-                  PopupMenuItem(value: 'Custom', child: Text('Custom Margins...')),
+                itemBuilder: (context) => [
+                  PopupMenuItem(value: 'Normal', child: Text('${_ribbonLabel('Normal')} — 1.00"')),
+                  PopupMenuItem(value: 'Narrow', child: Text('${_ribbonLabel('Narrow')} — 0.50"')),
+                  PopupMenuItem(value: 'Moderate', child: Text('${_ribbonLabel('Moderate')} — 0.75"')),
+                  PopupMenuItem(value: 'Wide', child: Text('${_ribbonLabel('Wide')} — 1.25"')),
+                  const PopupMenuDivider(),
+                  PopupMenuItem(value: 'Custom', child: Text(_ribbonLabel('Custom Margins...'))),
                 ],
                 child: Chip(
                   avatar: const Icon(Icons.border_outer, size: 17),
-                  label: Text(marginPreset),
+                  label: Text(_ribbonLabel(marginPreset)),
                 ),
               ),
             ],
@@ -2352,7 +2677,7 @@ Future<void> showCustomFontSizeDialog() async {
               });
             },
             icon: const Icon(Icons.restart_alt),
-            label: const Text('Reset'),
+            label: Text(_ribbonLabel('Reset')),
           ),
         ],
       ),
@@ -2379,8 +2704,8 @@ Future<void> showCustomFontSizeDialog() async {
 
     if (selection.isCollapsed) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('প্রথমে যে লেখায় Link দিতে চান সেটি নির্বাচন করুন।'),
+        SnackBar(
+          content: Text(_t('প্রথমে যে লেখায় Link দিতে চান সেটি নির্বাচন করুন।', 'Select the text you want to turn into a link first.')),
         ),
       );
       return;
@@ -2391,27 +2716,27 @@ Future<void> showCustomFontSizeDialog() async {
     final url = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Insert Hyperlink'),
+        title: Text(_ribbonLabel('Insert Hyperlink')),
         content: TextField(
           controller: controller,
           autofocus: true,
           keyboardType: TextInputType.url,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             hintText: 'https://example.com',
-            labelText: 'Website URL',
+            labelText: _t('ওয়েবসাইটের ঠিকানা', 'Website URL'),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text(_ribbonLabel('Cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(
               dialogContext,
               controller.text.trim(),
             ),
-            child: const Text('Insert'),
+            child: Text(_ribbonLabel('Insert')),
           ),
         ],
       ),
@@ -2429,8 +2754,8 @@ Future<void> showCustomFontSizeDialog() async {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('সঠিক Website URL দিন।'),
+        SnackBar(
+          content: Text(_t('সঠিক Website URL দিন।', 'Enter a valid website URL.')),
         ),
       );
       return;
@@ -2475,6 +2800,11 @@ Future<void> showCustomFontSizeDialog() async {
             label: Text(_t('ছবি', 'Image')),
           ),
           ElevatedButton.icon(
+            onPressed: insertWriterPageBreak,
+            icon: const Icon(Icons.insert_page_break),
+            label: Text(_t('পৃষ্ঠা বিরতি', 'Page Break')),
+          ),
+          ElevatedButton.icon(
             onPressed: insertHyperlink,
             icon: const Icon(Icons.link),
             label: Text(_t('হাইপারলিংক', 'Hyperlink')),
@@ -2493,14 +2823,27 @@ Future<void> showCustomFontSizeDialog() async {
               PopupMenuItem(value: '∞', child: Text('∞  Infinity')),
               PopupMenuItem(value: '✓', child: Text('✓  Check')),
             ],
-            child: const Chip(
-              avatar: Icon(Icons.functions),
-              label: Text('Symbols'),
+            child: Chip(
+              avatar: const Icon(Icons.functions),
+              label: Text(_ribbonLabel('Symbols')),
             ),
           ),
         ],
       ),
     );
+  }
+
+  void insertWriterPageBreak() {
+    final selection = quillController.selection;
+    final start = selection.start;
+    final length = selection.end - selection.start;
+    quillController.replaceText(
+      start,
+      length,
+      BlockEmbed.custom(const WriterPageBreakEmbed()),
+      TextSelection.collapsed(offset: start + 1),
+    );
+    scheduleSave();
   }
 
   Future<void> insertWriterTable() async {
@@ -2538,8 +2881,8 @@ Future<void> insertWriterImage() async {
 
     if (fileSize == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('ছবির ফাইলের সাইজ পড়া যায়নি।'),
+        SnackBar(
+          content: Text(_t('ছবির ফাইলের সাইজ পড়া যায়নি।', 'Could not read the image file size.')),
         ),
       );
       return;
@@ -2547,8 +2890,8 @@ Future<void> insertWriterImage() async {
 
     if (fileSize > 15 * 1024 * 1024) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('ছবির সর্বোচ্চ সাইজ ১৫ MB হতে পারবে।'),
+        SnackBar(
+          content: Text(_t('ছবির সর্বোচ্চ সাইজ ১৫ MB হতে পারবে।', 'Images must be 15 MB or smaller.')),
         ),
       );
       return;
@@ -2563,8 +2906,8 @@ Future<void> insertWriterImage() async {
 
     if (!allowedExtensions.contains(extension)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('এই ছবির ফরম্যাট সমর্থিত নয়।'),
+        SnackBar(
+          content: Text(_t('এই ছবির ফরম্যাট সমর্থিত নয়।', 'This image format is not supported.')),
         ),
       );
       return;
@@ -2606,8 +2949,8 @@ Future<void> insertWriterImage() async {
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('ছবি ডকুমেন্টে যুক্ত হয়েছে।'),
+        SnackBar(
+          content: Text(_t('ছবি ডকুমেন্টে যুক্ত হয়েছে।', 'Image added to the document.')),
         ),
       );
     }
@@ -2616,7 +2959,7 @@ Future<void> insertWriterImage() async {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('ছবি যুক্ত করা যায়নি: $error'),
+        content: Text(_t('ছবি যুক্ত করা যায়নি: $error', 'Could not add image: $error')),
       ),
     );
   }
@@ -2682,6 +3025,7 @@ Future<void> insertWriterImage() async {
         })
         .catchError((Object error) {});
 
+    _pageTransformController.dispose();
     editorFocusNode.dispose();
     titleController.dispose();
     quillController.dispose();
@@ -2722,9 +3066,9 @@ Future<void> insertWriterImage() async {
             child: TextField(
               controller: titleController,
               onChanged: (_) => scheduleSave(),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 border: InputBorder.none,
-                hintText: 'Document name',
+                hintText: _t('ডকুমেন্টের নাম', 'Document name'),
                 prefixIcon: Icon(Icons.description_outlined),
               ),
               style: const TextStyle(color: OFFYNEXTheme.ink, fontSize: 17, fontWeight: FontWeight.w800),
@@ -2743,7 +3087,7 @@ Future<void> insertWriterImage() async {
                   child: QuillSimpleToolbar(
                     controller: quillController,
                     config: const QuillSimpleToolbarConfig(
-                      multiRowsDisplay: true,
+                      multiRowsDisplay: false,
                       showFontFamily: false,
                       showFontSize: false,
                       showBoldButton: false,
@@ -2787,56 +3131,60 @@ Future<void> insertWriterImage() async {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final page = _pageDimensions;
-                final availableWidth = math.max(1.0, constraints.maxWidth - 24);
-                final fitScale = math.min(
-                  availableWidth / page.width,
-                  constraints.maxHeight / page.height,
+                final layout = WriterViewportLayout.calculate(
+                  pageWidth: page.width,
+                  pageHeight: page.height,
+                  viewportWidth: constraints.maxWidth,
+                  viewportHeight: constraints.maxHeight,
+                  viewFit: viewFit,
+                  zoom: zoomLevel,
                 );
-                final baseScale = viewFit == 'Width'
-                    ? availableWidth / page.width
-                    : viewFit == 'Actual'
-                        ? 1.0
-                        : fitScale;
-                final scale = (baseScale * zoomLevel).clamp(0.15, 2.0).toDouble();
+                final availableWidth = layout.availableWidth;
+                final scale = layout.scale;
                 final displayWidth = page.width * scale;
                 final displayHeight = page.height * scale;
-                final plainText = quillController.document.toPlainText();
-                final textPainter = TextPainter(
-                  text: TextSpan(
-                    text: plainText,
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                  textDirection: Directionality.of(context),
-                )..layout(
-                    maxWidth: math.max(
-                      1,
-                      page.width - (marginLeft + marginRight) * 96,
-                    ),
-                  );
+                final pageContentWidth = math.max(
+                  1,
+                  page.width - (marginLeft + marginRight) * 96,
+                ).toDouble();
                 final pageContentHeight = math.max(
                   1,
                   page.height - (marginTop + marginBottom) * 96,
+                ).toDouble();
+                final contentHeight = WriterContentMetrics.estimateHeight(
+                  delta: quillController.document.toDelta().toJson(),
+                  maxWidth: pageContentWidth,
+                  pageContentHeight: pageContentHeight,
+                  textDirection: Directionality.of(context),
                 );
                 final estimatedPageCount = math.max(
                   1,
-                  (textPainter.height / pageContentHeight).ceil(),
+                  (contentHeight / pageContentHeight).ceil(),
                 );
                 final documentCanvasHeight =
                     displayHeight * estimatedPageCount;
 
-                return SingleChildScrollView(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: SizedBox(
-                      width: math.max(availableWidth, displayWidth),
-                      height: documentCanvasHeight + 24,
-                      child: Center(
-                        child: Container(
-                          width: displayWidth,
-                          height: documentCanvasHeight,
-                          margin: const EdgeInsets.symmetric(vertical: 12),
-                          child: Stack(
-                            children: [
+                return InteractiveViewer(
+                  transformationController: _pageTransformController,
+                  minScale: 0.5,
+                  maxScale: 4.0,
+                  constrained: false,
+                  panEnabled: true,
+                  scaleEnabled: true,
+                  boundaryMargin: const EdgeInsets.all(120),
+                  alignment: Alignment.topCenter,
+                  clipBehavior: Clip.hardEdge,
+                  onInteractionEnd: _handlePageInteractionEnd,
+                  child: SizedBox(
+                    width: math.max(availableWidth, displayWidth),
+                    height: documentCanvasHeight + 24,
+                    child: Center(
+                      child: Container(
+                        width: displayWidth,
+                        height: documentCanvasHeight,
+                        margin: const EdgeInsets.symmetric(vertical: 12),
+                        child: Stack(
+                          children: [
                               Positioned.fill(
                                 child: CustomPaint(
                                   painter: _WriterPagesPainter(
@@ -2868,13 +3216,13 @@ Future<void> insertWriterImage() async {
                                           onEdit: editWriterTable,
                                         ),
                                         WriterImageEmbedBuilder(),
+                                        WriterPageBreakEmbedBuilder(),
                                       ],
                                     ),
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
+                          ],
                         ),
                       ),
                     ),
@@ -2883,6 +3231,7 @@ Future<void> insertWriterImage() async {
               },
             ),
           ),
+          _buildViewportControls(),
           if (showStatusBar) Container(
             width: double.infinity,
             decoration: const BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: OFFYNEXTheme.border))),
@@ -3114,7 +3463,7 @@ class _WriterPrintPreviewScreenState
       if (!mounted) return;
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Save failed: $error')),
+        SnackBar(content: Text(_t('সংরক্ষণ ব্যর্থ হয়েছে: $error', 'Save failed: $error'))),
       );
     }
   }
@@ -3218,6 +3567,7 @@ class _WriterPrintPreviewScreenState
                             onEdit: widget.onEditTable,
                           ),
                           WriterImageEmbedBuilder(),
+                          WriterPageBreakEmbedBuilder(),
                         ],
                       ),
                     ),

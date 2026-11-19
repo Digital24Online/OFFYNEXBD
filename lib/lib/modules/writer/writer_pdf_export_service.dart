@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:pdf/pdf.dart';
 import 'package:bangla_pdf/widgets.dart' as pw;
+import 'writer_page_break.dart';
 
 /// Builds Writer print/PDF output with HarfBuzz-compatible OpenType Bengali shaping.
 class WriterPdfExportService {
@@ -24,15 +25,20 @@ class WriterPdfExportService {
     final sansFont = pw.Font.ttf(sansFontData);
     final serifFont = pw.Font.ttf(serifFontData);
     final latinFont = pw.Font.ttf(latinFontData);
-    final widgets = <pw.Widget>[
-      pw.Text(title, style: pw.TextStyle(
-        font: _containsBangla(title) ? sansFont : latinFont,
-        fontFallback: _containsBangla(title) ? [latinFont] : const [],
-        fontSize: 18,
-      )),
-      pw.SizedBox(height: 14),
-    ];
+    final titleAlreadyInBody = _firstParagraphText(delta).trim() == title.trim() &&
+        title.trim().isNotEmpty;
+    final widgets = <pw.Widget>[];
+    if (!titleAlreadyInBody && title.trim().isNotEmpty) {
+      widgets
+        ..add(pw.Text(title, style: pw.TextStyle(
+          font: _containsBangla(title) ? sansFont : latinFont,
+          fontFallback: _containsBangla(title) ? [latinFont] : const [],
+          fontSize: 18,
+        )))
+        ..add(pw.SizedBox(height: 14));
+    }
     final spans = <pw.TextSpan>[];
+    var orderedListNumber = 0;
 
     pw.Font fontFor(Map<String, dynamic> attributes, String text) {
       if (!_containsBangla(text)) return latinFont;
@@ -63,20 +69,56 @@ class WriterPdfExportService {
     }
 
     void flushParagraph([Map<String, dynamic>? paragraphAttributes]) {
-      if (spans.isEmpty) {
+      final attributes = paragraphAttributes ?? const <String, dynamic>{};
+      final listType = attributes['list']?.toString();
+      final isBullet = listType == 'bullet';
+      final isOrdered = listType == 'ordered';
+      final rawIndent = attributes['indent'];
+      final indentLevel = (rawIndent is num
+              ? rawIndent.toInt()
+              : int.tryParse(rawIndent?.toString() ?? '') ?? 0)
+          .clamp(0, 8)
+          .toInt();
+      if (isOrdered) {
+        orderedListNumber++;
+      } else if (!isBullet) {
+        orderedListNumber = 0;
+      }
+
+      if (spans.isEmpty && !isBullet && !isOrdered) {
         widgets.add(pw.SizedBox(height: 8));
       } else {
-        final alignment = switch (paragraphAttributes?['align']?.toString()) {
+        final alignment = switch (attributes['align']?.toString()) {
           'center' => pw.TextAlign.center,
           'right' => pw.TextAlign.right,
           'justify' => pw.TextAlign.justify,
           _ => pw.TextAlign.left,
         };
+        final paragraphSpans = <pw.TextSpan>[];
+        if (isBullet || isOrdered) {
+          final marker = isBullet ? '•  ' : '$orderedListNumber.  ';
+          paragraphSpans.add(
+            pw.TextSpan(
+              text: marker,
+              style: pw.TextStyle(
+                font: latinFont,
+                fontSize: 12,
+                fontWeight: isBullet || isOrdered
+                    ? pw.FontWeight.bold
+                    : pw.FontWeight.normal,
+              ),
+            ),
+          );
+        }
+        paragraphSpans.addAll(spans);
         widgets.add(
           pw.Padding(
-            padding: const pw.EdgeInsets.only(bottom: 5),
+            padding: pw.EdgeInsets.only(
+              bottom: 5,
+              left: indentLevel * 18.0,
+            ),
             child: pw.RichText(
-              text: pw.TextSpan(children: List<pw.TextSpan>.from(spans)),
+              text: pw.TextSpan(children: paragraphSpans),
               textAlign: alignment,
             ),
           ),
@@ -126,6 +168,8 @@ class WriterPdfExportService {
               ),
             );
           }
+        } else if (insert.containsKey(WriterPageBreakEmbed.embedType)) {
+          widgets.add(pw.NewPage());
         } else if (insert.containsKey('offynexbd-writer-table')) {
           widgets.add(_tableWidget(
             insert['offynexbd-writer-table']?.toString() ?? '{}',
@@ -232,6 +276,21 @@ class WriterPdfExportService {
         }),
       ),
     );
+  }
+
+  static String _firstParagraphText(List<Map<String, dynamic>> delta) {
+    final paragraph = StringBuffer();
+    for (final operation in delta) {
+      final insert = operation['insert'];
+      if (insert is String) {
+        final newline = insert.indexOf('\n');
+        paragraph.write(newline < 0 ? insert : insert.substring(0, newline));
+        if (newline >= 0) break;
+      } else if (insert is Map && paragraph.isEmpty) {
+        break;
+      }
+    }
+    return paragraph.toString();
   }
 
   static bool _containsBangla(String value) =>

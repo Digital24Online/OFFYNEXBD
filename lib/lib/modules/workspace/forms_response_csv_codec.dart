@@ -84,7 +84,16 @@ class FormsResponseCsvCodec {
             (response['answers'] as Map<String, String>)[key] ?? '',
         ],
     ];
-    String quote(String value) => '"${value.replaceAll('"', '""')}"';
+    String safeCell(String value) {
+      final trimmed = value.trimLeft();
+      if (trimmed.isNotEmpty && '=+-@'.contains(trimmed[0])) return "'$value";
+      return value;
+    }
+    String quote(String value) {
+      final safe = safeCell(value);
+      final escaped = safe.replaceAll('"', '""');
+      return '"$escaped"';
+    }
     final csv = rows.map((row) => row.map(quote).join(',')).join('\r\n');
     // UTF-8 BOM helps spreadsheet applications detect Bengali text correctly.
     return '\uFEFF$csv\r\n';

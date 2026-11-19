@@ -37,5 +37,15 @@ void main() {
       expect(() => SheetsCsvCodec.decode('ab"cd'), throwsA(isA<FormatException>()));
       expect(() => SheetsCsvCodec.decode('"ok"x'), throwsA(isA<FormatException>()));
     });
+
+    test('neutralizes formula-like text in CSV exports', () {
+      final encoded = SheetsCsvCodec.encode([
+        ['=SUM(A1:A2)', '  @SUM(A1:A2)', '+cmd', '-1'],
+      ]);
+      expect(
+        SheetsCsvCodec.decode(encoded),
+        [["'=SUM(A1:A2)", "'  @SUM(A1:A2)", "'+cmd", "'-1"]],
+      );
+    });
   });
 }

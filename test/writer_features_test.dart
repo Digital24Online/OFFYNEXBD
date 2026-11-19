@@ -47,6 +47,91 @@ void main() {
     expect(find.text('View'), findsOneWidget);
   });
 
+  testWidgets('Writer page layout controls follow the selected language', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: true)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('নতুন ডকুমেন্ট'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('লেআউট'));
+    await tester.tap(find.text('লেআউট'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('পৃষ্ঠার আকার'), findsOneWidget);
+    expect(find.text('দিকনির্দেশ'), findsOneWidget);
+    expect(find.text('মার্জিন'), findsOneWidget);
+    expect(find.text('স্বাভাবিক'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: false)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('New Document'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Layout'));
+    await tester.tap(find.text('Layout'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Page Size'), findsOneWidget);
+    expect(find.text('Orientation'), findsOneWidget);
+    expect(find.text('Margins'), findsOneWidget);
+    expect(find.text('Normal'), findsOneWidget);
+  });
+
+  testWidgets('Writer View ribbon exposes page fit, zoom and pinch canvas', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: true)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('নতুন ডকুমেন্ট'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('ভিউ'));
+    await tester.tap(find.text('ভিউ'));
+    await tester.pumpAndSettle();
+
+    final pageFitLabel = find.text('সম্পূর্ণ পৃষ্ঠা').first;
+    final pageWidthLabel = find.text('পৃষ্ঠার প্রস্থ').first;
+    expect(find.text('সম্পূর্ণ পৃষ্ঠা'), findsAtLeastNWidgets(1));
+    expect(find.text('পৃষ্ঠার প্রস্থ'), findsAtLeastNWidgets(1));
+    // The editor also has a compact bottom zoom slider; both controls are valid.
+    expect(find.byType(Slider), findsAtLeastNWidgets(1));
+    expect(find.byType(InteractiveViewer), findsOneWidget);
+
+    await tester.tap(pageWidthLabel);
+    await tester.pumpAndSettle();
+    final widthChip = tester.widget<ChoiceChip>(
+      find.ancestor(
+        of: pageWidthLabel,
+        matching: find.byType(ChoiceChip),
+      ).first,
+    );
+    expect(widthChip.selected, isTrue);
+
+    await tester.tap(pageFitLabel);
+    await tester.pumpAndSettle();
+    final pageChip = tester.widget<ChoiceChip>(
+      find.ancestor(
+        of: pageFitLabel,
+        matching: find.byType(ChoiceChip),
+      ).first,
+    );
+    expect(pageChip.selected, isTrue);
+  });
+
+  testWidgets('Writer Insert ribbon offers an explicit page break', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: true)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('নতুন ডকুমেন্ট'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('ইনসার্ট'));
+    await tester.tap(find.text('ইনসার্ট'));
+    await tester.pumpAndSettle();
+    expect(find.text('পৃষ্ঠা বিরতি'), findsOneWidget);
+    await tester.tap(find.text('পৃষ্ঠা বিরতি'));
+    await tester.pumpAndSettle();
+    expect(find.text('PAGE BREAK'), findsOneWidget);
+  });
+
   testWidgets('Writer header and footer settings persist with document metadata', (tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: true)));

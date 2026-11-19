@@ -410,4 +410,33 @@ void main() {
     expect(find.text('Add row'), findsNothing);
   });
 
+
+  testWidgets('Slides workspace opens a navigable presentation preview', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'offynex_workspace_slides_v1': jsonEncode([
+        {
+          'id': 'slides-1',
+          'title': 'Project Overview',
+          'content': 'Introduction\nProject goals\nNext steps',
+          'updatedAt': '2026-11-19T10:00:00Z',
+        },
+      ]),
+    });
+    await tester.pumpWidget(const MaterialApp(
+      home: OfficeWorkspaceScreen(module: 'Slides', isBangla: false),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Preview presentation'));
+    await tester.pumpAndSettle();
+    expect(find.text('Presentation preview'), findsOneWidget);
+    expect(find.text('Project Overview'), findsOneWidget);
+    expect(find.text('Slide 1 of 3'), findsOneWidget);
+    await tester.tap(find.text('Next'));
+    await tester.pumpAndSettle();
+    expect(find.text('Slide 2 of 3'), findsOneWidget);
+    expect(find.text('Project goals'), findsOneWidget);
+  });
+
+
 }

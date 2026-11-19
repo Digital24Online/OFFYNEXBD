@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'dart:convert';
 
+import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offynexbd/lib/modules/writer/writer_docx_export_service.dart';
 
@@ -7,6 +9,9 @@ void main() {
   test('Writer DOCX export produces a valid Office document with formatted text', () async {
     final bytes = await WriterDocxExportService.build(
       title: 'বাংলা Report',
+      pageLayout: {'pageSize': 'A5', 'orientation': 'Landscape', 'top': 0.5, 'bottom': 0.75, 'left': 1.0, 'right': 1.25},
+      headerText: 'পরীক্ষার Header · {page}/{pages}',
+      footerText: 'Footer text · {page} of {pages}',
       delta: [
         {'insert': 'শিরোনাম\n', 'attributes': {'header': 1}},
         {'insert': 'বাংলা ও English ', 'attributes': {'bold': true}},
@@ -18,6 +23,51 @@ void main() {
     expect(bytes.length, greaterThan(1000));
     expect(bytes[0], 0x50);
     expect(bytes[1], 0x4B);
+    final archive = ZipDecoder().decodeBytes(bytes);
+    final documentXml = utf8.decode(archive.findFile('word/document.xml')!.readBytes()!);
+    expect(documentXml, contains('<w:pgSz w:w="11906" w:h="8391" w:orient="landscape"/>'));
+    expect(documentXml, contains('w:top="720"'));
+    expect(documentXml, contains('<w:header w:type="default"'));
+    expect(documentXml, contains('<w:footer w:type="default"'));
+    final headerXml = utf8.decode(archive.findFile('word/header1.xml')!.readBytes()!);
+    final footerXml = utf8.decode(archive.findFile('word/footer1.xml')!.readBytes()!);
+    expect(headerXml, contains('পরীক্ষার Header'));
+    expect(headerXml, contains('w:instr=" PAGE "'));
+    expect(headerXml, contains('w:instr=" NUMPAGES "'));
+    expect(footerXml, contains('Footer text'));
+    expect(footerXml, contains('w:instr=" PAGE "'));
+    expect(footerXml, contains('w:instr=" NUMPAGES "'));
+  });
+
+  test('Writer DOCX export keeps consecutive numbered items in one numbering sequence', () async {
+    final bytes = await WriterDocxExportService.build(
+      title: 'List test',
+      delta: [
+        {'insert': 'First\n', 'attributes': {'list': 'ordered'}},
+        {'insert': 'Second\n', 'attributes': {'list': 'ordered'}},
+      ],
+    );
+    final archive = ZipDecoder().decodeBytes(bytes);
+    final document = utf8.decode(archive.findFile('word/document.xml')!.readBytes()!);
+    expect(RegExp(r'<w:numPr>').allMatches(document).length, 2);
+    final ids = RegExp(r'<w:numId w:val="(\d+)"').allMatches(document).map((m) => m.group(1)).toSet();
+    expect(ids.length, 1);
+  });
+
+  test('Writer DOCX export preserves nested list levels', () async {
+    final bytes = await WriterDocxExportService.build(
+      title: 'Nested list',
+      delta: [
+        {'insert': 'Parent one\n', 'attributes': {'list': 'ordered'}},
+        {'insert': 'Nested child\n', 'attributes': {'list': 'bullet', 'indent': 1}},
+        {'insert': 'Parent two\n', 'attributes': {'list': 'ordered'}},
+      ],
+    );
+    final archive = ZipDecoder().decodeBytes(bytes);
+    final document = utf8.decode(archive.findFile('word/document.xml')!.readBytes()!);
+    expect(RegExp(r'<w:numPr>').allMatches(document).length, 3);
+    expect(document, contains('<w:ilvl w:val="1"/>'));
+    expect(document, contains('<w:ilvl w:val="0"/>'));
   });
 
   test('Writer DOCX export rejects missing local image instead of creating broken link', () async {
@@ -58,4 +108,44 @@ void main() {
     }
   });
 
+
+  test('DOCX export does not duplicate a title already present as the first body paragraph', () async {
+    final bytes = await WriterDocxExportService.build(
+      title: 'Annual Report',
+      delta: [
+        {'insert': 'Annual Report\n', 'attributes': {'header': 1}},
+        {'insert': 'Body text\n'},
+      ],
+    );
+    final archive = ZipDecoder().decodeBytes(bytes);
+    final document = utf8.decode(archive.findFile('word/document.xml')!.readBytes()!);
+    expect(RegExp(r'Annual Report').allMatches(document).length, 1);
+    expect(document, contains('<w:pStyle w:val="Heading1"/>'));
+  });
+
+  test('DOCX export still adds the document title when the body starts with different text', () async {
+    final bytes = await WriterDocxExportService.build(
+      title: 'Annual Report',
+      delta: [{'insert': 'Introduction\n'}],
+    );
+    final archive = ZipDecoder().decodeBytes(bytes);
+    final document = utf8.decode(archive.findFile('word/document.xml')!.readBytes()!);
+    expect(RegExp(r'Annual Report').allMatches(document).length, 1);
+    expect(document, contains('Introduction'));
+  });
+
+  test('DOCX export writes a real Word hard page break', () async {
+    final bytes = await WriterDocxExportService.build(
+      title: 'Page break test',
+      delta: [
+        {'insert': 'Before\n'},
+        {'insert': {'offynexbd-writer-page-break': 'page'}},
+        {'insert': 'After\n'},
+      ],
+    );
+    final archive = ZipDecoder().decodeBytes(bytes);
+    final document = utf8.decode(archive.findFile('word/document.xml')!.readBytes()!);
+    expect(document, contains('<w:br w:type="page"/>'));
+    expect(document, isNot(contains('OFFYNEXBD_WRITER_PAGE_BREAK')));
+  });
 }

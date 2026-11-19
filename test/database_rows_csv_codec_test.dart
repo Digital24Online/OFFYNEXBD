@@ -75,4 +75,16 @@ void main() {
       throwsFormatException,
     );
   });
+  test('neutralizes spreadsheet formulas in database headers and values', () {
+    final csv = DatabaseRowsCsvCodec.encode(
+      fields: ['=Header', 'Name'],
+      rows: [
+        {'id': '1', 'values': {'=Header': '=1+1', 'Name': '  @SUM(A1:A2)'}},
+      ],
+    );
+    expect(csv, contains("'=Header"));
+    expect(csv, contains("'=1+1"));
+    expect(csv, contains("'  @SUM"));
+  });
+
 }

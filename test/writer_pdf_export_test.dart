@@ -64,4 +64,105 @@ void main() {
     expect(extracted, contains('Page 1 of 1'));
   });
 
+  test('Writer PDF does not duplicate a title already in the first body paragraph', () async {
+    final sans = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
+    final serif = await rootBundle.load('assets/fonts/NotoSerifBengali.ttf');
+    final latin = await rootBundle.load('assets/fonts/NotoSans.ttf');
+    const title = 'OFFYNEXBD report title';
+    final bytes = await WriterPdfExportService.build(
+      title: title,
+      delta: [
+        {'insert': '$title\n'},
+        {'insert': 'Document body\n'},
+      ],
+      sansFontData: sans,
+      serifFontData: serif,
+      latinFontData: latin,
+      pageFormat: PdfPageFormat.a4,
+      marginTop: 54,
+      marginBottom: 54,
+      marginLeft: 54,
+      marginRight: 54,
+    );
+    final extracted = BanglaPdfExtractor.extract(bytes).text;
+    expect(extracted.split(title).length - 1, 1);
+  });
+
+  test('Writer PDF inserts metadata title when body starts with different text', () async {
+    final sans = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
+    final serif = await rootBundle.load('assets/fonts/NotoSerifBengali.ttf');
+    final latin = await rootBundle.load('assets/fonts/NotoSans.ttf');
+    const title = 'OFFYNEXBD metadata title';
+    final bytes = await WriterPdfExportService.build(
+      title: title,
+      delta: [{'insert': 'Body starts here\n'}],
+      sansFontData: sans,
+      serifFontData: serif,
+      latinFontData: latin,
+      pageFormat: PdfPageFormat.a4,
+      marginTop: 54,
+      marginBottom: 54,
+      marginLeft: 54,
+      marginRight: 54,
+    );
+    final extracted = BanglaPdfExtractor.extract(bytes).text;
+    expect(extracted, contains(title));
+    expect(extracted, contains('Body starts here'));
+  });
+
+  test('Writer PDF preserves bullet and numbered list markers and indentation', () async {
+    final sans = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
+    final serif = await rootBundle.load('assets/fonts/NotoSerifBengali.ttf');
+    final latin = await rootBundle.load('assets/fonts/NotoSans.ttf');
+    final bytes = await WriterPdfExportService.build(
+      title: 'List export test',
+      delta: [
+        {'insert': 'Bullet item\n', 'attributes': {'list': 'bullet'}},
+        {'insert': 'First numbered item\n', 'attributes': {'list': 'ordered'}},
+        {'insert': 'Second numbered item\n', 'attributes': {'list': 'ordered', 'indent': 1}},
+      ],
+      sansFontData: sans,
+      serifFontData: serif,
+      latinFontData: latin,
+      pageFormat: PdfPageFormat.a4,
+      marginTop: 54,
+      marginBottom: 54,
+      marginLeft: 54,
+      marginRight: 54,
+    );
+    final extracted = BanglaPdfExtractor.extract(bytes).text;
+    expect(extracted, contains('•'));
+    expect(extracted, contains('Bullet item'));
+    expect(extracted, contains('1.'));
+    expect(extracted, contains('First numbered item'));
+    expect(extracted, contains('2.'));
+    expect(extracted, contains('Second numbered item'));
+  });
+
+
+  test('Writer PDF keeps content on both sides of an explicit page break', () async {
+    final sans = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
+    final serif = await rootBundle.load('assets/fonts/NotoSerifBengali.ttf');
+    final latin = await rootBundle.load('assets/fonts/NotoSans.ttf');
+    final bytes = await WriterPdfExportService.build(
+      title: 'Page break export test',
+      delta: [
+        {'insert': 'First page content\n'},
+        {'insert': {'offynexbd-writer-page-break': 'page'}},
+        {'insert': 'Second page content\n'},
+      ],
+      sansFontData: sans,
+      serifFontData: serif,
+      latinFontData: latin,
+      pageFormat: PdfPageFormat.a4,
+      marginTop: 54,
+      marginBottom: 54,
+      marginLeft: 54,
+      marginRight: 54,
+    );
+    final extracted = BanglaPdfExtractor.extract(bytes).text;
+    expect(extracted, contains('First page content'));
+    expect(extracted, contains('Second page content'));
+  });
+
 }

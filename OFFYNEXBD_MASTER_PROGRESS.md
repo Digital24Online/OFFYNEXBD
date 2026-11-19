@@ -1030,3 +1030,459 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Added regression coverage for multi-cell/multi-area import, unsupported rules, grid/expansion limits, grouped export and XLSX save/reopen round-trip.
 - [ ] Flutter Analyze, full automated tests, Android release APK build and artifact upload must pass on the integrated commit before CI verification.
 - [ ] Formula/range-backed dropdowns and non-list Excel validation types remain unsupported; they are rejected with an explicit import error, not silently dropped.
+
+
+## Writer mobile page viewport and touch zoom — implementation batch (2026-11-18)
+
+- [x] Added a shared, testable viewport scale calculator for Full Page, Page Width and Actual (100%) modes; layout recalculates when device/window dimensions change.
+- [x] Added a mobile-visible zoom strip with zoom-out, zoom-in, slider, percentage, Full Page, Page Width and 100% controls.
+- [x] Added two-finger pinch zoom and pan to the Writer page canvas using InteractiveViewer; pinch scale is committed to the per-document saved zoom setting while preserving pan translation.
+- [x] Expanded the saved zoom range to 50%–300%; existing legacy zoom values remain readable and are safely clamped.
+- [x] Kept the existing Quill Delta, table/image embeds, autosave, PDF generation and print-preview callbacks in place.
+- [x] Added five viewport unit tests for phone Full Page fit, Page Width, 100% scale, zoom limits and invalid page dimensions.
+- [ ] Flutter Analyze, complete automated test suite, Android release APK build and artifact upload must pass on the integrated commit before merge.
+- [ ] This viewport change does not yet provide true rich-content pagination: the existing continuous Quill editor and estimated page backgrounds remain a limitation for exact page breaks around tables/images.
+- [ ] DOCX import, ODT import/export, full-fidelity portable image packaging, advanced pagination, spellcheck and installable font management remain open Writer tasks.
+- [ ] Physical Android pinch/scroll, small-screen and accessibility checks remain pending.
+
+
+## Writer document format interchange — integrated implementation batch (2026-11-18)
+
+- [x] Added bounded DOCX and ODT import (25 MB source, 60 MB expanded archive, 2,000 archive entries, 15 MB per image).
+- [x] DOCX import maps paragraphs, common text formatting, headings, alignment, lists, editable Writer tables and embedded images into the existing Quill Delta/table/image model.
+- [x] ODT import maps paragraphs, headings, common span styles, lists, editable tables and embedded images into the existing document model.
+- [x] ODT export writes an OpenDocument ZIP package with text styles, headings, lists, editable tables, packaged images, page size/orientation/margins and header/footer content.
+- [x] Added File ribbon commands for DOCX/ODT import and ODT export; imports create a new library document and leave the open source document unchanged.
+- [x] Added three regression tests for DOCX formatting import, ODT text/style/table round-trip and unsupported/oversized file rejection.
+- [ ] Flutter Analyze, complete tests, Android release APK and real-device checks are pending; do not claim full format fidelity before validation.
+- [ ] Advanced automatic pagination, spellcheck and installable user-font management remain open Writer tasks.
+
+
+## Writer interchange CI readiness — 2026-11-18
+
+- [x] Enabled GitHub Actions pull-request validation for source, tests, dependencies and asset changes; the existing main-branch and manual triggers remain enabled.
+- [x] ODT package now includes its document title metadata and lists the metadata file in the package manifest.
+- [ ] Pull-request Analyze, full test suite and Android APK build have not yet reported a result; merge remains blocked until the run passes.
+
+
+## Writer CI dependency-resolution correction — 2026-11-18
+
+- Build #378 (run ID 44362647172) reached dependency resolution and failed before Analyze because pdf ^3.13.1 requires xml ^7.0.1 while Writer initially pinned xml ^6.5.0.
+- [x] Updated the direct XML dependency to ^7.0.1 to satisfy the existing PDF package constraint.
+- [ ] Re-run dependency resolution, Analyze, full tests and Android APK build on the corrected branch.
+
+
+## Writer format-import integration correction — 2026-11-18
+
+- Build #381 reached Flutter Analyze but failed because the first DOCX/ODT import/export method insertion was truncated at a raw filename regular expression, producing cascading Dart parser errors.
+- [x] Replaced the entire import/export method region with complete, bounded methods; removed the fragile extension regular expression and used the selected file's extension/name fields.
+- [ ] Re-run Analyze, all tests and Android APK build; no feature is considered verified until the full run passes.
+
+
+## Writer source restoration and DOCX/ODT integration — 2026-11-18
+
+- [x] Restored the complete Writer screen from the last intact mobile-viewport commit, preserving its ribbon, references, review, print preview, table/image editor, autosave and page controls.
+- [x] Reinserted DOCX/ODT import and ODT export as complete class methods at the correct scope; imports create a separate document and preserve the current one.
+- [x] Re-added File ribbon commands and Bangla/English labels.
+- [ ] Analyze, tests and Android APK build must pass before the Writer format changes are merged.
+
+
+## Writer ZIP encoder API compatibility — 2026-11-18
+
+- [x] Archive 4.x renamed ZIP encoding from `encode` to `encodeBytes`; corrected the ODT exporter and its DOCX fixture test to use the current API.
+- [ ] Re-run Analyze and tests to catch any further API mismatches before building the Android APK.
+
+
+## Writer ODT package ordering and import metadata — 2026-11-18
+
+- [x] Corrected ODT package assembly so the uncompressed `mimetype` entry is the first ZIP member, as required by the OpenDocument package format; image files are now queued and appended after it.
+- [x] Corrected PlatformFile size checking to use the repository-supported lengthSync()/length() methods.
+- [x] Replaced all unresolved UI interpolation placeholders with explicit Dart string/path operations.
+- [x] Added a regression assertion that ODT `mimetype` is the first archive entry.
+- [ ] Analyze, tests and Android APK build remain pending for the corrected commit.
+
+
+## Writer Analyze cleanup — 2026-11-18
+
+- Build #385 installed dependencies successfully, then Analyze identified a nullable PlatformFile length, an async BuildContext lint, string-composition lints and a deprecated Matrix4.translate call.
+- [x] Added a zero fallback for nullable file length, separated the mounted guard, converted string composition to interpolation and replaced deprecated matrix translation with translateByDouble.
+- [x] Removed the remaining unnecessary interpolation braces in ODT image names.
+- [ ] Re-run Analyze, full tests and Android APK build on the corrected commit.
+
+
+## Writer viewport Matrix4 API correction — 2026-11-18
+
+- Build #386 reduced Analyze findings to one Matrix4 API signature mismatch: translateByDouble requires x, y, z and w.
+- [x] Added the homogeneous w=1 argument; no other Analyze errors or lints were reported in Build #386.
+- [ ] Re-run Analyze, tests and Android APK build.
+
+
+## Writer final Analyze lint correction — 2026-11-18
+
+- Build #387 narrowed Analyze findings to two informational lints: a missing mounted guard after the asynchronous file-size read, and unnecessary interpolation braces in the ODT filename.
+- [x] Added the post-await mounted guard and simplified the filename interpolation.
+- [ ] Re-run Analyze, tests and Android APK build.
+
+
+## Writer document import title test correction — 2026-11-18
+
+- Build #388: Flutter Analyze SUCCESS; 150 tests passed and one DOCX import test failed because the service retained the source extension in the imported title.
+- [x] DOCX/ODT import title normalization now removes only the supported .docx/.odt suffix and preserves other periods in the document title.
+- [ ] Re-run all tests and Android APK build.
+
+
+## Writer CI artifact publication repair — 2026-11-18
+
+- Build #389: Flutter Analyze SUCCESS; all 151 tests SUCCESS; Android Release APK compiled successfully (108.0 MB).
+- The workflow then failed in "Save Generated Source" because GitHub Actions checked out a detached HEAD and the step used a bare `git push`; this caused the APK upload step to be skipped.
+- [x] Updated the source-save step to push explicitly to the triggering branch (`HEAD:${GITHUB_REF_NAME}`) and skip source pushes on pull-request runs.
+- [ ] Re-run workflow to verify artifact upload and final job success.
+- [ ] Physical Android device validation and complete Writer parity checks remain open.
+
+
+## Writer Interchange Fidelity Batch — 2026-11-19
+
+- Added safe external hyperlink preservation to DOCX import by resolving external relationship targets and mapping supported HTTP, HTTPS and mailto links into Quill link attributes.
+- Added ODT hyperlink import/export through standard text hyperlink elements.
+- Link targets are restricted to safe supported schemes; unsupported, malformed, oversized and non-web schemes are discarded rather than made clickable.
+- Added DOCX and ODT hyperlink regression coverage alongside the existing paragraph, formatting, table and package checks.
+- This batch does not claim complete DOCX/ODT fidelity: headers/footers and section/page setup import, numbering fidelity, merged tables, floating images, advanced styles, comments/track changes and real-world round-trip compatibility remain open.
+- Build #390 (run ID 44367606027; commit 08ec234f733c4e537859233f6b72319dfb05d3c8) verified Analyze, 151 automated tests, Android Release APK build and APK artifact upload successfully. Artifact ID 14457907066; expires 2026-11-25. Physical Android gesture, editing and printer testing remain pending.
+
+
+### Writer hyperlink batch CI correction — 2026-11-19
+- CI run #394 identified two Dart analyzer style diagnostics in the new DOCX/ODT hyperlink map literals. Replaced nullable checks with null-check patterns; no functional behavior change.
+- Hyperlink import/export test coverage remains in the same Writer interchange batch. CI must be rerun and pass before considering this batch verified.
+
+
+### Writer ODT inline-format fidelity — 2026-11-19
+- ODT style import/export now covers strike-through, foreground/background colors, font size (pt/px normalization), and serif/sans-serif font family in addition to bold, italic and underline.
+- ODT export generates named inline styles from validated Quill attributes instead of dropping those formats.
+- Added ODT round-trip assertions for all newly supported inline attributes.
+- This remains a standards-interoperability implementation, not a claim of pixel-perfect fidelity across every office suite. Page layout/header/footer import, advanced numbering, complex table merges and floating objects remain to be verified/implemented.
+
+
+### Writer CI lint follow-up — 2026-11-19
+- Applied the null-check pattern consistently to both DOCX and ODT hyperlink attribute maps after CI surfaced the second instance.
+- The ODT inline-style enhancement is queued for full analyzer, regression-test and Android build validation.
+
+
+### Writer page setup and header/footer import — 2026-11-19
+- DOCX section properties now import common paper sizes/orientation and page margins from Word twips.
+- DOCX default header/footer parts are resolved through package relationships and their text is imported.
+- ODT page dimensions/orientation/margins and master-page header/footer text are read from styles.xml.
+- Imported page layout and header/footer are now applied to the new Writer document instead of silently resetting to A4 defaults/empty header-footer.
+- Added round-trip/import assertions for DOCX and ODT page setup and header/footer.
+- Limitations remain for section-specific layouts, multiple headers/footers, first/even page variants, complex fields/page-number fields, and exact pagination.
+
+
+---
+
+## New Chat Handoff — Verified checkpoint 2026-11-19
+
+### Mandatory continuation rules
+- Continue the existing OFFYNEXBD project; do not restart, scaffold a duplicate app, or ask the user to repeat prior requirements.
+- User wants related tasks handled in coherent batches, not one tiny task per turn. Avoid repetitive progress dialogue; perform repository inspection, implementation, tests, and CI verification before reporting.
+- Use simple Bangla for user-facing communication. Do not ask the user to upload files/images or write code.
+- Do not claim a feature is complete merely because a screen, menu, or source file exists. Completion requires implementation plus appropriate tests and validation.
+- Do not claim physical Android/printer validation based on CI.
+- Keep OFFYNEXBD separate from Digital 24 Online and INAB BD.
+- Writer is the active priority; do not move to another module until Writer's software work is complete and remaining device-only checks are explicitly identified.
+
+### Repository and active work
+- Repository: https://github.com/Digital24Online/OFFYNEXBD
+- Active branch: `work/writer-mobile-page-viewport`
+- Active PR: https://github.com/Digital24Online/OFFYNEXBD/pull/3
+- Branch head at checkpoint: `160351fd365c18a94688b365cd621c8f000ee6bb`
+- Main branch remains separate; do not assume the active PR is merged.
+
+### Latest verified Android CI
+- Workflow run #400, run ID `44381024091`.
+- Commit: `160351fd365c18a94688b365cd621c8f000ee6bb`.
+- Flutter Analyze: SUCCESS.
+- Automated tests: SUCCESS.
+- Android Release APK build: SUCCESS.
+- APK artifact upload: SUCCESS.
+- Artifact: `OFFYNEXBD-Android-APK`, artifact ID `14464681374`, size 51,491,506 bytes; expires 2026-11-25.
+- Run: https://github.com/Digital24Online/OFFYNEXBD/actions/runs/44381024091
+- APK artifact success does not establish real-device gesture, printer, or full office-suite compatibility.
+
+### Latest Writer implementation checkpoint
+- Mobile page viewport controls include Fit Page, Fit Width, 100% and pinch-zoom handling.
+- DOCX/ODT import reads common page size, orientation, margins and default header/footer text.
+- ODT import/export supports bold, italic, underline, strike-through, foreground/background color, font size, font family and hyperlinks.
+- DOCX/ODT hyperlink import/export supports safe HTTP, HTTPS and mailto targets.
+- Regression tests cover the supported import/export metadata and formatting.
+- CI run #400 verifies Analyze, tests, APK build and upload for this checkpoint.
+
+### Writer remaining work — do not mark complete yet
+1. True document pagination and accurate page-break behavior.
+2. Advanced DOCX/ODT fidelity: complex tables, merged cells, floating images, numbering/lists, paragraph styles and multiple sections.
+3. Section-specific, first/even-page headers and footers; fields and page-number fields.
+4. Confirm and extend DOCX export of page layout, headers and footers.
+5. Spellcheck, including Bangla.
+6. Font management/import and Bangla shaping/ligature tests.
+7. Large-document performance, crash recovery and robust backup/restore with portable embedded images.
+8. Complete Bangla/English UI localization and responsive mobile ribbon audit.
+9. Expand widget tests for zoom, pinch, scrolling, editing and page display.
+10. Android physical-device testing and printer/Print Preview integration checks.
+
+### Other modules — incomplete
+- Sheets: formula/grid foundation, lazy rendering, cell editing/persistence, find/replace, freeze top row and dropdown validation work exist. Still needs charts, pivot tables, conditional formatting, broader Excel fidelity, ODS, advanced print setup, large-workbook and device tests.
+- Slides, PDF, Fonts, AI, Cloud, Forms, Scan and Database are only initial/partial implementations; none should be represented as complete office-grade modules.
+- Production authentication/backend, online sync, shared cloud services, security architecture and cross-platform release validation remain open.
+
+### Next batch to execute
+1. Inspect Writer DOCX export service and ensure page layout/header/footer export is present and tested.
+2. Audit portable image packaging in Writer backup/restore and document import/export.
+3. Fix font-family classification so sans-serif is not misclassified as serif.
+4. Complete Bangla/English localization audit for Writer ribbons and controls.
+5. Add/extend automated tests for the above as one coherent batch.
+6. Update this progress file, run Analyze + full tests + Android Release build + artifact upload, and only then report verified status.
+7. Keep device-only checks clearly separated from CI-verified work.
+
+### New-chat continuation prompt
+“OFFYNEXBD MASTER PROJECT চালু করো। GitHub-এর OFFYNEXBD_MASTER_PROGRESS.md-এর সর্বশেষ ‘New Chat Handoff’ এবং active PR #3/branch-এর বর্তমান অবস্থা পড়ে ঠিক সেখান থেকে কাজ চালাও। আগের কোনো কাজ পুনরায় শুরু বা আমাকে আবার নির্দেশনা দিতে বলবে না। Writer-এর বাকি কাজগুলো একসঙ্গে অডিট, বাস্তবায়ন, পরীক্ষা ও CI যাচাই করো। সহজ বাংলায় কথা বলবে; কাজ যাচাই না করে সম্পন্ন বলবে না।”
+
+
+---
+
+## Writer Reliability Batch — DOCX export, portable backup, fonts and localization (2026-11-19)
+
+- [x] DOCX export now receives the current page size, orientation, four margins, and header/footer text from the active Writer document.
+- [x] DOCX package writer adds Word section page dimensions/margins and separate header/footer parts with relationships and content-type declarations.
+- [x] Added archive-level regression coverage for A5 landscape dimensions, margins, and exported header/footer parts.
+- [x] Fixed DOCX/ODT font family detection: sans-serif is checked before generic serif matching, preventing the substring collision in `sans-serif`.
+- [x] Added DOCX and ODT regression tests for sans-serif and serif classification.
+- [x] Added a portable `.offynex` Writer backup format that packages referenced images with the document library and restores image files to the destination app storage.
+- [x] Writer backup import retains legacy JSON import compatibility; new backup export uses the portable archive format.
+- [x] Localized the Writer View ribbon controls for Bangla and English.
+- [x] Corrected relationship ID allocation in DOCX package post-processing to avoid collisions with existing image relationships.
+- [x] Added a 60 MB expanded-archive safety bound for portable Writer backup import/export, restricted image packaging to the app's Writer image directory, and aligned the screen import limit with the 25 MB archive limit.
+- [x] DOCX section replacement now handles both existing paired and self-closing section-property XML forms.
+- [ ] Run Flutter Analyze, complete automated tests, Android Release APK build and artifact upload on this batch.
+- [ ] Real Microsoft Word / LibreOffice opening and print output must still be checked; CI archive tests do not replace external office application testing.
+- [ ] Remaining Writer gaps: true live pagination, complex DOCX/ODT fidelity, spellcheck, full font management, comprehensive ribbon localization, large-document performance and Android physical-device/printing validation.
+
+- CI trigger note (2026-11-19): source commit `e5e5f33f4691fbe3a326579f47ae61dc07567ac6` is the current Writer implementation checkpoint; run Analyze, all tests, Android release build and artifact upload against the latest PR head before considering this batch verified.
+
+- Latest source branch head at 2026-11-19 checkpoint: `53f9cca97fbb4c7580a4275163fae8229248beab` (Writer backup path guard and CI-trigger marker).
+- Current PR #3 still points to this branch. Build #401 (`44383179935`) analyzed and tested commit `3a92f365db04f4e1cc31c177ad1f2fc6dcd283f4`, which predates the Writer reliability batch; Android APK build is still in progress. No CI result is yet available for the current source head, so do not mark this batch verified.
+
+
+## Integrated Portable Backup — All Modules, Writer Assets and Scan PDFs (2026-11-19)
+
+- [x] Replaced Cloud workspace's primary backup export with a portable `.offynex` ZIP archive containing all supported `offynex_*` preferences used by Writer, Sheets and the other module workspaces.
+- [x] Writer embedded image files are packaged from the app-managed `offynexbd_images` directory and their paths are rewritten in the backup manifest.
+- [x] Scan PDF files are packaged from the app-managed `OFFYNEXBD/Scans` directory; Scan workspace records and Writer references are rewritten and restored to new device-local paths.
+- [x] Legacy JSON backup import and manual JSON copy/paste restore remain supported.
+- [x] Import validates the app-specific manifest, archive size/file count/expanded size, asset paths and managed storage roots; extraction is rolled back if restore preparation fails.
+- [x] Added regression tests for Writer image + Scan PDF cross-device restoration, unrelated local-path rejection and invalid archive rejection.
+- [ ] Current source branch CI Analyze/tests/Android APK/artifact verification is pending.
+- [ ] This is portable offline backup/restore, not online Cloud Sync. Authentication, remote storage, encryption-at-rest, sharing and conflict resolution remain incomplete.
+
+- CI correction note: Build #402 (run ID 44383735233, source commit `c411f9b8aa226fd105558cde4da28488a222bcb7`) failed at Analyze because of two DOCX string-style infos, one missing mounted guard after an async Writer import, and one unused test import. These findings are being corrected in the integrated batch; no APK was produced by that run.
+
+- Build #405 (run ID 44385365644, source commit `5cedf1b9f27504410c3ba675fb28228d005a0169`) — Analyze SUCCESS; tests 157 passed / 1 failed. The failing regression exposed that the ODT font-family branch still used the old substring check even though the DOCX helper was fixed. Correcting ODT to use the shared sans-first classifier; APK build was skipped because tests failed.
+- Portable backup export/import size accounting now applies the same 100 MB expanded limit including the manifest, and asset extensions are constrained to their matching folder type.
+
+---
+
+## Writer integrated audit follow-up — 2026-11-19
+
+- [x] Audited the current Writer mobile viewport implementation: Full Page, Page Width, Actual 100%, slider zoom and pinch/pan controls are present. The page background count is still estimated from plain-text height; this is not true rich-content pagination and remains open.
+- [x] Audited DOCX export page setup/header/footer generation and the archive-level regression test for page size, margins, and header/footer parts.
+- [x] Audited portable Writer image backup/restore: app-managed image-root checks, missing-image rejection, archive limits, embedded image packaging and restore-to-new-path test are present.
+- [x] Corrected DOCX nested-list import to store Quill indent as a numeric level and aligned its regression assertion.
+- [x] Corrected the DOCX nested-list export fixture to use actual newline characters rather than literal backslash-n text, so the test exercises separate list paragraphs.
+- [ ] Run Flutter Analyze, full tests, Android release build and artifact upload against the latest branch head; no fresh CI verification is claimed for these latest commits yet.
+- [ ] True rich-content pagination, complex DOCX/ODT fidelity, section-specific/first/even headers and fields, Bangla spellcheck, full font management/shaping, comprehensive localization, large-document stress/recovery and physical Android/printer validation remain open.
+
+---
+
+## Branding and App Info work — 2026-11-19
+
+- [x] Confirmed the user's selected logo is Option 2 (Productivity), featuring the document, four productivity tiles and white orbit/swoosh with the tagline “Work Smart, Be Productive”.
+- [x] Replaced the previous generic placeholder SVG with an Option 2-inspired OFFYNEXBD brand mark used by the Home app bar and App Info.
+- [x] Added an App Info entry point on the Home app bar; creator attribution is inside App Info, not a separate About menu.
+- [x] Added the creator attribution content: MD PIYARUL ISLAM; Founder & Original Creator; Rajshahi, Bangladesh; creator statement; “Work Smart, Be Productive”; © 2026 OFFYNEXBD. All Rights Reserved.
+- [x] Embedded the selected founder portrait in the App Info screen source to avoid a missing external asset dependency.
+- [x] Added an Android vector launcher icon and updated the Android manifest to use it instead of the old mipmap icon.
+- [x] Updated the Android launch background to show OFFYNEXBD branding.
+- [x] Added CI generation of the same approved logo into Android, iOS, Windows and macOS launcher icon resources using `flutter_launcher_icons`; CI creates a 1024px PNG from the checked-in SVG before icon generation. Cross-platform builds and rendered icon appearance still require verification.
+- [x] Added an App Info widget regression test for creator attribution and founder portrait rendering; CI must pass it before verification is complete.
+- [ ] Latest branding changes add a CI step to rasterize the SVG and generate platform launcher icons, then run Analyze, tests and Android APK upload; the latest run is pending verification.
+- Note: the in-app creator statement is an attribution record; it is not, by itself, a legal certificate of ownership. GitHub commit history and release records remain outside the app as requested.
+
+- Added `test/app_info_screen_test.dart` to check the creator statement, name, city, copyright and image decode fallback.
+- The app icon generation workflow uses the same approved Option 2 SVG as the single source of truth; Android splash uses the matching vector identity.
+
+## Writer portable-image backup security follow-up — 2026-11-19
+
+- Hardened Writer backup export path validation: image files are now resolved through filesystem symbolic links and must resolve inside the app-managed Writer image directory. A symlink pointing outside that directory is rejected.
+- Made Writer backup image extraction transactional: if a later referenced image is missing/invalid or extraction otherwise fails, files extracted earlier in that import attempt are deleted on a best-effort basis while the original import error is preserved.
+- Added regression tests for symlink escape rejection and cleanup after a partially failed import.
+- [ ] Flutter Analyze, full tests, Android Release APK build, signing verification and artifact upload are pending for this security follow-up.
+- Build #447 (run ID 44485996198; commit 6238248dd4dcaeced9418e39a51c0f336694d005) passed Analyze and the full test step, but the workflow was **cancelled during Android APK build**. Signature verification and APK upload were skipped; no new installable artifact was produced by #447.
+- Writer still remains incomplete: true rich-content pagination, complex DOCX/ODT layout fidelity, advanced section/header/footer fields, Bangla spellcheck, user font management, large-document stress/recovery, full ribbon localization and physical Android/printer validation are not yet verified.
+
+
+## CI verification and direct APK delivery correction — 2026-11-19
+
+- Build #456 (run ID `44492934813`, PR #3 head `6ad999906aebf50131d641c998f3cd7d9553b210`) completed successfully: Flutter Analyze SUCCESS; all 170 automated tests passed; Android release APK build SUCCESS; APK signing fingerprint and package metadata verification SUCCESS; download package validation and artifact upload SUCCESS.
+- Verified package ID: `com.offynexbd.offynexbd`; signing certificate SHA-256 matches the previously installed app certificate; generated APK size is approximately 104 MB.
+- The user's Android file manager repeatedly reports “Couldn't extract file. Error unknown” for the 51 MB compressed Actions artifact. The artifact itself uploaded successfully; extraction is a delivery/usability failure, not a Flutter build failure.
+- Added a main-branch-only GitHub Release asset publishing step so future validated main builds provide a directly downloadable `app-release.apk` (plus SHA-256 file), avoiding the need to extract the Actions artifact ZIP. This step must pass on the first main-branch release build before a direct APK link is offered.
+- The DOCX page layout/header/footer export, sans-serif font classification, portable Writer image backup/restore, and View ribbon localization changes are included in the source verified by Build #456 and its 170 passing tests.
+- Still open and not claimed complete: true rich-content pagination; advanced DOCX/ODT fidelity (merged/complex tables, floating images, section-specific headers/footers and fields); Bangla spellcheck; user font management; full ribbon localization; large-document performance/recovery; Android physical-device and printer/Word/LibreOffice visual acceptance.
+
+
+## Latest chat continuation — Writer larger page and compact ribbon (2026-11-19)
+
+- User reconfirmed the approved Writer design: retain the previously shown compact desktop-style ribbon and make the white document page larger; keep the zoom controls and status bar.
+- User explicitly requested that all remaining work be audited, implemented and tested together, not as repeated one-at-a-time tasks.
+- User reaffirmed the existing GitHub Actions Artifact ZIP delivery method. Do not switch to GitHub Releases/direct APK publishing. Preserve the installed app update identity and signing certificate.
+- Latest completed baseline CI: Build #459, run ID `44507489031`, commit `91497af50dfd88442ea43dc974f23d083eb02b22`; Analyze, tests, Android release APK, signature/package validation and `OFFYNEXBD-Android-APK` artifact upload all succeeded. Artifact ID `14519534438`, expires 2026-12-03.
+- New UI batch changes on this branch:
+  - Reduced Writer ribbon action tiles from 96x72 to 84x56 and tightened Home ribbon padding/spacing.
+  - Changed the secondary Quill toolbar to a single-row display to reduce vertical space used by controls.
+  - Increased viewport usable width from viewport minus 24 px to viewport minus 8 px so the document page occupies more of the phone screen.
+  - Updated viewport regression expectations for the wider Full Page and Page Width fit.
+  - Added Bangla labels for Page Color, page color choices, Page Border, revision capture, custom size and common text formatting tooltips.
+- These new changes are committed but are NOT yet verified by CI. Trigger and inspect a fresh PR workflow run against the latest branch head before calling them complete.
+- Still open: true rich-content pagination/page breaks; advanced DOCX/ODT fidelity and section-specific headers/footers/fields; Bangla spellcheck; user font import/management and Bangla shaping validation; full dialog/control localization; large-document stress/recovery; expanded widget tests for editing/scroll/pinch; real Android device and physical printer/Word/LibreOffice acceptance.
+- Keep the previously selected Option 2 logo, App Info creator attribution and portrait work intact. Do not add GitHub work history or release records inside App Info.
+
+
+---
+
+## Writer UI localization continuation — 2026-11-19
+
+- [x] Expanded the Writer translation dictionary for page size, orientation, page margins, margin presets, custom margin fields, reset, and common review/document dialog actions.
+- [x] Applied language-aware labels to the Layout ribbon and its margin menu; stored page-size/orientation/margin values remain unchanged for document compatibility.
+- [x] Localized the custom margins dialog controls and the existing Writer review/document dialogs that use the shared label helper.
+- [x] Added a widget regression test covering the Layout ribbon in Bangla and English.
+- [ ] CI Analyze, full automated tests, Android Release APK build, signing validation and artifact upload must pass on the final latest branch head. Build #472 succeeded for its earlier Slides-preview commit; it does not verify these later Writer changes.
+- [ ] Writer still requires further completion work: true rich-content pagination/page breaks; complex DOCX/ODT fidelity and section-specific headers/footers/fields; Bangla spellcheck; user font import/management and glyph-shaping checks; full localization of remaining validation/error messages; large-document stress/recovery; physical Android/printer and Word/LibreOffice acceptance.
+- [ ] Do not call Writer complete until the remaining items above are implemented or explicitly scoped as platform-dependent, tested, and the final CI run is successful.
+
+
+### Writer localization + View controls follow-up — 2026-11-19
+
+- [x] Extended Bangla/English localization to the Writer library import/export/rename/delete dialogs and common editor fields.
+- [x] Added a View ribbon widget test for Full Page, Page Width, zoom control presence and the interactive pinch/pan canvas.
+- [x] Fixed the Symbols ribbon chip after converting its label to a runtime localized string.
+- [ ] Latest source/test checkpoint: `f324340b7b3d9f1dab053f7bdee5f7187ea7bad4` (includes test commit `bcc24ce00021939af34d2beb65d2aad67abfa95e`). GitHub Actions Build #479 (run ID `44519427002`) is running against the latest source checkpoint; Analyze, full tests, Android release APK, signing verification and artifact upload are not yet confirmed.
+- [ ] The new tests do not replace physical-device pinch/scroll acceptance. True rich-content pagination, advanced DOCX/ODT layout fidelity, spellcheck, full font manager, remaining message localization, large-document recovery and external Word/LibreOffice print verification remain open.
+
+
+## Writer DOCX Title Fidelity Correction — 2026-11-19
+
+- Prevented the DOCX exporter from adding a second visible document title when the first body paragraph already matches the Writer document title.
+- Retained the automatic title heading when the body begins with different content, and when the document body is empty.
+- Added regression tests for both cases. This is a targeted export-fidelity correction; it does not imply complete DOCX/Word compatibility.
+- Verification: pending the next GitHub Actions Analyze, automated test and Android release run.
+
+ 
+## Writer PDF title fidelity correction — 2026-11-19
+
+- PDF export avoids adding a duplicate title when the first body paragraph already matches the document title.
+- The metadata title remains visible when the body starts with different content; blank titles are not emitted as empty headings.
+- Added PDF text-extraction regression tests for both cases.
+- CI verification is pending; this correction is not complete until Analyze, full tests, Android release build, signature checks and artifact upload succeed.
+
+
+## Writer PDF paragraph and list fidelity — 2026-11-19
+
+- PDF export now renders Quill bullet and ordered-list markers, keeps ordered numbering within a consecutive list, and applies bounded indentation levels.
+- Existing inline text styles and paragraph alignment remain intact; this change is limited to list markers and bounded indentation.
+- Added PDF text-extraction regression coverage for bullet and numbered list output, including a nested indentation level.
+- This is a focused PDF fidelity improvement; automatic rich-content page flow, full Word/ODT layout parity and physical print validation remain open.
+- Verification: awaiting the next GitHub Actions Analyze, full test suite, Android release build, signing/package checks and artifact upload.
+
+
+## Writer page fields and final localization pass — 2026-11-19
+
+- Added live Microsoft Word PAGE and NUMPAGES fields to DOCX headers/footers when users enter the existing `{page}` and `{pages}` placeholders; surrounding text remains editable.
+- Expanded DOCX export regression coverage to verify both fields in both header and footer parts.
+- Localized remaining high-visibility Writer feedback and dialog text in Bangla/English: document statistics, margin validation, hyperlink selection/URL validation, image import outcomes, and Print Preview save errors.
+- This does not yet implement section-specific/first/even-page headers or Writer's on-screen page-number field rendering. Analyze, full tests and Android release artifact verification are pending.
+
+
+## Writer page-break persistence correction — 2026-11-19
+
+- Fixed the Writer document codec allow-list so the existing `offynexbd-writer-page-break` Quill embed is accepted and preserved during library validation, portable backup encoding, and restore decoding.
+- Added regression tests for a Bangla document containing a page break and for rejecting malformed page-break payloads.
+- This fixes persistence/backup compatibility for explicit page breaks only. It does **not** implement automatic rich-content pagination, page-flow layout for images/tables, or section-specific page formatting.
+- Build #495 (run ID `44540926439`) completed successfully on the previous checkpoint: Analyze, full configured test suite, Android release APK, signature/package validation, and artifact upload all succeeded.
+- The page-break codec correction and its regression tests are new and require a fresh full CI run before verification.
+
+---
+
+## New Chat Handoff — 2026-11-19 (Writer / PR #3)
+
+### Latest conversation decisions
+- User reconfirmed that the Writer page should appear larger on the phone while retaining the compact desktop-style ribbon, zoom controls and status bar.
+- User requires all remaining Writer tasks to be audited, implemented, tested and CI-verified as one integrated effort; do not return to one-change-at-a-time patching or claim completion from partial work.
+- Keep the current GitHub Actions artifact ZIP delivery flow. Do not switch to GitHub Releases/direct APK links.
+- Preserve the existing app ID and signing certificate. Do not merge PR #3 without the user's explicit approval.
+- User expects work to continue from the latest branch state without asking them to repeat prior decisions.
+
+### PR #3 latest verified checkpoint
+- Repository: `Digital24Online/OFFYNEXBD`
+- PR: #3, still OPEN and not merged.
+- Head branch: `work/writer-mobile-page-viewport`
+- Verified head commit before this handoff update: `4de36f6c9b06d943988bbde03c6e10c57b735e52`
+- Build #502 / run ID `44545249771` completed SUCCESS on that exact commit.
+- Flutter Analyze: SUCCESS — “No issues found”.
+- Full automated test suite: **188 tests passed**.
+- Android release APK: SUCCESS (built APK 108.7 MB).
+- APK signature verified against the existing certificate SHA-256: `7a132720dbf3c991e75f530eb095fafa6ad9ccbbe8449283b005eb9367268677`.
+- Package metadata validation and Actions artifact upload: SUCCESS.
+- Artifact: `OFFYNEXBD-Android-APK`, ID `14541611392`, 51,809,876 bytes; expires 2026-12-03 14:42:09 UTC.
+- Artifact ZIP SHA-256: `40a277750cedf449dda8f76995286ecd77b594bbe3bf9bd792d5a8747c1a8d6d`.
+- APK SHA-256 from build log: `11f6bac0f92fa0588887801b6671691b5488b93f65bc9d2f35c6c50dd56d56fe`.
+
+### Writer implementation confirmed on this branch
+- Responsive Full Page, Page Width and Actual 100% viewport calculations.
+- Zoom slider, percentage, zoom-in/out, fit controls and pinch/pan interaction.
+- Compact ribbon spacing and larger usable page width.
+- Explicit page-break embed persistence through the Writer document codec and portable backup.
+- DOCX/ODT import/export foundations, Writer PDF export, Bengali font embedding/shaping work, headers/footers, PAGE/NUMPAGES DOCX fields, and localization improvements.
+- Rich-content metrics estimate text, images, tables and explicit page breaks for a visual page-count estimate.
+
+### Remaining Writer gaps — do not mark complete
+- The current editor still uses one continuous QuillEditor inside painted page rectangles. `WriterContentMetrics` estimates page count; it does **not** provide true Word-like rich-content pagination or guarantee that images, tables and text flow across page boundaries with per-page margins.
+- DOCX import currently reduces tables to plain text grids; merged cells, rich cell formatting, floating objects, and complex table layout are not preserved.
+- DOCX/ODT import/export still needs section-specific, first-page and even-page headers/footers, richer section breaks and dynamic-field fidelity.
+- ODT export currently uses one default master page; section-specific variants and advanced fields remain incomplete.
+- Bangla spellcheck has not been proven against a real dictionary/engine.
+- User font import/management and broad OpenType shaping/fallback validation remain incomplete.
+- Remaining ribbon/dialog/error localization, long-document stress/recovery, and expanded editing/scroll/pinch tests remain open.
+- Real Android-device interaction, Bangla PDF visual inspection, physical printer, and Word/LibreOffice interoperability checks remain outside CI and unverified.
+
+### Next continuation actions
+1. Continue a consolidated Writer source audit on the current PR head; preserve all existing Delta, table/image embeds, autosave, backup, page layout, review, citation and export behavior.
+2. Implement only genuine supported behavior; do not disguise estimated pagination or flattened format import as full compatibility.
+3. Add regression tests for each integrated correction and run Analyze, the complete test suite, Android release build, signature/package verification and Actions artifact upload on the final head.
+4. Update this handoff with the exact new commit and CI evidence.
+5. Keep PR #3 open until the user explicitly approves merging.
+
+## Writer Master Requirements Contract — 2026-11-19
+
+- Added `WRITER_MASTER_REQUIREMENTS.md` as the consolidated, binding A–Z Writer requirements and acceptance contract. It captures the user's requested desktop-style ribbon, mobile page viewport/zoom, true multi-page flow, rich text/tables/images, DOCX/ODT/PDF fidelity, Bangla fonts/spellcheck, storage/recovery, localization, accessibility, preservation rules and mandatory verification gates.
+- The contract is a requirements baseline, **not** a claim that all features are implemented. In particular, current painted-page/continuous-Quill layout remains estimated pagination, not true page-flow pagination.
+- Added a PDF export regression test covering explicit page-break content on both sides of the break.
+- New commits: requirements contract `bd04b329b3ef6b1bd786081793e37abd5549e8a5`; PDF page-break test `d6e79b6eecdb49bd9f7bbeebbfee7b77b7e0d7f5`.
+- These commits require a fresh CI run. Do not mark Writer complete until the full contract is implemented and all automated/manual acceptance gates have evidence. PR #3 remains open and must not be merged without explicit user approval.
+
+
+## Branding and creator attribution refinement — 2026-11-19
+
+- [x] Preserved the approved full OFFYNEXBD logo artwork and added a matching symbol-only SVG asset for small app-header and app-icon contexts, where the full wordmark would become unreadable.
+- [x] Updated Home/App Info small logo placements and Android/iOS/Windows/macOS launcher-icon generation to use the symbol-only asset; the original full logo asset remains in the repository.
+- [x] Standardized the App Info product tagline to the approved brand tagline: “The Future of Office Productivity”.
+- [x] Kept the selected founder portrait, full creator name, Founder & Original Creator attribution, Rajshahi, Bangladesh location and copyright statement in App Info; no GitHub history or release records were added.
+- [x] Added App Info regression assertions for the approved tagline and removal of the outdated tagline.
+- [ ] Flutter Analyze, full tests, Android release build, icon generation and Actions artifact upload must pass on this commit before the branding batch is considered CI-verified.
+- [ ] Visual inspection of launcher icons on a real Android device and cross-platform icon review remain pending.

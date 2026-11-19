@@ -99,4 +99,23 @@ void main() {
       throwsFormatException,
     );
   });
+  test('neutralizes spreadsheet formulas in response values and headers', () {
+    final csv = FormsResponseCsvCodec.encode([
+      {
+        'formId': 'f1',
+        'formTitle': '=HYPERLINK("https://bad.example")',
+        'submittedAt': '2026-11-18T10:00:00.000Z',
+        'answers': [
+          {'question': 'Command', 'answer': '+cmd'},
+          {'question': 'Formula', 'answer': '=1+1'},
+          {'question': 'Name', 'answer': '  @SUM(A1:A2)'},
+        ],
+      },
+    ]);
+    expect(csv, contains("'=HYPERLINK"));
+    expect(csv, contains("'+cmd"));
+    expect(csv, contains("'=1+1"));
+    expect(csv, contains("'  @SUM"));
+  });
+
 }
