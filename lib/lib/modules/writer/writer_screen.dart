@@ -183,7 +183,7 @@ class _WriterScreenState extends State<WriterScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: Text(_ribbonLabel('Cancel')),
+              child: Text(_t('বাতিল', 'Cancel')),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(dialogContext, true),
@@ -317,7 +317,7 @@ class _WriterScreenState extends State<WriterScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(_t('ডকুমেন্ট মুছে ফেলবেন?', 'Delete document?')),
-        content: const Text(
+        content: Text(
           _t('এই ডকুমেন্টটি স্থায়ীভাবে মুছে যাবে।', 'This document will be permanently deleted.'),
         ),
         actions: [
@@ -945,7 +945,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
           controller: controller,
           minLines: 2,
           maxLines: 5,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             hintText: 'নোট লিখুন',
             labelText: _t('নোট', 'Note'),
           ),
@@ -3046,7 +3046,7 @@ Future<void> insertWriterImage() async {
             child: TextField(
               controller: titleController,
               onChanged: (_) => scheduleSave(),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 border: InputBorder.none,
                 hintText: _t('ডকুমেন্টের নাম', 'Document name'),
                 prefixIcon: Icon(Icons.description_outlined),
