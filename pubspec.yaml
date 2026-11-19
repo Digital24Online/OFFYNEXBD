@@ -36,6 +36,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
@@ -47,3 +48,19 @@ flutter:
     - assets/fonts/NotoSans.ttf
     - assets/tessdata_config.json
     - assets/tessdata/
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/branding/offynexbd_app_icon.png
+  adaptive_icon_background: "#062A68"
+  adaptive_icon_foreground: assets/branding/offynexbd_app_icon.png
+  remove_alpha_ios: true
+  background_color_ios: "#062A68"
+  windows:
+    generate: true
+    image_path: assets/branding/offynexbd_app_icon.png
+    icon_size: 256
+  macos:
+    generate: true
+    image_path: assets/branding/offynexbd_app_icon.png
