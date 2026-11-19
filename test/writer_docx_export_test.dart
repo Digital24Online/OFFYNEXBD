@@ -10,8 +10,8 @@ void main() {
     final bytes = await WriterDocxExportService.build(
       title: 'বাংলা Report',
       pageLayout: {'pageSize': 'A5', 'orientation': 'Landscape', 'top': 0.5, 'bottom': 0.75, 'left': 1.0, 'right': 1.25},
-      headerText: 'পরীক্ষার Header',
-      footerText: 'Footer text',
+      headerText: 'পরীক্ষার Header · {page}/{pages}',
+      footerText: 'Footer text · {page} of {pages}',
       delta: [
         {'insert': 'শিরোনাম\n', 'attributes': {'header': 1}},
         {'insert': 'বাংলা ও English ', 'attributes': {'bold': true}},
@@ -29,8 +29,14 @@ void main() {
     expect(documentXml, contains('w:top="720"'));
     expect(documentXml, contains('<w:header w:type="default"'));
     expect(documentXml, contains('<w:footer w:type="default"'));
-    expect(utf8.decode(archive.findFile('word/header1.xml')!.readBytes()!), contains('পরীক্ষার Header'));
-    expect(utf8.decode(archive.findFile('word/footer1.xml')!.readBytes()!), contains('Footer text'));
+    final headerXml = utf8.decode(archive.findFile('word/header1.xml')!.readBytes()!);
+    final footerXml = utf8.decode(archive.findFile('word/footer1.xml')!.readBytes()!);
+    expect(headerXml, contains('পরীক্ষার Header'));
+    expect(headerXml, contains('w:instr=" PAGE "'));
+    expect(headerXml, contains('w:instr=" NUMPAGES "'));
+    expect(footerXml, contains('Footer text'));
+    expect(footerXml, contains('w:instr=" PAGE "'));
+    expect(footerXml, contains('w:instr=" NUMPAGES "'));
   });
 
   test('Writer DOCX export keeps consecutive numbered items in one numbering sequence', () async {

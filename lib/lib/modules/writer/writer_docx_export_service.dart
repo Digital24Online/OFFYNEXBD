@@ -219,7 +219,7 @@ class WriterDocxExportService {
       files['word/$fileName'] = utf8.encode(
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         '<w:$element xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
-        '<w:p><w:r><w:t xml:space="preserve">${_escape(text)}</w:t></w:r></w:p>'
+        '<w:p>${_headerFooterRuns(text)}</w:p>'
         '</w:$element>',
       );
       final partType = kind == 'header'
@@ -265,6 +265,30 @@ class WriterDocxExportService {
       output.addFile(ArchiveFile(entry.key, entry.value.length, entry.value));
     }
     return ZipEncoder().encodeBytes(output);
+  }
+
+
+  /// Converts Writer's {page}/{pages} placeholders into live Word fields.
+  /// Ordinary text remains XML-escaped and editable in the header/footer.
+  static String _headerFooterRuns(String value) {
+    final output = StringBuffer();
+    final fields = RegExp(r'\\{(page|pages)\\}');
+    var cursor = 0;
+    var wroteAny = false;
+    for (final match in fields.allMatches(value)) {
+      if (match.start > cursor) {
+        output.write('<w:r><w:t xml:space="preserve">${_escape(value.substring(cursor, match.start))}</w:t></w:r>');
+        wroteAny = true;
+      }
+      final instruction = match.group(1) == 'page' ? ' PAGE ' : ' NUMPAGES ';
+      output.write('<w:fldSimple w:instr="$instruction"><w:r><w:t>1</w:t></w:r></w:fldSimple>');
+      wroteAny = true;
+      cursor = match.end;
+    }
+    if (cursor < value.length || !wroteAny) {
+      output.write('<w:r><w:t xml:space="preserve">${_escape(value.substring(cursor))}</w:t></w:r>');
+    }
+    return output.toString();
   }
 
   static String _styledText(String value, Map<String, dynamic> attributes) {

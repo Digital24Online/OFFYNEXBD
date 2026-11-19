@@ -1399,3 +1399,11 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - Added PDF text-extraction regression coverage for bullet and numbered list output, including a nested indentation level.
 - This is a focused PDF fidelity improvement; automatic rich-content page flow, full Word/ODT layout parity and physical print validation remain open.
 - Verification: awaiting the next GitHub Actions Analyze, full test suite, Android release build, signing/package checks and artifact upload.
+
+
+## Writer page fields and final localization pass — 2026-11-19
+
+- Added live Microsoft Word PAGE and NUMPAGES fields to DOCX headers/footers when users enter the existing `{page}` and `{pages}` placeholders; surrounding text remains editable.
+- Expanded DOCX export regression coverage to verify both fields in both header and footer parts.
+- Localized remaining high-visibility Writer feedback and dialog text in Bangla/English: document statistics, margin validation, hyperlink selection/URL validation, image import outcomes, and Print Preview save errors.
+- This does not yet implement section-specific/first/even-page headers or Writer's on-screen page-number field rendering. Analyze, full tests and Android release artifact verification are pending.

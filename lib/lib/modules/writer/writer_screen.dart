@@ -767,19 +767,19 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('নাম: ${titleController.text}'),
-            Text('শব্দ: $wordCount'),
-            Text('অক্ষর: $chars'),
-            Text('অনুচ্ছেদ: $paragraphs'),
-            Text('মন্তব্য: ${writerComments.length}'),
-            Text('উদ্ধৃতি: ${writerCitations.length}'),
-            Text('সর্বশেষ সংরক্ষণ: ${widget.document['updated'] ?? 'এই সেশনে'}'),
+            Text('${_t('নাম', 'Name')}: ${titleController.text}'),
+            Text('${_t('শব্দ', 'Words')}: $wordCount'),
+            Text('${_t('অক্ষর', 'Characters')}: $chars'),
+            Text('${_t('অনুচ্ছেদ', 'Paragraphs')}: $paragraphs'),
+            Text('${_t('মন্তব্য', 'Comments')}: ${writerComments.length}'),
+            Text('${_t('উদ্ধৃতি', 'Citations')}: ${writerCitations.length}'),
+            Text('${_t('সর্বশেষ সংরক্ষণ', 'Last saved')}: ${widget.document['updated'] ?? _t('এই সেশনে', 'This session')}'),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('বন্ধ করুন'),
+            child: Text(_t('বন্ধ করুন', 'Close')),
           ),
         ],
       ),
@@ -2545,7 +2545,7 @@ Future<void> showCustomFontSizeDialog() async {
               });
               if (hasInvalidMargin) {
                 ScaffoldMessenger.of(dialogContext).showSnackBar(
-                  const SnackBar(content: Text('সঠিক মার্জিনের মান দিন।')),
+                  SnackBar(content: Text(_t('সঠিক মার্জিনের মান দিন।', 'Enter valid margin values.'))),
                 );
                 return;
               }
@@ -2570,8 +2570,8 @@ Future<void> showCustomFontSizeDialog() async {
     if (values[0] + values[1] >= pageHeightInches - 1 ||
         values[2] + values[3] >= pageWidthInches - 1) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('মার্জিনের যোগফল পৃষ্ঠার আকারের তুলনায় বেশি।'),
+        SnackBar(
+          content: Text(_t('মার্জিনের যোগফল পৃষ্ঠার আকারের তুলনায় বেশি।', 'The combined margins are too large for this page size.')),
         ),
       );
       return;
@@ -2703,8 +2703,8 @@ Future<void> showCustomFontSizeDialog() async {
 
     if (selection.isCollapsed) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('প্রথমে যে লেখায় Link দিতে চান সেটি নির্বাচন করুন।'),
+        SnackBar(
+          content: Text(_t('প্রথমে যে লেখায় Link দিতে চান সেটি নির্বাচন করুন।', 'Select the text you want to turn into a link first.')),
         ),
       );
       return;
@@ -2722,7 +2722,7 @@ Future<void> showCustomFontSizeDialog() async {
           keyboardType: TextInputType.url,
           decoration: const InputDecoration(
             hintText: 'https://example.com',
-            labelText: 'Website URL',
+            labelText: _t('ওয়েবসাইটের ঠিকানা', 'Website URL'),
           ),
         ),
         actions: [
@@ -2753,8 +2753,8 @@ Future<void> showCustomFontSizeDialog() async {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('সঠিক Website URL দিন।'),
+        SnackBar(
+          content: Text(_t('সঠিক Website URL দিন।', 'Enter a valid website URL.')),
         ),
       );
       return;
@@ -2880,8 +2880,8 @@ Future<void> insertWriterImage() async {
 
     if (fileSize == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('ছবির ফাইলের সাইজ পড়া যায়নি।'),
+        SnackBar(
+          content: Text(_t('ছবির ফাইলের সাইজ পড়া যায়নি।', 'Could not read the image file size.')),
         ),
       );
       return;
@@ -2889,8 +2889,8 @@ Future<void> insertWriterImage() async {
 
     if (fileSize > 15 * 1024 * 1024) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('ছবির সর্বোচ্চ সাইজ ১৫ MB হতে পারবে।'),
+        SnackBar(
+          content: Text(_t('ছবির সর্বোচ্চ সাইজ ১৫ MB হতে পারবে।', 'Images must be 15 MB or smaller.')),
         ),
       );
       return;
@@ -2905,8 +2905,8 @@ Future<void> insertWriterImage() async {
 
     if (!allowedExtensions.contains(extension)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('এই ছবির ফরম্যাট সমর্থিত নয়।'),
+        SnackBar(
+          content: Text(_t('এই ছবির ফরম্যাট সমর্থিত নয়।', 'This image format is not supported.')),
         ),
       );
       return;
@@ -2948,8 +2948,8 @@ Future<void> insertWriterImage() async {
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('ছবি ডকুমেন্টে যুক্ত হয়েছে।'),
+        SnackBar(
+          content: Text(_t('ছবি ডকুমেন্টে যুক্ত হয়েছে।', 'Image added to the document.')),
         ),
       );
     }
@@ -2958,7 +2958,7 @@ Future<void> insertWriterImage() async {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('ছবি যুক্ত করা যায়নি: $error'),
+        content: Text(_t('ছবি যুক্ত করা যায়নি: $error', 'Could not add image: $error')),
       ),
     );
   }
@@ -3465,7 +3465,7 @@ class _WriterPrintPreviewScreenState
       if (!mounted) return;
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Save failed: $error')),
+        SnackBar(content: Text(_t('সংরক্ষণ ব্যর্থ হয়েছে: $error', 'Save failed: $error'))),
       );
     }
   }
