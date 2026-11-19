@@ -14,6 +14,53 @@ class PortableWorkspaceBackupService {
   static const int maxFiles = 2000;
   static const String _assetPrefix = 'offynex-asset://';
 
+  static void _validateArchiveEntries(Archive archive) {
+    final names = <String>{};
+    var manifestCount = 0;
+    const imageExtensions = {'png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'};
+    for (final file in archive.files) {
+      final name = file.name;
+      if (!names.add(name)) {
+        throw const FormatException('Portable backup contains duplicate archive paths.');
+      }
+      if (name == 'manifest.json') {
+        manifestCount++;
+        continue;
+      }
+      final isImage = name.startsWith('writer-images/asset_');
+      final isPdf = name.startsWith('scan-pdfs/asset_');
+      if (!isImage && !isPdf) {
+        throw const FormatException('Portable backup contains an unsafe archive entry.');
+      }
+      if (name.contains(String.fromCharCode(92)) || name.contains('..')) {
+        throw const FormatException('Portable backup contains an unsafe archive entry.');
+      }
+      final filename = name.substring(name.indexOf('/') + 1);
+      final dot = filename.lastIndexOf('.');
+      if (!filename.startsWith('asset_') || dot < 7) {
+        throw const FormatException('Portable backup contains an invalid asset name.');
+      }
+      final number = filename.substring(6, dot);
+      final extension = filename.substring(dot + 1).toLowerCase();
+      if (int.tryParse(number) == null) {
+        throw const FormatException('Portable backup contains an invalid asset name.');
+      }
+      if (isImage && !imageExtensions.contains(extension)) {
+        throw const FormatException('Portable backup image extension is invalid.');
+      }
+      if (isPdf && extension != 'pdf') {
+        throw const FormatException('Portable backup scan extension is invalid.');
+      }
+      if (file.size <= 0) {
+        throw const FormatException('Portable backup contains an empty asset.');
+      }
+    }
+    if (manifestCount != 1) {
+      throw const FormatException('Portable backup must contain exactly one manifest.');
+    }
+  }
+
+
   static Future<Uint8List> exportArchive(
     Map<String, Object?> source, {
     required Directory writerImageDirectory,
@@ -132,6 +179,7 @@ class PortableWorkspaceBackupService {
       throw const FormatException('Portable backup must be between 1 byte and 25 MB.');
     }
     final archive = ZipDecoder().decodeBytes(bytes);
+    _validateArchiveEntries(archive);
     if (archive.files.length > maxFiles) {
       throw const FormatException('Portable backup contains too many files.');
     }
@@ -158,6 +206,24 @@ class PortableWorkspaceBackupService {
       final isPdf = archivePath.startsWith('scan-pdfs/');
       if (!isImage && !isPdf) throw const FormatException('Portable backup has an unknown asset path.');
       final name = archivePath.split('/').last;
+      final dot = name.lastIndexOf('.');
+      final extension = dot < 0 ? '' : name.substring(dot + 1).toLowerCase();
+      const imageExtensions = {'png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'};
+      final validName = name.startsWith('asset_') &&
+          dot > 6 &&
+          int.tryParse(name.substring(6, dot)) != null;
+      if (!validName) throw const FormatException('Portable backup has an unsafe asset path.');
+      if (isImage && !imageExtensions.contains(extension)) {
+        throw const FormatException('Portable backup image path has an invalid extension.');
+      }
+      if (isPdf && extension != 'pdf') {
+        throw const FormatException('Portable backup PDF path has an invalid extension.');
+      }
+      if (archivePath.contains('..') ||
+          archivePath.startsWith('/') ||
+          archivePath.contains(String.fromCharCode(92))) {
+        throw const FormatException('Portable backup has an unsafe asset path.');
+      }
       if (!RegExp(r'^asset_\d+\.(png|jpg|jpeg|webp|gif|bmp|pdf)$').hasMatch(name) ||
           archivePath.contains('..') || archivePath.startsWith('/')) {
         throw const FormatException('Portable backup has an unsafe asset path.');
