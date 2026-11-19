@@ -1285,3 +1285,15 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 
 - Build #405 (run ID 44385365644, source commit `5cedf1b9f27504410c3ba675fb28228d005a0169`) — Analyze SUCCESS; tests 157 passed / 1 failed. The failing regression exposed that the ODT font-family branch still used the old substring check even though the DOCX helper was fixed. Correcting ODT to use the shared sans-first classifier; APK build was skipped because tests failed.
 - Portable backup export/import size accounting now applies the same 100 MB expanded limit including the manifest, and asset extensions are constrained to their matching folder type.
+
+---
+
+## Writer integrated audit follow-up — 2026-11-19
+
+- [x] Audited the current Writer mobile viewport implementation: Full Page, Page Width, Actual 100%, slider zoom and pinch/pan controls are present. The page background count is still estimated from plain-text height; this is not true rich-content pagination and remains open.
+- [x] Audited DOCX export page setup/header/footer generation and the archive-level regression test for page size, margins, and header/footer parts.
+- [x] Audited portable Writer image backup/restore: app-managed image-root checks, missing-image rejection, archive limits, embedded image packaging and restore-to-new-path test are present.
+- [x] Corrected DOCX nested-list import to store Quill indent as a numeric level and aligned its regression assertion.
+- [x] Corrected the DOCX nested-list export fixture to use actual newline characters rather than literal backslash-n text, so the test exercises separate list paragraphs.
+- [ ] Run Flutter Analyze, full tests, Android release build and artifact upload against the latest branch head; no fresh CI verification is claimed for these latest commits yet.
+- [ ] True rich-content pagination, complex DOCX/ODT fidelity, section-specific/first/even headers and fields, Bangla spellcheck, full font management/shaping, comprehensive localization, large-document stress/recovery and physical Android/printer validation remain open.
