@@ -14,6 +14,7 @@ import 'writer_document_backup_service.dart';
 import 'writer_docx_export_service.dart';
 import 'writer_document_format_service.dart';
 import 'writer_viewport.dart';
+import 'writer_content_metrics.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -3142,26 +3143,23 @@ Future<void> insertWriterImage() async {
                 final scale = layout.scale;
                 final displayWidth = page.width * scale;
                 final displayHeight = page.height * scale;
-                final plainText = quillController.document.toPlainText();
-                final textPainter = TextPainter(
-                  text: TextSpan(
-                    text: plainText,
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                  textDirection: Directionality.of(context),
-                )..layout(
-                    maxWidth: math.max(
-                      1,
-                      page.width - (marginLeft + marginRight) * 96,
-                    ),
-                  );
+                final pageContentWidth = math.max(
+                  1,
+                  page.width - (marginLeft + marginRight) * 96,
+                );
                 final pageContentHeight = math.max(
                   1,
                   page.height - (marginTop + marginBottom) * 96,
                 );
+                final contentHeight = WriterContentMetrics.estimateHeight(
+                  delta: quillController.document.toDelta().toJson(),
+                  maxWidth: pageContentWidth,
+                  pageContentHeight: pageContentHeight,
+                  textDirection: Directionality.of(context),
+                );
                 final estimatedPageCount = math.max(
                   1,
-                  (textPainter.height / pageContentHeight).ceil(),
+                  (contentHeight / pageContentHeight).ceil(),
                 );
                 final documentCanvasHeight =
                     displayHeight * estimatedPageCount;
