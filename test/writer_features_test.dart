@@ -92,7 +92,8 @@ void main() {
     final pageWidthLabel = find.text('পৃষ্ঠার প্রস্থ').first;
     expect(find.text('সম্পূর্ণ পৃষ্ঠা'), findsAtLeastNWidgets(1));
     expect(find.text('পৃষ্ঠার প্রস্থ'), findsAtLeastNWidgets(1));
-    expect(find.byType(Slider), findsOneWidget);
+    // The editor also has a compact bottom zoom slider; both controls are valid.
+    expect(find.byType(Slider), findsAtLeastNWidgets(1));
     expect(find.byType(InteractiveViewer), findsOneWidget);
 
     await tester.tap(pageWidthLabel);
