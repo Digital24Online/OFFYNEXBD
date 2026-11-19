@@ -28,10 +28,13 @@ void main() {
     await tester.tap(find.text('নতুন ডকুমেন্ট'));
     await tester.pumpAndSettle();
     expect(find.text('ফাইল'), findsOneWidget);
+    expect(find.text('হোম'), findsOneWidget);
+    expect(find.text('ইনসার্ট'), findsOneWidget);
     expect(find.text('লেআউট'), findsOneWidget);
     expect(find.text('রেফারেন্স'), findsOneWidget);
     expect(find.text('রিভিউ'), findsOneWidget);
     expect(find.text('ভিউ'), findsOneWidget);
+    expect(find.text('ডিজাইন'), findsNothing);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpAndSettle();
@@ -42,10 +45,13 @@ void main() {
     await tester.tap(find.text('New Document'));
     await tester.pumpAndSettle();
     expect(find.text('File'), findsOneWidget);
+    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Insert'), findsOneWidget);
     expect(find.text('Layout'), findsOneWidget);
     expect(find.text('References'), findsOneWidget);
     expect(find.text('Review'), findsOneWidget);
     expect(find.text('View'), findsOneWidget);
+    expect(find.text('Design'), findsNothing);
   });
 
   testWidgets('Writer page layout controls follow the selected language', (tester) async {
