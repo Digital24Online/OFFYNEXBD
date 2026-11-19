@@ -78,6 +78,42 @@ void main() {
     expect(find.text('Normal'), findsOneWidget);
   });
 
+  testWidgets('Writer View ribbon exposes page fit, zoom and pinch canvas', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: true)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('নতুন ডকুমেন্ট'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('ভিউ'));
+    await tester.tap(find.text('ভিউ'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('সম্পূর্ণ পৃষ্ঠা'), findsOneWidget);
+    expect(find.text('পৃষ্ঠার প্রস্থ'), findsOneWidget);
+    expect(find.byType(Slider), findsOneWidget);
+    expect(find.byType(InteractiveViewer), findsOneWidget);
+
+    await tester.tap(find.text('পৃষ্ঠার প্রস্থ'));
+    await tester.pumpAndSettle();
+    final widthChip = tester.widget<ChoiceChip>(
+      find.ancestor(
+        of: find.text('পৃষ্ঠার প্রস্থ'),
+        matching: find.byType(ChoiceChip),
+      ),
+    );
+    expect(widthChip.selected, isTrue);
+
+    await tester.tap(find.text('সম্পূর্ণ পৃষ্ঠা'));
+    await tester.pumpAndSettle();
+    final pageChip = tester.widget<ChoiceChip>(
+      find.ancestor(
+        of: find.text('সম্পূর্ণ পৃষ্ঠা'),
+        matching: find.byType(ChoiceChip),
+      ),
+    );
+    expect(pageChip.selected, isTrue);
+  });
+
   testWidgets('Writer header and footer settings persist with document metadata', (tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: true)));
