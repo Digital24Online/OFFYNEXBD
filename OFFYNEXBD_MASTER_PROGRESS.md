@@ -1525,3 +1525,11 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - Added a Writer widget regression test for the zoom slider bounds and both direct zoom actions.
 - This is a mobile usability improvement only; it does not solve true content-aware pagination or the other open Writer compatibility gaps.
 - CI validation is pending for the integrated branch.
+
+
+## DOCX/ODT table-grid import hardening — 2026-11-19
+
+- DOCX import expands Word `gridSpan` cells into bounded logical grid slots. The first cell retains its text and extra spanned slots remain blank because the current Writer renderer does not yet support visual merged cells; later columns no longer shift left.
+- ODT import expands `number-columns-repeated` and `number-rows-repeated` within the existing 20-row / 10-column safety limits. Covered ODT cells remain blank grid slots.
+- Added focused DOCX and ODT archive-import regression tests.
+- This improves grid alignment and repeated-cell fidelity; it does NOT implement visual merged cells, rich cell formatting, nested table editing, or full format round-trip.
