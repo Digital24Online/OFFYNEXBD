@@ -3146,11 +3146,11 @@ Future<void> insertWriterImage() async {
                 final pageContentWidth = math.max(
                   1,
                   page.width - (marginLeft + marginRight) * 96,
-                );
+                ).toDouble();
                 final pageContentHeight = math.max(
                   1,
                   page.height - (marginTop + marginBottom) * 96,
-                );
+                ).toDouble();
                 final contentHeight = WriterContentMetrics.estimateHeight(
                   delta: quillController.document.toDelta().toJson(),
                   maxWidth: pageContentWidth,
