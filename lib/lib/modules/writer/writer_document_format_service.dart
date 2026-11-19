@@ -156,7 +156,8 @@ class WriterDocumentFormatService {
     final abstractFormats = <String, String>{};
     for (final abstractNum in _descendants(document, 'abstractNum')) {
       final abstractId = _attribute(abstractNum, 'abstractNumId');
-      final level = _descendants(abstractNum, 'lvl').firstOrNull;
+      final levels = _descendants(abstractNum, 'lvl').toList();
+      final level = levels.isEmpty ? null : levels.first;
       final numFmt = level == null ? null : _firstChild(level, 'numFmt');
       final format = numFmt == null ? null : _attribute(numFmt, 'val');
       if (abstractId != null && format != null) abstractFormats[abstractId] = format;
