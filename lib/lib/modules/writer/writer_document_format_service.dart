@@ -149,38 +149,46 @@ class WriterDocumentFormatService {
     delta.add({'insert': '\n', if (block.isNotEmpty) 'attributes': block});
   }
 
-  static Map<String, String> _docxNumberingFormats(Archive archive) {
+  static Map<String, Map<int, String>> _docxNumberingFormats(Archive archive) {
     final file = archive.findFile('word/numbering.xml');
     if (file == null) return const {};
     final document = XmlDocument.parse(utf8.decode(_fileBytes(file)));
-    final abstractFormats = <String, String>{};
+    final abstractFormats = <String, Map<int, String>>{};
     for (final abstractNum in _descendants(document, 'abstractNum')) {
       final abstractId = _attribute(abstractNum, 'abstractNumId');
-      final levels = _descendants(abstractNum, 'lvl').toList();
-      final level = levels.isEmpty ? null : levels.first;
-      final numFmt = level == null ? null : _firstChild(level, 'numFmt');
-      final format = numFmt == null ? null : _attribute(numFmt, 'val');
-      if (abstractId != null && format != null) abstractFormats[abstractId] = format;
+      if (abstractId == null) continue;
+      final levels = <int, String>{};
+      for (final level in _descendants(abstractNum, 'lvl')) {
+        final levelIndex = (int.tryParse(_attribute(level, 'ilvl') ?? '0') ?? 0).clamp(0, 8);
+        final numFmt = _firstChild(level, 'numFmt');
+        final format = numFmt == null ? null : _attribute(numFmt, 'val');
+        if (format != null) levels[levelIndex] = format;
+      }
+      if (levels.isNotEmpty) abstractFormats[abstractId] = levels;
     }
-    final result = <String, String>{};
+    final result = <String, Map<int, String>>{};
     for (final num in _descendants(document, 'num')) {
       final numId = _attribute(num, 'numId');
       final abstract = _firstChild(num, 'abstractNumId');
       final abstractId = abstract == null ? null : _attribute(abstract, 'val');
-      final format = abstractId == null ? null : abstractFormats[abstractId];
-      if (numId == null || format == null) continue;
-      if (format == 'bullet') {
-        result[numId] = 'bullet';
-      } else if (const {'decimal', 'decimalZero', 'lowerLetter', 'upperLetter', 'lowerRoman', 'upperRoman'}.contains(format)) {
-        result[numId] = 'ordered';
+      final levels = abstractId == null ? null : abstractFormats[abstractId];
+      if (numId == null || levels == null) continue;
+      final resolved = Map<int, String>.from(levels);
+      for (final override in _elementChildren(num).where((element) => element.name.local == 'lvlOverride')) {
+        final levelIndex = (int.tryParse(_attribute(override, 'ilvl') ?? '0') ?? 0).clamp(0, 8);
+        final overrideLevel = _firstChild(override, 'lvl');
+        final overrideFormat = overrideLevel == null ? null : _firstChild(overrideLevel, 'numFmt');
+        final format = overrideFormat == null ? null : _attribute(overrideFormat, 'val');
+        if (format != null) resolved[levelIndex] = format;
       }
+      result[numId] = resolved;
     }
     return result;
   }
 
   static Map<String, dynamic> _docxParagraphAttributes(
     XmlElement paragraph,
-    Map<String, String> numberingFormats,
+    Map<String, Map<int, String>> numberingFormats,
   ) {
     final props = _firstChild(paragraph, 'pPr');
     if (props == null) return {};
@@ -195,9 +203,16 @@ class WriterDocumentFormatService {
     if (aligns.containsKey(align)) result['align'] = aligns[align];
     final numbering = _firstChild(props, 'numPr');
     final numIdElement = numbering == null ? null : _firstChild(numbering, 'numId');
+    final levelElement = numbering == null ? null : _firstChild(numbering, 'ilvl');
     final numId = numIdElement == null ? null : _attribute(numIdElement, 'val');
-    final listKind = numId == null ? null : numberingFormats[numId];
-    if (listKind != null) result['list'] = listKind;
+    final level = (int.tryParse(levelElement == null ? '0' : (_attribute(levelElement, 'val') ?? '0')) ?? 0).clamp(0, 8);
+    final format = numId == null ? null : numberingFormats[numId]?[level] ?? numberingFormats[numId]?[0];
+    if (format == 'bullet') {
+      result['list'] = 'bullet';
+    } else if (const {'decimal', 'decimalZero', 'lowerLetter', 'upperLetter', 'lowerRoman', 'upperRoman'}.contains(format)) {
+      result['list'] = 'ordered';
+    }
+    if (level > 0 && result.containsKey('list')) result['indent'] = level.toString();
     return result;
   }
 
