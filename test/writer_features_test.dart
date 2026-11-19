@@ -4,6 +4,7 @@ import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:offynexbd/lib/modules/writer/writer_screen.dart';
+import 'package:offynexbd/lib/modules/writer/writer_viewport.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Widget _writerTestApp(Widget home) => MaterialApp(
