@@ -488,7 +488,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
 
   // Writer-এর অতিরিক্ত নথি, রিভিউ ও ভিউ সেটিংস।
   double zoomLevel = 1.0;
-  String viewFit = 'Page';
+  String viewFit = 'Width';
   final TransformationController _pageTransformController = TransformationController();
   bool showRuler = true;
   bool showStatusBar = true;
@@ -522,7 +522,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
           : 1.0;
       viewFit = ['Page', 'Width', 'Actual'].contains(savedMeta['viewFit'])
           ? savedMeta['viewFit'] as String
-          : 'Page';
+          : 'Width';
       showRuler = savedMeta['showRuler'] is bool
           ? savedMeta['showRuler'] as bool : true;
       showStatusBar = savedMeta['showStatusBar'] is bool
@@ -1662,7 +1662,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   
   Widget _ribbonPanel(List<Widget> children) => Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
         decoration: const BoxDecoration(
           color: Color(0xFFEFF2F0),
           border: Border(bottom: BorderSide(color: Color(0xFFD2DAD5))),
@@ -1767,15 +1767,15 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
 
   Widget _ribbonButton(IconData icon, String label, VoidCallback action) =>
       SizedBox(
-        width: 84,
-        height: 56,
+        width: 72,
+        height: 42,
         child: Tooltip(
           message: _ribbonLabel(label),
           child: TextButton(
             onPressed: action,
             style: TextButton.styleFrom(
               foregroundColor: const Color(0xFF26362D),
-              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(5),
               ),
@@ -1844,7 +1844,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
       _t('রেফারেন্স', 'References'), _t('রিভিউ', 'Review'), _t('ভিউ', 'View'),
     ];
     return Container(
-      padding: const EdgeInsets.fromLTRB(10, 7, 10, 0),
+      padding: const EdgeInsets.fromLTRB(5, 2, 5, 0),
       decoration: const BoxDecoration(
         color: Color(0xFF185C3B),
         border: Border(bottom: BorderSide(color: Color(0xFF12452C))),
@@ -1860,7 +1860,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
               onTap: () => setState(() => selectedRibbonTab = index),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 160),
-                padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 11),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
                 decoration: BoxDecoration(
                   color: selected ? const Color(0xFFE8F1EB) : Colors.transparent,
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(5)),
@@ -1875,7 +1875,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
                   tabs[index],
                   style: TextStyle(
                     color: selected ? const Color(0xFF174B30) : Colors.white,
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                   ),
                 ),
@@ -2403,7 +2403,7 @@ Future<void> showCustomFontSizeDialog() async {
 
   Widget _buildViewportControls() {
     return Container(
-      height: 48,
+      height: 36,
       decoration: const BoxDecoration(
         color: Colors.white,
         border: Border(
@@ -2413,17 +2413,19 @@ Future<void> showCustomFontSizeDialog() async {
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 4),
         child: Row(
           children: [
             IconButton(
               tooltip: _t('ছোট করুন', 'Zoom out'),
               visualDensity: VisualDensity.compact,
+              constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+              padding: EdgeInsets.zero,
               onPressed: () => _adjustZoom(-0.1),
               icon: const Icon(Icons.remove_circle_outline, size: 20),
             ),
             SizedBox(
-              width: 112,
+              width: 88,
               child: Slider(
                 value: zoomLevel,
                 min: WriterViewportLayout.minimumZoom,
@@ -2444,6 +2446,8 @@ Future<void> showCustomFontSizeDialog() async {
             IconButton(
               tooltip: _t('বড় করুন', 'Zoom in'),
               visualDensity: VisualDensity.compact,
+              constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+              padding: EdgeInsets.zero,
               onPressed: () => _adjustZoom(0.1),
               icon: const Icon(Icons.add_circle_outline, size: 20),
             ),
@@ -3079,9 +3083,9 @@ Future<void> insertWriterImage() async {
       body: Column(
         children: [
           if (!focusMode) Container(
-            margin: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+            margin: const EdgeInsets.fromLTRB(4, 2, 4, 0),
             decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), border: Border.all(color: OFFYNEXTheme.border)),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
             child: TextField(
               controller: titleController,
               onChanged: (_) => scheduleSave(),
@@ -3090,7 +3094,7 @@ Future<void> insertWriterImage() async {
                 hintText: _t('ডকুমেন্টের নাম', 'Document name'),
                 prefixIcon: Icon(Icons.description_outlined),
               ),
-              style: const TextStyle(color: OFFYNEXTheme.ink, fontSize: 17, fontWeight: FontWeight.w800),
+              style: const TextStyle(color: OFFYNEXTheme.ink, fontSize: 14, fontWeight: FontWeight.w800),
             ),
           ),
           if (!focusMode) Column(
