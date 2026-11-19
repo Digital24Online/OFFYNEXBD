@@ -1382,3 +1382,11 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - Retained the automatic title heading when the body begins with different content, and when the document body is empty.
 - Added regression tests for both cases. This is a targeted export-fidelity correction; it does not imply complete DOCX/Word compatibility.
 - Verification: pending the next GitHub Actions Analyze, automated test and Android release run.
+
+ 
+## Writer PDF title fidelity correction — 2026-11-19
+
+- PDF export avoids adding a duplicate title when the first body paragraph already matches the document title.
+- The metadata title remains visible when the body starts with different content; blank titles are not emitted as empty headings.
+- Added PDF text-extraction regression tests for both cases.
+- CI verification is pending; this correction is not complete until Analyze, full tests, Android release build, signature checks and artifact upload succeed.

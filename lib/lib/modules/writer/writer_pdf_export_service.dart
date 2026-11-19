@@ -25,14 +25,18 @@ class WriterPdfExportService {
     final sansFont = pw.Font.ttf(sansFontData);
     final serifFont = pw.Font.ttf(serifFontData);
     final latinFont = pw.Font.ttf(latinFontData);
-    final widgets = <pw.Widget>[
-      pw.Text(title, style: pw.TextStyle(
-        font: _containsBangla(title) ? sansFont : latinFont,
-        fontFallback: _containsBangla(title) ? [latinFont] : const [],
-        fontSize: 18,
-      )),
-      pw.SizedBox(height: 14),
-    ];
+    final titleAlreadyInBody = _firstParagraphText(delta).trim() == title.trim() &&
+        title.trim().isNotEmpty;
+    final widgets = <pw.Widget>[];
+    if (!titleAlreadyInBody && title.trim().isNotEmpty) {
+      widgets
+        ..add(pw.Text(title, style: pw.TextStyle(
+          font: _containsBangla(title) ? sansFont : latinFont,
+          fontFallback: _containsBangla(title) ? [latinFont] : const [],
+          fontSize: 18,
+        )))
+        ..add(pw.SizedBox(height: 14));
+    }
     final spans = <pw.TextSpan>[];
 
     pw.Font fontFor(Map<String, dynamic> attributes, String text) {
@@ -235,6 +239,21 @@ class WriterPdfExportService {
         }),
       ),
     );
+  }
+
+  static String _firstParagraphText(List<Map<String, dynamic>> delta) {
+    final paragraph = StringBuffer();
+    for (final operation in delta) {
+      final insert = operation['insert'];
+      if (insert is String) {
+        final newline = insert.indexOf('\n');
+        paragraph.write(newline < 0 ? insert : insert.substring(0, newline));
+        if (newline >= 0) break;
+      } else if (insert is Map && paragraph.isEmpty) {
+        break;
+      }
+    }
+    return paragraph.toString();
   }
 
   static bool _containsBangla(String value) =>
