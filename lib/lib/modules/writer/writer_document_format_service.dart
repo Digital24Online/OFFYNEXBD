@@ -159,7 +159,7 @@ class WriterDocumentFormatService {
       if (abstractId == null) continue;
       final levels = <int, String>{};
       for (final level in _descendants(abstractNum, 'lvl')) {
-        final levelIndex = (int.tryParse(_attribute(level, 'ilvl') ?? '0') ?? 0).clamp(0, 8);
+        final levelIndex = (int.tryParse(_attribute(level, 'ilvl') ?? '0') ?? 0).clamp(0, 8).toInt();
         final numFmt = _firstChild(level, 'numFmt');
         final format = numFmt == null ? null : _attribute(numFmt, 'val');
         if (format != null) levels[levelIndex] = format;
@@ -175,7 +175,7 @@ class WriterDocumentFormatService {
       if (numId == null || levels == null) continue;
       final resolved = Map<int, String>.from(levels);
       for (final override in _elementChildren(num).where((element) => element.name.local == 'lvlOverride')) {
-        final levelIndex = (int.tryParse(_attribute(override, 'ilvl') ?? '0') ?? 0).clamp(0, 8);
+        final levelIndex = (int.tryParse(_attribute(override, 'ilvl') ?? '0') ?? 0).clamp(0, 8).toInt();
         final overrideLevel = _firstChild(override, 'lvl');
         final overrideFormat = overrideLevel == null ? null : _firstChild(overrideLevel, 'numFmt');
         final format = overrideFormat == null ? null : _attribute(overrideFormat, 'val');
@@ -205,7 +205,7 @@ class WriterDocumentFormatService {
     final numIdElement = numbering == null ? null : _firstChild(numbering, 'numId');
     final levelElement = numbering == null ? null : _firstChild(numbering, 'ilvl');
     final numId = numIdElement == null ? null : _attribute(numIdElement, 'val');
-    final level = (int.tryParse(levelElement == null ? '0' : (_attribute(levelElement, 'val') ?? '0')) ?? 0).clamp(0, 8);
+    final level = (int.tryParse(levelElement == null ? '0' : (_attribute(levelElement, 'val') ?? '0')) ?? 0).clamp(0, 8).toInt();
     final format = numId == null ? null : numberingFormats[numId]?[level] ?? numberingFormats[numId]?[0];
     if (format == 'bullet') {
       result['list'] = 'bullet';
