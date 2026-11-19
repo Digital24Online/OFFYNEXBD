@@ -1309,7 +1309,10 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Embedded the selected founder portrait in the App Info screen source to avoid a missing external asset dependency.
 - [x] Added an Android vector launcher icon and updated the Android manifest to use it instead of the old mipmap icon.
 - [x] Updated the Android launch background to show OFFYNEXBD branding.
-- [ ] iOS, Windows and macOS launcher icon/splash branding still require platform-specific asset integration and verification.
-- [ ] Verify the embedded portrait decodes correctly and App Info renders on device.
-- [ ] Latest PR #3 CI run #437 (run ID 44484356009) is in progress; Analyze, tests, APK build and artifact upload are not yet verified for these changes.
+- [x] Added CI generation of the same approved logo into Android, iOS, Windows and macOS launcher icon resources using `flutter_launcher_icons`; CI creates a 1024px PNG from the checked-in SVG before icon generation. Cross-platform builds and rendered icon appearance still require verification.
+- [x] Added an App Info widget regression test for creator attribution and founder portrait rendering; CI must pass it before verification is complete.
+- [ ] Latest branding changes add a CI step to rasterize the SVG and generate platform launcher icons, then run Analyze, tests and Android APK upload; the latest run is pending verification.
 - Note: the in-app creator statement is an attribution record; it is not, by itself, a legal certificate of ownership. GitHub commit history and release records remain outside the app as requested.
+
+- Added `test/app_info_screen_test.dart` to check the creator statement, name, city, copyright and image decode fallback.
+- The app icon generation workflow uses the same approved Option 2 SVG as the single source of truth; Android splash uses the matching vector identity.
