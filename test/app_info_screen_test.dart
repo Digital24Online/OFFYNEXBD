@@ -16,6 +16,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('OFFYNEXBD'), findsOneWidget);
+    expect(find.text('The Future of Office Productivity'), findsOneWidget);
+    expect(find.text('Work Smart, Be Productive'), findsNothing);
     expect(find.text('MD PIYARUL ISLAM'), findsOneWidget);
     expect(find.text('Founder & Original Creator'), findsOneWidget);
     expect(find.text('Rajshahi, Bangladesh'), findsOneWidget);

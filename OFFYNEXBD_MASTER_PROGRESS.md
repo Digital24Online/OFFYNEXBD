@@ -1475,3 +1475,14 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - Added a PDF export regression test covering explicit page-break content on both sides of the break.
 - New commits: requirements contract `bd04b329b3ef6b1bd786081793e37abd5549e8a5`; PDF page-break test `d6e79b6eecdb49bd9f7bbeebbfee7b77b7e0d7f5`.
 - These commits require a fresh CI run. Do not mark Writer complete until the full contract is implemented and all automated/manual acceptance gates have evidence. PR #3 remains open and must not be merged without explicit user approval.
+
+
+## Branding and creator attribution refinement — 2026-11-19
+
+- [x] Preserved the approved full OFFYNEXBD logo artwork and added a matching symbol-only SVG asset for small app-header and app-icon contexts, where the full wordmark would become unreadable.
+- [x] Updated Home/App Info small logo placements and Android/iOS/Windows/macOS launcher-icon generation to use the symbol-only asset; the original full logo asset remains in the repository.
+- [x] Standardized the App Info product tagline to the approved brand tagline: “The Future of Office Productivity”.
+- [x] Kept the selected founder portrait, full creator name, Founder & Original Creator attribution, Rajshahi, Bangladesh location and copyright statement in App Info; no GitHub history or release records were added.
+- [x] Added App Info regression assertions for the approved tagline and removal of the outdated tagline.
+- [ ] Flutter Analyze, full tests, Android release build, icon generation and Actions artifact upload must pass on this commit before the branding batch is considered CI-verified.
+- [ ] Visual inspection of launcher icons on a real Android device and cross-platform icon review remain pending.

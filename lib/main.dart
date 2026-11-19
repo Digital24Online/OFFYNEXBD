@@ -247,7 +247,7 @@ void openModule(OfficeModule module) {
                 borderRadius: BorderRadius.circular(13),
                 border: Border.all(color: OFFYNEXTheme.border),
               ),
-              child: SvgPicture.asset('assets/branding/offynexbd_logo.svg', fit: BoxFit.contain),
+              child: SvgPicture.asset('assets/branding/offynexbd_icon.svg', fit: BoxFit.contain),
             ),
             const SizedBox(width: 11),
             const Column(
@@ -530,7 +530,7 @@ class AppInfoScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(24),
                     ),
                     child: SvgPicture.asset(
-                      'assets/branding/offynexbd_logo.svg',
+                      'assets/branding/offynexbd_icon.svg',
                       fit: BoxFit.contain,
                     ),
                   ),
@@ -546,7 +546,7 @@ class AppInfoScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   const Text(
-                    'Work Smart, Be Productive',
+                    'The Future of Office Productivity',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Color(0xFFFFD66B),

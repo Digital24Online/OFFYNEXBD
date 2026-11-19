@@ -78,7 +78,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y librsvg2-bin
-          rsvg-convert --width 1024 --height 1024 assets/branding/offynexbd_logo.svg > assets/branding/offynexbd_app_icon.png
+          rsvg-convert --width 1024 --height 1024 assets/branding/offynexbd_icon.svg > assets/branding/offynexbd_app_icon.png
           test -s assets/branding/offynexbd_app_icon.png
 
       - name: Get Dependencies
