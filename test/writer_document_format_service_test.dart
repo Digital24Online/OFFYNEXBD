@@ -54,11 +54,12 @@ void main() {
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>
 <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="7"/></w:numPr></w:pPr><w:r><w:t>First</w:t></w:r></w:p>
 <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="7"/></w:numPr></w:pPr><w:r><w:t>Second</w:t></w:r></w:p>
+<w:p><w:pPr><w:numPr><w:ilvl w:val="1"/><w:numId w:val="7"/></w:numPr></w:pPr><w:r><w:t>Nested</w:t></w:r></w:p>
 <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="8"/></w:numPr></w:pPr><w:r><w:t>Bullet</w:t></w:r></w:p>
 <w:sectPr/></w:body></w:document>''';
     const numberingXml = '''
 <w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-<w:abstractNum w:abstractNumId="1"><w:lvl w:ilvl="0"><w:numFmt w:val="decimal"/></w:lvl></w:abstractNum>
+<w:abstractNum w:abstractNumId="1"><w:lvl w:ilvl="0"><w:numFmt w:val="decimal"/></w:lvl><w:lvl w:ilvl="1"><w:numFmt w:val="bullet"/></w:lvl></w:abstractNum>
 <w:abstractNum w:abstractNumId="2"><w:lvl w:ilvl="0"><w:numFmt w:val="bullet"/></w:lvl></w:abstractNum>
 <w:num w:numId="7"><w:abstractNumId w:val="1"/></w:num>
 <w:num w:numId="8"><w:abstractNumId w:val="2"/></w:num>
@@ -75,6 +76,8 @@ void main() {
     expect(first['attributes']['list'], 'ordered');
     expect(second, 2);
     expect(imported.delta.any((op) => op['insert'] == '\n' && (op['attributes'] as Map?)?['list'] == 'bullet'), isTrue);
+    final nested = imported.delta.firstWhere((op) => op['insert'] == '\n' && (op['attributes'] as Map?)?['indent'] == '1');
+    expect(nested['attributes']['list'], 'bullet');
   });
 
   test('ODT export/import groups and preserves ordered list items', () async {
