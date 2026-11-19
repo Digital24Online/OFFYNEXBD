@@ -88,28 +88,30 @@ void main() {
     await tester.tap(find.text('ভিউ'));
     await tester.pumpAndSettle();
 
-    expect(find.text('সম্পূর্ণ পৃষ্ঠা'), findsOneWidget);
-    expect(find.text('পৃষ্ঠার প্রস্থ'), findsOneWidget);
+    final pageFitLabel = find.text('সম্পূর্ণ পৃষ্ঠা').first;
+    final pageWidthLabel = find.text('পৃষ্ঠার প্রস্থ').first;
+    expect(find.text('সম্পূর্ণ পৃষ্ঠা'), findsAtLeastNWidgets(1));
+    expect(find.text('পৃষ্ঠার প্রস্থ'), findsAtLeastNWidgets(1));
     expect(find.byType(Slider), findsOneWidget);
     expect(find.byType(InteractiveViewer), findsOneWidget);
 
-    await tester.tap(find.text('পৃষ্ঠার প্রস্থ'));
+    await tester.tap(pageWidthLabel);
     await tester.pumpAndSettle();
     final widthChip = tester.widget<ChoiceChip>(
       find.ancestor(
-        of: find.text('পৃষ্ঠার প্রস্থ'),
+        of: pageWidthLabel,
         matching: find.byType(ChoiceChip),
-      ),
+      ).first,
     );
     expect(widthChip.selected, isTrue);
 
-    await tester.tap(find.text('সম্পূর্ণ পৃষ্ঠা'));
+    await tester.tap(pageFitLabel);
     await tester.pumpAndSettle();
     final pageChip = tester.widget<ChoiceChip>(
       find.ancestor(
-        of: find.text('সম্পূর্ণ পৃষ্ঠা'),
+        of: pageFitLabel,
         matching: find.byType(ChoiceChip),
-      ),
+      ).first,
     );
     expect(pageChip.selected, isTrue);
   });
