@@ -207,3 +207,33 @@ void main() {
     expect(page.width, greaterThanOrEqualTo(380));
   });
 }
+
+  testWidgets('Writer Home exposes working undo, redo, paragraph alignment and list controls', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: true)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('নতুন ডকুমেন্ট'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('হোম'));
+    await tester.tap(find.text('হোম'));
+    await tester.pumpAndSettle();
+
+    const controlKeys = [
+      'writer-home-undo',
+      'writer-home-redo',
+      'writer-home-align-left',
+      'writer-home-align-center',
+      'writer-home-align-right',
+      'writer-home-align-justify',
+      'writer-home-bullets',
+      'writer-home-numbering',
+    ];
+    for (final key in controlKeys) {
+      final finder = find.byKey(ValueKey(key));
+      expect(finder, findsOneWidget, reason: 'Missing Home control: $key');
+      await tester.ensureVisible(finder);
+      await tester.tap(finder);
+      await tester.pumpAndSettle();
+    }
+  });
+
