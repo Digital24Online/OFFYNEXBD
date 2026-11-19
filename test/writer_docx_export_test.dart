@@ -48,6 +48,22 @@ void main() {
     expect(ids.length, 1);
   });
 
+  test('Writer DOCX export preserves nested list levels', () async {
+    final bytes = await WriterDocxExportService.build(
+      title: 'Nested list',
+      delta: [
+        {'insert': 'Parent one\\n', 'attributes': {'list': 'ordered'}},
+        {'insert': 'Nested child\\n', 'attributes': {'list': 'bullet', 'indent': 1}},
+        {'insert': 'Parent two\\n', 'attributes': {'list': 'ordered'}},
+      ],
+    );
+    final archive = ZipDecoder().decodeBytes(bytes);
+    final document = utf8.decode(archive.findFile('word/document.xml')!.readBytes()!);
+    expect(RegExp(r'<w:numPr>').allMatches(document).length, 3);
+    expect(document, contains('<w:ilvl w:val="1"/>'));
+    expect(document, contains('<w:ilvl w:val="0"/>'));
+  });
+
   test('Writer DOCX export rejects missing local image instead of creating broken link', () async {
     expect(
       () => WriterDocxExportService.build(
