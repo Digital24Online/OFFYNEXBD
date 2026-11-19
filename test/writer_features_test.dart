@@ -188,4 +188,16 @@ void main() {
     expect(slider.value, closeTo(1.0, 0.001));
   });
 
+  testWidgets('Writer opens with page width filling the mobile editor viewport', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.binding.setSurfaceSize(const Size(400, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: true)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('নতুন ডকুমেন্ট'));
+    await tester.pumpAndSettle();
+
+    final page = tester.getSize(find.byKey(const ValueKey('writer-page-canvas')));
+    expect(page.width, greaterThanOrEqualTo(380));
+  });
 }

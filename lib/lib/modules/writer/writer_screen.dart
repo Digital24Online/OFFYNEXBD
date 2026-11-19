@@ -520,7 +520,11 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
       zoomLevel = (savedMeta['zoom'] is num)
           ? (savedMeta['zoom'] as num).toDouble().clamp(0.5, 3.0).toDouble()
           : 1.0;
-      viewFit = ['Page', 'Width', 'Actual'].contains(savedMeta['viewFit'])
+      final savedViewFitVersion = savedMeta['viewFitVersion'] is num
+          ? (savedMeta['viewFitVersion'] as num).toInt()
+          : 0;
+      viewFit = savedViewFitVersion >= 2 &&
+              ['Page', 'Width', 'Actual'].contains(savedMeta['viewFit'])
           ? savedMeta['viewFit'] as String
           : 'Width';
       showRuler = savedMeta['showRuler'] is bool
@@ -708,6 +712,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
         'zoom': zoomLevel,
         'fontFamily': selectedFontFamily,
         'viewFit': viewFit,
+        'viewFitVersion': 2,
         'showRuler': showRuler,
         'showStatusBar': showStatusBar,
         'showPageBorder': showPageBorder,
@@ -1962,6 +1967,11 @@ Future<void> showCustomFontSizeDialog() async {
       children: [
         // Font Family
         DropdownButton<String>(
+          isDense: true,
+          itemHeight: 36,
+          iconSize: 16,
+          underline: const SizedBox.shrink(),
+          style: const TextStyle(fontSize: 11, color: Colors.black87),
           value: fontFamilies.containsValue(selectedFontFamily)
               ? selectedFontFamily
               : 'sans-serif',
@@ -1986,6 +1996,11 @@ Future<void> showCustomFontSizeDialog() async {
 
         // Font Size (Points)
         DropdownButton<String>(
+          isDense: true,
+          itemHeight: 36,
+          iconSize: 16,
+          underline: const SizedBox.shrink(),
+          style: const TextStyle(fontSize: 12, color: Colors.black87),
           value: fontSizes.contains(selectedFontSize)
               ? selectedFontSize
               : '16',
@@ -2007,6 +2022,7 @@ Future<void> showCustomFontSizeDialog() async {
         ),
 
         OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact, minimumSize: const Size(30, 30), padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2), textStyle: const TextStyle(fontSize: 10)),
           onPressed: showCustomFontSizeDialog,
           icon: const Icon(Icons.edit, size: 16),
           label: Text(_ribbonLabel('Custom Size')),
@@ -2014,6 +2030,9 @@ Future<void> showCustomFontSizeDialog() async {
 
         // Bold
         IconButton(
+          visualDensity: VisualDensity.compact,
+          constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+          padding: EdgeInsets.zero,
           tooltip: _ribbonLabel('Bold'),
           onPressed: () {
             quillController.formatSelection(Attribute.bold);
@@ -2023,6 +2042,9 @@ Future<void> showCustomFontSizeDialog() async {
 
         // Italic
         IconButton(
+          visualDensity: VisualDensity.compact,
+          constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+          padding: EdgeInsets.zero,
           tooltip: _ribbonLabel('Italic'),
           onPressed: () {
             quillController.formatSelection(Attribute.italic);
@@ -2032,6 +2054,9 @@ Future<void> showCustomFontSizeDialog() async {
 
         // Underline
         IconButton(
+          visualDensity: VisualDensity.compact,
+          constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+          padding: EdgeInsets.zero,
           tooltip: _ribbonLabel('Underline'),
           onPressed: () {
             quillController.formatSelection(Attribute.underline);
@@ -2041,6 +2066,9 @@ Future<void> showCustomFontSizeDialog() async {
 
         // Strikethrough
         IconButton(
+          visualDensity: VisualDensity.compact,
+          constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+          padding: EdgeInsets.zero,
           tooltip: _ribbonLabel('Strikethrough'),
           onPressed: () {
             quillController.formatSelection(
@@ -2052,6 +2080,9 @@ Future<void> showCustomFontSizeDialog() async {
 
         // Red Text
         IconButton(
+          visualDensity: VisualDensity.compact,
+          constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+          padding: EdgeInsets.zero,
           tooltip: _ribbonLabel('Red Text'),
           onPressed: () {
             quillController.formatSelection(
@@ -2066,6 +2097,9 @@ Future<void> showCustomFontSizeDialog() async {
 
         // Yellow Highlight
         IconButton(
+          visualDensity: VisualDensity.compact,
+          constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+          padding: EdgeInsets.zero,
           tooltip: _ribbonLabel('Yellow Highlight'),
           onPressed: () {
             quillController.formatSelection(
@@ -3203,6 +3237,7 @@ Future<void> insertWriterImage() async {
                     height: documentCanvasHeight + 24,
                     child: Center(
                       child: Container(
+                        key: const ValueKey('writer-page-canvas'),
                         width: displayWidth,
                         height: documentCanvasHeight,
                         margin: const EdgeInsets.symmetric(vertical: 12),
