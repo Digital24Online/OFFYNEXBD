@@ -761,7 +761,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Document Information'),
+        title: Text(_ribbonLabel('Document Information')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -790,17 +790,17 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     final value = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Rename Document'),
+        title: Text(_ribbonLabel('Rename Document')),
         content: TextField(
           controller: controller,
           autofocus: true,
           decoration: const InputDecoration(labelText: 'Document name'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(_ribbonLabel('Cancel'))),
           ElevatedButton(
             onPressed: () => Navigator.pop(dialogContext, controller.text.trim()),
-            child: const Text('Save'),
+            child: Text(_ribbonLabel('Save')),
           ),
         ],
       ),
@@ -819,7 +819,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     final result = await showDialog<List<String>>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Insert Citation'),
+        title: Text(_ribbonLabel('Insert Citation')),
         content: SingleChildScrollView(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             TextField(controller: author, decoration: const InputDecoration(labelText: 'Author / লেখক')),
@@ -828,8 +828,8 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
           ]),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
-          ElevatedButton(onPressed: () => Navigator.pop(dialogContext, [author.text.trim(), title.text.trim(), year.text.trim()]), child: const Text('Insert')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(_ribbonLabel('Cancel'))),
+          ElevatedButton(onPressed: () => Navigator.pop(dialogContext, [author.text.trim(), title.text.trim(), year.text.trim()]), child: Text(_ribbonLabel('Insert'))),
         ],
       ),
     );
@@ -872,7 +872,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, refreshDialog) => AlertDialog(
-          title: const Text('Citation Sources / উদ্ধৃতির উৎস'),
+          title: Text(_ribbonLabel('Citation Sources / উদ্ধৃতির উৎস')),
           content: SizedBox(
             width: 460,
             child: writerCitations.isEmpty
@@ -891,24 +891,24 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
                         title: Text('$author ($year)'),
                         subtitle: Text(title),
                         trailing: IconButton(
-                          tooltip: 'Remove source',
+                          tooltip: _ribbonLabel('Remove source'),
                           icon: const Icon(Icons.delete_outline),
                           onPressed: () async {
                             final confirmed = await showDialog<bool>(
                               context: context,
                               builder: (confirmContext) => AlertDialog(
-                                title: const Text('Remove citation source?'),
+                                title: Text(_ribbonLabel('Remove citation source?')),
                                 content: const Text(
                                   'উৎসটি তালিকা ও ভবিষ্যৎ Bibliography থেকে বাদ যাবে। ডকুমেন্টের আগে বসানো citation text মুছবে না।',
                                 ),
                                 actions: [
                                   TextButton(
                                     onPressed: () => Navigator.pop(confirmContext, false),
-                                    child: const Text('Cancel'),
+                                    child: Text(_ribbonLabel('Cancel')),
                                   ),
                                   ElevatedButton(
                                     onPressed: () => Navigator.pop(confirmContext, true),
-                                    child: const Text('Remove'),
+                                    child: Text(_ribbonLabel('Remove')),
                                   ),
                                 ],
                               ),
@@ -927,7 +927,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Close / বন্ধ'),
+              child: Text(_ribbonLabel('Close / বন্ধ')),
             ),
           ],
         ),
@@ -940,7 +940,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     final note = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text(endnote ? 'Insert Endnote' : 'Insert Footnote'),
+        title: Text(endnote ? _ribbonLabel('Insert Endnote') : _ribbonLabel('Insert Footnote')),
         content: TextField(
           controller: controller,
           minLines: 2,
@@ -953,12 +953,12 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text(_ribbonLabel('Cancel')),
           ),
           ElevatedButton(
             onPressed: () =>
                 Navigator.pop(dialogContext, controller.text.trim()),
-            child: const Text('Insert'),
+            child: Text(_ribbonLabel('Insert')),
           ),
         ],
       ),
@@ -1047,7 +1047,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     final caption = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Insert Caption'),
+        title: Text(_ribbonLabel('Insert Caption')),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -1056,12 +1056,12 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text(_ribbonLabel('Cancel')),
           ),
           ElevatedButton(
             onPressed: () =>
                 Navigator.pop(dialogContext, controller.text.trim()),
-            child: const Text('Insert'),
+            child: Text(_ribbonLabel('Insert')),
           ),
         ],
       ),
@@ -1089,7 +1089,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     final comment = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('New Comment'),
+        title: Text(_ribbonLabel('New Comment')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1110,12 +1110,12 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text(_ribbonLabel('Cancel')),
           ),
           ElevatedButton(
             onPressed: () =>
                 Navigator.pop(dialogContext, controller.text.trim()),
-            child: const Text('Add'),
+            child: Text(_ribbonLabel('Add')),
           ),
         ],
       ),
@@ -1140,7 +1140,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Document Comments'),
+        title: Text(_ribbonLabel('Document Comments')),
         content: SizedBox(
           width: 420,
           child: writerComments.isEmpty
@@ -1209,7 +1209,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
                         Navigator.pop(dialogContext);
                       },
                       trailing: IconButton(
-                        tooltip: 'Delete comment',
+                        tooltip: _ribbonLabel('Delete comment'),
                         icon: const Icon(Icons.delete_outline),
                         onPressed: () {
                           setState(() => writerComments.removeAt(index));
@@ -1224,7 +1224,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Close'),
+            child: Text(_ribbonLabel('Close')),
           ),
         ],
       ),
@@ -1238,7 +1238,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     final action = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Find and Replace'),
+        title: Text(_ribbonLabel('Find and Replace')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1256,15 +1256,15 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, 'find'),
-            child: const Text('Find Next'),
+            child: Text(_ribbonLabel('Find Next')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, 'replace'),
-            child: const Text('Replace'),
+            child: Text(_ribbonLabel('Replace')),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(dialogContext, 'all'),
-            child: const Text('Replace All'),
+            child: Text(_ribbonLabel('Replace All')),
           ),
         ],
       ),
@@ -1339,7 +1339,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, refreshDialog) => AlertDialog(
-          title: const Text('Revision Snapshots'),
+          title: Text(_ribbonLabel('Revision Snapshots')),
           content: SizedBox(
             width: 420,
             child: writerRevisions.isEmpty
@@ -1371,7 +1371,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
                           final confirm = await showDialog<bool>(
                             context: context,
                             builder: (confirmContext) => AlertDialog(
-                              title: const Text('Restore this snapshot?'),
+                              title: Text(_ribbonLabel('Restore this snapshot?')),
                               content: const Text(
                                 'বর্তমান লেখা প্রতিস্থাপিত হবে।',
                               ),
@@ -1381,14 +1381,14 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
                                     confirmContext,
                                     false,
                                   ),
-                                  child: const Text('Cancel'),
+                                  child: Text(_ribbonLabel('Cancel')),
                                 ),
                                 ElevatedButton(
                                   onPressed: () => Navigator.pop(
                                     confirmContext,
                                     true,
                                   ),
-                                  child: const Text('Restore'),
+                                  child: Text(_ribbonLabel('Restore')),
                                 ),
                               ],
                             ),
@@ -1436,13 +1436,13 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
                           }
                         },
                         trailing: IconButton(
-                          tooltip: 'Delete snapshot',
+                          tooltip: _ribbonLabel('Delete snapshot'),
                           icon: const Icon(Icons.delete_outline),
                           onPressed: () async {
                             final confirm = await showDialog<bool>(
                               context: context,
                               builder: (confirmContext) => AlertDialog(
-                                title: const Text('Delete snapshot?'),
+                                title: Text(_ribbonLabel('Delete snapshot?')),
                                 content: const Text(
                                   'এই Revision স্থায়ীভাবে মুছে যাবে।',
                                 ),
@@ -1452,14 +1452,14 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
                                       confirmContext,
                                       false,
                                     ),
-                                    child: const Text('Cancel'),
+                                    child: Text(_ribbonLabel('Cancel')),
                                   ),
                                   ElevatedButton(
                                     onPressed: () => Navigator.pop(
                                       confirmContext,
                                       true,
                                     ),
-                                    child: const Text('Delete'),
+                                    child: Text(_ribbonLabel('Delete')),
                                   ),
                                 ],
                               ),
@@ -1484,7 +1484,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
                   final confirm = await showDialog<bool>(
                     context: context,
                     builder: (confirmContext) => AlertDialog(
-                      title: const Text('Clear revision history?'),
+                      title: Text(_ribbonLabel('Clear revision history?')),
                       content: const Text(
                         'সব সংরক্ষিত Revision মুছে যাবে। ডকুমেন্টের বর্তমান লেখা মুছবে না।',
                       ),
@@ -1492,12 +1492,12 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
                         TextButton(
                           onPressed: () =>
                               Navigator.pop(confirmContext, false),
-                          child: const Text('Cancel'),
+                          child: Text(_ribbonLabel('Cancel')),
                         ),
                         ElevatedButton(
                           onPressed: () =>
                               Navigator.pop(confirmContext, true),
-                          child: const Text('Clear History'),
+                          child: Text(_ribbonLabel('Clear History')),
                         ),
                       ],
                     ),
@@ -1508,11 +1508,11 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
                     refreshDialog(() {});
                   }
                 },
-                child: const Text('Clear History'),
+                child: Text(_ribbonLabel('Clear History')),
               ),
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Close'),
+              child: Text(_ribbonLabel('Close')),
             ),
           ],
         ),
@@ -1708,6 +1708,38 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
       'Reset': 'রিসেট',
       'Cancel': 'বাতিল',
       'Page Margins': 'পৃষ্ঠার মার্জিন',
+      'Cancel': 'বাতিল',
+      'Document Information': 'ডকুমেন্টের তথ্য',
+      'Rename Document': 'ডকুমেন্টের নাম পরিবর্তন',
+      'Insert Citation': 'উদ্ধৃতি যোগ করুন',
+      'Citation Sources / উদ্ধৃতির উৎস': 'উদ্ধৃতির উৎস',
+      'Remove citation source?': 'উদ্ধৃতির উৎস সরাবেন?',
+      'Remove': 'সরান',
+      'Close / বন্ধ': 'বন্ধ',
+      'Insert Caption': 'ক্যাপশন যোগ করুন',
+      'Add': 'যোগ করুন',
+      'Document Comments': 'ডকুমেন্টের মন্তব্য',
+      'Find and Replace': 'খুঁজুন ও প্রতিস্থাপন',
+      'Find Next': 'পরবর্তীটি খুঁজুন',
+      'Replace': 'প্রতিস্থাপন',
+      'Replace All': 'সব প্রতিস্থাপন',
+      'Revision Snapshots': 'সংশোধনের সংস্করণ',
+      'Restore this snapshot?': 'এই সংস্করণটি পুনরুদ্ধার করবেন?',
+      'Restore': 'পুনরুদ্ধার',
+      'Delete snapshot?': 'সংস্করণ মুছবেন?',
+      'Delete': 'মুছুন',
+      'Clear revision history?': 'সংশোধনের ইতিহাস মুছবেন?',
+      'Clear History': 'ইতিহাস মুছুন',
+      'Clear document?': 'ডকুমেন্ট খালি করবেন?',
+      'Custom Font Size': 'নিজস্ব ফন্ট সাইজ',
+      'Insert Hyperlink': 'হাইপারলিংক যোগ করুন',
+      'Remove source': 'উৎস সরান',
+      'Delete comment': 'মন্তব্য মুছুন',
+      'Delete snapshot': 'সংস্করণ মুছুন',
+      'Website URL': 'ওয়েবসাইটের ঠিকানা',
+      'Size in points (8–72)': 'সাইজ (৮–৭২ পয়েন্ট)',
+      'Insert Endnote': 'শেষটীকা যোগ করুন',
+      'Insert Footnote': 'পাদটীকা যোগ করুন',
     };
     return _t(translations[english] ?? english, english);
   }
@@ -1760,16 +1792,16 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Clear document?'),
+        title: Text(_ribbonLabel('Clear document?')),
         content: const Text('সব লেখা মুছে ফেলতে চান?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
+            child: Text(_ribbonLabel('Cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Clear'),
+            child: Text(_ribbonLabel('Clear')),
           ),
         ],
       ),
@@ -1840,7 +1872,7 @@ Future<void> showCustomFontSizeDialog() async {
     final value = await showDialog<double>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Custom Font Size'),
+        title: Text(_ribbonLabel('Custom Font Size')),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -1848,7 +1880,7 @@ Future<void> showCustomFontSizeDialog() async {
           decoration: const InputDecoration(labelText: 'Size in points (8–72)'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(_ribbonLabel('Cancel'))),
           ElevatedButton(
             onPressed: () {
               final parsed = double.tryParse(controller.text.trim());
@@ -2682,7 +2714,7 @@ Future<void> showCustomFontSizeDialog() async {
     final url = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Insert Hyperlink'),
+        title: Text(_ribbonLabel('Insert Hyperlink')),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -2695,14 +2727,14 @@ Future<void> showCustomFontSizeDialog() async {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text(_ribbonLabel('Cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(
               dialogContext,
               controller.text.trim(),
             ),
-            child: const Text('Insert'),
+            child: Text(_ribbonLabel('Insert')),
           ),
         ],
       ),
