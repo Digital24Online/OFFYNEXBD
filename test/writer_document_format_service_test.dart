@@ -12,7 +12,7 @@ Uint8List makeZip(Map<String, String> files) {
     final bytes = utf8.encode(entry.value);
     archive.addFile(ArchiveFile(entry.key, bytes.length, bytes));
   }
-  return Uint8List.fromList(ZipEncoder().encode(archive)!);
+  return Uint8List.fromList(ZipEncoder().encode(archive));
 }
 
 Map<String, dynamic> tableData(WriterImportedDocument document) {
