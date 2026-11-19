@@ -272,7 +272,7 @@ class WriterDocxExportService {
   /// Ordinary text remains XML-escaped and editable in the header/footer.
   static String _headerFooterRuns(String value) {
     final output = StringBuffer();
-    final fields = RegExp(r'\\{(page|pages)\\}');
+    final fields = RegExp(r'\{(page|pages)\}');
     var cursor = 0;
     var wroteAny = false;
     for (final match in fields.allMatches(value)) {
