@@ -651,7 +651,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     );
   }
 
-  Future<void> saveDocument() {
+  Future<void> saveDocument({bool rethrowOnError = false}) {
     final title = titleController.text;
     final content = quillController.document.toDelta().toJson();
     final pageLayout = _pageLayoutToJson();
@@ -690,6 +690,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
           if (mounted) {
             setState(() => isSaved = false);
           }
+          if (rethrowOnError) throw error;
         });
 
     return saveQueue;
@@ -2248,7 +2249,7 @@ Future<void> showCustomFontSizeDialog() async {
           controller: quillController,
           focusNode: editorFocusNode,
           isBangla: widget.isBangla,
-          onSave: saveDocument,
+          onSave: () => saveDocument(rethrowOnError: true),
           onEditTable: editWriterTable,
         ),
       ),
@@ -2256,7 +2257,7 @@ Future<void> showCustomFontSizeDialog() async {
   }
 
   Future<void> printDocument() async {
-    await saveDocument();
+    await saveDocument(rethrowOnError: true);
     if (!mounted) return;
     try {
       await Printing.layoutPdf(
