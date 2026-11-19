@@ -99,8 +99,13 @@ void main() {
         },
       ], imageDirectory: source);
       final archive = ZipDecoder().decodeBytes(bytes);
-      archive.files.removeWhere((file) => file.name == 'images/image_2.png');
-      final damaged = Uint8List.fromList(ZipEncoder().encodeBytes(archive));
+      final damagedArchive = Archive();
+      for (final file in archive.files) {
+        if (file.name != 'images/image_2.png') {
+          damagedArchive.addFile(file);
+        }
+      }
+      final damaged = Uint8List.fromList(ZipEncoder().encodeBytes(damagedArchive));
       await expectLater(
         WriterDocumentBackupService.importArchive(damaged, imageDirectory: target),
         throwsA(isA<FormatException>()),
