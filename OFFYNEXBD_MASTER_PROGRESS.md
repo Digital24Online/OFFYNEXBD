@@ -1316,3 +1316,12 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 
 - Added `test/app_info_screen_test.dart` to check the creator statement, name, city, copyright and image decode fallback.
 - The app icon generation workflow uses the same approved Option 2 SVG as the single source of truth; Android splash uses the matching vector identity.
+
+## Writer portable-image backup security follow-up — 2026-11-19
+
+- Hardened Writer backup export path validation: image files are now resolved through filesystem symbolic links and must resolve inside the app-managed Writer image directory. A symlink pointing outside that directory is rejected.
+- Made Writer backup image extraction transactional: if a later referenced image is missing/invalid or extraction otherwise fails, files extracted earlier in that import attempt are deleted on a best-effort basis while the original import error is preserved.
+- Added regression tests for symlink escape rejection and cleanup after a partially failed import.
+- [ ] Flutter Analyze, full tests, Android Release APK build, signing verification and artifact upload are pending for this security follow-up.
+- Build #447 (run ID 44485996198; commit 6238248dd4dcaeced9418e39a51c0f336694d005) passed Analyze and the full test step, but the workflow was **cancelled during Android APK build**. Signature verification and APK upload were skipped; no new installable artifact was produced by #447.
+- Writer still remains incomplete: true rich-content pagination, complex DOCX/ODT layout fidelity, advanced section/header/footer fields, Bangla spellcheck, user font management, large-document stress/recovery, full ribbon localization and physical Android/printer validation are not yet verified.
