@@ -1395,7 +1395,7 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 ## Writer PDF paragraph and list fidelity — 2026-11-19
 
 - PDF export now renders Quill bullet and ordered-list markers, keeps ordered numbering within a consecutive list, and applies bounded indentation levels.
-- PDF export now applies paragraph heading emphasis and level sizing for H1/H2/H3 while preserving inline text styles and paragraph alignment.
+- Existing inline text styles and paragraph alignment remain intact; this change is limited to list markers and bounded indentation.
 - Added PDF text-extraction regression coverage for bullet and numbered list output, including a nested indentation level.
 - This is a focused PDF fidelity improvement; automatic rich-content page flow, full Word/ODT layout parity and physical print validation remain open.
 - Verification: awaiting the next GitHub Actions Analyze, full test suite, Android release build, signing/package checks and artifact upload.
