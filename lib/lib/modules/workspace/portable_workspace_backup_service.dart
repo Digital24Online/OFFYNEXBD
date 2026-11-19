@@ -29,7 +29,7 @@ class PortableWorkspaceBackupService {
       }
       final isImage = name.startsWith('writer-images/asset_');
       final isPdf = name.startsWith('scan-pdfs/asset_');
-      if ((!isImage && !isPdf) || name.contains(r'\\') || name.contains('..')) {
+      if ((!isImage && !isPdf) || name.contains(String.fromCharCode(92)) || name.contains('..')) {
         throw const FormatException('Portable backup contains an unsafe archive entry.');
       }
       final filename = name.substring(name.indexOf('/') + 1);
@@ -209,7 +209,7 @@ class PortableWorkspaceBackupService {
           (isPdf && extension != 'pdf') ||
           archivePath.contains('..') ||
           archivePath.startsWith('/') ||
-          archivePath.contains(r'\\')) {
+          archivePath.contains(String.fromCharCode(92))) {
         throw const FormatException('Portable backup has an unsafe asset path.');
       }
       if (restored.containsKey(archivePath)) return restored[archivePath]!;
@@ -282,7 +282,7 @@ class PortableWorkspaceBackupService {
 }
 ,
       ).firstMatch(name);
-      if (match == null || name.contains(r'\') || name.contains('..')) {
+      if ((!isImage && !isPdf) || name.contains(String.fromCharCode(92)) || name.contains('..')) {
         throw const FormatException('Portable backup contains an unsafe archive entry.');
       }
       final isImage = match.group(1) == 'writer-images';
@@ -592,7 +592,7 @@ class PortableWorkspaceBackupService {
 }
 ,
       ).firstMatch(name);
-      if (match == null || name.contains(r'\') || name.contains('..')) {
+      if ((!isImage && !isPdf) || name.contains(String.fromCharCode(92)) || name.contains('..')) {
         throw const FormatException('Portable backup contains an unsafe archive entry.');
       }
       final isImage = match.group(1) == 'writer-images';
