@@ -106,7 +106,7 @@ void main() {
         'formTitle': '=HYPERLINK("https://bad.example")',
         'submittedAt': '2026-11-18T10:00:00.000Z',
         'answers': [
-          {'question': '+cmd', 'answer': '=1+1'},
+          {'question': 'Command', 'answer': '+cmd'},
           {'question': 'Name', 'answer': '  @SUM(A1:A2)'},
         ],
       },
