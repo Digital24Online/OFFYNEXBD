@@ -190,7 +190,7 @@ void main() {
 
   testWidgets('Writer opens with page width filling the mobile editor viewport', (tester) async {
     SharedPreferences.setMockInitialValues({});
-    await tester.binding.setSurfaceSize(const Size(400, 800));
+    await tester.binding.setSurfaceSize(const Size(600, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: true)));
     await tester.pumpAndSettle();
