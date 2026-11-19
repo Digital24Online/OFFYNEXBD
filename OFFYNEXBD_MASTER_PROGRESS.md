@@ -1325,3 +1325,13 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [ ] Flutter Analyze, full tests, Android Release APK build, signing verification and artifact upload are pending for this security follow-up.
 - Build #447 (run ID 44485996198; commit 6238248dd4dcaeced9418e39a51c0f336694d005) passed Analyze and the full test step, but the workflow was **cancelled during Android APK build**. Signature verification and APK upload were skipped; no new installable artifact was produced by #447.
 - Writer still remains incomplete: true rich-content pagination, complex DOCX/ODT layout fidelity, advanced section/header/footer fields, Bangla spellcheck, user font management, large-document stress/recovery, full ribbon localization and physical Android/printer validation are not yet verified.
+
+
+## CI verification and direct APK delivery correction — 2026-11-19
+
+- Build #456 (run ID `44492934813`, PR #3 head `6ad999906aebf50131d641c998f3cd7d9553b210`) completed successfully: Flutter Analyze SUCCESS; all 170 automated tests passed; Android release APK build SUCCESS; APK signing fingerprint and package metadata verification SUCCESS; download package validation and artifact upload SUCCESS.
+- Verified package ID: `com.offynexbd.offynexbd`; signing certificate SHA-256 matches the previously installed app certificate; generated APK size is approximately 104 MB.
+- The user's Android file manager repeatedly reports “Couldn't extract file. Error unknown” for the 51 MB compressed Actions artifact. The artifact itself uploaded successfully; extraction is a delivery/usability failure, not a Flutter build failure.
+- Added a main-branch-only GitHub Release asset publishing step so future validated main builds provide a directly downloadable `app-release.apk` (plus SHA-256 file), avoiding the need to extract the Actions artifact ZIP. This step must pass on the first main-branch release build before a direct APK link is offered.
+- The DOCX page layout/header/footer export, sans-serif font classification, portable Writer image backup/restore, and View ribbon localization changes are included in the source verified by Build #456 and its 170 passing tests.
+- Still open and not claimed complete: true rich-content pagination; advanced DOCX/ODT fidelity (merged/complex tables, floating images, section-specific headers/footers and fields); Bangla spellcheck; user font management; full ribbon localization; large-document performance/recovery; Android physical-device and printer/Word/LibreOffice visual acceptance.
