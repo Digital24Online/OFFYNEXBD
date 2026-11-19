@@ -102,6 +102,32 @@ void main() {
     }
   });
 
+
+  test('DOCX export does not duplicate a title already present as the first body paragraph', () async {
+    final bytes = await WriterDocxExportService.build(
+      title: 'Annual Report',
+      delta: [
+        {'insert': 'Annual Report\\n', 'attributes': {'header': 1}},
+        {'insert': 'Body text\\n'},
+      ],
+    );
+    final archive = ZipDecoder().decodeBytes(bytes);
+    final document = utf8.decode(archive.findFile('word/document.xml')!.readBytes()!);
+    expect(RegExp(r'Annual Report').allMatches(document).length, 1);
+    expect(document, contains('<w:pStyle w:val="Heading1"/>'));
+  });
+
+  test('DOCX export still adds the document title when the body starts with different text', () async {
+    final bytes = await WriterDocxExportService.build(
+      title: 'Annual Report',
+      delta: [{'insert': 'Introduction\\n'}],
+    );
+    final archive = ZipDecoder().decodeBytes(bytes);
+    final document = utf8.decode(archive.findFile('word/document.xml')!.readBytes()!);
+    expect(RegExp(r'Annual Report').allMatches(document).length, 1);
+    expect(document, contains('Introduction'));
+  });
+
   test('DOCX export writes a real Word hard page break', () async {
     final bytes = await WriterDocxExportService.build(
       title: 'Page break test',

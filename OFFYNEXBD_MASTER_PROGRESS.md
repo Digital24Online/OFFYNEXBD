@@ -1374,3 +1374,11 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Fixed the Symbols ribbon chip after converting its label to a runtime localized string.
 - [ ] Latest source/test checkpoint: `f324340b7b3d9f1dab053f7bdee5f7187ea7bad4` (includes test commit `bcc24ce00021939af34d2beb65d2aad67abfa95e`). GitHub Actions Build #479 (run ID `44519427002`) is running against the latest source checkpoint; Analyze, full tests, Android release APK, signing verification and artifact upload are not yet confirmed.
 - [ ] The new tests do not replace physical-device pinch/scroll acceptance. True rich-content pagination, advanced DOCX/ODT layout fidelity, spellcheck, full font manager, remaining message localization, large-document recovery and external Word/LibreOffice print verification remain open.
+
+
+## Writer DOCX Title Fidelity Correction — 2026-11-19
+
+- Prevented the DOCX exporter from adding a second visible document title when the first body paragraph already matches the Writer document title.
+- Retained the automatic title heading when the body begins with different content, and when the document body is empty.
+- Added regression tests for both cases. This is a targeted export-fidelity correction; it does not imply complete DOCX/Word compatibility.
+- Verification: pending the next GitHub Actions Analyze, automated test and Android release run.

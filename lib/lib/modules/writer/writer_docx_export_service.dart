@@ -15,7 +15,31 @@ class WriterDocxExportService {
     String headerText = '',
     String footerText = '',
   }) async {
-    final html = StringBuffer()..write('<h1>${_escape(title)}</h1>');
+    // The document title is separate metadata in Writer. Avoid adding it as a
+    // second visible heading when the user's first body paragraph already is
+    // the same title; otherwise keep the convenient title heading on export.
+    final firstParagraph = StringBuffer();
+    var firstParagraphEnded = false;
+    for (final operation in delta) {
+      final insert = operation['insert'];
+      if (insert is String && !firstParagraphEnded) {
+        final newline = insert.indexOf('\\n');
+        firstParagraph.write(newline < 0 ? insert : insert.substring(0, newline));
+        if (newline >= 0) firstParagraphEnded = true;
+      } else if (insert is Map && !firstParagraphEnded) {
+        if (insert.containsKey(WriterPageBreakEmbed.embedType) ||
+            insert.containsKey('offynexbd-writer-table') ||
+            insert.containsKey('image')) {
+          firstParagraphEnded = true;
+        }
+      }
+      if (firstParagraphEnded) break;
+    }
+    final titleAlreadyInBody = firstParagraph.toString().trim() == title.trim();
+    final html = StringBuffer();
+    if (!titleAlreadyInBody && title.trim().isNotEmpty) {
+      html.write('<h1>${_escape(title)}</h1>');
+    }
     final line = StringBuffer();
     final listTags = <String>[];
     final listItemOpen = <bool>[];
