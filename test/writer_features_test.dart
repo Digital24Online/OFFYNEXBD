@@ -47,6 +47,37 @@ void main() {
     expect(find.text('View'), findsOneWidget);
   });
 
+  testWidgets('Writer page layout controls follow the selected language', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: true)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('নতুন ডকুমেন্ট'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('লেআউট'));
+    await tester.tap(find.text('লেআউট'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('পৃষ্ঠার আকার'), findsOneWidget);
+    expect(find.text('দিকনির্দেশ'), findsOneWidget);
+    expect(find.text('মার্জিন'), findsOneWidget);
+    expect(find.text('স্বাভাবিক'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: false)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('New Document'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Layout'));
+    await tester.tap(find.text('Layout'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Page Size'), findsOneWidget);
+    expect(find.text('Orientation'), findsOneWidget);
+    expect(find.text('Margins'), findsOneWidget);
+    expect(find.text('Normal'), findsOneWidget);
+  });
+
   testWidgets('Writer header and footer settings persist with document metadata', (tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: true)));
