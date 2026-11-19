@@ -111,35 +111,16 @@ class WriterPdfExportService {
           );
         }
         paragraphSpans.addAll(spans);
-        final headingLevel = attributes['header'];
-        final headingSize = headingLevel == 1
-            ? 20.0
-            : headingLevel == 2
-                ? 17.0
-                : headingLevel == 3
-                    ? 14.0
-                    : null;
-        final paragraphWidget = pw.RichText(
-          text: pw.TextSpan(children: paragraphSpans),
-          textAlign: alignment,
-        );
         widgets.add(
           pw.Padding(
             padding: pw.EdgeInsets.only(
-              bottom: headingSize == null ? 5 : 8,
+              bottom: 5,
               left: indentLevel * 18.0,
-              top: headingSize == null ? 0 : 5,
             ),
-            child: headingSize == null
-                ? paragraphWidget
-                : pw.DefaultTextStyle(
-                    style: pw.TextStyle(
-                      font: latinFont,
-                      fontSize: headingSize,
-                      fontWeight: pw.FontWeight.bold,
-                    ),
-                    child: paragraphWidget,
-                  ),
+            child: pw.RichText(
+              text: pw.TextSpan(children: paragraphSpans),
+              textAlign: alignment,
+            ),
           ),
         );
       }
