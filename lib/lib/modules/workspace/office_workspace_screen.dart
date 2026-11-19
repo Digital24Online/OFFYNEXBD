@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:printing/printing.dart';
 import 'slides_pdf_export_service.dart';
+import 'slides_preview_screen.dart';
 import 'scan_document_service.dart';
 import 'database_rows_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -715,6 +716,30 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
     ));
   }
 
+  Future<void> _previewSlides(Map<String, dynamic> presentation) async {
+    final slides = (presentation['content']?.toString() ?? '')
+        .split(RegExp(r'\r?\n'))
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty)
+        .toList(growable: false);
+    if (slides.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(_bn ? 'প্রিভিউয়ের আগে স্লাইডের লেখা যোগ করুন।' : 'Add slide content before opening the preview.'),
+      ));
+      return;
+    }
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SlidesPreviewScreen(
+          title: presentation['title']?.toString() ?? '',
+          slides: slides,
+          isBangla: _bn,
+        ),
+      ),
+    );
+  }
+
   Future<void> _exportSlidePdf(Map<String, dynamic> slide) async {
     try {
       final title = slide['title']?.toString().trim() ?? '';
@@ -1244,6 +1269,11 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
                               ? Wrap(
                                   spacing: 0,
                                   children: [
+                                    IconButton(
+                                      tooltip: _bn ? 'স্লাইড প্রিভিউ' : 'Preview presentation',
+                                      icon: const Icon(Icons.slideshow_outlined),
+                                      onPressed: () => _previewSlides(item),
+                                    ),
                                     IconButton(
                                       tooltip: _bn ? 'PDF Export' : 'Export Slides PDF',
                                       icon: const Icon(Icons.picture_as_pdf_outlined),
