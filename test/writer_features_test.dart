@@ -123,8 +123,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('নতুন ডকুমেন্ট'));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Insert'));
-    await tester.tap(find.text('Insert'));
+    await tester.ensureVisible(find.text('ইনসার্ট'));
+    await tester.tap(find.text('ইনসার্ট'));
     await tester.pumpAndSettle();
     expect(find.text('পৃষ্ঠা বিরতি'), findsOneWidget);
     await tester.tap(find.text('পৃষ্ঠা বিরতি'));
