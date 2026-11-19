@@ -48,6 +48,55 @@ void main() {
     expect(imported.delta.any((op) => op['insert'] is Map && (op['insert'] as Map).containsKey('offynexbd-writer-table')), isTrue);
   });
 
+  test('DOCX import preserves ordered and bullet numbering formats', () async {
+    final archive = Archive();
+    const documentXml = '''
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>
+<w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="7"/></w:numPr></w:pPr><w:r><w:t>First</w:t></w:r></w:p>
+<w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="7"/></w:numPr></w:pPr><w:r><w:t>Second</w:t></w:r></w:p>
+<w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="8"/></w:numPr></w:pPr><w:r><w:t>Bullet</w:t></w:r></w:p>
+<w:sectPr/></w:body></w:document>''';
+    const numberingXml = '''
+<w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+<w:abstractNum w:abstractNumId="1"><w:lvl w:ilvl="0"><w:numFmt w:val="decimal"/></w:lvl></w:abstractNum>
+<w:abstractNum w:abstractNumId="2"><w:lvl w:ilvl="0"><w:numFmt w:val="bullet"/></w:lvl></w:abstractNum>
+<w:num w:numId="7"><w:abstractNumId w:val="1"/></w:num>
+<w:num w:numId="8"><w:abstractNumId w:val="2"/></w:num>
+</w:numbering>''';
+    final docBytes = utf8.encode(documentXml), numBytes = utf8.encode(numberingXml);
+    archive.addFile(ArchiveFile('word/document.xml', docBytes.length, docBytes));
+    archive.addFile(ArchiveFile('word/numbering.xml', numBytes.length, numBytes));
+    final imported = await WriterDocumentFormatService.importFile(
+      bytes: Uint8List.fromList(ZipEncoder().encodeBytes(archive)),
+      extension: 'docx', imageDirectory: temp, title: 'numbered.docx',
+    );
+    final first = imported.delta.firstWhere((op) => op['insert'] == '\n' && (op['attributes'] as Map?)?['list'] == 'ordered');
+    final second = imported.delta.where((op) => op['insert'] == '\n' && (op['attributes'] as Map?)?['list'] == 'ordered').length;
+    expect(first['attributes']['list'], 'ordered');
+    expect(second, 2);
+    expect(imported.delta.any((op) => op['insert'] == '\n' && (op['attributes'] as Map?)?['list'] == 'bullet'), isTrue);
+  });
+
+  test('ODT export/import groups and preserves ordered list items', () async {
+    final bytes = await WriterDocumentFormatService.exportOdt(
+      title: 'Numbered list',
+      delta: [
+        {'insert': 'First\n', 'attributes': {'list': 'ordered'}},
+        {'insert': 'Second\n', 'attributes': {'list': 'ordered'}},
+      ],
+      imageDirectory: temp,
+      pageLayout: {'pageSize': 'A4', 'orientation': 'Portrait'},
+    );
+    final archive = ZipDecoder().decodeBytes(bytes);
+    final content = utf8.decode(archive.findFile('content.xml')!.readBytes()!);
+    expect(RegExp(r'<text:list text:style-name="L_Numbered">').allMatches(content).length, 1);
+    expect(RegExp(r'<text:list-item>').allMatches(content).length, 2);
+    final imported = await WriterDocumentFormatService.importFile(
+      bytes: bytes, extension: 'odt', imageDirectory: temp, title: 'numbered.odt',
+    );
+    expect(imported.delta.where((op) => op['insert'] == '\n' && (op['attributes'] as Map?)?['list'] == 'ordered').length, 2);
+  });
+
   test('ODT export/import round-trip preserves text, bold style, heading and editable table', () async {
     final delta = <Map<String, dynamic>>[
       {'insert': 'Hello বাংলা'},
