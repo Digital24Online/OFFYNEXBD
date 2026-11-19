@@ -218,10 +218,11 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.initialData == null ? 'টেবিল তৈরি করুন' : 'টেবিল সম্পাদনা'),
+      scrollable: false,
+      title: Text(widget.initialData == null ? 'Create Table' : 'Edit Table'),
       content: SizedBox(
-        width: 560,
-        height: 430,
+        width: (MediaQuery.sizeOf(context).width * 0.88).clamp(280.0, 720.0),
+        height: (MediaQuery.sizeOf(context).height * 0.62).clamp(260.0, 620.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -232,22 +233,22 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
                 OutlinedButton.icon(
                   onPressed: cells.length >= 20 ? null : addRow,
                   icon: const Icon(Icons.add),
-                  label: const Text('সারি যোগ'),
+                  label: const Text('Add Row'),
                 ),
                 OutlinedButton.icon(
                   onPressed: cells.length <= 1 ? null : removeRow,
                   icon: const Icon(Icons.remove),
-                  label: const Text('সারি কমান'),
+                  label: const Text('Remove Row'),
                 ),
                 OutlinedButton.icon(
                   onPressed: columnCount >= 10 ? null : addColumn,
                   icon: const Icon(Icons.add),
-                  label: const Text('কলাম যোগ'),
+                  label: const Text('Add Column'),
                 ),
                 OutlinedButton.icon(
                   onPressed: columnCount <= 1 ? null : removeColumn,
                   icon: const Icon(Icons.remove),
-                  label: const Text('কলাম কমান'),
+                  label: const Text('Remove Column'),
                 ),
                 OutlinedButton(
                   onPressed: () => chooseColor(chooseBorder: true),
@@ -255,12 +256,12 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
                 ),
                 OutlinedButton(
                   onPressed: () => chooseColor(chooseBorder: false),
-                  child: const Text('Background'),
+                  child: const Text('Cell Fill'),
                 ),
               ],
             ),
             const SizedBox(height: 10),
-            Text('সারি: ${cells.length}  |  কলাম: $columnCount'),
+            Text('${cells.length} rows  ·  $columnCount columns'),
             const SizedBox(height: 8),
             Expanded(
               child: SingleChildScrollView(
@@ -299,12 +300,12 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('বাতিল'),
+          child: const Text('Cancel'),
         ),
         FilledButton.icon(
           onPressed: saveTable,
           icon: const Icon(Icons.check),
-          label: const Text('সংরক্ষণ'),
+          label: const Text('Apply Table'),
         ),
       ],
     );
@@ -377,11 +378,11 @@ class WriterTableEmbedBuilder extends EmbedBuilder {
                         embedContext.node.documentOffset,
                       ),
               icon: const Icon(Icons.edit, size: 16),
-              label: const Text('টেবিল সম্পাদনা'),
+              label: const Text('Edit Table'),
             ),
           ),
           if (rows.isEmpty)
-            const Text('খালি টেবিল')
+            const Text('Empty table')
           else
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
