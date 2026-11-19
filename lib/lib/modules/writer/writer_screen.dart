@@ -1708,7 +1708,6 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
       'Reset': 'রিসেট',
       'Cancel': 'বাতিল',
       'Page Margins': 'পৃষ্ঠার মার্জিন',
-      'Cancel': 'বাতিল',
       'Document Information': 'ডকুমেন্টের তথ্য',
       'Rename Document': 'ডকুমেন্টের নাম পরিবর্তন',
       'Insert Citation': 'উদ্ধৃতি যোগ করুন',
