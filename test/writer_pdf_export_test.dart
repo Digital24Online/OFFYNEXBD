@@ -139,4 +139,30 @@ void main() {
     expect(extracted, contains('Second numbered item'));
   });
 
+
+  test('Writer PDF keeps content on both sides of an explicit page break', () async {
+    final sans = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
+    final serif = await rootBundle.load('assets/fonts/NotoSerifBengali.ttf');
+    final latin = await rootBundle.load('assets/fonts/NotoSans.ttf');
+    final bytes = await WriterPdfExportService.build(
+      title: 'Page break export test',
+      delta: [
+        {'insert': 'First page content\n'},
+        {'insert': {'offynexbd-writer-page-break': 'page'}},
+        {'insert': 'Second page content\n'},
+      ],
+      sansFontData: sans,
+      serifFontData: serif,
+      latinFontData: latin,
+      pageFormat: PdfPageFormat.a4,
+      marginTop: 54,
+      marginBottom: 54,
+      marginLeft: 54,
+      marginRight: 54,
+    );
+    final extracted = BanglaPdfExtractor.extract(bytes).text;
+    expect(extracted, contains('First page content'));
+    expect(extracted, contains('Second page content'));
+  });
+
 }
