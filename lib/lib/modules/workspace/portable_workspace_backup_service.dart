@@ -17,6 +17,7 @@ class PortableWorkspaceBackupService {
   static void _validateArchiveEntries(Archive archive) {
     final names = <String>{};
     var manifestCount = 0;
+    const imageExtensions = {'png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'};
     for (final file in archive.files) {
       final name = file.name;
       if (!names.add(name)) {
@@ -26,8 +27,32 @@ class PortableWorkspaceBackupService {
         manifestCount++;
         continue;
       }
-      final match = RegExp(
-        r'^(writer-images|scan-pdfs)/asset_\d+\.(png|jpg|jpeg|webp|gif|bmp|pdf)
+      final isImage = name.startsWith('writer-images/asset_');
+      final isPdf = name.startsWith('scan-pdfs/asset_');
+      if ((!isImage && !isPdf) || name.contains(r'\\') || name.contains('..')) {
+        throw const FormatException('Portable backup contains an unsafe archive entry.');
+      }
+      final filename = name.substring(name.indexOf('/') + 1);
+      final dot = filename.lastIndexOf('.');
+      if (!filename.startsWith('asset_') || dot < 7) {
+        throw const FormatException('Portable backup contains an invalid asset name.');
+      }
+      final number = filename.substring(6, dot);
+      final extension = filename.substring(dot + 1).toLowerCase();
+      if (int.tryParse(number) == null ||
+          (isImage && !imageExtensions.contains(extension)) ||
+          (isPdf && extension != 'pdf')) {
+        throw const FormatException('Portable backup asset type or name is invalid.');
+      }
+      if (file.size <= 0) {
+        throw const FormatException('Portable backup contains an empty asset.');
+      }
+    }
+    if (manifestCount != 1) {
+      throw const FormatException('Portable backup must contain exactly one manifest.');
+    }
+  }
+
   static Future<Uint8List> exportArchive(
     Map<String, Object?> source, {
     required Directory writerImageDirectory,
@@ -173,9 +198,19 @@ class PortableWorkspaceBackupService {
       final isPdf = archivePath.startsWith('scan-pdfs/');
       if (!isImage && !isPdf) throw const FormatException('Portable backup has an unknown asset path.');
       final name = archivePath.split('/').last;
-      final extension = name.split('.').last.toLowerCase();
-      final allowedImageExtensions = const {'png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'};
-      if (!RegExp(r'^asset_\d+\.(png|jpg|jpeg|webp|gif|bmp|pdf)        throw const FormatException('Portable backup has an unsafe asset path.');
+      final dot = name.lastIndexOf('.');
+      final extension = dot < 0 ? '' : name.substring(dot + 1).toLowerCase();
+      const imageExtensions = {'png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'};
+      final validName = name.startsWith('asset_') &&
+          dot > 6 &&
+          int.tryParse(name.substring(6, dot)) != null;
+      if (!validName ||
+          (isImage && !imageExtensions.contains(extension)) ||
+          (isPdf && extension != 'pdf') ||
+          archivePath.contains('..') ||
+          archivePath.startsWith('/') ||
+          archivePath.contains(r'\\')) {
+        throw const FormatException('Portable backup has an unsafe asset path.');
       }
       if (restored.containsKey(archivePath)) return restored[archivePath]!;
       final entry = archive.findFile(archivePath);

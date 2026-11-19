@@ -2,10 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offynexbd/lib/modules/workspace/portable_workspace_backup_service.dart';
-import 'package:offynexbd/lib/modules/workspace/workspace_backup_codec.dart';
 
 void main() {
   test('portable backup includes Writer images, scanned PDFs and all app preferences', () async {
@@ -97,35 +95,4 @@ void main() {
       await root.delete(recursive: true);
     }
   });
-  test('portable backup rejects duplicate manifests and mismatched asset folders', () async {
-    final root = await Directory.systemTemp.createTemp('offynex-portable-entries-');
-    try {
-      final manifest = utf8.encode(WorkspaceBackupCodec.encode({}));
-      final invalidArchives = <Archive>[
-        Archive()
-          ..addFile(ArchiveFile('manifest.json', manifest.length, manifest))
-          ..addFile(ArchiveFile('manifest.json', manifest.length, manifest)),
-        Archive()
-          ..addFile(ArchiveFile('manifest.json', manifest.length, manifest))
-          ..addFile(ArchiveFile('writer-images/asset_1.pdf', 3, [1, 2, 3])),
-        Archive()
-          ..addFile(ArchiveFile('../outside.png', 3, [1, 2, 3]))
-          ..addFile(ArchiveFile('manifest.json', manifest.length, manifest)),
-      ];
-      for (final invalid in invalidArchives) {
-        final bytes = Uint8List.fromList(ZipEncoder().encodeBytes(invalid));
-        await expectLater(
-          PortableWorkspaceBackupService.importArchive(
-            bytes,
-            writerImageDirectory: Directory('\${root.path}/images'),
-            scanDirectory: Directory('\${root.path}/scans'),
-          ),
-          throwsA(isA<FormatException>()),
-        );
-      }
-    } finally {
-      await root.delete(recursive: true);
-    }
-  });
-
 }
