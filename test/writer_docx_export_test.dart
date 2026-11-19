@@ -33,6 +33,21 @@ void main() {
     expect(utf8.decode(archive.findFile('word/footer1.xml')!.readBytes()!), contains('Footer text'));
   });
 
+  test('Writer DOCX export keeps consecutive numbered items in one numbering sequence', () async {
+    final bytes = await WriterDocxExportService.build(
+      title: 'List test',
+      delta: [
+        {'insert': 'First\n', 'attributes': {'list': 'ordered'}},
+        {'insert': 'Second\n', 'attributes': {'list': 'ordered'}},
+      ],
+    );
+    final archive = ZipDecoder().decodeBytes(bytes);
+    final document = utf8.decode(archive.findFile('word/document.xml')!.readBytes()!);
+    expect(RegExp(r'<w:numPr>').allMatches(document).length, 2);
+    final ids = RegExp(r'<w:numId w:val="(\d+)"').allMatches(document).map((m) => m.group(1)).toSet();
+    expect(ids.length, 1);
+  });
+
   test('Writer DOCX export rejects missing local image instead of creating broken link', () async {
     expect(
       () => WriterDocxExportService.build(
