@@ -1335,3 +1335,20 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - Added a main-branch-only GitHub Release asset publishing step so future validated main builds provide a directly downloadable `app-release.apk` (plus SHA-256 file), avoiding the need to extract the Actions artifact ZIP. This step must pass on the first main-branch release build before a direct APK link is offered.
 - The DOCX page layout/header/footer export, sans-serif font classification, portable Writer image backup/restore, and View ribbon localization changes are included in the source verified by Build #456 and its 170 passing tests.
 - Still open and not claimed complete: true rich-content pagination; advanced DOCX/ODT fidelity (merged/complex tables, floating images, section-specific headers/footers and fields); Bangla spellcheck; user font management; full ribbon localization; large-document performance/recovery; Android physical-device and printer/Word/LibreOffice visual acceptance.
+
+
+## Latest chat continuation — Writer larger page and compact ribbon (2026-11-19)
+
+- User reconfirmed the approved Writer design: retain the previously shown compact desktop-style ribbon and make the white document page larger; keep the zoom controls and status bar.
+- User explicitly requested that all remaining work be audited, implemented and tested together, not as repeated one-at-a-time tasks.
+- User reaffirmed the existing GitHub Actions Artifact ZIP delivery method. Do not switch to GitHub Releases/direct APK publishing. Preserve the installed app update identity and signing certificate.
+- Latest completed baseline CI: Build #459, run ID `44507489031`, commit `91497af50dfd88442ea43dc974f23d083eb02b22`; Analyze, tests, Android release APK, signature/package validation and `OFFYNEXBD-Android-APK` artifact upload all succeeded. Artifact ID `14519534438`, expires 2026-12-03.
+- New UI batch changes on this branch:
+  - Reduced Writer ribbon action tiles from 96x72 to 84x56 and tightened Home ribbon padding/spacing.
+  - Changed the secondary Quill toolbar to a single-row display to reduce vertical space used by controls.
+  - Increased viewport usable width from viewport minus 24 px to viewport minus 8 px so the document page occupies more of the phone screen.
+  - Updated viewport regression expectations for the wider Full Page and Page Width fit.
+  - Added Bangla labels for Page Color, page color choices, Page Border, revision capture, custom size and common text formatting tooltips.
+- These new changes are committed but are NOT yet verified by CI. Trigger and inspect a fresh PR workflow run against the latest branch head before calling them complete.
+- Still open: true rich-content pagination/page breaks; advanced DOCX/ODT fidelity and section-specific headers/footers/fields; Bangla spellcheck; user font import/management and Bangla shaping validation; full dialog/control localization; large-document stress/recovery; expanded widget tests for editing/scroll/pinch; real Android device and physical printer/Word/LibreOffice acceptance.
+- Keep the previously selected Option 2 logo, App Info creator attribution and portrait work intact. Do not add GitHub work history or release records inside App Info.
