@@ -345,7 +345,6 @@ class _WriterScreenState extends State<WriterScreen> {
   }
 
   @override
-  @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     final horizontalPadding = width >= 900 ? 32.0 : 18.0;
