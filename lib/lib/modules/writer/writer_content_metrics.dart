@@ -35,7 +35,7 @@ class WriterContentMetrics {
       final indent = indentValue is num
           ? indentValue.toDouble()
           : double.tryParse(indentValue?.toString() ?? '') ?? 0;
-      final width = math.max(24.0, maxWidth - indent.clamp(0, 8) * 24);
+      final width = math.max(24.0, maxWidth - indent.clamp(0, 8) * 24).toDouble();
       final spans = paragraph.isEmpty
           ? <InlineSpan>[TextSpan(text: ' ', style: TextStyle(fontSize: defaultFontSize))]
           : List<InlineSpan>.of(paragraph);
@@ -43,7 +43,7 @@ class WriterContentMetrics {
         text: TextSpan(children: spans),
         textDirection: textDirection,
       )..layout(maxWidth: width);
-      final height = math.max(defaultFontSize * 1.35, painter.height);
+      final height = math.max(defaultFontSize * 1.35, painter.height).toDouble();
       totalHeight += height + 4;
       paragraph.clear();
       paragraphAttributes = <String, dynamic>{};
@@ -115,7 +115,7 @@ class WriterContentMetrics {
     }
 
     if (paragraph.isNotEmpty || totalHeight == 0) flushParagraph();
-    return math.max(totalHeight, defaultFontSize * 1.35);
+    return math.max(totalHeight, defaultFontSize * 1.35).toDouble();
   }
 
   static double _estimateTableHeight(
@@ -132,7 +132,7 @@ class WriterContentMetrics {
       for (final rawRow in rows) {
         final cells = rawRow is List ? rawRow.take(10) : <Object?>[rawRow];
         final cellCount = math.max(1, cells.length);
-        final cellWidth = math.max(24.0, maxWidth / cellCount - 12);
+        final cellWidth = math.max(24.0, maxWidth / cellCount - 12).toDouble();
         var rowHeight = 36.0;
         for (final cell in cells) {
           final painter = TextPainter(
@@ -142,7 +142,7 @@ class WriterContentMetrics {
             ),
             textDirection: direction,
           )..layout(maxWidth: cellWidth);
-          rowHeight = math.max(rowHeight, painter.height + 16);
+          rowHeight = math.max(rowHeight, painter.height + 16).toDouble();
         }
         height += rowHeight;
       }
