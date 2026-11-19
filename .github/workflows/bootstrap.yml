@@ -195,6 +195,18 @@ jobs:
           grep -Eq '(Signer #1|V[0-9]+ Signer): certificate SHA-256 digest' "$OUTPUT/APK_SIGNATURE.txt"
           ls -lh "$OUTPUT"
 
+      - name: Publish Direct APK Download
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: offynexbd-android-${{ github.run_number }}
+          name: OFFYNEXBD Android Build #${{ github.run_number }}
+          prerelease: true
+          make_latest: false
+          files: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/flutter-apk/APK_SHA256.txt
+
       - name: Upload Android APK
         uses: actions/upload-artifact@v4
         with:
