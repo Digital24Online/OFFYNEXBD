@@ -1709,14 +1709,14 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(icon, size: 21, color: const Color(0xFF315D43)),
-                const SizedBox(height: 4),
+                Icon(icon, size: 18, color: const Color(0xFF315D43)),
+                const SizedBox(height: 2),
                 Text(
                   _ribbonLabel(label),
                   textAlign: TextAlign.center,
-                  maxLines: 3,
-                  overflow: TextOverflow.visible,
-                  style: const TextStyle(fontSize: 10, height: 1.1),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 9, height: 1.0),
                 ),
               ],
             ),
