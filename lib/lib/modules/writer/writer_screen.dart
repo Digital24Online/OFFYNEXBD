@@ -2816,8 +2816,8 @@ Future<void> showCustomFontSizeDialog() async {
               PopupMenuItem(value: '∞', child: Text('∞  Infinity')),
               PopupMenuItem(value: '✓', child: Text('✓  Check')),
             ],
-            child: const Chip(
-              avatar: Icon(Icons.functions),
+            child: Chip(
+              avatar: const Icon(Icons.functions),
               label: Text(_ribbonLabel('Symbols')),
             ),
           ),
