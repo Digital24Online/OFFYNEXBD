@@ -5,8 +5,8 @@ import 'package:offynexbd/main.dart';
 void main() {
   testWidgets('App Info records the creator attribution and selected portrait',
       (tester) async {
-    await tester.view.setPhysicalSize(const Size(800, 1600));
-    await tester.view.setDevicePixelRatio(1);
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
