@@ -2964,7 +2964,7 @@ Future<void> showCustomFontSizeDialog() async {
   }
 
   Future<void> insertWriterTable() async {
-    final data = await showWriterTableEditor(context);
+    final data = await showWriterTableEditor(context, isBangla: widget.isBangla);
 
     if (data == null || !mounted) return;
 
@@ -3090,6 +3090,7 @@ Future<void> insertWriterImage() async {
     final updatedData = await showWriterTableEditor(
       editorContext,
       initialData: data,
+      isBangla: widget.isBangla,
     );
 
     if (updatedData == null || !mounted) return;
@@ -3392,6 +3393,7 @@ Future<void> insertWriterImage() async {
                                       embedBuilders: [
                                         WriterTableEmbedBuilder(
                                           onEdit: editWriterTable,
+                                          isBangla: widget.isBangla,
                                         ),
                                         WriterImageEmbedBuilder(),
                                         WriterPageBreakEmbedBuilder(),
@@ -3743,6 +3745,7 @@ class _WriterPrintPreviewScreenState
                         embedBuilders: [
                           WriterTableEmbedBuilder(
                             onEdit: widget.onEditTable,
+                            isBangla: widget.isBangla,
                           ),
                           WriterImageEmbedBuilder(),
                           WriterPageBreakEmbedBuilder(),
