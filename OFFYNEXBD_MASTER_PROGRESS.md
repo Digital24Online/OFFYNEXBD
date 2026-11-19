@@ -1365,3 +1365,12 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [ ] CI Analyze, full automated tests, Android Release APK build, signing validation and artifact upload must pass on the final latest branch head. Build #472 succeeded for its earlier Slides-preview commit; it does not verify these later Writer changes.
 - [ ] Writer still requires further completion work: true rich-content pagination/page breaks; complex DOCX/ODT fidelity and section-specific headers/footers/fields; Bangla spellcheck; user font import/management and glyph-shaping checks; full localization of remaining validation/error messages; large-document stress/recovery; physical Android/printer and Word/LibreOffice acceptance.
 - [ ] Do not call Writer complete until the remaining items above are implemented or explicitly scoped as platform-dependent, tested, and the final CI run is successful.
+
+
+### Writer localization + View controls follow-up — 2026-11-19
+
+- [x] Extended Bangla/English localization to the Writer library import/export/rename/delete dialogs and common editor fields.
+- [x] Added a View ribbon widget test for Full Page, Page Width, zoom control presence and the interactive pinch/pan canvas.
+- [x] Fixed the Symbols ribbon chip after converting its label to a runtime localized string.
+- [ ] Latest source/test checkpoint: `f324340b7b3d9f1dab053f7bdee5f7187ea7bad4` (includes test commit `bcc24ce00021939af34d2beb65d2aad67abfa95e`). GitHub Actions Build #479 (run ID `44519427002`) is running against the latest source checkpoint; Analyze, full tests, Android release APK, signing verification and artifact upload are not yet confirmed.
+- [ ] The new tests do not replace physical-device pinch/scroll acceptance. True rich-content pagination, advanced DOCX/ODT layout fidelity, spellcheck, full font manager, remaining message localization, large-document recovery and external Word/LibreOffice print verification remain open.
