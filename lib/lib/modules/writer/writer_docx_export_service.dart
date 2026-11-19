@@ -16,6 +16,13 @@ class WriterDocxExportService {
   }) async {
     final html = StringBuffer()..write('<h1>${_escape(title)}</h1>');
     final line = StringBuffer();
+    String? openListTag;
+
+    void closeList() {
+      if (openListTag == null) return;
+      html.write('</$openListTag>');
+      openListTag = null;
+    }
 
     void flushLine(Map<String, dynamic> attributes) {
       final content = line.toString();
@@ -24,8 +31,14 @@ class WriterDocxExportService {
       final list = attributes['list'];
       if (list == 'bullet' || list == 'ordered') {
         final tag = list == 'bullet' ? 'ul' : 'ol';
-        html.write('<$tag><li>$content</li></$tag>');
+        if (openListTag != tag) {
+          closeList();
+          openListTag = tag;
+          html.write('<$tag>');
+        }
+        html.write('<li>$content</li>');
       } else {
+        closeList();
         final tag = heading == 1 ? 'h1' : heading == 2 ? 'h2' : heading == 3 ? 'h3' : 'p';
         html.write('<$tag>$content</$tag>');
       }
@@ -71,6 +84,7 @@ class WriterDocxExportService {
       }
     }
     if (line.length > 0) flushLine(<String, dynamic>{});
+    closeList();
 
     final nodes = await DocxParser.fromHtml(html.toString());
     final document = DocxBuiltDocument(elements: nodes);
