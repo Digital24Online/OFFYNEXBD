@@ -582,7 +582,7 @@ class AppInfoScreen extends StatelessWidget {
                       width: 116,
                       height: 116,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
+                      errorBuilder: (_, _, _) => Container(
                         width: 116,
                         height: 116,
                         alignment: Alignment.center,
