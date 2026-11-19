@@ -224,16 +224,11 @@ class PortableWorkspaceBackupService {
           archivePath.contains(String.fromCharCode(92))) {
         throw const FormatException('Portable backup has an unsafe asset path.');
       }
-      if (!RegExp(r'^asset_\d+\.(png|jpg|jpeg|webp|gif|bmp|pdf)$').hasMatch(name) ||
-          archivePath.contains('..') || archivePath.startsWith('/')) {
-        throw const FormatException('Portable backup has an unsafe asset path.');
-      }
       if (restored.containsKey(archivePath)) return restored[archivePath]!;
       final entry = archive.findFile(archivePath);
       final content = entry?.readBytes();
       if (content == null || content.isEmpty) throw const FormatException('A backup asset is missing.');
       final directory = isImage ? writerImageDirectory : scanDirectory;
-      final extension = name.split('.').last;
       final target = File('${directory.path}/offynex_restore_${stamp}_${restored.length}.$extension');
       await target.writeAsBytes(content, flush: true);
       createdFiles.add(target);

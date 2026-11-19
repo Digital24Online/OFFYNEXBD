@@ -117,8 +117,8 @@ void main() {
         await expectLater(
           PortableWorkspaceBackupService.importArchive(
             bytes,
-            writerImageDirectory: Directory(root.path + '/images'),
-            scanDirectory: Directory(root.path + '/scans'),
+            writerImageDirectory: Directory('${root.path}/images'),
+            scanDirectory: Directory('${root.path}/scans'),
           ),
           throwsA(isA<FormatException>()),
         );
