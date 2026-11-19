@@ -16,12 +16,20 @@ class WriterDocxExportService {
   }) async {
     final html = StringBuffer()..write('<h1>${_escape(title)}</h1>');
     final line = StringBuffer();
-    String? openListTag;
+    final listTags = <String>[];
+    final listItemOpen = <bool>[];
 
-    void closeList() {
-      if (openListTag == null) return;
-      html.write('</$openListTag>');
-      openListTag = null;
+    void closeDeepestListLevel() {
+      if (listTags.isEmpty) return;
+      if (listItemOpen.last) html.write('</li>');
+      html.write('</${listTags.removeLast()}>');
+      listItemOpen.removeLast();
+    }
+
+    void closeAllLists() {
+      while (listTags.isNotEmpty) {
+        closeDeepestListLevel();
+      }
     }
 
     void flushLine(Map<String, dynamic> attributes) {
@@ -31,14 +39,34 @@ class WriterDocxExportService {
       final list = attributes['list'];
       if (list == 'bullet' || list == 'ordered') {
         final tag = list == 'bullet' ? 'ul' : 'ol';
-        if (openListTag != tag) {
-          closeList();
-          openListTag = tag;
-          html.write('<$tag>');
+        final rawIndent = attributes['indent'];
+        final requestedLevel = rawIndent is num
+            ? rawIndent.toInt()
+            : int.tryParse(rawIndent?.toString() ?? '') ?? 0;
+        final level = requestedLevel.clamp(0, 8).toInt();
+
+        while (listTags.length - 1 > level) {
+          closeDeepestListLevel();
         }
-        html.write('<li>$content</li>');
+        if (listTags.isNotEmpty && listTags.length - 1 == level &&
+            listTags.last != tag) {
+          closeDeepestListLevel();
+        }
+        if (listTags.isNotEmpty && listTags.length - 1 == level &&
+            listItemOpen.last) {
+          html.write('</li>');
+          listItemOpen[listItemOpen.length - 1] = false;
+        }
+
+        while (listTags.length <= level) {
+          html.write('<$tag>');
+          listTags.add(tag);
+          listItemOpen.add(false);
+        }
+        html.write('<li>$content');
+        listItemOpen[listItemOpen.length - 1] = true;
       } else {
-        closeList();
+        closeAllLists();
         final tag = heading == 1 ? 'h1' : heading == 2 ? 'h2' : heading == 3 ? 'h3' : 'p';
         html.write('<$tag>$content</$tag>');
       }
@@ -84,7 +112,7 @@ class WriterDocxExportService {
       }
     }
     if (line.length > 0) flushLine(<String, dynamic>{});
-    closeList();
+    closeAllLists();
 
     final nodes = await DocxParser.fromHtml(html.toString());
     final document = DocxBuiltDocument(elements: nodes);
