@@ -1706,6 +1706,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
       'Right': 'ডানে',
       'Apply': 'প্রয়োগ',
       'Reset': 'রিসেট',
+      'Cancel': 'বাতিল',
       'Page Margins': 'পৃষ্ঠার মার্জিন',
     };
     return _t(translations[english] ?? english, english);
@@ -2495,7 +2496,7 @@ Future<void> showCustomFontSizeDialog() async {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text(_ribbonLabel('Cancel')),
           ),
           ElevatedButton(
             onPressed: () {
@@ -2517,7 +2518,7 @@ Future<void> showCustomFontSizeDialog() async {
               }
               Navigator.pop(dialogContext, parsed.cast<double>());
             },
-            child: const Text('Apply'),
+            child: Text(_ribbonLabel('Apply')),
           ),
         ],
       ),
@@ -2572,8 +2573,8 @@ Future<void> showCustomFontSizeDialog() async {
                 items: [
                   const DropdownMenuItem(value: 'A4', child: Text('A4')),
                   const DropdownMenuItem(value: 'A5', child: Text('A5')),
-                  DropdownMenuItem(value: 'Letter', child: Text('লেটার')),
-                  const DropdownMenuItem(value: 'Legal', child: Text('লিগ্যাল')),
+                  DropdownMenuItem(value: 'Letter', child: Text(_ribbonLabel('Letter'))),
+                  DropdownMenuItem(value: 'Legal', child: Text(_ribbonLabel('Legal'))),
                 ],
                 onChanged: (value) {
                   if (value == null) return;
