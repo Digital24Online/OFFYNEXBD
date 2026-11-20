@@ -1722,7 +1722,7 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - **PDF:** shared PDF byte validation is available for reader and conversion flows; validates the PDF signature, non-empty minimum and 50 MB limit. Conversion validates page count (1–1,000) and verifies DOCX ZIP output signatures. Added boundary and signature tests.
 - **PDF Reader:** added a PDF preview screen using the existing printing stack, with print/share actions. PDF-to-Document can open the original imported PDF in Reader without replacing the source bytes.
 - **Scan:** native Android scanner output now validates PDF signature, page count (1–50) and 50 MB limit. Saved PDF writes use a staged file and rename only after byte-count verification. OCR image byte limits are centralized. Added validation tests.
-- **Scan-to-PDF:** Scan history can open the saved PDF in Reader; sharing and confirmed deletion remain available.
+- **Scan-to-PDF:** Scan history can open the saved PDF in Reader, open OCR text in an editable Writer document, review/correct OCR text and synchronize the correction back to Writer; sharing and confirmed deletion remain available.
 - Updated four module READMEs to state current implementation and remaining limits accurately.
 
 ### Still blocking a claim of full completion
