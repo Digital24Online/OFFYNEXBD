@@ -3,6 +3,8 @@ import 'dart:convert';
 /// Reads legacy one-line-per-slide records and the structured v1 slide format.
 class SlidesContentCodec {
   static const String marker = 'OFFYNEXBD_SLIDES_V1\n';
+  static const int maxSlides = 200;
+  static const int maxTextBytes = 5 * 1024 * 1024;
 
   static List<String> decode(String? source) {
     final value = source ?? '';
@@ -14,24 +16,29 @@ class SlidesContentCodec {
         throw const FormatException('Invalid OFFYNEXBD slide document.');
       }
       final slides = decoded.cast<String>();
-      if (utf8.encode(slides.join('\\n')).length > maxTextBytes) {
+      if (utf8.encode(slides.join('\n')).length > maxTextBytes) {
         throw const FormatException('Slide text exceeds the 5 MB limit.');
       }
       return slides;
     }
-    return value
+    final slides = value
         .split(RegExp(r'\r?\n'))
         .map((item) => item.trim())
         .where((item) => item.isNotEmpty)
         .toList(growable: false);
+    if (slides.length > maxSlides || utf8.encode(value).length > maxTextBytes) {
+      throw const FormatException('Legacy slide content exceeds supported limits.');
+    }
+    return slides;
   }
 
   static String encode(List<String> slides) {
-    if (slides.length > maxSlides ||
+    if (slides.isEmpty ||
+        slides.length > maxSlides ||
         slides.any((item) => item.trim().isEmpty) ||
-        utf8.encode(slides.join('\\n')).length > maxTextBytes) {
+        utf8.encode(slides.join('\n')).length > maxTextBytes) {
       throw const FormatException('Slide content exceeds supported limits.');
     }
-    return '$marker${jsonEncode(slides)}';
+    return '$marker\${jsonEncode(slides)}';
   }
 }
