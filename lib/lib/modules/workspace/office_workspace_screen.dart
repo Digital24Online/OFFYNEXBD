@@ -628,7 +628,6 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
       ));
       return;
     }
-    final fields = schema.map((field) => field.name).toList(growable: false);
     final prefs = await SharedPreferences.getInstance();
     const storageKey = 'offynex_database_rows_v1';
     final raw = prefs.getString(storageKey);
