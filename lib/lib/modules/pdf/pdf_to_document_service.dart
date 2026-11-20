@@ -235,8 +235,12 @@ class PdfToDocumentService {
     Uint8List imageBytes, {
     required String sourceName,
   }) async {
-    if (imageBytes.isEmpty || !isSupportedImageName(sourceName)) {
-      throw const FormatException('সমর্থিত ও বৈধ ছবি নির্বাচন করুন।');
+    if (imageBytes.isEmpty ||
+        !isSupportedImageName(sourceName) ||
+        !hasValidImageSignature(imageBytes, sourceName)) {
+      throw const FormatException(
+        'ছবির ফাইলের ধরন ও প্রকৃত ডেটা মিলছে না অথবা ছবি বৈধ নয়।',
+      );
     }
     if (imageBytes.length > maxImageBytes) {
       throw const FormatException('ছবির সর্বোচ্চ সাইজ ৩০ MB।');
@@ -272,6 +276,15 @@ class PdfToDocumentService {
     }
   }
 
+  /// Detects the actual image container before passing embedded PDF images
+  /// to OCR. PDF parsers may return JPEG, PNG, WEBP, BMP or TIFF bytes.
+  static String? _imageExtensionFromSignature(Uint8List bytes) {
+    for (final extension in const ['jpg', 'png', 'webp', 'bmp', 'tif']) {
+      if (hasValidImageSignature(bytes, 'image.$extension')) return extension;
+    }
+    return null;
+  }
+
   static bool _isEmpty(List<Map<String, dynamic>> delta) =>
       delta.every((op) =>
           op['insert'] is String && (op['insert'] as String).trim().isEmpty);
@@ -282,8 +295,10 @@ class PdfToDocumentService {
     for (var i = 0; i < images.length; i++) {
       final bytes = Uint8List.fromList(List<int>.from(images[i].bytes as List));
       if (bytes.isEmpty || bytes.length > maxImageBytes) continue;
+      final extension = _imageExtensionFromSignature(bytes);
+      if (extension == null) continue;
       final file = File(
-        '${temp.path}/offynex_ocr_${DateTime.now().microsecondsSinceEpoch}_$i.png',
+        '${temp.path}/offynex_ocr_${DateTime.now().microsecondsSinceEpoch}_$i.$extension',
       );
       await file.writeAsBytes(bytes, flush: true);
       try {
