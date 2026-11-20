@@ -76,6 +76,17 @@ void main() {
       expect(height, greaterThanOrEqualTo(pageHeight));
     });
 
+    test('calculates page count from content-aware estimate', () {
+      expect(WriterContentMetrics.estimatePageCount(
+        delta: [{'insert': 'Short paragraph\\n'}],
+        maxWidth: 300, pageContentHeight: 1000,
+      ), 1);
+      expect(WriterContentMetrics.estimatePageCount(
+        delta: [{'insert': List.filled(100, 'বাংলা লেখা\\n').join()}],
+        maxWidth: 100, pageContentHeight: 100,
+      ), greaterThan(1));
+    });
+
     test('rejects invalid layout dimensions', () {
       expect(
         () => WriterContentMetrics.estimateHeight(
