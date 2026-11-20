@@ -359,7 +359,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
     }
     lastRow = lastRow.clamp(2, SheetsWorkbookLimits.maxRows).toInt();
     lastColumn = lastColumn.clamp(2, SheetsWorkbookLimits.maxColumns).toInt();
-    return 'A1:' + SheetsAnalytics.columnName(lastColumn) + lastRow.toString();
+    return 'A1:${SheetsAnalytics.columnName(lastColumn)}$lastRow';
   }
 
   Map<String, String> _resolvedSheetValues(SheetsWorksheet sheet) {
@@ -471,7 +471,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
       var name = 'Pivot Table';
       while (names.contains(name.toLowerCase())) {
         suffix++;
-        name = 'Pivot Table ' + suffix.toString();
+        name = 'Pivot Table $suffix';
       }
       final cells = <String, String>{};
       final styles = <String, Map<String, dynamic>>{};
@@ -484,7 +484,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
         }
       }
       final pivotSheet = SheetsWorksheet(
-        id: 'pivot-' + DateTime.now().microsecondsSinceEpoch.toString(),
+        id: 'pivot-${DateTime.now().microsecondsSinceEpoch}',
         name: name,
         rows: rows.length,
         columns: 2,
@@ -569,7 +569,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
         padding: const EdgeInsets.all(8),
         scrollDirection: Axis.horizontal,
         itemCount: charts.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           final chart = charts[index];
           SheetsChartData? data;
