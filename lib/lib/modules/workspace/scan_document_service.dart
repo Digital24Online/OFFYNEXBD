@@ -49,6 +49,12 @@ class ScanDocumentService {
       .where((page) => page.isNotEmpty)
       .join('\n\n');
 
+  static void validateImportedImages(
+    List<({String name, Uint8List bytes})> images,
+  ) {
+    validateImportedImages(images);
+  }
+
   /// Creates a multi-page scan PDF from imported images on platforms where
   /// the native ML Kit scanner is unavailable. JPEG/PNG originals are embedded
   /// in the PDF; OCR failures never discard the saved scan.
