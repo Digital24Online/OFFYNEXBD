@@ -3334,15 +3334,11 @@ Future<void> insertWriterImage() async {
                   1,
                   page.height - (marginTop + marginBottom) * 96,
                 ).toDouble();
-                final contentHeight = WriterContentMetrics.estimateHeight(
+                final estimatedPageCount = WriterContentMetrics.estimatePageCount(
                   delta: quillController.document.toDelta().toJson(),
                   maxWidth: pageContentWidth,
                   pageContentHeight: pageContentHeight,
                   textDirection: Directionality.of(context),
-                );
-                final estimatedPageCount = math.max(
-                  1,
-                  (contentHeight / pageContentHeight).ceil(),
                 );
                 final documentCanvasHeight =
                     displayHeight * estimatedPageCount;
