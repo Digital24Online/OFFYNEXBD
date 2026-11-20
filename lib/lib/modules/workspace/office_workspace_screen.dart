@@ -8,6 +8,7 @@ import 'package:printing/printing.dart';
 import 'slides_pdf_export_service.dart';
 import 'slides_preview_screen.dart';
 import 'slides_editor_screen.dart';
+import 'slides_content_codec.dart';
 import 'scan_document_service.dart';
 import 'database_rows_dialog.dart';
 import 'database_field_codec.dart';
@@ -726,11 +727,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
   }
 
   Future<void> _previewSlides(Map<String, dynamic> presentation) async {
-    final slides = (presentation['content']?.toString() ?? '')
-        .split(RegExp(r'\r?\n'))
-        .map((value) => value.trim())
-        .where((value) => value.isNotEmpty)
-        .toList(growable: false);
+    final slides = SlidesContentCodec.decode(presentation['content']?.toString());
     if (slides.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(_bn ? 'প্রিভিউয়ের আগে স্লাইডের লেখা যোগ করুন।' : 'Add slide content before opening the preview.'),
@@ -752,11 +749,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
   Future<void> _exportSlidePdf(Map<String, dynamic> slide) async {
     try {
       final title = slide['title']?.toString().trim() ?? '';
-      final slideTexts = (slide['content']?.toString() ?? '')
-          .split(RegExp(r'\r?\n'))
-          .map((value) => value.trim())
-          .where((value) => value.isNotEmpty)
-          .toList(growable: false);
+      final slideTexts = SlidesContentCodec.decode(slide['content']?.toString());
       final bytes = await SlidesPdfExportService.build(
         title: title,
         slideTexts: slideTexts,
