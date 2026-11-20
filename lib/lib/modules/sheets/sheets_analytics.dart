@@ -236,6 +236,157 @@ class SheetsAnalytics {
     return SheetsChartData(labels: labels, series: series);
   }
 
+  static String _formatPivotNumber(double value) {
+    if (value == value.roundToDouble()) return value.toStringAsFixed(0);
+    return value.toStringAsFixed(2).replaceFirst(RegExp(r'0+
+    required Map<String, String> cells,
+    required String rangeText,
+    required String groupColumn,
+    required String valueColumn,
+    required String aggregation,
+  }) {
+    final range = parseRange(rangeText);
+    final groupIndex = columnNumber(groupColumn);
+    final valueIndex = columnNumber(valueColumn);
+    if (range.rows < 2 ||
+        groupIndex < range.firstColumn ||
+        groupIndex > range.lastColumn ||
+        valueIndex < range.firstColumn ||
+        valueIndex > range.lastColumn ||
+        groupIndex == valueIndex) {
+      throw const FormatException('Choose two different columns inside the source range, including a header row.');
+    }
+    if (!pivotAggregations.contains(aggregation)) {
+      throw const FormatException('Unsupported Pivot aggregation.');
+    }
+    final groupHeader = cells['${columnName(groupIndex)}${range.firstRow}']?.trim() ?? '';
+    final valueHeader = cells['${columnName(valueIndex)}${range.firstRow}']?.trim() ?? '';
+    final groups = <String, List<double>>{};
+    for (var row = range.firstRow + 1; row <= range.lastRow; row++) {
+      final label = cells['${columnName(groupIndex)}$row']?.trim() ?? '';
+      if (label.isEmpty) continue;
+      final raw = cells['${columnName(valueIndex)}$row']?.trim() ?? '';
+      if (aggregation == 'count') {
+        final values = groups.putIfAbsent(label, () => <double>[]);
+        if (raw.isNotEmpty) values.add(1);
+        continue;
+      }
+      if (raw.isEmpty) continue;
+      final value = double.tryParse(raw);
+      if (value == null || !value.isFinite) {
+        throw FormatException('Pivot value in ${columnName(valueIndex)}$row is not numeric.');
+      }
+      groups.putIfAbsent(label, () => <double>[]).add(value);
+    }
+    if (groups.isEmpty) throw const FormatException('No grouped rows were found in the selected range.');
+    final result = <List<String>>[
+      [groupHeader.isEmpty ? 'Row' : groupHeader, '${aggregation.toUpperCase()} of ${valueHeader.isEmpty ? 'Value' : valueHeader}'],
+    ];
+    final keys = groups.keys.toList()..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    if (keys.length > SheetsWorkbookLimits.maxRows - 2) {
+      throw const FormatException('Pivot result would exceed the supported worksheet row limit.');
+    }
+    for (final key in keys) {
+      final values = groups[key]!;
+      final total = values.fold<double>(0, (sum, value) => sum + value);
+      final aggregate = values.isEmpty ? 0.0 : switch (aggregation) {
+        'count' => values.length.toDouble(),
+        'average' => total / values.length,
+        'min' => values.reduce((left, right) => left < right ? left : right),
+        'max' => values.reduce((left, right) => left > right ? left : right),
+        _ => total,
+      };
+      result.add([key, _formatPivotNumber(aggregate)]);
+    }
+    final grandValues = groups.values.expand((values) => values).toList();
+    final grandTotal = grandValues.fold<double>(0, (sum, value) => sum + value);
+    final grand = grandValues.isEmpty ? 0.0 : switch (aggregation) {
+      'count' => grandValues.length.toDouble(),
+      'average' => grandTotal / grandValues.length,
+      'min' => grandValues.reduce((left, right) => left < right ? left : right),
+      'max' => grandValues.reduce((left, right) => left > right ? left : right),
+      _ => grandTotal,
+    };
+    result.add(['Grand Total', _formatPivotNumber(grand)]);
+    return result;
+  }
+}
+), '').replaceFirst(RegExp(r'\\.
+    required Map<String, String> cells,
+    required String rangeText,
+    required String groupColumn,
+    required String valueColumn,
+    required String aggregation,
+  }) {
+    final range = parseRange(rangeText);
+    final groupIndex = columnNumber(groupColumn);
+    final valueIndex = columnNumber(valueColumn);
+    if (range.rows < 2 ||
+        groupIndex < range.firstColumn ||
+        groupIndex > range.lastColumn ||
+        valueIndex < range.firstColumn ||
+        valueIndex > range.lastColumn ||
+        groupIndex == valueIndex) {
+      throw const FormatException('Choose two different columns inside the source range, including a header row.');
+    }
+    if (!pivotAggregations.contains(aggregation)) {
+      throw const FormatException('Unsupported Pivot aggregation.');
+    }
+    final groupHeader = cells['${columnName(groupIndex)}${range.firstRow}']?.trim() ?? '';
+    final valueHeader = cells['${columnName(valueIndex)}${range.firstRow}']?.trim() ?? '';
+    final groups = <String, List<double>>{};
+    for (var row = range.firstRow + 1; row <= range.lastRow; row++) {
+      final label = cells['${columnName(groupIndex)}$row']?.trim() ?? '';
+      if (label.isEmpty) continue;
+      final raw = cells['${columnName(valueIndex)}$row']?.trim() ?? '';
+      if (aggregation == 'count') {
+        final values = groups.putIfAbsent(label, () => <double>[]);
+        if (raw.isNotEmpty) values.add(1);
+        continue;
+      }
+      if (raw.isEmpty) continue;
+      final value = double.tryParse(raw);
+      if (value == null || !value.isFinite) {
+        throw FormatException('Pivot value in ${columnName(valueIndex)}$row is not numeric.');
+      }
+      groups.putIfAbsent(label, () => <double>[]).add(value);
+    }
+    if (groups.isEmpty) throw const FormatException('No grouped rows were found in the selected range.');
+    final result = <List<String>>[
+      [groupHeader.isEmpty ? 'Row' : groupHeader, '${aggregation.toUpperCase()} of ${valueHeader.isEmpty ? 'Value' : valueHeader}'],
+    ];
+    final keys = groups.keys.toList()..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    if (keys.length > SheetsWorkbookLimits.maxRows - 2) {
+      throw const FormatException('Pivot result would exceed the supported worksheet row limit.');
+    }
+    for (final key in keys) {
+      final values = groups[key]!;
+      final total = values.fold<double>(0, (sum, value) => sum + value);
+      final aggregate = values.isEmpty ? 0.0 : switch (aggregation) {
+        'count' => values.length.toDouble(),
+        'average' => total / values.length,
+        'min' => values.reduce((left, right) => left < right ? left : right),
+        'max' => values.reduce((left, right) => left > right ? left : right),
+        _ => total,
+      };
+      result.add([key, _formatPivotNumber(aggregate)]);
+    }
+    final grandValues = groups.values.expand((values) => values).toList();
+    final grandTotal = grandValues.fold<double>(0, (sum, value) => sum + value);
+    final grand = grandValues.isEmpty ? 0.0 : switch (aggregation) {
+      'count' => grandValues.length.toDouble(),
+      'average' => grandTotal / grandValues.length,
+      'min' => grandValues.reduce((left, right) => left < right ? left : right),
+      'max' => grandValues.reduce((left, right) => left > right ? left : right),
+      _ => grandTotal,
+    };
+    result.add(['Grand Total', _formatPivotNumber(grand)]);
+    return result;
+  }
+}
+), '');
+  }
+
   static List<List<String>> buildPivotSummary({
     required Map<String, String> cells,
     required String rangeText,
@@ -294,9 +445,7 @@ class SheetsAnalytics {
         'max' => values.reduce((left, right) => left > right ? left : right),
         _ => total,
       };
-      result.add([key, aggregate == aggregate.roundToDouble()
-          ? aggregate.toStringAsFixed(0)
-          : aggregate.toStringAsFixed(2)]);
+      result.add([key, _formatPivotNumber(aggregate)]);
     }
     final grandValues = groups.values.expand((values) => values).toList();
     final grandTotal = grandValues.fold<double>(0, (sum, value) => sum + value);
@@ -307,9 +456,7 @@ class SheetsAnalytics {
       'max' => grandValues.reduce((left, right) => left > right ? left : right),
       _ => grandTotal,
     };
-    result.add(['Grand Total', grand == grand.roundToDouble()
-        ? grand.toStringAsFixed(0)
-        : grand.toStringAsFixed(2)]);
+    result.add(['Grand Total', _formatPivotNumber(grand)]);
     return result;
   }
 }
