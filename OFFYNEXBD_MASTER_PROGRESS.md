@@ -1633,3 +1633,15 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - Build #558 / run `44737466194` is queued on exact corrected head `e12345e99195c022d8243e09f52b4eb619fdaa55`. Do not mark the batch verified until Analyze, tests, signed APK, package checks and artifact upload pass.
 - Known Sheets interoperability limits remain: native XLSX charts/conditional-rule metadata are not round-tripped; Pivot filtering/drill-down is limited. Writer true content-aware rich pagination and broader office-suite acceptance remain open.
 - No changes merged to main.
+
+
+## Integrated Writer + Sheets CI verification — 2026-11-20 (Build #564)
+
+- [x] Final integrated branch head: `e56eae96e345b81562c6c7345cf2dc792e83efc3`.
+- [x] Build #564 / run `44739199116` completed SUCCESS on that exact commit.
+- [x] Flutter Analyze and the full configured automated test suite passed.
+- [x] Android release APK built; signing and install metadata verification passed; download package contents verified; artifact upload passed.
+- [x] Artifact: `OFFYNEXBD-Android-APK`, ID `14629763825`, size 51,995,343 bytes; SHA-256 `ff281464938611593599cb2e366c327115bfa8f386d148e99f35cd658be76359`; expires 2026-12-04 13:00:04 UTC.
+- [x] Fixed the Writer mobile AppBar title overflow detected by Build #563 by constraining the title/subtitle to the available width and applying single-line ellipsis.
+- [x] PR #9 remains OPEN, Draft, and unmerged; current head is mergeable against main. No merge was performed.
+- [ ] This verifies the integrated Writer zoom regression and Sheets analytics batch only. It does not close true Writer pagination, native XLSX chart/rule round-trip, advanced Pivot features, remaining office modules, production backend/security, cross-platform release or physical-device acceptance.
