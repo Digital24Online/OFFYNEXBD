@@ -244,6 +244,18 @@ void main() {
       expect(rangeEngine.evaluateCell('B4'), 3);
     });
 
+    test('evaluates Excel-style postfix percentages', () {
+      final engine = SheetsFormulaEngine({
+        'A1': '=25%', 'A2': '=50%*200', 'A3': '=10+5%',
+        'A4': '=-25%', 'A5': '=200*12.5%',
+      });
+      expect(engine.evaluateCell('A1'), 0.25);
+      expect(engine.evaluateCell('A2'), 100);
+      expect(engine.evaluateCell('A3'), 10.05);
+      expect(engine.evaluateCell('A4'), -0.25);
+      expect(engine.evaluateCell('A5'), 25);
+    });
+
     test('parses scientific notation in formula numbers', () {
       final engine = SheetsFormulaEngine({
         'A1': '=1E3+2.5e-1',
