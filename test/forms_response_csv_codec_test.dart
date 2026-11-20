@@ -128,6 +128,25 @@ void main() {
       throwsFormatException,
     );
 
+    final tooManyCells = <Map<String, dynamic>>[
+      for (var row = 0; row < 200; row++)
+        {
+          'formId': 'f$row',
+          'formTitle': 'Form $row',
+          'submittedAt': '2026-11-18T10:00:00.000Z',
+          'answers': [
+            for (var column = 0;
+                column < FormsResponseCsvCodec.maxAnswerColumns;
+                column++)
+              {'question': 'Q$column', 'answer': 'A'},
+          ],
+        },
+    ];
+    expect(
+      () => FormsResponseCsvCodec.encode(tooManyCells),
+      throwsFormatException,
+    );
+
     expect(
       () => FormsResponseCsvCodec.encode([
         {
