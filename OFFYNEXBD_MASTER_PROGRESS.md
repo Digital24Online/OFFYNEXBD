@@ -1708,3 +1708,35 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] PR #10 marked Ready and squash-merged; merge commit `9eb527fbca74426fb9f9ea4bcb83f5aabb67158f`.
 - [ ] This is a workspace navigation/UX correction only. It does not complete Slides, Fonts, AI, Forms, Database or any other module.
 - Continue with real editor workflows and module capabilities; keep implementation and CI acceptance distinct.
+
+
+## Priority four-module completion work — Writer, Sheets, PDF, Scan — 2026-11-20
+
+### Work branch
+- Branch: `work/writer-sheets-pdf-scan-completion-20261120`
+- Based on current `main`; no changes merged.
+- Scope is deliberately limited to Writer, Sheets, PDF and Scan until these four modules pass their completion gates.
+
+### Implemented in this tranche (source changes; CI pending)
+- **Sheets:** formula evaluation now resolves bounded direct references and aggregate ranges across worksheets, including quoted worksheet names with spaces. Missing worksheet names, cross-worksheet ranges spanning different sheets, and cross-sheet circular references fail safely. The Sheets screen supplies the workbook worksheet map to formula evaluation and Pivot source calculations. Added focused tests.
+- **PDF:** shared PDF byte validation is available for reader and conversion flows; validates the PDF signature, non-empty minimum and 50 MB limit. Conversion validates page count (1–1,000) and verifies DOCX ZIP output signatures. Added boundary and signature tests.
+- **PDF Reader:** added a PDF preview screen using the existing printing stack, with print/share actions. PDF-to-Document can open the original imported PDF in Reader without replacing the source bytes.
+- **Scan:** native Android scanner output now validates PDF signature, page count (1–50) and 50 MB limit. Saved PDF writes use a staged file and rename only after byte-count verification. OCR image byte limits are centralized. Added validation tests.
+- **Scan-to-PDF:** Scan history can open the saved PDF in Reader; sharing and confirmed deletion remain available.
+- Updated four module READMEs to state current implementation and remaining limits accurately.
+
+### Still blocking a claim of full completion
+- **Writer:** true content-aware pagination is not implemented. Current canvas remains one continuous QuillEditor with estimated painted page backgrounds. Rich/merged-cell table model, per-section layout/header-footer behavior, full DOCX/ODT fidelity, genuine Bangla spellcheck and arbitrary user-font import are not complete. Phone, keyboard, Bangla glyph and printer interoperability acceptance remain pending.
+- **Sheets:** broad Excel formula compatibility (text/date/time/lookup/financial/dynamic arrays), native XLSX chart and conditional-formatting round-trip, advanced Pivot filtering/drill-down, ODS support and complete Excel compatibility remain open.
+- **PDF:** Reader preview is not a full PDF editor. Editing text/images, merge/split/page reorder/delete, compression, annotation/redaction, forms, signatures, encryption/password, OCR review/search layer, metadata and batch tools remain open.
+- **Scan:** native document scanner is Android-only in the current dependency. Other-platform native scanner parity, full scan-history editing, OCR correction/review and real camera/device acceptance remain open.
+
+### Verification state
+- [ ] Flutter Analyze on this exact branch head.
+- [ ] Full automated test suite on this exact branch head.
+- [ ] Signed Android release APK.
+- [ ] Signing certificate and install metadata verification.
+- [ ] APK package contents verification and Actions artifact upload.
+- [ ] Physical Android tests: Writer page fit/zoom/keyboard/selection/Bangla; Sheets multi-sheet/cross-sheet formulas/XLSX; PDF open/print/share; Scan camera, multipage, OCR, save/share/delete.
+- [ ] Representative DOCX/ODT and Bangla PDF visual checks with Word/LibreOffice and a real printer.
+- This tranche is not complete until all source-level gaps are implemented and every applicable acceptance gate has evidence. Do not merge based only on a passing CI run.
