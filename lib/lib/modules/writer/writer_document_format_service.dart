@@ -799,7 +799,19 @@ ${manifestImages.join('\n')}
     final parts = <String>[];
     for (final part in path.replaceAll('\\', '/').split('/')) {
       if (part.isEmpty || part == '.') continue;
-      if (part == '..') { if (parts.isNotEmpty) parts.removeLast(); } else { parts.add(part); }
+      if (part == '..') {
+        if (parts.isEmpty) {
+          throw const FormatException(
+            'Document archive contains a relationship path outside the package root.',
+          );
+        }
+        parts.removeLast();
+      } else {
+        parts.add(part);
+      }
+    }
+    if (parts.isEmpty) {
+      throw const FormatException('Document archive contains an empty relationship path.');
     }
     return parts.join('/');
   }
