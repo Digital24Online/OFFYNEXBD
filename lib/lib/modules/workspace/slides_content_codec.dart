@@ -8,10 +8,16 @@ class SlidesContentCodec {
     final value = source ?? '';
     if (value.startsWith(marker)) {
       final decoded = jsonDecode(value.substring(marker.length));
-      if (decoded is! List || decoded.any((item) => item is! String)) {
+      if (decoded is! List ||
+          decoded.length > maxSlides ||
+          decoded.any((item) => item is! String)) {
         throw const FormatException('Invalid OFFYNEXBD slide document.');
       }
-      return decoded.cast<String>();
+      final slides = decoded.cast<String>();
+      if (utf8.encode(slides.join('\\n')).length > maxTextBytes) {
+        throw const FormatException('Slide text exceeds the 5 MB limit.');
+      }
+      return slides;
     }
     return value
         .split(RegExp(r'\r?\n'))
@@ -21,6 +27,11 @@ class SlidesContentCodec {
   }
 
   static String encode(List<String> slides) {
+    if (slides.length > maxSlides ||
+        slides.any((item) => item.trim().isEmpty) ||
+        utf8.encode(slides.join('\\n')).length > maxTextBytes) {
+      throw const FormatException('Slide content exceeds supported limits.');
+    }
     return '$marker${jsonEncode(slides)}';
   }
 }
