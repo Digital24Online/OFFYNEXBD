@@ -1561,3 +1561,41 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [ ] This localization fix does not close the major Writer requirements still open: true content-aware pagination, rich/merged DOCX/ODT tables, section-aware headers/footers, real Bangla spellcheck, user font management, long-document recovery, full ribbon/dialog localization, bottom-toolbar overlap and physical device/printer/interoperability checks.
 - [ ] PR #6 remains OPEN and Draft. Do not merge without explicit user approval.
 - [x] Build #534 artifact archive was independently downloaded and checked with `unzip -t`; all five entries passed CRC checks and archive SHA-256 matched GitHub artifact metadata. This proves the archive itself is valid, not the cause of Files by Google's device-specific extraction error.
+
+---
+
+## Integrated full-scope audit continuation — 2026-11-20
+
+### Authoritative repository / CI state
+- PR #3 remains CLOSED and MERGED; merge commit `cb6888843763e592508146a644e87504da7fe942`.
+- PR #6 remains OPEN and Draft; do not merge without the user's explicit approval.
+- Active branch: `work/writer-integrated-audit-ci-repair-20261119`.
+- Current PR #6 head after the archive-safety regression test correction: `d08d31254d0448a84893115110473c22d113bc92`.
+- Build #537 / run `44592317041` completed SUCCESS on `88dd9f53fc198db0a194d923095782b6f9295218`: Analyze, configured tests, Android release build, signing/install metadata, package verification and artifact upload all passed.
+- Build #537 artifact: `OFFYNEXBD-Android-APK`, ID `14563559835`, size 51,820,701 bytes; expires 2026-12-03 19:00:50 UTC. Build #537 verifies its own source commit, not the later security patch.
+- Archive relationship path hardening: commit `8f5896fedd17c833766ca151106a51d5c72a66de` now rejects DOCX/ODT relationship paths that traverse above the archive package root. Regression test added in `3da02ae8d53248cf3f9ab74c32c96b8c5713cf50`; test-file closure correction committed as `d08d31254d0448a84893115110473c22d113bc92`.
+- Build #540 / run `44728176498` is the CI run for the final `d08d312...` head. At the time of this entry it is still in progress; no Analyze/test/APK/artifact success is claimed for the security correction until that run completes.
+
+### Consolidated source audit — actual implementation boundaries
+- Writer: rich text, local autosave, backup, basic table/image embeds, layout controls, review/reference tools and DOCX/ODT/PDF conversion foundations exist. The editor still hosts one continuous QuillEditor over painted page backgrounds; `WriterContentMetrics` estimates page count. This is NOT true content-aware page flow. Table cells are still plain strings; merged cells and rich per-cell formatting are not represented. Section-specific/first/even-page headers and footers, full section layout, real Bangla spellcheck, arbitrary user font management, large-document recovery/stress, remaining localization, bottom-toolbar overlap verification, and physical/interoperability acceptance remain open.
+- Sheets: offline workbook/grid, formula engine, local persistence, CSV/XLSX subset import/export, validation, find/replace and PDF/print foundations exist. It is not full Excel parity: complete multi-sheet/cross-sheet behavior, advanced formulas, charts/pivots, conditional formatting, robust workbook collaboration and full external compatibility remain open.
+- PDF: PDF-to-Writer and image-to-document conversion foundations with OCR exist. Full PDF text editing, merge/split/reorder/compression, annotations/forms/signatures, robust scanned-page rendering/OCR, password-protected input and full visual fidelity are not complete.
+- Scan: Android ML Kit multi-page scan and Bengali/English OCR integration exist. Standalone scan-history management, broader platform parity and cloud synchronization remain open; device/Play-services behavior still needs physical-device verification.
+- Slides: local slide records and PDF preview/export foundations exist; a full visual slide editor, layout/theme system, shapes/charts/animations, PPTX/ODP round-trip and slideshow feature set remain open.
+- Fonts: the current workspace is not a real font manager. Font import, activation, preview/catalogue, license metadata, fallback and export embedding workflows remain open.
+- AI Assistant: current workspace stores local prompts/records; no live or bundled AI inference/service integration is present. Provider, credentials, privacy controls and offline model decisions remain open.
+- Cloud: local backup/restore utilities exist; there is no production account service, remote object storage, multi-device sync, conflict resolution or server-side version history.
+- Forms: basic local form/question and response handling/export foundations exist; professional field types, validation/branching, templates, shareable hosted forms, permissions and multi-device response collection remain open.
+- Database: local record/row and CSV workflows exist; relational tables, typed fields, indexes, query builder/SQL, relationships, reports and robust database migrations remain open.
+- Backend/security: production authentication, hosted sync/storage, server API, encryption/key lifecycle, authorization and deployment/monitoring architecture are not implemented. Do not treat planned README folders as working backend services.
+
+### Branding / creator proof
+- Approved logo assets and App Info creator attribution are present in source; creator name, Founder & Original Creator, Rajshahi, Bangladesh and copyright are covered by widget assertions.
+- CI verifies asset generation and app code; physical Android launcher icon / App Info visual inspection and iOS/Windows/macOS icon checks remain pending.
+
+### Required continuation rules
+- Continue integrated source changes across related modules while preserving existing saved data, document IDs, Delta embeds, formulas, workbooks, backups and branding.
+- Do not call Writer or the ten-module suite complete based only on CI.
+- Every manual/device/Word/LibreOffice/printer acceptance gate stays pending until actual evidence is recorded.
+- Do not merge PR #6 or change the main branch without explicit user approval.
+
