@@ -1,4 +1,8 @@
 import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
 
 import 'package:google_mlkit_document_scanner/google_mlkit_document_scanner.dart';
 import 'package:flutter/services.dart';
@@ -45,6 +49,86 @@ class ScanDocumentService {
       .where((page) => page.isNotEmpty)
       .join('\n\n');
 
+  /// Creates a multi-page scan PDF from imported images on platforms where
+  /// the native ML Kit scanner is unavailable. JPEG/PNG originals are embedded
+  /// in the PDF; OCR failures never discard the saved scan.
+  static Future<ScanCaptureResult> captureImportedImages(
+    List<({String name, Uint8List bytes})> images,
+  ) async {
+    if (images.isEmpty || images.length > maxPages) {
+      throw FormatException('Imported scan must contain 1 to $maxPages images.');
+    }
+    var totalBytes = 0;
+    for (final image in images) {
+      final extension = image.name.split('.').last.toLowerCase();
+      if (extension != 'jpg' && extension != 'jpeg' && extension != 'png') {
+        throw const FormatException('Imported scan supports JPEG and PNG images only.');
+      }
+      if (image.bytes.isEmpty || image.bytes.length > maxOcrImageBytes) {
+        throw const FormatException('Each scan image must be between 1 byte and 30 MB.');
+      }
+      totalBytes += image.bytes.length;
+      if (totalBytes > maxPdfBytes) {
+        throw const FormatException('Combined scan images exceed 50 MB.');
+      }
+    }
+
+    final document = pw.Document();
+    for (final image in images) {
+      final memoryImage = pw.MemoryImage(image.bytes);
+      document.addPage(pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(24),
+        build: (_) => pw.Center(
+          child: pw.Image(memoryImage, fit: pw.BoxFit.contain),
+        ),
+      ));
+    }
+    final pdfBytes = Uint8List.fromList(await document.save());
+    validateCapturedPdf(pdfBytes, images.length);
+
+    final savedFile = await _savePdf(pdfBytes);
+    final recognizedPages = <String>[];
+    for (var index = 0; index < images.length; index++) {
+      try {
+        final text = await PdfToDocumentService.recognizeImageBytes(
+          images[index].bytes,
+          sourceName: images[index].name,
+        );
+        if (text.trim().isNotEmpty) recognizedPages.add(text.trim());
+      } catch (_) {
+        // Keep the complete PDF even if OCR fails on one or more pages.
+      }
+    }
+
+    return ScanCaptureResult(
+      pdfBytes: pdfBytes,
+      pdfPath: savedFile.path,
+      fileName: savedFile.uri.pathSegments.last,
+      pageCount: images.length,
+      recognizedText: combineRecognizedPages(recognizedPages),
+    );
+  }
+
+  static Future<File> _savePdf(Uint8List bytes) async {
+    final documents = await getApplicationDocumentsDirectory();
+    final scansDirectory = Directory('${documents.path}/OFFYNEXBD/Scans');
+    await scansDirectory.create(recursive: true);
+    final stamp = DateTime.now().microsecondsSinceEpoch;
+    final savedFile = File('${scansDirectory.path}/OFFYNEXBD_Scan_$stamp.pdf');
+    final pendingFile = File('${savedFile.path}.pending');
+    try {
+      await pendingFile.writeAsBytes(bytes, flush: true);
+      if (await pendingFile.length() != bytes.length) {
+        throw const FileSystemException('Scan PDF could not be fully written.');
+      }
+      return await pendingFile.rename(savedFile.path);
+    } catch (_) {
+      if (await pendingFile.exists()) await pendingFile.delete();
+      rethrow;
+    }
+  }
+
   static Future<ScanCaptureResult?> captureAndroid() async {
     if (!Platform.isAndroid) {
       throw UnsupportedError(
@@ -89,23 +173,8 @@ class ScanDocumentService {
     // Preserve the captured PDF before OCR, so a recognition failure cannot
     // discard the user's scan.
     // Save the PDF before OCR so recognition failures cannot discard the scan.
-    final documents = await getApplicationDocumentsDirectory();
-    final scansDirectory = Directory('${documents.path}/OFFYNEXBD/Scans');
-    await scansDirectory.create(recursive: true);
-    final stamp = DateTime.now().microsecondsSinceEpoch;
-    final fileName = 'OFFYNEXBD_Scan_$stamp.pdf';
-    final savedFile = File('${scansDirectory.path}/$fileName');
-    final pendingFile = File('${savedFile.path}.pending');
-    try {
-      await pendingFile.writeAsBytes(pdfBytes, flush: true);
-      if (await pendingFile.length() != pdfBytes.length) {
-        throw const FileSystemException('Scan PDF could not be fully written.');
-      }
-      await pendingFile.rename(savedFile.path);
-    } catch (_) {
-      if (await pendingFile.exists()) await pendingFile.delete();
-      rethrow;
-    }
+    final savedFile = await _savePdf(pdfBytes);
+    final fileName = savedFile.uri.pathSegments.last;
 
     final recognizedPages = <String>[];
     final imagePaths = result.images ?? const <String>[];
