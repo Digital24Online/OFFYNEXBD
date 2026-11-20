@@ -272,5 +272,24 @@ void main() {
       await tester.tap(finder);
       await tester.pumpAndSettle();
     }
+
+    // Each Home action must be rendered once, not repeated in the
+    // secondary Quill toolbar beneath the ribbon.
+    for (final icon in [
+      Icons.undo,
+      Icons.redo,
+      Icons.format_align_left,
+      Icons.format_align_center,
+      Icons.format_align_right,
+      Icons.format_align_justify,
+      Icons.format_list_bulleted,
+      Icons.format_list_numbered,
+    ]) {
+      expect(
+        find.byIcon(icon),
+        findsOneWidget,
+        reason: 'Duplicate Home option detected for $icon',
+      );
+    }
   });
 }
