@@ -86,5 +86,31 @@ void main() {
       );
     });
 
+
+    test('validates PDF byte signature and size for reader input', () {
+      expect(
+        () => PdfToDocumentService.validatePdfBytes(
+          Uint8List.fromList('%PDF-1.7'.codeUnits),
+        ),
+        returnsNormally,
+      );
+      expect(
+        () => PdfToDocumentService.validatePdfBytes(Uint8List(0)),
+        throwsFormatException,
+      );
+      expect(
+        () => PdfToDocumentService.validatePdfBytes(
+          Uint8List.fromList('NOT A PDF'.codeUnits),
+        ),
+        throwsFormatException,
+      );
+      expect(
+        () => PdfToDocumentService.validatePdfBytes(
+          Uint8List(PdfToDocumentService.maxPdfBytes + 1),
+        ),
+        throwsFormatException,
+      );
+    });
+
   });
 }
