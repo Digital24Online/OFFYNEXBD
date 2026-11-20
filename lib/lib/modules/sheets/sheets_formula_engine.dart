@@ -386,6 +386,8 @@ class _FormulaParser {
       'ABS', 'ROUND', 'ROUNDUP', 'ROUNDDOWN', 'SQRT', 'POWER',
       'MOD', 'INT', 'SIGN', 'MEDIAN', 'LARGE', 'SMALL',
       'CEILING', 'FLOOR', 'PI', 'EXP', 'LN', 'LOG', 'LOG10',
+      'TRUNC', 'FACT', 'EVEN', 'ODD', 'RADIANS', 'DEGREES',
+      'GCD', 'LCM', 'COMBIN', 'PERMUT', 'QUOTIENT',
       'SIN', 'COS', 'TAN', 'ASIN', 'ACOS', 'ATAN',
       'IF', 'IFERROR', 'AND', 'OR', 'NOT',
     };
@@ -505,6 +507,78 @@ class _FormulaParser {
       case 'INT':
         _expectNoExtraArguments(name, values, 1);
         return values.first.floorToDouble();
+      case 'TRUNC':
+        if (values.isEmpty || values.length > 2) {
+          throw const FormatException('TRUNC expects one or two arguments');
+        }
+        final digits = values.length == 2 ? _integerArgument(values[1]) : 0;
+        return _roundTowardZero(values[0], digits);
+      case 'FACT':
+        _expectNoExtraArguments(name, values, 1);
+        final n = _integerArgument(values.first);
+        if (n < 0 || n > 170) throw const FormatException('FACT argument out of range');
+        var factorial = 1.0;
+        for (var i = 2; i <= n; i++) {
+          factorial *= i;
+        }
+        return factorial;
+      case 'EVEN':
+      case 'ODD':
+        _expectNoExtraArguments(name, values, 1);
+        final value = values.first;
+        final rounded = value.isNegative ? value.floor() : value.ceil();
+        if (name == 'EVEN') {
+          final even = rounded.abs().isEven ? rounded : rounded + (rounded.isNegative ? -1 : 1);
+          return even.toDouble();
+        }
+        final odd = rounded.abs().isOdd ? rounded : rounded + (rounded.isNegative ? -1 : 1);
+        return odd.toDouble();
+      case 'RADIANS':
+        _expectNoExtraArguments(name, values, 1);
+        return values.first * math.pi / 180;
+      case 'DEGREES':
+        _expectNoExtraArguments(name, values, 1);
+        return values.first * 180 / math.pi;
+      case 'GCD':
+      case 'LCM':
+        if (values.isEmpty || values.length > 255) {
+          throw FormatException('$name expects between 1 and 255 arguments');
+        }
+        var aggregate = name == 'GCD' ? 0 : 1;
+        for (final value in values) {
+          final integer = _integerArgument(value).abs();
+          if (name == 'GCD') {
+            aggregate = _greatestCommonDivisor(aggregate, integer);
+          } else {
+            if (integer == 0) return 0;
+            aggregate = (aggregate ~/ _greatestCommonDivisor(aggregate, integer)) * integer;
+            if (aggregate > 9007199254740991) {
+              throw const FormatException('LCM result exceeds safe integer range');
+            }
+          }
+        }
+        return aggregate.toDouble();
+      case 'COMBIN':
+      case 'PERMUT':
+        _expectNoExtraArguments(name, values, 2);
+        final n = _integerArgument(values[0]);
+        final k = _integerArgument(values[1]);
+        if (n < 0 || k < 0 || k > n) {
+          throw const FormatException('Invalid combination/permutation arguments');
+        }
+        var result = 1.0;
+        final count = name == 'COMBIN' ? math.min(k, n - k) : k;
+        for (var i = 1; i <= count; i++) {
+          result *= (name == 'COMBIN' ? n - count + i : n - i + 1) / i;
+          if (!result.isFinite || result > 9007199254740991) {
+            throw const FormatException('Result exceeds safe integer range');
+          }
+        }
+        return result;
+      case 'QUOTIENT':
+        _expectNoExtraArguments(name, values, 2);
+        if (values[1] == 0) throw const FormatException('Division by zero');
+        return (values[0] / values[1]).truncateToDouble();
       case 'SIGN':
         _expectNoExtraArguments(name, values, 1);
         return values.first.sign.toDouble();
@@ -633,6 +707,36 @@ class _FormulaParser {
     'SUM', 'AVERAGE', 'COUNT', 'MIN', 'MAX', 'PRODUCT',
     'MEDIAN', 'LARGE', 'SMALL',
   }.contains(name);
+
+  int _integerArgument(double value) {
+    if (!value.isFinite || value != value.truncateToDouble() ||
+        value.abs() > 9007199254740991) {
+      throw const FormatException('Expected a safe integer argument');
+    }
+    return value.toInt();
+  }
+
+  int _greatestCommonDivisor(int a, int b) {
+    var left = a;
+    var right = b;
+    while (right != 0) {
+      final remainder = left % right;
+      left = right;
+      right = remainder;
+    }
+    return left;
+  }
+
+  double _roundTowardZero(double number, int digits) {
+    if (digits > 308) return number;
+    if (digits < -308) return 0;
+    final factor = math.pow(10, digits).toDouble();
+    if (!factor.isFinite) return number;
+    if (factor == 0) return 0;
+    final scaled = number * factor;
+    if (!scaled.isFinite) return number;
+    return scaled.truncateToDouble() / factor;
+  }
 
   double _roundWithPrecision(double number, double precision, String mode) {
     if (!precision.isFinite || precision != precision.truncateToDouble()) {
