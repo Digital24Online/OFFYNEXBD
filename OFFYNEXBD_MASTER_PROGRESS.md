@@ -1502,3 +1502,111 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [ ] Important Writer gap remains: editor still uses one continuous QuillEditor over painted page backgrounds, while page count is estimated from content metrics. True content-aware Word-style page-flow pagination with text/images/tables flowing between pages is NOT implemented or verified. Do not mark Writer complete.
 - [ ] DOCX/ODT complex table fidelity, section-specific headers/footers, Bangla spellcheck and user font management, long-document recovery, physical printer checks and Word/LibreOffice interoperability remain outstanding as described in the requirements contract.
 - PR #3 is merged; do not describe it as open or pending merge in future handoffs.
+
+
+## Writer continuation audit and CI recovery — 2026-11-19 (latest)
+
+- Current authoritative base: `main` commit `95278bf585af0b22387abc8b89a16a36ee1743e9`.
+- PR #3 is CLOSED and MERGED at `cb6888843763e592508146a644e87504da7fe942`; the earlier New Chat Handoff text claiming it was open is stale and superseded by the authoritative merge section below it.
+- PR #5 (`writer-mobile-page-zoom`) remains OPEN but is based on the pre-merge main commit `6cca1bb66b7f94e6265bc1a7d094141e7181c8e7`, is two commits behind current main, and GitHub reports it as dirty/non-mergeable. It is not the continuation base. Its zoom changes must be carried forward only after rebasing/revalidation; do not merge it as-is.
+- Build #511 (run `44558963762`) on the PR #3 merge commit: Analyze SUCCESS, full configured Tests SUCCESS, Android APK build SUCCESS, signature/install metadata verification SUCCESS. The final Save Generated Source step failed because the workflow attempted to push a generated-source commit from an outdated checkout after main had advanced; package verification and artifact upload were skipped. This is a workflow push race, not a Dart Analyze/test/build failure.
+- Updated the Save Generated Source workflow step to fetch and rebase the generated-source commit onto the latest branch before pushing, with bounded retries. This must be verified by a subsequent non-PR run; PR validation alone skips this step.
+- Source audit confirms the current Writer canvas still hosts one continuous QuillEditor inside painted page rectangles. WriterContentMetrics estimates content height/page count; it is not an actual pagination/layout engine and does not reset page-specific content margins. Do not describe this as true Word-like pagination.
+- Confirmed outstanding format limitations: DOCX table import currently flattens cells to strings (up to 20 rows × 10 columns), losing merged cells and cell/paragraph formatting; ODT table import similarly reduces cell content to plain text. DOCX/ODT section-specific first/even/default headers and footers and multiple section page settings are not fully represented. ODT export currently emits a single default page/master-page style. Existing DOCX PAGE/NUMPAGES and PDF page fields are narrower implementations, not full dynamic-field parity.
+- Confirmed remaining acceptance work from the Writer contract: genuine editable rich-content page flow for text/images/tables; robust complex table model and round-trip; section-aware headers/footers and fields; real Bangla spellcheck; user font import/management; long-document recovery/stress; bottom toolbar overlap and full localization checks; visual Bangla PDF, physical Android/printer and Word/LibreOffice interoperability.
+- Preserve Quill Delta, existing table/image/page-break embeds, autosave, backup/restore, layout metadata, comments, citations, revisions and export behavior during the next integrated implementation batch.
+- This entry is an audit and CI recovery checkpoint, NOT a declaration that Writer is complete. Every pending acceptance gate remains pending until implemented and verified.
+
+
+## Writer mobile zoom controls — integrated continuation (2026-11-19)
+
+- Carried forward the useful direct Zoom In / Zoom Out controls from stale PR #5 onto the current main-based integrated branch, while preserving the current supported zoom range (50%–300%) rather than importing PR #5's narrower 50%–200% limit.
+- Kept the existing Page / Page Width / Actual modes, persisted zoom, pinch/pan transform behavior and Quill content untouched.
+- Added a Writer widget regression test for the zoom slider bounds and both direct zoom actions.
+- This is a mobile usability improvement only; it does not solve true content-aware pagination or the other open Writer compatibility gaps.
+- CI validation is pending for the integrated branch.
+
+
+## DOCX/ODT table-grid import hardening — 2026-11-19
+
+- DOCX import expands Word `gridSpan` cells into bounded logical grid slots. The first cell retains its text and extra spanned slots remain blank because the current Writer renderer does not yet support visual merged cells; later columns no longer shift left.
+- ODT import expands `number-columns-repeated` and `number-rows-repeated` within the existing 20-row / 10-column safety limits. Covered ODT cells remain blank grid slots.
+- Added focused DOCX and ODT archive-import regression tests.
+- This improves grid alignment and repeated-cell fidelity; it does NOT implement visual merged cells, rich cell formatting, nested table editing, or full format round-trip.
+
+
+## Writer compact header order correction — 2026-11-19
+
+- Corrected the keyboard-open Writer header order to match the user's latest instruction: document name first, ribbon tabs second, compact formatting toolbar third.
+- Ribbon tabs are now rendered once in the keyboard-open branch after the document-name field, and once in the keyboard-closed branch before the selected full ribbon. The AppBar remains hidden while the keyboard is open; nonessential ruler, zoom and status controls remain hidden in that state to preserve editing space.
+- This is a targeted layout correction only. It does not claim true Word-style pagination or close the remaining DOCX/ODT, Bangla spellcheck/font-management, recovery, localization or physical-device acceptance gaps.
+- Previous Build #525 / run `44578820556` succeeded on the parent commit `5b751bd6985979f551e851f52dba7cce4d0d24f8` (Analyze, tests, Android release APK, signing/package checks and `OFFYNEXBD-Android-APK` artifact upload). It does not verify this new correction; a fresh PR CI run is required.
+
+
+## Writer header-order syntax correction — 2026-11-19
+
+- Build #526 / run `44580491288` caught a missing closing collection bracket in the compact-header branch during Flutter Analyze; no test, APK or artifact was produced by that failed run.
+- Corrected the nested collection structure while retaining the intended keyboard-open order (document name → ribbon tabs → compact formatting toolbar) and the normal keyboard-closed ribbon layout.
+- A fresh CI run on this exact follow-up commit is required. The previous Build #525 result applies only to its earlier parent commit.
+
+
+## Writer table localization correction — 2026-11-20
+
+- [x] Passed the selected Bangla/English setting into the Insert Table dialog and the table embed editor in both the main Writer editor and editable Print Preview.
+- [x] Localized table creation/edit titles, add/remove row and column actions, row/column count, border/fill color labels, cancel/apply actions, empty-table message and edit-table action.
+- [x] Added a bilingual Writer widget regression test for the table editor.
+- [x] Source committed on active PR #6 branch. Commits: `12f18a984d35983bd9f6bfd3f1539e36505495a0`, `61a91d73c4361da5948daec781d5666565cdea9c`, `2a4e8fe3a8c156bb82e4edb12a56cb9533cc19fe`.
+- [x] Build #536 / run `44591359648`: Flutter Analyze SUCCESS and full automated Tests SUCCESS.
+- [ ] Android release APK build, signing/package verification and Actions artifact upload are still running/pending at the time of this note.
+- [ ] This localization fix does not close the major Writer requirements still open: true content-aware pagination, rich/merged DOCX/ODT tables, section-aware headers/footers, real Bangla spellcheck, user font management, long-document recovery, full ribbon/dialog localization, bottom-toolbar overlap and physical device/printer/interoperability checks.
+- [ ] PR #6 remains OPEN and Draft. Do not merge without explicit user approval.
+- [x] Build #534 artifact archive was independently downloaded and checked with `unzip -t`; all five entries passed CRC checks and archive SHA-256 matched GitHub artifact metadata. This proves the archive itself is valid, not the cause of Files by Google's device-specific extraction error.
+
+---
+
+## Integrated full-scope audit continuation — 2026-11-20
+
+### Authoritative repository / CI state
+- PR #3 remains CLOSED and MERGED; merge commit `cb6888843763e592508146a644e87504da7fe942`.
+- PR #6 remains OPEN and Draft; do not merge without the user's explicit approval.
+- Active branch: `work/writer-integrated-audit-ci-repair-20261119`.
+- Current PR #6 head after the archive-safety regression test correction: `d08d31254d0448a84893115110473c22d113bc92`.
+- Build #537 / run `44592317041` completed SUCCESS on `88dd9f53fc198db0a194d923095782b6f9295218`: Analyze, configured tests, Android release build, signing/install metadata, package verification and artifact upload all passed.
+- Build #537 artifact: `OFFYNEXBD-Android-APK`, ID `14563559835`, size 51,820,701 bytes; expires 2026-12-03 19:00:50 UTC. Build #537 verifies its own source commit, not the later security patch.
+- Archive relationship path hardening: commit `8f5896fedd17c833766ca151106a51d5c72a66de` now rejects DOCX/ODT relationship paths that traverse above the archive package root. Regression test added in `3da02ae8d53248cf3f9ab74c32c96b8c5713cf50`; test-file closure correction committed as `d08d31254d0448a84893115110473c22d113bc92`.
+- Build #540 / run `44728176498` is the CI run for the final `d08d312...` head. At the time of this entry it is still in progress; no Analyze/test/APK/artifact success is claimed for the security correction until that run completes.
+
+### Consolidated source audit — actual implementation boundaries
+- Writer: rich text, local autosave, backup, basic table/image embeds, layout controls, review/reference tools and DOCX/ODT/PDF conversion foundations exist. The editor still hosts one continuous QuillEditor over painted page backgrounds; `WriterContentMetrics` estimates page count. This is NOT true content-aware page flow. Table cells are still plain strings; merged cells and rich per-cell formatting are not represented. Section-specific/first/even-page headers and footers, full section layout, real Bangla spellcheck, arbitrary user font management, large-document recovery/stress, remaining localization, bottom-toolbar overlap verification, and physical/interoperability acceptance remain open.
+- Sheets: offline workbook/grid, formula engine, local persistence, CSV/XLSX subset import/export, validation, find/replace and PDF/print foundations exist. It is not full Excel parity: complete multi-sheet/cross-sheet behavior, advanced formulas, charts/pivots, conditional formatting, robust workbook collaboration and full external compatibility remain open.
+- PDF: PDF-to-Writer and image-to-document conversion foundations with OCR exist. Full PDF text editing, merge/split/reorder/compression, annotations/forms/signatures, robust scanned-page rendering/OCR, password-protected input and full visual fidelity are not complete.
+- Scan: Android ML Kit multi-page scan and Bengali/English OCR integration exist. Standalone scan-history management, broader platform parity and cloud synchronization remain open; device/Play-services behavior still needs physical-device verification.
+- Slides: local slide records and PDF preview/export foundations exist; a full visual slide editor, layout/theme system, shapes/charts/animations, PPTX/ODP round-trip and slideshow feature set remain open.
+- Fonts: the current workspace is not a real font manager. Font import, activation, preview/catalogue, license metadata, fallback and export embedding workflows remain open.
+- AI Assistant: current workspace stores local prompts/records; no live or bundled AI inference/service integration is present. Provider, credentials, privacy controls and offline model decisions remain open.
+- Cloud: local backup/restore utilities exist; there is no production account service, remote object storage, multi-device sync, conflict resolution or server-side version history.
+- Forms: basic local form/question and response handling/export foundations exist; professional field types, validation/branching, templates, shareable hosted forms, permissions and multi-device response collection remain open.
+- Database: local record/row and CSV workflows exist; relational tables, typed fields, indexes, query builder/SQL, relationships, reports and robust database migrations remain open.
+- Backend/security: production authentication, hosted sync/storage, server API, encryption/key lifecycle, authorization and deployment/monitoring architecture are not implemented. Do not treat planned README folders as working backend services.
+
+### Branding / creator proof
+- Approved logo assets and App Info creator attribution are present in source; creator name, Founder & Original Creator, Rajshahi, Bangladesh and copyright are covered by widget assertions.
+- CI verifies asset generation and app code; physical Android launcher icon / App Info visual inspection and iOS/Windows/macOS icon checks remain pending.
+
+### Required continuation rules
+- Continue integrated source changes across related modules while preserving existing saved data, document IDs, Delta embeds, formulas, workbooks, backups and branding.
+- Do not call Writer or the ten-module suite complete based only on CI.
+- Every manual/device/Word/LibreOffice/printer acceptance gate stays pending until actual evidence is recorded.
+- Do not merge PR #6 or change the main branch without explicit user approval.
+
+---
+
+## User-approved PR merge and duplicate-control requirement — 2026-11-20
+
+- User has now stated that merge permission was already granted. Treat this as current authorization for PR #6, superseding the earlier historical instruction to keep PR #6 Draft and unmerged. Merge only after the exact final head has passed required CI and the duplicate-option audit is clean.
+- New permanent UX rule: the same command/action must not be exposed twice in the same context. Keep one authoritative control for each action; do not duplicate undo/redo, alignment, list, save, print, zoom or other commands across adjacent toolbars/tabs. Where a compact keyboard toolbar is necessary, avoid duplicating controls already displayed in the active ribbon.
+- Audit found duplicate Home actions: Undo, Redo, paragraph alignment and list commands appeared in both the Home ribbon and the secondary Quill toolbar. The secondary toolbar now hides those duplicate commands while retaining indent actions.
+- Added a widget regression assertion that each Home action icon is rendered exactly once.
+- Restored Writer widget/editor constructor defaults to Bangla, consistent with the app's initial Bangla language setting; the main app continues to pass the explicit user-selected language.
+- The user's approval does not waive the quality gate: no merge until latest PR head CI (Analyze, complete tests, signed Android build, signature/package verification and artifact upload) is successful. Recheck mergeability and exact head SHA immediately before merge.
+

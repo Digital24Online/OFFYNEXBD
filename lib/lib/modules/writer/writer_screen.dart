@@ -397,9 +397,9 @@ class _WriterScreenState extends State<WriterScreen> {
                   padding: EdgeInsets.fromLTRB(horizontalPadding, 12, horizontalPadding, 100),
                   itemCount: documents.length,
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: width >= 1100 ? 4 : width >= 700 ? 3 : 2,
+                    crossAxisCount: width >= 1100 ? 4 : width >= 700 ? 3 : width >= 360 ? 2 : 1,
                     crossAxisSpacing: 16, mainAxisSpacing: 16,
-                    childAspectRatio: width >= 700 ? 1.12 : 0.94,
+                    childAspectRatio: width >= 900 ? 1.12 : 0.78,
                   ),
                   itemBuilder: (context, index) {
                     final document = documents[index];
@@ -488,7 +488,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
 
   // Writer-এর অতিরিক্ত নথি, রিভিউ ও ভিউ সেটিংস।
   double zoomLevel = 1.0;
-  String viewFit = 'Page';
+  String viewFit = 'Width';
   final TransformationController _pageTransformController = TransformationController();
   bool showRuler = true;
   bool showStatusBar = true;
@@ -520,9 +520,13 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
       zoomLevel = (savedMeta['zoom'] is num)
           ? (savedMeta['zoom'] as num).toDouble().clamp(0.5, 3.0).toDouble()
           : 1.0;
-      viewFit = ['Page', 'Width', 'Actual'].contains(savedMeta['viewFit'])
+      final savedViewFitVersion = savedMeta['viewFitVersion'] is num
+          ? (savedMeta['viewFitVersion'] as num).toInt()
+          : 0;
+      viewFit = savedViewFitVersion >= 2 &&
+              ['Page', 'Width', 'Actual'].contains(savedMeta['viewFit'])
           ? savedMeta['viewFit'] as String
-          : 'Page';
+          : 'Width';
       showRuler = savedMeta['showRuler'] is bool
           ? savedMeta['showRuler'] as bool : true;
       showStatusBar = savedMeta['showStatusBar'] is bool
@@ -708,6 +712,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
         'zoom': zoomLevel,
         'fontFamily': selectedFontFamily,
         'viewFit': viewFit,
+        'viewFitVersion': 2,
         'showRuler': showRuler,
         'showStatusBar': showStatusBar,
         'showPageBorder': showPageBorder,
@@ -1615,16 +1620,35 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
           ChoiceChip(label: const Text('100%'), selected: viewFit == 'Actual', onSelected: (_) => _setViewFit('Actual')),
         ]),
         SizedBox(
-          width: 180,
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text('${_t('জুম', 'Zoom')} ${(zoomLevel * 100).round()}%'),
-            Slider(
-              value: zoomLevel,
-              min: WriterViewportLayout.minimumZoom,
-              max: WriterViewportLayout.maximumZoom,
-              divisions: 25,
-              onChanged: (value) => _setZoomLevel(value, save: false),
-              onChangeEnd: (_) => scheduleSave(),
+          width: 250,
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            IconButton(
+              key: const ValueKey('writer-zoom-out'),
+              tooltip: _t('ছোট করুন', 'Zoom out'),
+              visualDensity: VisualDensity.compact,
+              onPressed: () => _adjustZoom(-0.1),
+              icon: const Icon(Icons.remove_circle_outline),
+            ),
+            Expanded(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Text('${_t('জুম', 'Zoom')} ${(zoomLevel * 100).round()}%'),
+                Slider(
+                  key: const ValueKey('writer-zoom-slider'),
+                  value: zoomLevel,
+                  min: WriterViewportLayout.minimumZoom,
+                  max: WriterViewportLayout.maximumZoom,
+                  divisions: 25,
+                  onChanged: (value) => _setZoomLevel(value, save: false),
+                  onChangeEnd: (_) => scheduleSave(),
+                ),
+              ]),
+            ),
+            IconButton(
+              key: const ValueKey('writer-zoom-in'),
+              tooltip: _t('বড় করুন', 'Zoom in'),
+              visualDensity: VisualDensity.compact,
+              onPressed: () => _adjustZoom(0.1),
+              icon: const Icon(Icons.add_circle_outline),
             ),
           ]),
         ),
@@ -1643,7 +1667,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   
   Widget _ribbonPanel(List<Widget> children) => Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
         decoration: const BoxDecoration(
           color: Color(0xFFEFF2F0),
           border: Border(bottom: BorderSide(color: Color(0xFFD2DAD5))),
@@ -1662,7 +1686,9 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
       'Light Blue': 'হালকা নীল', 'Light Gray': 'হালকা ধূসর',
       'Light Green': 'হালকা সবুজ', 'Light Yellow': 'হালকা হলুদ',
       'Page Border': 'পৃষ্ঠার বর্ডার', 'Capture revisions': 'সংশোধন সংরক্ষণ',
-      'Custom Size': 'নিজস্ব সাইজ', 'Bold': 'গাঢ়', 'Italic': 'তির্যক',
+      'Custom Size': 'নিজস্ব সাইজ', 'Undo': 'পূর্বাবস্থা', 'Redo': 'পুনরায় করুন',
+      'Align Left': 'বামে সাজান', 'Center': 'মাঝখানে সাজান', 'Align Right': 'ডানে সাজান',
+      'Justify': 'দুই পাশে সমান', 'Bullets': 'বুলেট', 'Numbering': 'নম্বর', 'Bold': 'গাঢ়', 'Italic': 'তির্যক',
       'Underline': 'নিচে দাগ', 'Strikethrough': 'মাঝে দাগ',
       'Red Text': 'লাল লেখা', 'Yellow Highlight': 'হলুদ হাইলাইট',
       'Save': 'সংরক্ষণ',
@@ -1748,15 +1774,15 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
 
   Widget _ribbonButton(IconData icon, String label, VoidCallback action) =>
       SizedBox(
-        width: 84,
-        height: 56,
+        width: 72,
+        height: 42,
         child: Tooltip(
           message: _ribbonLabel(label),
           child: TextButton(
             onPressed: action,
             style: TextButton.styleFrom(
               foregroundColor: const Color(0xFF26362D),
-              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(5),
               ),
@@ -1821,11 +1847,11 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   Widget buildRibbonTabs() {
     final tabs = [
       _t('ফাইল', 'File'), _t('হোম', 'Home'), _t('ইনসার্ট', 'Insert'),
-      _t('ডিজাইন', 'Design'), _t('লেআউট', 'Layout'),
-      _t('রেফারেন্স', 'References'), _t('রিভিউ', 'Review'), _t('ভিউ', 'View'),
+      _t('লেআউট', 'Layout'), _t('রেফারেন্স', 'References'),
+      _t('রিভিউ', 'Review'), _t('ভিউ', 'View'),
     ];
     return Container(
-      padding: const EdgeInsets.fromLTRB(10, 7, 10, 0),
+      padding: const EdgeInsets.fromLTRB(5, 2, 5, 0),
       decoration: const BoxDecoration(
         color: Color(0xFF185C3B),
         border: Border(bottom: BorderSide(color: Color(0xFF12452C))),
@@ -1841,7 +1867,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
               onTap: () => setState(() => selectedRibbonTab = index),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 160),
-                padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 11),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: selected ? const Color(0xFFE8F1EB) : Colors.transparent,
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(5)),
@@ -1856,7 +1882,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
                   tabs[index],
                   style: TextStyle(
                     color: selected ? const Color(0xFF174B30) : Colors.white,
-                    fontSize: 12,
+                    fontSize: 10,
                     fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                   ),
                 ),
@@ -1943,6 +1969,11 @@ Future<void> showCustomFontSizeDialog() async {
       children: [
         // Font Family
         DropdownButton<String>(
+          isDense: true,
+          itemHeight: 48,
+          iconSize: 16,
+          underline: const SizedBox.shrink(),
+          style: const TextStyle(fontSize: 11, color: Colors.black87),
           value: fontFamilies.containsValue(selectedFontFamily)
               ? selectedFontFamily
               : 'sans-serif',
@@ -1967,6 +1998,11 @@ Future<void> showCustomFontSizeDialog() async {
 
         // Font Size (Points)
         DropdownButton<String>(
+          isDense: true,
+          itemHeight: 48,
+          iconSize: 16,
+          underline: const SizedBox.shrink(),
+          style: const TextStyle(fontSize: 12, color: Colors.black87),
           value: fontSizes.contains(selectedFontSize)
               ? selectedFontSize
               : '16',
@@ -1988,13 +2024,75 @@ Future<void> showCustomFontSizeDialog() async {
         ),
 
         OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact, minimumSize: const Size(30, 30), padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2), textStyle: const TextStyle(fontSize: 10)),
           onPressed: showCustomFontSizeDialog,
           icon: const Icon(Icons.edit, size: 16),
           label: Text(_ribbonLabel('Custom Size')),
         ),
 
+        // Editing history and paragraph controls (Microsoft Word-style Home tools).
+        IconButton(
+          key: const ValueKey('writer-home-undo'),
+          visualDensity: VisualDensity.compact,
+          tooltip: _ribbonLabel('Undo'),
+          onPressed: quillController.undo,
+          icon: const Icon(Icons.undo),
+        ),
+        IconButton(
+          key: const ValueKey('writer-home-redo'),
+          visualDensity: VisualDensity.compact,
+          tooltip: _ribbonLabel('Redo'),
+          onPressed: quillController.redo,
+          icon: const Icon(Icons.redo),
+        ),
+        IconButton(
+          key: const ValueKey('writer-home-align-left'),
+          visualDensity: VisualDensity.compact,
+          tooltip: _ribbonLabel('Align Left'),
+          onPressed: () => quillController.formatSelection(Attribute.leftAlignment),
+          icon: const Icon(Icons.format_align_left),
+        ),
+        IconButton(
+          key: const ValueKey('writer-home-align-center'),
+          visualDensity: VisualDensity.compact,
+          tooltip: _ribbonLabel('Center'),
+          onPressed: () => quillController.formatSelection(Attribute.centerAlignment),
+          icon: const Icon(Icons.format_align_center),
+        ),
+        IconButton(
+          key: const ValueKey('writer-home-align-right'),
+          visualDensity: VisualDensity.compact,
+          tooltip: _ribbonLabel('Align Right'),
+          onPressed: () => quillController.formatSelection(Attribute.rightAlignment),
+          icon: const Icon(Icons.format_align_right),
+        ),
+        IconButton(
+          key: const ValueKey('writer-home-align-justify'),
+          visualDensity: VisualDensity.compact,
+          tooltip: _ribbonLabel('Justify'),
+          onPressed: () => quillController.formatSelection(Attribute.justifyAlignment),
+          icon: const Icon(Icons.format_align_justify),
+        ),
+        IconButton(
+          key: const ValueKey('writer-home-bullets'),
+          visualDensity: VisualDensity.compact,
+          tooltip: _ribbonLabel('Bullets'),
+          onPressed: () => quillController.formatSelection(Attribute.ul),
+          icon: const Icon(Icons.format_list_bulleted),
+        ),
+        IconButton(
+          key: const ValueKey('writer-home-numbering'),
+          visualDensity: VisualDensity.compact,
+          tooltip: _ribbonLabel('Numbering'),
+          onPressed: () => quillController.formatSelection(Attribute.ol),
+          icon: const Icon(Icons.format_list_numbered),
+        ),
+
         // Bold
         IconButton(
+          visualDensity: VisualDensity.compact,
+          constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+          padding: EdgeInsets.zero,
           tooltip: _ribbonLabel('Bold'),
           onPressed: () {
             quillController.formatSelection(Attribute.bold);
@@ -2004,6 +2102,9 @@ Future<void> showCustomFontSizeDialog() async {
 
         // Italic
         IconButton(
+          visualDensity: VisualDensity.compact,
+          constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+          padding: EdgeInsets.zero,
           tooltip: _ribbonLabel('Italic'),
           onPressed: () {
             quillController.formatSelection(Attribute.italic);
@@ -2013,6 +2114,9 @@ Future<void> showCustomFontSizeDialog() async {
 
         // Underline
         IconButton(
+          visualDensity: VisualDensity.compact,
+          constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+          padding: EdgeInsets.zero,
           tooltip: _ribbonLabel('Underline'),
           onPressed: () {
             quillController.formatSelection(Attribute.underline);
@@ -2022,6 +2126,9 @@ Future<void> showCustomFontSizeDialog() async {
 
         // Strikethrough
         IconButton(
+          visualDensity: VisualDensity.compact,
+          constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+          padding: EdgeInsets.zero,
           tooltip: _ribbonLabel('Strikethrough'),
           onPressed: () {
             quillController.formatSelection(
@@ -2033,6 +2140,9 @@ Future<void> showCustomFontSizeDialog() async {
 
         // Red Text
         IconButton(
+          visualDensity: VisualDensity.compact,
+          constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+          padding: EdgeInsets.zero,
           tooltip: _ribbonLabel('Red Text'),
           onPressed: () {
             quillController.formatSelection(
@@ -2047,6 +2157,9 @@ Future<void> showCustomFontSizeDialog() async {
 
         // Yellow Highlight
         IconButton(
+          visualDensity: VisualDensity.compact,
+          constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+          padding: EdgeInsets.zero,
           tooltip: _ribbonLabel('Yellow Highlight'),
           onPressed: () {
             quillController.formatSelection(
@@ -2384,7 +2497,7 @@ Future<void> showCustomFontSizeDialog() async {
 
   Widget _buildViewportControls() {
     return Container(
-      height: 48,
+      height: 36,
       decoration: const BoxDecoration(
         color: Colors.white,
         border: Border(
@@ -2394,17 +2507,19 @@ Future<void> showCustomFontSizeDialog() async {
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 4),
         child: Row(
           children: [
             IconButton(
               tooltip: _t('ছোট করুন', 'Zoom out'),
               visualDensity: VisualDensity.compact,
+              constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+              padding: EdgeInsets.zero,
               onPressed: () => _adjustZoom(-0.1),
               icon: const Icon(Icons.remove_circle_outline, size: 20),
             ),
             SizedBox(
-              width: 112,
+              width: 88,
               child: Slider(
                 value: zoomLevel,
                 min: WriterViewportLayout.minimumZoom,
@@ -2425,6 +2540,8 @@ Future<void> showCustomFontSizeDialog() async {
             IconButton(
               tooltip: _t('বড় করুন', 'Zoom in'),
               visualDensity: VisualDensity.compact,
+              constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+              padding: EdgeInsets.zero,
               onPressed: () => _adjustZoom(0.1),
               icon: const Icon(Icons.add_circle_outline, size: 20),
             ),
@@ -2847,7 +2964,7 @@ Future<void> showCustomFontSizeDialog() async {
   }
 
   Future<void> insertWriterTable() async {
-    final data = await showWriterTableEditor(context);
+    final data = await showWriterTableEditor(context, isBangla: widget.isBangla);
 
     if (data == null || !mounted) return;
 
@@ -2973,6 +3090,7 @@ Future<void> insertWriterImage() async {
     final updatedData = await showWriterTableEditor(
       editorContext,
       initialData: data,
+      isBangla: widget.isBangla,
     );
 
     if (updatedData == null || !mounted) return;
@@ -3036,13 +3154,34 @@ Future<void> insertWriterImage() async {
 
   @override
   Widget build(BuildContext context) {
+    // কিবোর্ড খোলা থাকলে লেখার জায়গা সর্বোচ্চ রাখতে উপরের ও নিচের
+    // অপ্রয়োজনীয় বার সরিয়ে শুধু ছোট ribbon ও formatting toolbar রাখা হয়।
+    final keyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: OFFYNEXTheme.canvas,
-      appBar: focusMode ? null : AppBar(
+      appBar: (focusMode || keyboardVisible) ? null : AppBar(
         backgroundColor: const Color(0xFF185C3B),
         foregroundColor: Colors.white,
         elevation: 0,
-        title: const Text('OFFYNEX Writer', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+        title: TextField(
+          controller: titleController,
+          onChanged: (_) => scheduleSave(),
+          maxLines: 1,
+          textInputAction: TextInputAction.done,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+          ),
+          decoration: InputDecoration(
+            isDense: true,
+            border: InputBorder.none,
+            hintText: _t('ডকুমেন্টের নাম', 'Document name'),
+            hintStyle: const TextStyle(color: Colors.white70, fontSize: 14),
+            contentPadding: const EdgeInsets.symmetric(vertical: 5),
+          ),
+        ),
         actions: [
           IconButton(tooltip: _t('সব নির্বাচন', 'Select all'), onPressed: selectAllText, icon: const Icon(Icons.select_all)),
           IconButton(tooltip: _t('সংরক্ষণ', 'Save'), onPressed: () => saveDocument(), icon: const Icon(Icons.save_outlined)),
@@ -3059,26 +3198,74 @@ Future<void> insertWriterImage() async {
       ),
       body: Column(
         children: [
-          if (!focusMode) Container(
-            margin: const EdgeInsets.fromLTRB(12, 4, 12, 0),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), border: Border.all(color: OFFYNEXTheme.border)),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-            child: TextField(
-              controller: titleController,
-              onChanged: (_) => scheduleSave(),
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                hintText: _t('ডকুমেন্টের নাম', 'Document name'),
-                prefixIcon: Icon(Icons.description_outlined),
-              ),
-              style: const TextStyle(color: OFFYNEXTheme.ink, fontSize: 17, fontWeight: FontWeight.w800),
-            ),
-          ),
           if (!focusMode) Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              buildRibbonTabs(),
-              if (selectedRibbonTab == 0) ...[
+              if (keyboardVisible) ...[
+                // তিন লাইনের কমপ্যাক্ট এডিটিং হেডার: ডকুমেন্ট নাম, ট্যাব, টুল।
+                Container(
+                  height: 30,
+                  color: const Color(0xFF185C3B),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  alignment: Alignment.centerLeft,
+                  child: TextField(
+                    controller: titleController,
+                    onChanged: (_) => scheduleSave(),
+                    maxLines: 1,
+                    textInputAction: TextInputAction.done,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    decoration: InputDecoration(
+                      isDense: true,
+                      border: InputBorder.none,
+                      hintText: _t('ডকুমেন্টের নাম', 'Document name'),
+                      hintStyle: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                      ),
+                      contentPadding: EdgeInsets.zero,
+                      prefixIcon: const Icon(
+                        Icons.description_outlined,
+                        color: Colors.white70,
+                        size: 16,
+                      ),
+                      prefixIconConstraints: const BoxConstraints(
+                        minWidth: 25,
+                        minHeight: 24,
+                      ),
+                    ),
+                  ),
+                ),
+                // Keyboard-open order: document name, ribbon tabs, formatting tools.
+                buildRibbonTabs(),
+                SizedBox(
+                  height: 32,
+                  child: ClipRect(
+                    child: QuillSimpleToolbar(
+                      controller: quillController,
+                      config: const QuillSimpleToolbarConfig(
+                        multiRowsDisplay: false,
+                        showFontFamily: false,
+                        showFontSize: false,
+                        showBoldButton: true,
+                        showItalicButton: true,
+                        showUnderLineButton: true,
+                        showAlignmentButtons: true,
+                        showListNumbers: true,
+                        showListBullets: true,
+                        showIndent: true,
+                        showUndo: true,
+                        showRedo: true,
+                      ),
+                    ),
+                  ),
+                ),
+              ] else ...[
+                buildRibbonTabs(),
+                if (selectedRibbonTab == 0) ...[
                 buildFileRibbon(),
                 ] else if (selectedRibbonTab == 1) ...[
                 buildHomeRibbon(),
@@ -3093,40 +3280,34 @@ Future<void> insertWriterImage() async {
                       showBoldButton: false,
                       showItalicButton: false,
                       showUnderLineButton: false,
-                      showAlignmentButtons: true,
-                      showListNumbers: true,
-                      showListBullets: true,
+                      // Alignment, lists, undo and redo already exist in
+                      // the Home ribbon immediately above. Keep only indent
+                      // actions here to avoid duplicate controls.
+                      showAlignmentButtons: false,
+                      showListNumbers: false,
+                      showListBullets: false,
                       showIndent: true,
-                      showUndo: true,
-                      showRedo: true,
+                      showUndo: false,
+                      showRedo: false,
                     ),
                   ),
                 ),
               ] else if (selectedRibbonTab == 2) ...[
                 buildInsertRibbon(),
               ] else if (selectedRibbonTab == 3) ...[
+                buildLayoutRibbon(),
                 buildDesignRibbon(),
               ] else if (selectedRibbonTab == 4) ...[
-                buildLayoutRibbon(),
-              ] else if (selectedRibbonTab == 5) ...[
                 buildReferencesRibbon(),
-              ] else if (selectedRibbonTab == 6) ...[
+              ] else if (selectedRibbonTab == 5) ...[
                 buildReviewRibbon(),
-              ] else if (selectedRibbonTab == 7) ...[
+              ] else if (selectedRibbonTab == 6) ...[
                 buildViewRibbon(),
-              ] else ...[
-                const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Center(
-                    child: Text(
-                      'এই ট্যাবে এখন কোনো অতিরিক্ত টুল নেই।',
-                    ),
-                  ),
-                ),
+              ],
               ],
             ],
           ),
-          if (showRuler && !focusMode) _rulerWidget(),
+          if (showRuler && !focusMode && !keyboardVisible) _rulerWidget(),
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -3180,6 +3361,7 @@ Future<void> insertWriterImage() async {
                     height: documentCanvasHeight + 24,
                     child: Center(
                       child: Container(
+                        key: const ValueKey('writer-page-canvas'),
                         width: displayWidth,
                         height: documentCanvasHeight,
                         margin: const EdgeInsets.symmetric(vertical: 12),
@@ -3214,6 +3396,7 @@ Future<void> insertWriterImage() async {
                                       embedBuilders: [
                                         WriterTableEmbedBuilder(
                                           onEdit: editWriterTable,
+                                          isBangla: widget.isBangla,
                                         ),
                                         WriterImageEmbedBuilder(),
                                         WriterPageBreakEmbedBuilder(),
@@ -3231,8 +3414,8 @@ Future<void> insertWriterImage() async {
               },
             ),
           ),
-          _buildViewportControls(),
-          if (showStatusBar) Container(
+          if (!keyboardVisible) _buildViewportControls(),
+          if (showStatusBar && !keyboardVisible) Container(
             width: double.infinity,
             decoration: const BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: OFFYNEXTheme.border))),
             padding: const EdgeInsets.symmetric(
@@ -3565,6 +3748,7 @@ class _WriterPrintPreviewScreenState
                         embedBuilders: [
                           WriterTableEmbedBuilder(
                             onEdit: widget.onEditTable,
+                            isBangla: widget.isBangla,
                           ),
                           WriterImageEmbedBuilder(),
                           WriterPageBreakEmbedBuilder(),

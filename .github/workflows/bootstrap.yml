@@ -207,12 +207,24 @@ jobs:
       - name: Save Generated Source
         if: github.event_name != 'pull_request'
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+users.noreply.github.com"
           git add .
           if ! git diff --cached --quiet; then
             git commit -m "Create OFFYNEXBD Flutter foundation"
-            git push origin "HEAD:${GITHUB_REF_NAME}"
+            # A merge or documentation commit may land after checkout. Rebase
+            # the generated-source commit onto the latest branch before push.
+            for attempt in 1 2 3; do
+              git fetch origin "${GITHUB_REF_NAME}"
+              git rebase "origin/${GITHUB_REF_NAME}"
+              if git push origin "HEAD:${GITHUB_REF_NAME}"; then
+                exit 0
+              fi
+              echo "Push attempt ${attempt} was rejected; fetching and rebasing again."
+            done
+            echo "Unable to publish generated Flutter source after three attempts."
+            exit 1
           fi
 
       - name: Verify Download Package Contents

@@ -13,15 +13,16 @@
 
 ## 2. Ribbon and editing commands
 
-Required ribbon structure:
+Required ribbon structure (the user's approved seven-tab layout):
 - File
 - Home
 - Insert
-- Design
 - Layout
 - References
 - Review
 - View
+
+Design-related page appearance controls are grouped within the Layout tab; Design is not a separate top-level ribbon tab. Do not add an eighth tab without the user's approval.
 
 Required editing behavior:
 - Numeric font-size choices and font-family selection; do not replace numeric sizes with vague Small/Large controls.
