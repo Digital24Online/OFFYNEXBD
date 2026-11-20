@@ -59,6 +59,23 @@ void main() {
         Uint8List.fromList([0xFF, 0xD8, 0xFF]), 'scan.png'), isFalse);
     });
 
+    test('OCR rejects image bytes whose signature disagrees with the extension', () async {
+      await expectLater(
+        PdfToDocumentService.recognizeImageBytes(
+          Uint8List.fromList([0xFF, 0xD8, 0xFF, 0x00]),
+          sourceName: 'spoofed.png',
+        ),
+        throwsFormatException,
+      );
+      await expectLater(
+        PdfToDocumentService.recognizeImageBytes(
+          Uint8List.fromList([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]),
+          sourceName: 'spoofed.jpg',
+        ),
+        throwsFormatException,
+      );
+    });
+
     test('creates an empty editable paragraph for empty input', () {
       expect(PdfToDocumentService.plainTextToDelta('').single['insert'], '\n');
     });
