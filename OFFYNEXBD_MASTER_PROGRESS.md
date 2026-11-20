@@ -1610,3 +1610,14 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - Restored Writer widget/editor constructor defaults to Bangla, consistent with the app's initial Bangla language setting; the main app continues to pass the explicit user-selected language.
 - The user's approval does not waive the quality gate: no merge until latest PR head CI (Analyze, complete tests, signed Android build, signature/package verification and artifact upload) is successful. Recheck mergeability and exact head SHA immediately before merge.
 
+
+
+## Integrated Sheets analytics port — 2026-11-20
+
+- Ported the previously isolated Sheets charts / Pivot summaries / conditional-formatting feature batch onto a fresh branch based on the current `main`, rather than merging its stale, diverged PR branch.
+- Added bounded cell-range parsing, conditional rules, chart data preparation, Pivot aggregation and validation helpers; added bilingual UI dialogs/widgets.
+- Integrated persistent worksheet metadata and live-grid style/chart/Pivot actions into the current Sheets screen and workbook codec.
+- Added focused analytics and workbook-codec regression tests.
+- Source was ported by applying the reviewed PR #2 hunks to the current `main` files; every hunk matched exactly. Existing newer main-branch changes were retained.
+- This is source integration only until a fresh CI run passes Analyze, all tests, signed Android build and artifact verification. XLSX native chart/conditional-rule round-trip and advanced Pivot filtering/drill-down remain known limitations.
+- No merge to `main` was performed.
