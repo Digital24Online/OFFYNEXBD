@@ -581,13 +581,13 @@ class _FormulaParser {
     try {
       value = _parseComparison();
     } on FormatException {
-      _skipFunctionArgument();
+      if (current != ',') _skipFunctionArgument();
       _expect(',');
       final fallback = _parseComparison();
       _expect(')');
       return fallback;
     } on RangeError {
-      _skipFunctionArgument();
+      if (current != ',') _skipFunctionArgument();
       _expect(',');
       final fallback = _parseComparison();
       _expect(')');
