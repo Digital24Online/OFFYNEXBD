@@ -89,6 +89,7 @@ void main() {
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pumpAndSettle();
 
+    await tester.ensureVisible(find.text('Bold'));
     await tester.tap(find.text('Bold'));
     await tester.pumpAndSettle();
 
@@ -371,6 +372,7 @@ void main() {
     await tester.tap(find.text('নতুন ডকুমেন্ট'));
     await tester.pumpAndSettle();
 
+    await tester.ensureVisible(find.text('ভিউ'));
     await tester.tap(find.text('ভিউ'));
     await tester.pumpAndSettle();
 
