@@ -57,6 +57,7 @@ class FormsResponseCsvCodec {
         throw const FormatException('A form response contains invalid metadata.');
       }
       final answerValues = <String, String>{};
+      final questionOccurrences = <String, int>{};
       for (final answer in answers) {
         if (answer is! Map ||
             answer['question'] is! String ||
@@ -67,8 +68,13 @@ class FormsResponseCsvCodec {
         if (question.isEmpty) {
           throw const FormatException('A form response contains an empty question.');
         }
-        final key = '$formId\u0000$question';
-        final label = '$formTitle — $question';
+        // Keep repeated labels as separate columns instead of overwriting
+        // one answer with another in the per-response map.
+        final occurrence = (questionOccurrences[question] ?? 0) + 1;
+        questionOccurrences[question] = occurrence;
+        final key = '$formId\u0000$question\u0000$occurrence';
+        final suffix = occurrence == 1 ? '' : ' ($occurrence)';
+        final label = '$formTitle — $question$suffix';
         if (!labels.containsKey(key)) {
           if (columns.length >= maxAnswerColumns) {
             throw const FormatException('Forms CSV exceeds the 512-answer-column limit.');

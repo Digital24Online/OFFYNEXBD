@@ -181,4 +181,33 @@ void main() {
     expect(csv, contains("'  @SUM"));
   });
 
+
+  test('preserves repeated question labels as distinct CSV columns', () {
+    final csv = FormsResponseCsvCodec.encode([
+      {
+        'id': 'r1',
+        'formId': 'f1',
+        'formTitle': 'Customer form',
+        'submittedAt': '2026-11-20T10:00:00.000Z',
+        'answers': [
+          {'question': 'Address', 'answer': 'Home address'},
+          {'question': 'Address', 'answer': 'Office address'},
+        ],
+      },
+      {
+        'id': 'r2',
+        'formId': 'f1',
+        'formTitle': 'Customer form',
+        'submittedAt': '2026-11-20T11:00:00.000Z',
+        'answers': [
+          {'question': 'Address', 'answer': 'Village address'},
+          {'question': 'Address', 'answer': 'Work address'},
+        ],
+      },
+    ]);
+    expect(csv, contains('"Customer form — Address","Customer form — Address (2)"'));
+    expect(csv, contains('"Home address","Office address"'));
+    expect(csv, contains('"Village address","Work address"'));
+  });
+
 }

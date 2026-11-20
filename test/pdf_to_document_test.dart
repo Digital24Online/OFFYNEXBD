@@ -66,5 +66,18 @@ void main() {
       );
     });
 
+    test('validates PDF page count bounds', () {
+      expect(() => PdfToDocumentService.validatePageCount(0), throwsFormatException);
+      expect(() => PdfToDocumentService.validatePageCount(1), returnsNormally);
+      expect(
+        () => PdfToDocumentService.validatePageCount(PdfToDocumentService.maxPdfPages),
+        returnsNormally,
+      );
+      expect(
+        () => PdfToDocumentService.validatePageCount(PdfToDocumentService.maxPdfPages + 1),
+        throwsFormatException,
+      );
+    });
+
   });
 }

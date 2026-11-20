@@ -7,6 +7,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:printing/printing.dart';
 import 'slides_pdf_export_service.dart';
 import 'slides_preview_screen.dart';
+import 'slides_editor_screen.dart';
+import 'slides_content_codec.dart';
 import 'scan_document_service.dart';
 import 'database_rows_dialog.dart';
 import 'database_field_codec.dart';
@@ -147,16 +149,30 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
 
   Future<void> _editItem({Map<String, dynamic>? item}) async {
     if (_workspaceDataBlocked) return;
-    final result = await showDialog<Map<String, String>>(
-      context: context,
-      builder: (_) => _WorkspaceItemDialog(
-        isBangla: _bn,
-        title: item?['title']?.toString() ?? '',
-        content: item?['content']?.toString() ?? '',
-        contentLabel: _contentLabel,
-        isNew: item == null,
-      ),
-    );
+    Map<String, String>? result;
+    if (widget.module == 'Slides') {
+      result = await Navigator.push<Map<String, String>>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SlidesEditorScreen(
+            isBangla: _bn,
+            title: item?['title']?.toString() ?? '',
+            content: item?['content']?.toString() ?? '',
+          ),
+        ),
+      );
+    } else {
+      result = await showDialog<Map<String, String>>(
+        context: context,
+        builder: (_) => _WorkspaceItemDialog(
+          isBangla: _bn,
+          title: item?['title']?.toString() ?? '',
+          content: item?['content']?.toString() ?? '',
+          contentLabel: _contentLabel,
+          isNew: item == null,
+        ),
+      );
+    }
     if (result == null || result['title']!.trim().isEmpty) return;
     final now = DateTime.now().toIso8601String();
     final updated = _items.map((entry) => Map<String, dynamic>.from(entry)).toList();
@@ -711,11 +727,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
   }
 
   Future<void> _previewSlides(Map<String, dynamic> presentation) async {
-    final slides = (presentation['content']?.toString() ?? '')
-        .split(RegExp(r'\r?\n'))
-        .map((value) => value.trim())
-        .where((value) => value.isNotEmpty)
-        .toList(growable: false);
+    final slides = SlidesContentCodec.decode(presentation['content']?.toString());
     if (slides.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(_bn ? 'প্রিভিউয়ের আগে স্লাইডের লেখা যোগ করুন।' : 'Add slide content before opening the preview.'),
@@ -737,11 +749,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
   Future<void> _exportSlidePdf(Map<String, dynamic> slide) async {
     try {
       final title = slide['title']?.toString().trim() ?? '';
-      final slideTexts = (slide['content']?.toString() ?? '')
-          .split(RegExp(r'\r?\n'))
-          .map((value) => value.trim())
-          .where((value) => value.isNotEmpty)
-          .toList(growable: false);
+      final slideTexts = SlidesContentCodec.decode(slide['content']?.toString());
       final bytes = await SlidesPdfExportService.build(
         title: title,
         slideTexts: slideTexts,

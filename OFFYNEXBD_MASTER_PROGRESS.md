@@ -1708,3 +1708,30 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] PR #10 marked Ready and squash-merged; merge commit `9eb527fbca74426fb9f9ea4bcb83f5aabb67158f`.
 - [ ] This is a workspace navigation/UX correction only. It does not complete Slides, Fonts, AI, Forms, Database or any other module.
 - Continue with real editor workflows and module capabilities; keep implementation and CI acceptance distinct.
+
+
+## Integrated office-suite reliability batch — 2026-11-20 (PR pending CI)
+
+### Slides
+- Added a dedicated offline Slides editor connected to the Slides workspace create/edit flow.
+- Supports adding, editing, duplicating, deleting and drag-reordering slides.
+- Added a versioned structured content codec. Newlines inside a slide remain paragraphs in that same slide; legacy newline-per-slide records remain readable.
+- Slides preview and PDF export now decode the same structured representation.
+- Enforced 200-slide and 5 MB text limits in editor and codec.
+- Added editor, codec and workspace round-trip tests.
+
+### Forms
+- Fixed CSV export collision when a single form contains repeated question labels. Repeated answers now become distinct columns (with occurrence suffixes) rather than one answer silently overwriting another.
+- Added regression coverage for repeated labels across multiple response rows.
+
+### PDF
+- Added an explicit page-count validation gate (1–1,000 pages) before conversion continues.
+- Added boundary tests for zero, minimum, maximum and over-limit page counts.
+
+### Verification and remaining work
+- [ ] This batch is not yet verified. Run Flutter Analyze, the full configured test suite, signed Android release build, APK signature/install metadata verification, package-content checks and artifact upload on the final PR head.
+- [ ] No changes have been merged to main.
+- Slides remain short of a full visual presentation editor: shapes, image/media placement, charts, themes/master layouts, transitions/animations, speaker notes, slideshow/presenter mode and PPTX/ODP round-trip remain open.
+- Forms hosted sharing, branching, dashboards, permission roles and sync remain open.
+- PDF reader/editor page management, merge/split/compress, annotation, forms/signatures, encryption and large-file acceptance remain open.
+- The other module and shared-platform items listed in the integrated scope above remain open; this batch does not mark any module complete.
