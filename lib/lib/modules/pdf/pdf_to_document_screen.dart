@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../writer/writer_screen.dart';
 import 'pdf_to_document_service.dart';
+import 'pdf_reader_screen.dart';
 import '../../theme/offynex_theme.dart';
 
 class PdfToDocumentScreen extends StatefulWidget {
@@ -19,6 +20,7 @@ class _PdfToDocumentScreenState extends State<PdfToDocumentScreen> {
   PdfConversionResult? result;
   String? sourceName;
   Map<String, dynamic>? savedDocument;
+  Uint8List? sourcePdfBytes;
   String? error;
   bool busy = false;
 
@@ -51,7 +53,7 @@ class _PdfToDocumentScreenState extends State<PdfToDocumentScreen> {
       documents.add(record);
       await storeDocuments(documents);
       if (!mounted) return;
-      setState(() { sourceName = file.name; savedDocument = record; result = converted; busy = false; });
+      setState(() { sourceName = file.name; sourcePdfBytes = bytes; savedDocument = record; result = converted; busy = false; });
     } catch (e) {
       if (!mounted) return;
       setState(() { error = e.toString().replaceFirst('Exception: ', ''); busy = false; });
@@ -89,6 +91,7 @@ class _PdfToDocumentScreenState extends State<PdfToDocumentScreen> {
       if (!mounted) return;
       setState(() {
         sourceName = file.name;
+        sourcePdfBytes = null;
         savedDocument = record;
         result = converted;
         busy = false;
@@ -122,6 +125,21 @@ class _PdfToDocumentScreenState extends State<PdfToDocumentScreen> {
     } finally {
       if (mounted) setState(() => busy = false);
     }
+  }
+
+  Future<void> _openPdfPreview() async {
+    final bytes = sourcePdfBytes;
+    if (bytes == null || sourceName == null || !mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PdfReaderScreen(
+          bytes: bytes,
+          fileName: sourceName!,
+          isBangla: widget.isBangla,
+        ),
+      ),
+    );
   }
 
   Future<void> _openWriter() async {
@@ -217,6 +235,12 @@ class _PdfToDocumentScreenState extends State<PdfToDocumentScreen> {
               ),
               const SizedBox(height: 14),
               Wrap(spacing: 10, runSpacing: 10, children: [
+                if (sourcePdfBytes != null)
+                  OutlinedButton.icon(
+                    onPressed: busy ? null : _openPdfPreview,
+                    icon: const Icon(Icons.picture_as_pdf_outlined),
+                    label: Text(bn ? 'PDF দেখুন' : 'View PDF'),
+                  ),
                 FilledButton.icon(
                   onPressed: busy ? null : _openWriter,
                   icon: const Icon(Icons.edit_document),
