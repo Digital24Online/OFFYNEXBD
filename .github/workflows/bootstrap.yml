@@ -14,6 +14,8 @@ on:
       - 'assets/**'
       - 'android/**'
       - 'ios/**'
+      - 'windows/**'
+      - 'macos/**'
       - '.github/workflows/bootstrap.yml'
   pull_request:
     branches:
@@ -26,6 +28,8 @@ on:
       - 'assets/**'
       - 'android/**'
       - 'ios/**'
+      - 'windows/**'
+      - 'macos/**'
       - '.github/workflows/bootstrap.yml'
 
 permissions:
