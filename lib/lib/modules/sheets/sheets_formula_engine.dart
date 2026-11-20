@@ -7,9 +7,15 @@ class SheetsFormulaEngine {
   static const int maxFormulaLength = 4096;
   static const int maxFormulaTokens = 2048;
 
-  SheetsFormulaEngine(this.cells);
+  SheetsFormulaEngine(
+    this.cells, {
+    this.worksheets = const <String, Map<String, String>>{},
+    this.activeSheetName = 'Sheet1',
+  });
 
   final Map<String, String> cells;
+  final Map<String, Map<String, String>> worksheets;
+  final String activeSheetName;
 
   double? evaluateCell(String reference, [Set<String>? visiting]) {
     final key = reference.toUpperCase();
@@ -23,16 +29,138 @@ class SheetsFormulaEngine {
 
     if (raw.length > maxFormulaLength) return null;
     final active = visiting ?? <String>{};
-    if (!active.add(key)) return null;
+    final visitKey = '${activeSheetName.toLowerCase()}!$key';
+    if (!active.add(visitKey)) return null;
     try {
-      return _FormulaParser(raw.substring(1), this, active).parse();
+      final formula = _expandCrossSheetReferences(raw.substring(1), active);
+      return _FormulaParser(formula, this, active).parse();
     } on FormatException {
       return null;
     } on RangeError {
       return null;
     } finally {
-      active.remove(key);
+      active.remove(visitKey);
     }
+  }
+
+
+  Map<String, String> _cellsForSheet(String sheetName) {
+    if (sheetName.toLowerCase() == activeSheetName.toLowerCase()) {
+      return cells;
+    }
+    for (final entry in worksheets.entries) {
+      if (entry.key.toLowerCase() == sheetName.toLowerCase()) {
+        return entry.value;
+      }
+    }
+    throw FormatException('Unknown worksheet: $sheetName');
+  }
+
+  double? _readQualifiedCell(
+    String sheetName,
+    String reference,
+    Set<String> visiting,
+  ) {
+    final target = _cellsForSheet(sheetName);
+    final key = reference.toUpperCase();
+    final raw = target[key]?.trim() ?? '';
+    if (raw.isEmpty) return 0;
+    if (!raw.startsWith('=')) {
+      final value = double.tryParse(raw);
+      return value != null && value.isFinite ? value : null;
+    }
+    return SheetsFormulaEngine(
+      target,
+      worksheets: worksheets,
+      activeSheetName: sheetName,
+    ).evaluateCell(key, visiting);
+  }
+
+  List<double> _readQualifiedRange(
+    String sheetName,
+    String start,
+    String end,
+    Set<String> visiting,
+  ) {
+    final first = _splitCellReference(start.toUpperCase());
+    final last = _splitCellReference(end.toUpperCase());
+    if (first == null || last == null) {
+      throw const FormatException('Invalid cross-worksheet range');
+    }
+    final minColumn = math.min(first.$1, last.$1).toInt();
+    final maxColumn = math.max(first.$1, last.$1).toInt();
+    final minRow = math.min(first.$2, last.$2).toInt();
+    final maxRow = math.max(first.$2, last.$2).toInt();
+    final count = (maxColumn - minColumn + 1) * (maxRow - minRow + 1);
+    if (count > 10000) {
+      throw const FormatException('Cross-worksheet range is too large');
+    }
+    final target = _cellsForSheet(sheetName);
+    final values = <double>[];
+    for (var row = minRow; row <= maxRow; row++) {
+      for (var column = minColumn; column <= maxColumn; column++) {
+        final key = _columnName(column) + row.toString();
+        final raw = target[key]?.trim() ?? '';
+        if (raw.isEmpty) continue;
+        final value = _readQualifiedCell(sheetName, key, visiting);
+        if (value == null) {
+          if (raw.startsWith('=')) {
+            throw const FormatException('Invalid or circular formula in cross-worksheet range');
+          }
+          continue;
+        }
+        values.add(value);
+      }
+    }
+    return values;
+  }
+
+  String _expandCrossSheetReferences(
+    String formula,
+    Set<String> visiting,
+  ) {
+    final sheetToken = r"(?:'(?:[^']|'')+'|[A-Za-z_][A-Za-z0-9_]*)";
+    final cellToken = r'[A-Z]+[1-9]\d*';
+    final rangePattern = RegExp(
+      '($sheetToken)!($cellToken):($sheetToken!)?($cellToken)',
+      caseSensitive: false,
+    );
+    var expanded = formula.replaceAllMapped(rangePattern, (match) {
+      final sheetName = _decodeSheetName(match.group(1)!);
+      final endSheetToken = match.group(3);
+      if (endSheetToken != null &&
+          _decodeSheetName(endSheetToken.substring(0, endSheetToken.length - 1)).toLowerCase() !=
+              sheetName.toLowerCase()) {
+        throw const FormatException('A range cannot span worksheets.');
+      }
+      final values = _readQualifiedRange(
+        sheetName,
+        match.group(2)!,
+        match.group(4)!,
+        visiting,
+      );
+      return values.map((value) => value.toString()).join(',');
+    });
+    final cellPattern = RegExp(
+      '($sheetToken)!($cellToken)',
+      caseSensitive: false,
+    );
+    expanded = expanded.replaceAllMapped(cellPattern, (match) {
+      final sheetName = _decodeSheetName(match.group(1)!);
+      final value = _readQualifiedCell(sheetName, match.group(2)!, visiting);
+      if (value == null) {
+        throw const FormatException('Cross-worksheet reference is not numeric or contains an error.');
+      }
+      return value.toString();
+    });
+    return expanded;
+  }
+
+  static String _decodeSheetName(String token) {
+    if (token.startsWith("'") && token.endsWith("'")) {
+      return token.substring(1, token.length - 1).replaceAll("''", "'");
+    }
+    return token;
   }
 
   double? _readCell(String reference, Set<String> visiting) =>
