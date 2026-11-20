@@ -138,6 +138,23 @@ void main() {
       expect(engine.evaluateCell('A14'), 7);
     });
 
+    test('IF evaluates only the selected branch, including nested branches', () {
+      final engine = SheetsFormulaEngine({
+        'A1': '=IF(1=1,9,1/0)',
+        'A2': '=IF(1=0,1/0,8)',
+        'A3': '=IF(1=1,IF(2=2,6,1/0),1/0)',
+        'A4': '=IF(1=0,IF(2=2,1/0,4),IF(3=3,5,1/0))',
+        'A5': '=IF(1=1,2,)',
+        'A6': '=IF(1=0,,2)',
+      });
+      expect(engine.evaluateCell('A1'), 9);
+      expect(engine.evaluateCell('A2'), 8);
+      expect(engine.evaluateCell('A3'), 6);
+      expect(engine.evaluateCell('A4'), 5);
+      expect(engine.evaluateCell('A5'), isNull);
+      expect(engine.evaluateCell('A6'), isNull);
+    });
+
     test('rejects malformed comparisons and invalid logical argument counts', () {
       final engine = SheetsFormulaEngine({
         'A1': '=1>2>3',
