@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:google_mlkit_document_scanner/google_mlkit_document_scanner.dart';
 import 'package:flutter/services.dart';
@@ -27,6 +28,18 @@ class ScanCaptureResult {
 class ScanDocumentService {
   static const int maxPages = 50;
   static const int maxPdfBytes = 50 * 1024 * 1024;
+  static const int maxOcrImageBytes = 30 * 1024 * 1024;
+
+  static void validateCapturedPdf(Uint8List bytes, int pageCount) {
+    if (pageCount < 1 || pageCount > maxPages) {
+      throw FormatException('Scan page count must be between 1 and $maxPages.');
+    }
+    if (bytes.length < 8 ||
+        bytes.length > maxPdfBytes ||
+        String.fromCharCodes(bytes.take(5)) != '%PDF-') {
+      throw const FormatException('Scan output is not a valid PDF or exceeds 50 MB.');
+    }
+  }
 
   static String combineRecognizedPages(Iterable<String> pages) => pages
       .map((page) => page.trim())
@@ -53,7 +66,8 @@ class ScanDocumentService {
     try {
       result = await scanner.scanDocument();
     } on PlatformException catch (error) {
-      if (error.message?.toLowerCase().contains('operation cancelled') == true) {
+      if (error.code.toLowerCase().contains('cancel') ||
+          error.message?.toLowerCase().contains('operation cancelled') == true) {
         return null;
       }
       rethrow;
@@ -71,9 +85,7 @@ class ScanDocumentService {
       throw const FileSystemException('স্ক্যান করা PDF ফাইল পাওয়া যায়নি।');
     }
     final pdfBytes = await sourcePdf.readAsBytes();
-    if (pdfBytes.isEmpty || pdfBytes.length > maxPdfBytes) {
-      throw const FormatException('স্ক্যান PDF খালি অথবা ৫০ MB-এর বেশি।');
-    }
+    validateCapturedPdf(pdfBytes, pdf.pageCount);
 
     // Preserve the captured PDF before OCR, so a recognition failure cannot
     // discard the user's scan.
@@ -84,7 +96,17 @@ class ScanDocumentService {
     final stamp = DateTime.now().microsecondsSinceEpoch;
     final fileName = 'OFFYNEXBD_Scan_$stamp.pdf';
     final savedFile = File('${scansDirectory.path}/$fileName');
-    await savedFile.writeAsBytes(pdfBytes, flush: true);
+    final pendingFile = File('${savedFile.path}.pending');
+    try {
+      await pendingFile.writeAsBytes(pdfBytes, flush: true);
+      if (await pendingFile.length() != pdfBytes.length) {
+        throw const FileSystemException('Scan PDF could not be fully written.');
+      }
+      await pendingFile.rename(savedFile.path);
+    } catch (_) {
+      if (await pendingFile.exists()) await pendingFile.delete();
+      rethrow;
+    }
 
     final recognizedPages = <String>[];
     final imagePaths = result.images ?? const <String>[];
@@ -92,7 +114,7 @@ class ScanDocumentService {
       final imageFile = File(imagePaths[index]);
       if (!await imageFile.exists()) continue;
       final imageBytes = await imageFile.readAsBytes();
-      if (imageBytes.isEmpty || imageBytes.length > 30 * 1024 * 1024) {
+      if (imageBytes.isEmpty || imageBytes.length > maxOcrImageBytes) {
         continue;
       }
       try {
