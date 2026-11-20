@@ -80,6 +80,12 @@ void main() {
       final valid = Uint8List.fromList('%PDF-1.7'.codeUnits);
       expect(() => ScanDocumentService.validateCapturedPdf(valid, 1), returnsNormally);
       expect(() => ScanDocumentService.validateCapturedPdf(valid, 0), throwsFormatException);
+      expect(
+        () => ScanDocumentService.validateCapturedPdf(
+          Uint8List.fromList('%PDF-9.9'.codeUnits), 1,
+        ),
+        throwsFormatException,
+      );
       expect(() => ScanDocumentService.validateCapturedPdf(valid, 51), throwsFormatException);
       expect(() => ScanDocumentService.validateCapturedPdf(Uint8List(0), 1), throwsFormatException);
       expect(
