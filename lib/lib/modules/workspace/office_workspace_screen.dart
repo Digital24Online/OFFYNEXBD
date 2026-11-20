@@ -1093,6 +1093,9 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
       return title.contains(query) || content.contains(query);
     }).toList(growable: false);
     return Scaffold(
+      floatingActionButtonLocation: widget.module == 'Database'
+          ? FloatingActionButtonLocation.startFloat
+          : FloatingActionButtonLocation.endFloat,
       backgroundColor: OFFYNEXTheme.canvas,
       appBar: AppBar(
         backgroundColor: OFFYNEXTheme.canvas,
