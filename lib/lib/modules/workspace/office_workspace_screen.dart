@@ -7,6 +7,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:printing/printing.dart';
 import 'slides_pdf_export_service.dart';
 import 'slides_preview_screen.dart';
+import 'slides_editor_screen.dart';
 import 'scan_document_service.dart';
 import 'database_rows_dialog.dart';
 import 'database_field_codec.dart';
@@ -147,16 +148,30 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
 
   Future<void> _editItem({Map<String, dynamic>? item}) async {
     if (_workspaceDataBlocked) return;
-    final result = await showDialog<Map<String, String>>(
-      context: context,
-      builder: (_) => _WorkspaceItemDialog(
-        isBangla: _bn,
-        title: item?['title']?.toString() ?? '',
-        content: item?['content']?.toString() ?? '',
-        contentLabel: _contentLabel,
-        isNew: item == null,
-      ),
-    );
+    Map<String, String>? result;
+    if (widget.module == 'Slides') {
+      result = await Navigator.push<Map<String, String>>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SlidesEditorScreen(
+            isBangla: _bn,
+            title: item?['title']?.toString() ?? '',
+            content: item?['content']?.toString() ?? '',
+          ),
+        ),
+      );
+    } else {
+      result = await showDialog<Map<String, String>>(
+        context: context,
+        builder: (_) => _WorkspaceItemDialog(
+          isBangla: _bn,
+          title: item?['title']?.toString() ?? '',
+          content: item?['content']?.toString() ?? '',
+          contentLabel: _contentLabel,
+          isNew: item == null,
+        ),
+      );
+    }
     if (result == null || result['title']!.trim().isEmpty) return;
     final now = DateTime.now().toIso8601String();
     final updated = _items.map((entry) => Map<String, dynamic>.from(entry)).toList();
