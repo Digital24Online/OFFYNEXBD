@@ -1621,3 +1621,15 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - Source was ported by applying the reviewed PR #2 hunks to the current `main` files; every hunk matched exactly. Existing newer main-branch changes were retained.
 - This is source integration only until a fresh CI run passes Analyze, all tests, signed Android build and artifact verification. XLSX native chart/conditional-rule round-trip and advanced Pivot filtering/drill-down remain known limitations.
 - No merge to `main` was performed.
+
+
+## Integrated Writer + Sheets batch — CI correction record — 2026-11-20
+
+- Current integrated PR: #9, branch `work/integrated-sheets-analytics-20261120`.
+- Writer mobile Page/Width/Actual fit modes, 50%–300% zoom slider, direct zoom controls and persisted zoom were verified in current main source; added a mobile widget regression test for zoom bounds/action/persistence.
+- Sheets analytics from stale PR #2 was ported by exact-context patch application onto current main files: bounded range parsing, conditional formatting, bar/line chart previews and persisted specs, Pivot summary worksheets, workbook codec validation and tests. Existing current-main workbook code was retained.
+- Build #557 / run `44737184125` reached Flutter Analyze and failed on 11 lint findings introduced by the port (deprecated DropdownButtonFormField.value, missing braces, string concatenation and unnecessary double underscore). Analyze failure correctly stopped tests and APK creation; no artifact was produced.
+- Corrected all 11 reported lint findings in commits `40e0a77475462a6f4fcd27d55103878bf534b035` and `e12345e99195c022d8243e09f52b4eb619fdaa55`.
+- Build #558 / run `44737466194` is queued on exact corrected head `e12345e99195c022d8243e09f52b4eb619fdaa55`. Do not mark the batch verified until Analyze, tests, signed APK, package checks and artifact upload pass.
+- Known Sheets interoperability limits remain: native XLSX charts/conditional-rule metadata are not round-tripped; Pivot filtering/drill-down is limited. Writer true content-aware rich pagination and broader office-suite acceptance remain open.
+- No changes merged to main.
