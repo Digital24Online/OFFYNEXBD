@@ -74,7 +74,7 @@ Future<void> storeDocuments(
 
 class WriterScreen extends StatefulWidget {
   final bool isBangla;
-  const WriterScreen({super.key, this.isBangla = false});
+  const WriterScreen({super.key, this.isBangla = true});
 
   @override
   State<WriterScreen> createState() => _WriterScreenState();
@@ -453,7 +453,7 @@ class WriterEditorScreen extends StatefulWidget {
   const WriterEditorScreen({
     super.key,
     required this.document,
-    this.isBangla = false,
+    this.isBangla = true,
   });
 
   @override
@@ -3280,12 +3280,15 @@ Future<void> insertWriterImage() async {
                       showBoldButton: false,
                       showItalicButton: false,
                       showUnderLineButton: false,
-                      showAlignmentButtons: true,
-                      showListNumbers: true,
-                      showListBullets: true,
+                      // Alignment, lists, undo and redo already exist in
+                      // the Home ribbon immediately above. Keep only indent
+                      // actions here to avoid duplicate controls.
+                      showAlignmentButtons: false,
+                      showListNumbers: false,
+                      showListBullets: false,
                       showIndent: true,
-                      showUndo: true,
-                      showRedo: true,
+                      showUndo: false,
+                      showRedo: false,
                     ),
                   ),
                 ),
