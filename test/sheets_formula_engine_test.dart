@@ -466,8 +466,51 @@ void main() {
       expect(engine.evaluateCell('A1'), isNull);
       expect(engine.evaluateCell('A2'), isNull);
       expect(engine.evaluateCell('A3'), isNull);
+
+    test('supports additional Excel-compatible numeric and engineering functions', () {
+      final engine = SheetsFormulaEngine({
+        'A1': '=TRUNC(-8.9)',
+        'A2': '=TRUNC(123.456,2)',
+        'A3': '=TRUNC(1234,-2)',
+        'A4': '=FACT(5)',
+        'A5': '=EVEN(-3)',
+        'A6': '=ODD(-2)',
+        'A7': '=RADIANS(180)',
+        'A8': '=DEGREES(PI())',
+        'A9': '=GCD(24,36,60)',
+        'A10': '=LCM(4,6,10)',
+        'A11': '=COMBIN(5,2)',
+        'A12': '=PERMUT(5,2)',
+        'A13': '=QUOTIENT(-7,2)',
+      });
+      expect(engine.evaluateCell('A1'), -8);
+      expect(engine.evaluateCell('A2'), closeTo(123.45, 1e-12));
+      expect(engine.evaluateCell('A3'), 1200);
+      expect(engine.evaluateCell('A4'), 120);
+      expect(engine.evaluateCell('A5'), -4);
+      expect(engine.evaluateCell('A6'), -3);
+      expect(engine.evaluateCell('A7'), closeTo(math.pi, 1e-12));
+      expect(engine.evaluateCell('A8'), closeTo(180, 1e-12));
+      expect(engine.evaluateCell('A9'), 12);
+      expect(engine.evaluateCell('A10'), 60);
+      expect(engine.evaluateCell('A11'), 10);
+      expect(engine.evaluateCell('A12'), 20);
+      expect(engine.evaluateCell('A13'), -3);
     });
 
+    test('rejects invalid integer arguments and unsafe combinatoric results', () {
+      final engine = SheetsFormulaEngine({
+        'A1': '=FACT(-1)',
+        'A2': '=FACT(2.5)',
+        'A3': '=GCD(2,2.5)',
+        'A4': '=LCM(0,0)',
+        'A5': '=COMBIN(4,5)',
+        'A6': '=PERMUT(100,100)',
+      });
+      for (var row = 1; row <= 6; row++) {
+        expect(engine.evaluateCell('A$row'), isNull);
+      }
+    });
 
   });
 }
