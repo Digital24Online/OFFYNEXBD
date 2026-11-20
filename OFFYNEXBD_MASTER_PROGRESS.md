@@ -1740,3 +1740,9 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [ ] Physical Android tests: Writer page fit/zoom/keyboard/selection/Bangla; Sheets multi-sheet/cross-sheet formulas/XLSX; PDF open/print/share; Scan camera, multipage, OCR, save/share/delete.
 - [ ] Representative DOCX/ODT and Bangla PDF visual checks with Word/LibreOffice and a real printer.
 - This tranche is not complete until all source-level gaps are implemented and every applicable acceptance gate has evidence. Do not merge based only on a passing CI run.
+
+
+### Follow-up in the four-module tranche
+- **Scan OCR review:** added a correction dialog in Scan history. Corrected OCR text is saved back to the scan record and synchronized to its linked Writer document by stable document ID; this avoids creating duplicate Writer documents on repeated corrections.
+- **Scan PDF Reader handoff:** opening a scan history record validates and previews the saved original PDF; share and confirmed delete remain separate actions.
+- CI must run again on the latest branch head after these follow-up changes.
