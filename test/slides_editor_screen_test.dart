@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:offynexbd/lib/modules/workspace/slides_editor_screen.dart';
+import 'package:offynexbd/lib/modules/workspace/slides_content_codec.dart';
 
 void main() {
   testWidgets('slide editor adds, duplicates and saves slides in legacy format',
@@ -45,7 +46,7 @@ void main() {
     final result = await resultFuture;
     expect(result, {
       'title': 'Project',
-      'content': 'Opening\nSummary\nNext steps\nNext steps',
+      'content': SlidesContentCodec.encode(['Opening', 'Summary', 'Next steps', 'Next steps']),
     });
   });
 
