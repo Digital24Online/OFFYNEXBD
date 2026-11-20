@@ -51,15 +51,6 @@ class ScanDocumentService {
   static void validateImportedImages(
     List<({String name, Uint8List bytes})> images,
   ) {
-    validateImportedImages(images);
-  }
-
-  /// Creates a multi-page scan PDF from imported images on platforms where
-  /// the native ML Kit scanner is unavailable. JPEG/PNG originals are embedded
-  /// in the PDF; OCR failures never discard the saved scan.
-  static Future<ScanCaptureResult> captureImportedImages(
-    List<({String name, Uint8List bytes})> images,
-  ) async {
     if (images.isEmpty || images.length > maxPages) {
       throw FormatException('Imported scan must contain 1 to $maxPages images.');
     }
@@ -77,6 +68,15 @@ class ScanDocumentService {
         throw const FormatException('Combined scan images exceed 50 MB.');
       }
     }
+  }
+
+  /// Creates a multi-page scan PDF from imported images on platforms where
+  /// the native ML Kit scanner is unavailable. JPEG/PNG originals are embedded
+  /// in the PDF; OCR failures never discard the saved scan.
+  static Future<ScanCaptureResult> captureImportedImages(
+    List<({String name, Uint8List bytes})> images,
+  ) async {
+    validateImportedImages(images);
 
     final document = pw.Document();
     for (final image in images) {
