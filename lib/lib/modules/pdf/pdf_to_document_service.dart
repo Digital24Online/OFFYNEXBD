@@ -33,6 +33,20 @@ class PdfConversionResult {
 class PdfToDocumentService {
   static const int maxPdfBytes = 50 * 1024 * 1024;
   static const int maxPdfPages = 1000;
+  static const int maxImageBytes = 30 * 1024 * 1024;
+
+  static void validatePageCount(int pageCount) {
+    if (pageCount < 1 || pageCount > maxPdfPages) {
+      throw FormatException('PDF page count must be between 1 and $maxPdfPages.');
+    }
+  }
+
+  static bool isValidDocxBytes(Uint8List bytes) =>
+      bytes.length >= 4 &&
+      bytes[0] == 0x50 &&
+      bytes[1] == 0x4B &&
+      bytes[2] == 0x03 &&
+      bytes[3] == 0x04;
 
   static List<Map<String, dynamic>> plainTextToDelta(String text) {
     final normalized = text.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
@@ -56,15 +70,16 @@ class PdfToDocumentService {
     final dynamic pdf = await dc.PdfReader.loadFromBytes(bytes);
     final text = (pdf.text as String? ?? '').trim();
     final pageCount = (pdf.pageCount as int?) ?? 0;
-    if (pageCount > maxPdfPages) {
-      throw const FormatException('PDF exceeds the 1000-page conversion limit.');
-    }
+    validatePageCount(pageCount);
     final images = ((pdf.images as Iterable?) ?? const []).toList();
     final dynamic docx = pdf.toDocx();
     final dynamic exported = await dc.DocxExporter().exportToBytes(docx);
     var docxBytes = exported is Uint8List
         ? exported
         : Uint8List.fromList(List<int>.from(exported as List));
+    if (!isValidDocxBytes(docxBytes)) {
+      throw const FormatException('PDF conversion did not produce a valid DOCX archive.');
+    }
 
     var delta = await _toWriterDelta(pdf.elements);
     var ocrUsed = false;
@@ -143,7 +158,8 @@ class PdfToDocumentService {
     Uint8List imageBytes, {
     required String sourceName,
   }) async {
-    if (imageBytes.isEmpty || !isSupportedImageName(sourceName)) {
+    if (imageBytes.isEmpty || imageBytes.length > maxImageBytes ||
+        !isSupportedImageName(sourceName)) {
       throw const FormatException(
         'সমর্থিত ছবি নির্বাচন করুন: JPG, JPEG, PNG, WEBP, BMP বা TIFF।',
       );
@@ -187,7 +203,7 @@ class PdfToDocumentService {
     if (imageBytes.isEmpty || !isSupportedImageName(sourceName)) {
       throw const FormatException('সমর্থিত ও বৈধ ছবি নির্বাচন করুন।');
     }
-    if (imageBytes.length > 30 * 1024 * 1024) {
+    if (imageBytes.length > maxImageBytes) {
       throw const FormatException('ছবির সর্বোচ্চ সাইজ ৩০ MB।');
     }
     if (Platform.isWindows) {
@@ -230,7 +246,7 @@ class PdfToDocumentService {
     final results = <String>[];
     for (var i = 0; i < images.length; i++) {
       final bytes = Uint8List.fromList(List<int>.from(images[i].bytes as List));
-      if (bytes.isEmpty) continue;
+      if (bytes.isEmpty || bytes.length > maxImageBytes) continue;
       final file = File(
         '${temp.path}/offynex_ocr_${DateTime.now().microsecondsSinceEpoch}_$i.png',
       );
