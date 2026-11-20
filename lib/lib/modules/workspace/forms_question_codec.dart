@@ -17,7 +17,7 @@ class FormsQuestionCodec {
       final line = rawLine.trim();
       if (line.isEmpty) continue;
       final match = RegExp(
-        r'^(required\\s+)?(text|email|number|date|choice)\\s*:\\s*(.+)$',
+        r'^(required\s+)?(text|email|number|date|choice)\s*:\s*(.+)$',
         caseSensitive: false,
       ).firstMatch(line);
       if (match == null) {
