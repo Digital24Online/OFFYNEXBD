@@ -398,6 +398,67 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
     }
   }
 
+  Future<void> _openScanInWriter(Map<String, dynamic> item) async {
+    if (_workspaceDataBlocked) return;
+    try {
+      final documents = await loadDocuments();
+      if (writerLibraryDataBlocked) {
+        throw StateError('Writer library is protected because its stored data needs recovery.');
+      }
+      final existingId = item['writerDocumentId']?.toString().trim() ?? '';
+      final documentId = existingId.isNotEmpty
+          ? existingId
+          : DateTime.now().microsecondsSinceEpoch.toString();
+      final index = documents.indexWhere(
+        (document) => document['id']?.toString() == documentId,
+      );
+      final record = <String, dynamic>{
+        if (index >= 0) ...documents[index],
+        'id': documentId,
+        'title': item['title']?.toString().trim().isNotEmpty == true
+            ? item['title'].toString()
+            : (_bn ? 'স্ক্যান করা ডকুমেন্ট' : 'Scanned document'),
+        'content': PdfToDocumentService.plainTextToDelta(
+          item['content']?.toString() ?? '',
+        ),
+        'updated': DateTime.now().toIso8601String(),
+        'source': 'native_document_scan',
+        'scanPdfPath': item['scanPdfPath'],
+      };
+      if (index >= 0) {
+        documents[index] = record;
+      } else {
+        documents.add(record);
+      }
+      await storeDocuments(documents);
+      if (existingId.isEmpty) {
+        final updated = _items
+            .map((entry) => entry['id'] == item['id']
+                ? {...entry, 'writerDocumentId': documentId}
+                : entry)
+            .toList(growable: false);
+        await _save(updated);
+        if (mounted) setState(() => _items = updated);
+      }
+      if (!mounted) return;
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => WriterEditorScreen(
+            document: record,
+            isBangla: _bn,
+          ),
+        ),
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text((_bn ? 'Writer-এ খোলা যায়নি: ' : 'Could not open in Writer: ') + error.toString())),
+        );
+      }
+    }
+  }
+
   Future<void> _openScanPdf(Map<String, dynamic> item) async {
     final path = item['scanPdfPath'];
     if (path is! String || path.isEmpty) return;
@@ -1404,6 +1465,11 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
                                 )
                               : widget.module == 'Scan'
                                   ? Wrap(spacing: 0, children: [
+                                      IconButton(
+                                        tooltip: _bn ? 'Writer-এ খুলুন' : 'Open in Writer',
+                                        icon: const Icon(Icons.description_outlined),
+                                        onPressed: () => _openScanInWriter(item),
+                                      ),
                                       IconButton(
                                         tooltip: _bn ? 'OCR লেখা যাচাই' : 'Review OCR text',
                                         icon: const Icon(Icons.text_snippet_outlined),
