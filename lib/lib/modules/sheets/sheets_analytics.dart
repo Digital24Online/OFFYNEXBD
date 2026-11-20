@@ -32,8 +32,6 @@ class SheetsChartData {
 }
 
 class SheetsAnalytics {
-  const SheetsAnalytics._();
-
   static const int maxRangeCells = 10000;
   static const int maxConditionalRules = 100;
   static const int maxCharts = 20;
