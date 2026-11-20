@@ -27,6 +27,22 @@ void main() {
     expect(() => DatabaseFieldCodec.parse('Team:choice|Sales|Sales'), throwsFormatException);
   });
 
+  test('validates typed values consistently for rows and CSV import', () {
+    final fields = DatabaseFieldCodec.parse(
+      'required Name:text, Age:number, Email:email, Joined:date, '
+      'Department:choice|Sales|Support',
+    );
+    expect(DatabaseFieldCodec.isValueValid(fields[0], ''), isFalse);
+    expect(DatabaseFieldCodec.isValueValid(fields[1], '18.5'), isTrue);
+    expect(DatabaseFieldCodec.isValueValid(fields[1], 'eighteen'), isFalse);
+    expect(DatabaseFieldCodec.isValueValid(fields[2], 'user@example.com'), isTrue);
+    expect(DatabaseFieldCodec.isValueValid(fields[2], 'not-an-email'), isFalse);
+    expect(DatabaseFieldCodec.isValueValid(fields[3], '2026-11-20'), isTrue);
+    expect(DatabaseFieldCodec.isValueValid(fields[3], 'tomorrow'), isFalse);
+    expect(DatabaseFieldCodec.isValueValid(fields[4], 'Sales'), isTrue);
+    expect(DatabaseFieldCodec.isValueValid(fields[4], 'Finance'), isFalse);
+  });
+
   test('rejects empty and excessive field definitions', () {
     expect(() => DatabaseFieldCodec.parse(' , '), throwsFormatException);
     expect(
