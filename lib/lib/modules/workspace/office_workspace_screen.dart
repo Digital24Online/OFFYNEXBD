@@ -9,6 +9,7 @@ import 'slides_pdf_export_service.dart';
 import 'slides_preview_screen.dart';
 import 'scan_document_service.dart';
 import 'database_rows_dialog.dart';
+import 'database_field_codec.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
 import 'portable_workspace_backup_service.dart';
@@ -618,20 +619,16 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
   }
 
   Future<void> _manageDatabaseRows(Map<String, dynamic> table) async {
-    final fields = (table['content']?.toString() ?? '')
-        .split(',')
-        .map((field) => field.trim())
-        .where((field) => field.isNotEmpty)
-        .toSet()
-        .toList(growable: false);
-    if (fields.isEmpty || fields.length > 40) {
+    late final List<DatabaseField> schema;
+    try {
+      schema = DatabaseFieldCodec.parse(table['content']?.toString() ?? '');
+    } on FormatException catch (error) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(_bn
-            ? 'টেবিলে ১ থেকে ৪০টি কমা দিয়ে আলাদা করা Field লিখুন।'
-            : 'Define between 1 and 40 comma-separated fields first.'),
+        content: Text('${_bn ? 'Database Field সংজ্ঞা ভুল' : 'Invalid database field definition'}: ${error.message}'),
       ));
       return;
     }
+    final fields = schema.map((field) => field.name).toList(growable: false);
     final prefs = await SharedPreferences.getInstance();
     const storageKey = 'offynex_database_rows_v1';
     final raw = prefs.getString(storageKey);
@@ -656,10 +653,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
             final row = Map<String, dynamic>.from(item);
             final id = row['id'];
             final values = row['values'];
-            if (id is! String ||
-                id.trim().isEmpty ||
-                !rowIds.add(id) ||
-                values is! Map) {
+            if (id is! String || id.trim().isEmpty || !rowIds.add(id) || values is! Map) {
               throw const FormatException('Database row has an invalid ID or values.');
             }
             final safeValues = <String, String>{};
@@ -702,7 +696,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
       builder: (_) => DatabaseRowsDialog(
         isBangla: _bn,
         tableName: table['title']?.toString() ?? '',
-        fields: fields,
+        schema: schema,
         initialRows: initialRows,
       ),
     );
