@@ -2,7 +2,7 @@ import 'dart:convert';
 
 /// Reads legacy one-line-per-slide records and the structured v1 slide format.
 class SlidesContentCodec {
-  static const String marker = 'OFFYNEXBD_SLIDES_V1\\n';
+  static const String marker = 'OFFYNEXBD_SLIDES_V1\n';
 
   static List<String> decode(String? source) {
     final value = source ?? '';
@@ -14,7 +14,7 @@ class SlidesContentCodec {
       return decoded.cast<String>();
     }
     return value
-        .split(RegExp(r'\\r?\\n'))
+        .split(RegExp(r'\r?\n'))
         .map((item) => item.trim())
         .where((item) => item.isNotEmpty)
         .toList(growable: false);
