@@ -24,7 +24,7 @@ OFFYNEX Writer is the document-editing module of OFFYNEXBD. It uses Flutter Quil
 
 - The native Writer archive is JSON, not DOCX or ODT; it remains the loss-minimizing editable backup.
 - DOCX/ODT interchange is a supported subset, not lossless Microsoft Word / LibreOffice compatibility. Unsupported advanced constructs may be simplified and must not be assumed to round-trip exactly.
-- The on-screen canvas still hosts one continuous QuillEditor over painted page backgrounds. Page count/height is estimated from content metrics; this is **not** true content-aware page-flow pagination. Text, images and tables do not yet have independently laid-out per-page editing regions.
+- The on-screen canvas still hosts one continuous QuillEditor over painted page backgrounds. Page count/height is estimated from content metrics; this is **not** true content-aware page-flow pagination. Text, images and tables do not yet have independently laid-out per-page editing regions. This remains a release-blocking requirement for a complete Writer claim.
 - Writer table embeds currently store plain-text cell values in a row/column grid. Visual merged cells, rich per-cell formatting, nested tables and full table-width/layout fidelity are not implemented.
 - Multiple section page settings and section-specific, first-page or even-page headers/footers are not fully represented. ODT export currently uses a single default master-page layout.
 - PDF generation has its own pagination; visual Bangla shaping, line wrapping, mixed-script output and physical printer fidelity still require representative rendered-PDF and device checks. Font embedding alone is not proof of identical rendering on every platform.
