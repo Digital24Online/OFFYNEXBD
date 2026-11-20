@@ -226,7 +226,7 @@ class _PdfToDocumentScreenState extends State<PdfToDocumentScreen> {
                 FilledButton.icon(
                   onPressed: busy ? null : _convert,
                   icon: const Icon(Icons.text_snippet_outlined),
-                  label: Text(bn ? 'PDF থেকে Document' : 'PDF to Document'),
+                  label: Text(bn ? 'রূপান্তর করুন' : 'Convert PDF'),
                 ),
                 OutlinedButton.icon(
                   onPressed: busy ? null : _openPdfFile,
