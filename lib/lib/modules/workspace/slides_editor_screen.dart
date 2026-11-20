@@ -48,39 +48,16 @@ class _SlidesEditorScreenState extends State<SlidesEditorScreen> {
   }
 
   Future<void> _editSlide(int index) async {
-    final controller = TextEditingController(text: _slides[index].text);
     final result = await showDialog<String>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(_bn ? 'স্লাইডের লেখা সম্পাদনা' : 'Edit slide text'),
-        content: TextField(
-          key: const Key('slide-content-input'),
-          controller: controller,
-          autofocus: true,
-          minLines: 3,
-          maxLines: 8,
-          maxLength: 12000,
-          decoration: InputDecoration(
-            hintText: _bn ? 'স্লাইডের বিষয়বস্তু লিখুন' : 'Enter slide content',
-            border: const OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text(_bn ? 'বাতিল' : 'Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, controller.text.trim()),
-            child: Text(_bn ? 'সংরক্ষণ' : 'Save'),
-          ),
-        ],
+      builder: (_) => _SlideTextDialog(
+        isBangla: _bn,
+        initialValue: _slides[index].text,
       ),
     );
-    if (result != null && mounted) {
+    if (result != null && mounted && index < _slides.length) {
       setState(() => _slides[index].text = result);
     }
-    controller.dispose();
   }
 
   void _addSlide() {
@@ -243,6 +220,66 @@ class _SlidesEditorScreenState extends State<SlidesEditorScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+
+class _SlideTextDialog extends StatefulWidget {
+  const _SlideTextDialog({
+    required this.isBangla,
+    required this.initialValue,
+  });
+
+  final bool isBangla;
+  final String initialValue;
+
+  @override
+  State<_SlideTextDialog> createState() => _SlideTextDialogState();
+}
+
+class _SlideTextDialogState extends State<_SlideTextDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialValue);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bn = widget.isBangla;
+    return AlertDialog(
+      title: Text(bn ? 'স্লাইডের লেখা সম্পাদনা' : 'Edit slide text'),
+      content: TextField(
+        key: const Key('slide-content-input'),
+        controller: _controller,
+        autofocus: true,
+        minLines: 3,
+        maxLines: 8,
+        maxLength: 12000,
+        decoration: InputDecoration(
+          hintText: bn ? 'স্লাইডের বিষয়বস্তু লিখুন' : 'Enter slide content',
+          border: const OutlineInputBorder(),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(bn ? 'বাতিল' : 'Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _controller.text.trim()),
+          child: Text(bn ? 'সংরক্ষণ' : 'Save'),
+        ),
+      ],
     );
   }
 }
