@@ -355,4 +355,43 @@ void main() {
     expect(find.byKey(const ValueKey('sheet-cell-A1000')), findsOneWidget);
   });
 
+
+  testWidgets('Writer mobile zoom controls stay within supported bounds and persist',
+      (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const OFFYNEXBDApp());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('রাইটার'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('নতুন ডকুমেন্ট'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('ভিউ'));
+    await tester.pumpAndSettle();
+
+    final sliderFinder = find.byKey(const ValueKey('writer-zoom-slider'));
+    expect(sliderFinder, findsOneWidget);
+    var slider = tester.widget<Slider>(sliderFinder);
+    expect(slider.min, 0.5);
+    expect(slider.max, 3.0);
+
+    await tester.tap(find.byKey(const ValueKey('writer-zoom-in')));
+    await tester.pumpAndSettle();
+    slider = tester.widget<Slider>(sliderFinder);
+    expect(slider.value, greaterThan(1.0));
+
+    await tester.pump(const Duration(milliseconds: 900));
+    await tester.pumpAndSettle();
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('offynex_writer_documents');
+    expect(raw, isNotNull);
+    final docs = (jsonDecode(raw!) as List).cast<Map<String, dynamic>>();
+    expect(docs.single['writerMeta']['zoom'], closeTo(slider.value, 0.001));
+  });
+
 }
