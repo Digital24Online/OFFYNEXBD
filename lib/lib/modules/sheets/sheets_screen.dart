@@ -18,6 +18,8 @@ import 'sheets_row_view.dart';
 import 'sheets_find_replace.dart';
 import 'sheets_data_validation.dart';
 import 'sheets_xlsx_validation_codec.dart';
+import 'sheets_analytics.dart';
+import 'sheets_analytics_widgets.dart';
 import '../../theme/offynex_theme.dart';
 
 const String _sheetStorageKey = 'offynex_sheets_workbook_v1';
@@ -186,8 +188,8 @@ class _SheetsScreenState extends State<SheetsScreen> {
     return Color(int.parse('FF$hex', radix: 16));
   }
 
-  TextStyle _cellTextStyle(String key) {
-    final style = _cellStyles[key] ?? const <String, dynamic>{};
+  TextStyle _cellTextStyle(String key, [Map<String, dynamic>? resolvedStyle]) {
+    final style = resolvedStyle ?? _cellStyles[key] ?? const <String, dynamic>{};
     return TextStyle(
       fontSize: ((style['fontSize'] as num?)?.toDouble() ?? 13) * _zoom,
       fontWeight: style['bold'] == true ? FontWeight.bold : FontWeight.normal,
@@ -197,8 +199,8 @@ class _SheetsScreenState extends State<SheetsScreen> {
     );
   }
 
-  Alignment _cellAlignment(String key) {
-    final style = _cellStyles[key] ?? const <String, dynamic>{};
+  Alignment _cellAlignment(String key, [Map<String, dynamic>? resolvedStyle]) {
+    final style = resolvedStyle ?? _cellStyles[key] ?? const <String, dynamic>{};
     final horizontal = switch (style['align']) {
       'center' => 0.0,
       'right' => 1.0,
@@ -213,8 +215,8 @@ class _SheetsScreenState extends State<SheetsScreen> {
     return Alignment(horizontal, vertical);
   }
 
-  TextAlign _cellTextAlign(String key) {
-    switch (_cellStyles[key]?['align']) {
+  TextAlign _cellTextAlign(String key, [Map<String, dynamic>? resolvedStyle]) {
+    switch ((resolvedStyle ?? _cellStyles[key])?['align']) {
       case 'center': return TextAlign.center;
       case 'right': return TextAlign.right;
       default: return TextAlign.left;
@@ -336,6 +338,280 @@ class _SheetsScreenState extends State<SheetsScreen> {
       ),
     );
     if (selected != null) await _applyCellStyle('numberFormat', selected);
+  }
+
+
+  String _defaultAnalysisRange() {
+    var lastRow = 2;
+    var lastColumn = 2;
+    for (final key in {
+      ..._cells.keys,
+      ..._cellStyles.keys,
+      ..._activeWorksheet.validations.keys,
+    }) {
+      try {
+        final cell = SheetsAnalytics.parseRange(key);
+        if (cell.firstRow > lastRow) lastRow = cell.firstRow;
+        if (cell.firstColumn > lastColumn) lastColumn = cell.firstColumn;
+      } on FormatException {
+        continue;
+      }
+    }
+    lastRow = lastRow.clamp(2, SheetsWorkbookLimits.maxRows).toInt();
+    lastColumn = lastColumn.clamp(2, SheetsWorkbookLimits.maxColumns).toInt();
+    return 'A1:' + SheetsAnalytics.columnName(lastColumn) + lastRow.toString();
+  }
+
+  Map<String, String> _resolvedSheetValues(SheetsWorksheet sheet) {
+    final engine = SheetsFormulaEngine(sheet.cells);
+    return {
+      for (final entry in sheet.cells.entries)
+        entry.key: entry.value.startsWith('=')
+            ? (engine.evaluateCell(entry.key)?.toString() ?? '#ERROR')
+            : entry.value,
+    };
+  }
+
+  Future<void> _setConditionalFormatting() async {
+    final selected = _selectedCell;
+    if (selected == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t('আগে একটি Cell নির্বাচন করুন।', 'Select a cell first.'))),
+      );
+      return;
+    }
+    if (_activeWorksheet.conditionalFormats.length >= SheetsAnalytics.maxConditionalRules) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t('সর্বোচ্চ ১০০টি নিয়ম রাখা যাবে।', 'A worksheet can have up to 100 rules.'))),
+      );
+      return;
+    }
+    final rule = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (_) => SheetsConditionalRuleDialog(initialRange: selected, isBangla: _bn),
+    );
+    if (rule == null || !mounted) return;
+    setState(() => _activeWorksheet.conditionalFormats.add(rule));
+    await _saveWorkbook();
+  }
+
+  Future<void> _clearConditionalFormatting() async {
+    if (_activeWorksheet.conditionalFormats.isEmpty) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(_t('Conditional Formatting সরাবেন?', 'Clear conditional formatting?')),
+        content: Text(_t(
+          'এই Worksheet-এর সব Conditional Formatting নিয়ম সরানো হবে।',
+          'All conditional formatting rules on this worksheet will be removed.',
+        )),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(_t('বাতিল', 'Cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text(_t('সব সরান', 'Clear rules'))),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _activeWorksheet.conditionalFormats.clear());
+    await _saveWorkbook();
+  }
+
+  Future<void> _createChart() async {
+    if (_activeWorksheet.charts.length >= SheetsAnalytics.maxCharts) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t('একটি Worksheet-এ সর্বোচ্চ ২০টি Chart রাখা যাবে।', 'A worksheet can contain up to 20 charts.'))),
+      );
+      return;
+    }
+    final chart = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (_) => SheetsChartDialog(initialRange: _defaultAnalysisRange(), isBangla: _bn),
+    );
+    if (chart == null || !mounted) return;
+    try {
+      SheetsAnalytics.buildChartData(_resolvedSheetValues(_activeWorksheet), chart['range']!);
+      setState(() => _activeWorksheet.charts.add(chart));
+      await _saveWorkbook();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t('Chart তৈরি করা যায়নি: ', 'Could not create chart: ') + error.toString())),
+      );
+    }
+  }
+
+  Future<void> _deleteChart(int index) async {
+    if (index < 0 || index >= _activeWorksheet.charts.length) return;
+    setState(() => _activeWorksheet.charts.removeAt(index));
+    await _saveWorkbook();
+  }
+
+  Future<void> _createPivotTable() async {
+    if (_workbook.sheets.length >= SheetsWorkbookCodec.maxWorksheets) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t('সর্বোচ্চ ১০০টি Worksheet রাখা যাবে।', 'A workbook can contain up to 100 worksheets.'))),
+      );
+      return;
+    }
+    final config = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (_) => SheetsPivotDialog(initialRange: _defaultAnalysisRange(), isBangla: _bn),
+    );
+    if (config == null || !mounted) return;
+    try {
+      final rows = SheetsAnalytics.buildPivotSummary(
+        cells: _resolvedSheetValues(_activeWorksheet),
+        rangeText: config['range']!,
+        groupColumn: config['groupColumn']!,
+        valueColumn: config['valueColumn']!,
+        aggregation: config['aggregation']!,
+      );
+      final names = _workbook.sheets.map((sheet) => sheet.name.toLowerCase()).toSet();
+      var suffix = 1;
+      var name = 'Pivot Table';
+      while (names.contains(name.toLowerCase())) {
+        suffix++;
+        name = 'Pivot Table ' + suffix.toString();
+      }
+      final cells = <String, String>{};
+      final styles = <String, Map<String, dynamic>>{};
+      for (var row = 0; row < rows.length; row++) {
+        for (var column = 0; column < rows[row].length; column++) {
+          final key = SheetsAnalytics.columnName(column + 1) + (row + 1).toString();
+          cells[key] = rows[row][column];
+          if (row == 0) styles[key] = {'bold': true, 'fillColor': 'CFE2F3'};
+          if (row == rows.length - 1) styles[key] = {...?styles[key], 'bold': true};
+        }
+      }
+      final pivotSheet = SheetsWorksheet(
+        id: 'pivot-' + DateTime.now().microsecondsSinceEpoch.toString(),
+        name: name,
+        rows: rows.length,
+        columns: 2,
+        cells: cells,
+        styles: styles,
+        pivotConfig: {'sourceSheetId': _activeWorksheet.id, ...config},
+      );
+      setState(() {
+        _workbook.sheets.add(pivotSheet);
+        _workbook.activeSheetId = pivotSheet.id;
+        _selectedCell = 'A1';
+        _formulaBarController.text = cells['A1'] ?? '';
+        _viewColumnIndex = null;
+        _filterQuery = null;
+      });
+      await _saveWorkbook();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t('Pivot Table তৈরি করা যায়নি: ', 'Could not create Pivot Table: ') + error.toString())),
+      );
+    }
+  }
+
+  Future<void> _refreshPivotTable() async {
+    final config = _activeWorksheet.pivotConfig;
+    if (config == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t('এই Worksheet Pivot Table নয়।', 'This worksheet is not a Pivot Table.'))),
+      );
+      return;
+    }
+    try {
+      SheetsWorksheet? source;
+      for (final sheet in _workbook.sheets) {
+        if (sheet.id == config['sourceSheetId']) source = sheet;
+      }
+      if (source == null) throw const FormatException('The original source worksheet no longer exists.');
+      final rows = SheetsAnalytics.buildPivotSummary(
+        cells: _resolvedSheetValues(source),
+        rangeText: config['range']?.toString() ?? '',
+        groupColumn: config['groupColumn']?.toString() ?? '',
+        valueColumn: config['valueColumn']?.toString() ?? '',
+        aggregation: config['aggregation']?.toString() ?? '',
+      );
+      final cells = <String, String>{};
+      final styles = <String, Map<String, dynamic>>{};
+      for (var row = 0; row < rows.length; row++) {
+        for (var column = 0; column < rows[row].length; column++) {
+          final key = SheetsAnalytics.columnName(column + 1) + (row + 1).toString();
+          cells[key] = rows[row][column];
+          if (row == 0) styles[key] = {'bold': true, 'fillColor': 'CFE2F3'};
+          if (row == rows.length - 1) styles[key] = {...?styles[key], 'bold': true};
+        }
+      }
+      setState(() {
+        _activeWorksheet.cells..clear()..addAll(cells);
+        _activeWorksheet.styles..clear()..addAll(styles);
+        _activeWorksheet.rows = rows.length;
+        _activeWorksheet.columns = 2;
+        _selectedCell = 'A1';
+        _formulaBarController.text = cells['A1'] ?? '';
+      });
+      await _saveWorkbook();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t('Pivot Refresh করা যায়নি: ', 'Pivot refresh failed: ') + error.toString())),
+      );
+    }
+  }
+
+  Widget _buildChartGallery() {
+    final charts = _activeWorksheet.charts;
+    if (charts.isEmpty) return const SizedBox.shrink();
+    final values = _resolvedSheetValues(_activeWorksheet);
+    return Container(
+      height: 190,
+      width: double.infinity,
+      decoration: const BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: OFFYNEXTheme.border))),
+      child: ListView.separated(
+        padding: const EdgeInsets.all(8),
+        scrollDirection: Axis.horizontal,
+        itemCount: charts.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final chart = charts[index];
+          SheetsChartData? data;
+          String? error;
+          try {
+            data = SheetsAnalytics.buildChartData(values, chart['range']?.toString() ?? '');
+          } catch (exception) {
+            error = exception.toString();
+          }
+          return SizedBox(
+            width: 280,
+            child: Card(
+              margin: EdgeInsets.zero,
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Column(children: [
+                  Row(children: [
+                    Expanded(child: Text(
+                      chart['title']?.toString() ?? _t('Chart', 'Chart'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    )),
+                    IconButton(
+                      tooltip: _t('Chart মুছুন', 'Remove chart'),
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => _deleteChart(index),
+                      icon: const Icon(Icons.close, size: 18),
+                    ),
+                  ]),
+                  Expanded(
+                    child: data == null
+                        ? Center(child: Text(error ?? _t('Data পাওয়া যায়নি', 'No chart data')))
+                        : SheetsChartPreview(data: data, type: chart['type']?.toString() ?? 'bar'),
+                  ),
+                ]),
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   Future<void> _setDataValidation() async {
@@ -586,6 +862,16 @@ class _SheetsScreenState extends State<SheetsScreen> {
   }
 
   Future<void> _deleteWorksheet() async {
+    final dependentPivots = _workbook.sheets.where(
+      (sheet) => sheet.pivotConfig?['sourceSheetId'] == _workbook.activeSheetId,
+    );
+    if (dependentPivots.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_t(
+        'এই Worksheet-এর ওপর Pivot Table নির্ভর করছে। আগে Pivot Worksheet মুছুন।',
+        'A Pivot Table depends on this worksheet. Delete the dependent Pivot worksheet first.',
+      ))));
+      return;
+    }
     if (_workbook.sheets.length <= 1) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_t('কমপক্ষে একটি Worksheet রাখতে হবে।', 'At least one worksheet must remain.'))),
@@ -1176,6 +1462,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
 
   void _writeWorksheetToExcel(xlsx.Excel workbook, SheetsWorksheet source) {
     final sheet = workbook[source.name];
+    final engine = SheetsFormulaEngine(source.cells);
     for (final key in {...source.cells.keys, ...source.styles.keys}) {
       final value = source.cells[key] ?? '';
       final cell = sheet.cell(xlsx.CellIndex.indexByString(key.toUpperCase()));
@@ -1193,8 +1480,14 @@ class _SheetsScreenState extends State<SheetsScreen> {
           cell.value = xlsx.TextCellValue(value);
         }
       }
-      final style = source.styles[key];
-      if (style == null || style.isEmpty) continue;
+      final resolvedValue = value.startsWith('=')
+          ? (engine.evaluateCell(key)?.toString() ?? '#ERROR')
+          : value;
+      final style = <String, dynamic>{
+        ...?source.styles[key],
+        ...SheetsAnalytics.conditionalStyleForCell(key, resolvedValue, source.conditionalFormats),
+      };
+      if (style.isEmpty) continue;
       final alignment = switch (style['align']) {
         'center' => xlsx.HorizontalAlign.Center,
         'right' => xlsx.HorizontalAlign.Right,
@@ -1325,6 +1618,9 @@ class _SheetsScreenState extends State<SheetsScreen> {
       _cells.clear();
       _cellStyles.clear();
       _activeWorksheet.validations.clear();
+      _activeWorksheet.conditionalFormats.clear();
+      _activeWorksheet.charts.clear();
+      _activeWorksheet.pivotConfig = null;
       _selectedCell = null;
       _viewColumnIndex = null;
       _filterQuery = null;
@@ -1501,6 +1797,8 @@ class _SheetsScreenState extends State<SheetsScreen> {
       case 1:
         commands.addAll([
           _ribbonCommand(_t('খুঁজুন ও পরিবর্তন', 'Find & Replace'), Icons.find_replace, _findAndReplace),
+          _ribbonCommand(_t('শর্তসাপেক্ষ Formatting', 'Conditional Formatting'), Icons.format_color_fill, _setConditionalFormatting),
+          _ribbonCommand(_t('Formatting নিয়ম সরান', 'Clear formatting rules'), Icons.format_clear, _clearConditionalFormatting),
           _ribbonCommand(_t('সেল সম্পাদনা', 'Edit cell'), Icons.edit, () {
             final key = _selectedCell;
             if (key == null) return;
@@ -1541,6 +1839,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
           _ribbonCommand(_t('Row যোগ', 'Add rows'), Icons.add, _addRows),
           _ribbonCommand(_t('Column যোগ', 'Add columns'), Icons.view_column, _addColumns),
           _ribbonCommand(_t('শিটের নাম', 'Sheet name'), Icons.drive_file_rename_outline, _renameSheet),
+          _ribbonCommand(_t('Chart তৈরি', 'Create chart'), Icons.insert_chart_outlined, _createChart),
         ]);
         break;
       case 3:
@@ -1557,6 +1856,9 @@ class _SheetsScreenState extends State<SheetsScreen> {
       case 4:
         commands.addAll([
           _ribbonCommand(_t('Dropdown Validation', 'Dropdown Validation'), Icons.arrow_drop_down_circle_outlined, _setDataValidation),
+          _ribbonCommand(_t('Pivot Table তৈরি', 'Create Pivot Table'), Icons.table_chart_outlined, _createPivotTable),
+          _ribbonCommand(_t('Pivot Refresh', 'Refresh Pivot'), Icons.refresh, _refreshPivotTable),
+          _ribbonCommand(_t('শর্তসাপেক্ষ Formatting', 'Conditional Formatting'), Icons.format_color_fill, _setConditionalFormatting),
           _ribbonCommand('Import XLSX', Icons.file_open, _importWorkbook),
           _ribbonCommand('Export XLSX', Icons.file_download, _exportWorkbook),
           _ribbonCommand('Import CSV', Icons.table_view, _importCsv),
@@ -1712,7 +2014,12 @@ class _SheetsScreenState extends State<SheetsScreen> {
 
   Widget _buildGridCell(int row, int column) {
     final key = _cellKey(row, column);
-    final style = _cellStyles[key] ?? const <String, dynamic>{};
+    final rawValue = _cells[key] ?? '';
+    final resolvedValue = rawValue.startsWith('=') ? (_numericValue(key)?.toString() ?? '#ERROR') : rawValue;
+    final style = <String, dynamic>{
+      ...?_cellStyles[key],
+      ...SheetsAnalytics.conditionalStyleForCell(key, resolvedValue, _activeWorksheet.conditionalFormats),
+    };
     final wrapText = style['wrapText'] == true;
     return SizedBox(
       width: 104 * _zoom,
@@ -1721,7 +2028,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
         onTap: () => _selectCell(key),
         onLongPress: () => _editCell(row, column),
         child: Container(
-          alignment: _cellAlignment(key),
+          alignment: _cellAlignment(key, style),
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(
             color: _selectedCell == key
@@ -1737,8 +2044,8 @@ class _SheetsScreenState extends State<SheetsScreen> {
             _displayValue(key),
             maxLines: wrapText ? 3 : 1,
             overflow: TextOverflow.ellipsis,
-            textAlign: _cellTextAlign(key),
-            style: _cellTextStyle(key),
+            textAlign: _cellTextAlign(key, style),
+            style: _cellTextStyle(key, style),
           ),
         ),
       ),
@@ -1867,6 +2174,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
                   ]),
                 ),
                 Expanded(child: _buildGrid(visibleRows)),
+                _buildChartGallery(),
                 Container(
                   width: double.infinity,
                   decoration: const BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: OFFYNEXTheme.border))),
