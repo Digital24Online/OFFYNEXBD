@@ -17,4 +17,20 @@ void main() {
       throwsFormatException,
     );
   });
+
+  test('rejects oversized slide collections and content', () {
+    expect(
+      () => SlidesContentCodec.encode(
+        List<String>.filled(SlidesContentCodec.maxSlides + 1, 'Slide'),
+      ),
+      throwsFormatException,
+    );
+    expect(
+      () => SlidesContentCodec.decode(
+        'Legacy content'.padRight(SlidesContentCodec.maxTextBytes + 1, 'x'),
+      ),
+      throwsFormatException,
+    );
+  });
+
 }
