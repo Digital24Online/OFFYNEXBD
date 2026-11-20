@@ -1419,7 +1419,7 @@ class _FormResponseDialogState extends State<_FormResponseDialog> {
     );
     if (selected != null) {
       _controllers[index].text =
-          ${selected.year.toString().padLeft(4, '0')}-${selected.month.toString().padLeft(2, '0')}-${selected.day.toString().padLeft(2, '0')};
+          '${selected.year.toString().padLeft(4, '0')}-${selected.month.toString().padLeft(2, '0')}-${selected.day.toString().padLeft(2, '0')}';
     }
   }
 
