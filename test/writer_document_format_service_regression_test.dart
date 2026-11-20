@@ -255,4 +255,3 @@ void main() {
     expect(temp.listSync(), isEmpty);
   });
 }
-}
