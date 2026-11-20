@@ -119,6 +119,25 @@ class WriterContentMetrics {
     return math.max(totalHeight, defaultFontSize * 1.35).toDouble();
   }
 
+  /// Content-aware page estimate for the editing canvas. PDF export performs
+  /// its own final pagination.
+  static int estimatePageCount({
+    required List<Map<String, dynamic>> delta,
+    required double maxWidth,
+    required double pageContentHeight,
+    TextDirection textDirection = TextDirection.ltr,
+    double defaultFontSize = 16,
+  }) {
+    final height = estimateHeight(
+      delta: delta,
+      maxWidth: maxWidth,
+      pageContentHeight: pageContentHeight,
+      textDirection: textDirection,
+      defaultFontSize: defaultFontSize,
+    );
+    return math.max(1, (height / pageContentHeight).ceil());
+  }
+
   static double _estimateTableHeight(
     Object? raw,
     double maxWidth,
