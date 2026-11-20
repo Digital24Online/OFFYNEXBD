@@ -1656,3 +1656,45 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - Stored row values remain strings in the existing `offynex_database_rows_v1` structure, so existing records and CSV schema are not migrated or discarded.
 - Added focused parser and typed-value validation tests. Automated CI for the latest source commit is pending; do not claim this batch verified until Analyze, all tests, signed APK, package/signature checks and artifact upload complete.
 - This is a Database data-entry/validation improvement, not a relational engine. Primary/foreign keys, indexes, joins, query builder/SQL, transactions, migrations and reports remain outstanding.
+
+
+
+## Integrated Writer + Sheets + Forms + Database batch — 2026-11-20 (Build #594)
+
+### Merge and Android release verification
+- [x] User explicitly authorized merging the integrated PR.
+- [x] PR #9 was converted from Draft to Ready for Review and squash-merged into `main`.
+- [x] Merge commit: `3ca52a08687a17165911c9ed72f101258f902e22`.
+- [x] PR #9 head verified before merge: `beb56b007bc6ef290aa30c2baaeb54b12b70dc8c`.
+- [x] Build #594 / run `44749390230` completed SUCCESS on that exact head.
+- [x] Flutter Analyze and the complete configured automated test suite passed.
+- [x] Signed Android APK build, signature/install metadata verification, package-content verification and artifact upload all passed.
+- [x] Artifact: `OFFYNEXBD-Android-APK`, ID `14634907859`, size 52,754,052 bytes, SHA-256 `73344d7ecd2d42bc7d7362f9e84c920667b8f5c47fd531fb79a435f9dbfafd96`; expires 2026-12-04 14:10 UTC.
+- Run: https://github.com/Digital24Online/OFFYNEXBD/actions/runs/44749390230
+- PR: https://github.com/Digital24Online/OFFYNEXBD/pull/9
+
+### Integrated work included in the merge
+- [x] Writer mobile Page / Page Width / Actual fit modes, 50%–300% zoom, direct zoom controls and persisted zoom regression coverage.
+- [x] Sheets chart previews/spec persistence, Pivot summary foundations, conditional formatting, bounded range parsing and workbook metadata validation.
+- [x] Approved Option 2 branding and App Info creator attribution implementation carried in the integrated source history.
+- [x] Forms typed question definitions, required/type validation, backward-compatible legacy form parsing and bounded CSV export.
+- [x] Database typed fields (text, number, email, date, choice), required/type validation, CSV import validation, backward-compatible schema parsing and existing string row storage preservation.
+- [x] Database floating action placement corrected so it no longer covers row action controls; the widget regression test passes.
+
+### Still incomplete — explicitly not marked complete
+- Writer: true content-aware pagination, rich/merged table model and DOCX/ODT fidelity, section-aware headers/footers, Bangla spellcheck, user font management, long-document recovery, remaining toolbar/localization work, physical-device/printer/interoperability acceptance.
+- Sheets: full Excel formula and multi-sheet parity, native XLSX chart/conditional-rule round-trip, advanced Pivot filtering/drill-down and broader compatibility.
+- Slides: full visual editor, shapes/media/charts, themes/layout/master slides, animations/transitions, PPTX/ODP round-trip and slideshow/presenter tools.
+- PDF: full reader/editor, page management, merge/split/compress, annotations, forms/signatures, encryption/password support, OCR review and large-file validation.
+- Fonts: user TTF/OTF import/activation, preview/catalogue, licensing metadata, fallback and export embedding workflows.
+- AI: secure live model/provider integration, generation/translation/summarization, privacy consent and usage controls.
+- Cloud: production authentication, remote storage, multi-device sync, conflict handling, version history and encryption/key lifecycle.
+- Forms: hosted/shareable forms, branching, templates, dashboards, permissions and synchronized responses.
+- Scan: physical Android validation, OCR review/correction, scan history/page management and iOS/Windows/macOS parity.
+- Database: relational engine, primary/foreign keys, indexes, joins, SQL/query builder, transactions, migrations and reports.
+- Shared platform: production backend/security, file handoff, accessibility, localization, desktop/mobile parity, platform release CI, E2E and physical device/printer acceptance, privacy/legal/support documentation.
+
+### Continuation requirement
+- Continue implementing the remaining scope in cohesive, cross-module batches, preserving all existing saved data and user-facing features.
+- Do not mark a module complete based on a placeholder screen, a partial workflow or CI alone.
+- Record implementation and verification separately. Where work requires backend credentials, physical hardware or external service provisioning, implement the safe local foundations and document the exact external acceptance gate rather than claiming it is done.
