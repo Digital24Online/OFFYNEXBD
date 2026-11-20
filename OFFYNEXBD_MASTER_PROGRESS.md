@@ -1758,3 +1758,11 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 
 - **PDF direct open:** added a separate Open PDF action so users can preview/print/share an original PDF without first converting it to Writer. The PDF-to-Document conversion action remains distinct and retains the source bytes.
 - The current PR head changed after the previous Actions run was queued; a fresh run on the final head is required.
+
+
+### Integrated OCR Input Validation — 2026-11-20
+- [x] PDF-to-Document OCR now verifies that image bytes match the declared extension before writing a temporary OCR input; malformed or extension-spoofed files are rejected before reaching the OCR engine.
+- [x] Embedded PDF images are identified by their actual JPEG/PNG/WEBP/BMP/TIFF signatures before OCR; unsupported or malformed image payloads are skipped rather than mislabeled as PNG.
+- [x] Scan uses the same shared OCR entry point, so imported scan images receive the same signature validation.
+- [x] Added regression coverage for JPEG-as-PNG and PNG-as-JPEG spoofing.
+- [ ] Analyze, full automated tests and signed Android APK build are pending GitHub Actions verification for this commit.
