@@ -465,4 +465,47 @@ void main() {
   });
 
 
+  testWidgets('Slides workspace saves multiline slide text and previews it as one slide',
+      (tester) async {
+    await tester.pumpWidget(const MaterialApp(
+      home: OfficeWorkspaceScreen(module: 'Slides', isBangla: false),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Create new'));
+    await tester.pumpAndSettle();
+    expect(find.text('Slides editor'), findsOneWidget);
+
+    await tester.enterText(find.byKey(const Key('presentation-title')), 'Project plan');
+    await tester.tap(find.byKey(const Key('add-slide')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('slide-content-input')),
+      'First paragraph\nSecond paragraph',
+    );
+    await tester.tap(find.text('Save').last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('save-slides')));
+    await tester.pumpAndSettle();
+
+    final prefs = await SharedPreferences.getInstance();
+    final records = jsonDecode(
+      prefs.getString('offynex_workspace_slides_v1')!,
+    ) as List;
+    expect(records, hasLength(1));
+    expect(records.single['title'], 'Project plan');
+    expect(
+      records.single['content'],
+      startsWith('OFFYNEXBD_SLIDES_V1\n'),
+    );
+
+    await tester.tap(find.byTooltip('Preview presentation'));
+    await tester.pumpAndSettle();
+    expect(find.text('Presentation preview'), findsOneWidget);
+    expect(find.text('Slide 1 of 1'), findsOneWidget);
+    expect(find.text('First paragraph\nSecond paragraph'), findsOneWidget);
+  });
+
+
 }
