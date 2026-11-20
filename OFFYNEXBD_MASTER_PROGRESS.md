@@ -1698,3 +1698,13 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - Continue implementing the remaining scope in cohesive, cross-module batches, preserving all existing saved data and user-facing features.
 - Do not mark a module complete based on a placeholder screen, a partial workflow or CI alone.
 - Record implementation and verification separately. Where work requires backend credentials, physical hardware or external service provisioning, implement the safe local foundations and document the exact external acceptance gate rather than claiming it is done.
+
+
+## Integrated workspace UX correction — 2026-11-20 (PR #10 / Build #596)
+
+- [x] Removed the duplicate AppBar Create icon from Slides, Fonts, AI Assistant, Forms and Database workspaces; the single floating Create action remains.
+- [x] Added a widget regression test that asserts one Create entry point.
+- [x] Build #596 / run `44752794835` completed SUCCESS on head `988371b00325ccd6486a214ef500e3b90d3a2dc9`; Flutter Analyze, full configured tests, signed Android APK, signature/install metadata, package verification and artifact upload passed.
+- [x] PR #10 marked Ready and squash-merged; merge commit `9eb527fbca74426fb9f9ea4bcb83f5aabb67158f`.
+- [ ] This is a workspace navigation/UX correction only. It does not complete Slides, Fonts, AI, Forms, Database or any other module.
+- Continue with real editor workflows and module capabilities; keep implementation and CI acceptance distinct.
