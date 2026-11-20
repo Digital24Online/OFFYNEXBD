@@ -1746,3 +1746,7 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - **Scan OCR review:** added a correction dialog in Scan history. Corrected OCR text is saved back to the scan record and synchronized to its linked Writer document by stable document ID; this avoids creating duplicate Writer documents on repeated corrections.
 - **Scan PDF Reader handoff:** opening a scan history record validates and previews the saved original PDF; share and confirmed delete remain separate actions.
 - CI must run again on the latest branch head after these follow-up changes.
+
+
+- **PDF direct open:** added a separate Open PDF action so users can preview/print/share an original PDF without first converting it to Writer. The PDF-to-Document conversion action remains distinct and retains the source bytes.
+- The current PR head changed after the previous Actions run was queued; a fresh run on the final head is required.
