@@ -202,15 +202,14 @@ class _SlidesEditorScreenState extends State<SlidesEditorScreen> {
                 : ReorderableListView.builder(
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
                     itemCount: _slides.length,
-                    onReorder: (oldIndex, newIndex) {
+                    onReorderItem: (oldIndex, newIndex) {
                       setState(() {
-                        if (newIndex > oldIndex) newIndex--;
                         final moved = _slides.removeAt(oldIndex);
                         _slides.insert(newIndex, moved);
                       });
                     },
                     itemBuilder: (context, index) => Card(
-                      key: ValueKey('slide-${index}-${_slides[index].hashCode}'),
+                      key: ValueKey('slide-$index-${_slides[index].hashCode}'),
                       child: ListTile(
                         leading: ReorderableDragStartListener(
                           index: index,
