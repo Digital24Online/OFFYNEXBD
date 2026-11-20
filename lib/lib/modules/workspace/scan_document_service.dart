@@ -36,11 +36,10 @@ class ScanDocumentService {
     if (pageCount < 1 || pageCount > maxPages) {
       throw FormatException('Scan page count must be between 1 and $maxPages.');
     }
-    if (bytes.length < 8 ||
-        bytes.length > maxPdfBytes ||
-        String.fromCharCodes(bytes.take(5)) != '%PDF-') {
-      throw const FormatException('Scan output is not a valid PDF or exceeds 50 MB.');
+    if (bytes.length > maxPdfBytes) {
+      throw const FormatException('Scan output exceeds the 50 MB limit.');
     }
+    PdfToDocumentService.validatePdfBytes(bytes);
   }
 
   static String combineRecognizedPages(Iterable<String> pages) => pages
@@ -63,20 +62,10 @@ class ScanDocumentService {
       if (image.bytes.isEmpty || image.bytes.length > maxOcrImageBytes) {
         throw const FormatException('Each scan image must be between 1 byte and 30 MB.');
       }
-      final validSignature = extension == 'png'
-          ? image.bytes.length >= 8 &&
-              image.bytes[0] == 0x89 &&
-              image.bytes[1] == 0x50 &&
-              image.bytes[2] == 0x4E &&
-              image.bytes[3] == 0x47 &&
-              image.bytes[4] == 0x0D &&
-              image.bytes[5] == 0x0A &&
-              image.bytes[6] == 0x1A &&
-              image.bytes[7] == 0x0A
-          : image.bytes.length >= 3 &&
-              image.bytes[0] == 0xFF &&
-              image.bytes[1] == 0xD8 &&
-              image.bytes[2] == 0xFF;
+      final validSignature = PdfToDocumentService.hasValidImageSignature(
+        image.bytes,
+        image.name,
+      );
       if (!validSignature) {
         throw const FormatException('Imported image content does not match its JPEG or PNG extension.');
       }
