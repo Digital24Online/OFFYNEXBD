@@ -13,15 +13,15 @@ OFFYNEX Sheets is an offline-first, multi-worksheet spreadsheet workspace with a
 - CSV import/export for cell values and formulas, with UTF-8/Bengali text, optional UTF-8 BOM, commas, escaped quotes, CRLF/LF line endings and quoted multiline fields. Import confirms before replacing the active sheet and enforces the same 1,000 × 100 grid limit.
 - Display-only sorting and filtering by the selected column: A→Z / Z→A sorting, case-insensitive substring filtering, combined sort + filter, blank cells last, stable original-order ties, and Clear sort/filter. The worksheet's underlying cell data, formulas, styles and formula references are not moved; clearing the view restores original row order. CSV/XLSX import and Clear Sheet reset the view state.
 - A4 landscape PDF export and print pipeline with Bengali OpenType shaping, English/Unicode fallback, supported cell styles, gridline visibility and page numbering.
-- Formula engine with 31 functions:
-  `SUM, AVERAGE, COUNT, MIN, MAX, PRODUCT, ABS, ROUND, ROUNDUP, ROUNDDOWN, SQRT, POWER, MOD, INT, SIGN, MEDIAN, LARGE, SMALL, CEILING, FLOOR, PI, EXP, LN, LOG, LOG10, SIN, COS, TAN, ASIN, ACOS, ATAN`.
-- Formula parsing supports arithmetic precedence, parentheses, cell references, ranges, nested calculations, circular-reference detection and range-error propagation.
+- Formula engine with 36 numeric and logical functions:
+  `SUM, AVERAGE, COUNT, MIN, MAX, PRODUCT, ABS, ROUND, ROUNDUP, ROUNDDOWN, SQRT, POWER, MOD, INT, SIGN, MEDIAN, LARGE, SMALL, CEILING, FLOOR, PI, EXP, LN, LOG, LOG10, SIN, COS, TAN, ASIN, ACOS, ATAN, IF, IFERROR, AND, OR, NOT`.
+- Formula parsing supports arithmetic precedence, numeric comparisons, parentheses, cell references, ranges, nested calculations, circular-reference detection and range-error propagation. IF and IFERROR evaluate only the selected/result-needed branch. AND/OR/NOT currently operate on numeric truth values; this is not full Excel text/logical-value compatibility.
 - Bangla and English UI labels.
 
 ## Known limitations — not Excel parity
 
 - Cross-worksheet formula references currently support numeric direct references and aggregate ranges; full Excel reference syntax, external workbook references and 3-D references are not implemented.
-- Formula compatibility is partial. Logical, text, date/time, lookup, conditional aggregate, array/dynamic and financial function families are not implemented.
+- Formula compatibility is partial. Text, date/time, lookup, conditional aggregate (for example COUNTIF/SUMIF), array/dynamic and financial function families are not implemented. Logical functions are numeric-only.
 - Charts, pivot tables, data validation, conditional formatting, named ranges, external links and macros are not implemented.
 - XLSX import/export preserves only the supported subset; complex workbook structures, charts, merged cells, formulas outside the supported engine and advanced styles need compatibility work.
 - ODS import/export is not implemented. CSV does not store cell formatting, workbook formulas are exported as formula text, and CSV import creates unformatted cells.

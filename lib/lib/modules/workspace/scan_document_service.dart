@@ -63,6 +63,23 @@ class ScanDocumentService {
       if (image.bytes.isEmpty || image.bytes.length > maxOcrImageBytes) {
         throw const FormatException('Each scan image must be between 1 byte and 30 MB.');
       }
+      final validSignature = extension == 'png'
+          ? image.bytes.length >= 8 &&
+              image.bytes[0] == 0x89 &&
+              image.bytes[1] == 0x50 &&
+              image.bytes[2] == 0x4E &&
+              image.bytes[3] == 0x47 &&
+              image.bytes[4] == 0x0D &&
+              image.bytes[5] == 0x0A &&
+              image.bytes[6] == 0x1A &&
+              image.bytes[7] == 0x0A
+          : image.bytes.length >= 3 &&
+              image.bytes[0] == 0xFF &&
+              image.bytes[1] == 0xD8 &&
+              image.bytes[2] == 0xFF;
+      if (!validSignature) {
+        throw const FormatException('Imported image content does not match its JPEG or PNG extension.');
+      }
       totalBytes += image.bytes.length;
       if (totalBytes > maxPdfBytes) {
         throw const FormatException('Combined scan images exceed 50 MB.');

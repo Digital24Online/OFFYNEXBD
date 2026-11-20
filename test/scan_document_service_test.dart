@@ -27,8 +27,10 @@ void main() {
     test('accepts multiple supported image pages for imported scans', () {
       expect(
         () => ScanDocumentService.validateImportedImages([
-          (name: 'page-1.jpg', bytes: Uint8List.fromList([1, 2, 3])),
-          (name: 'page-2.PNG', bytes: Uint8List.fromList([4, 5, 6])),
+          (name: 'page-1.jpg', bytes: Uint8List.fromList([0xFF, 0xD8, 0xFF, 0xD9])),
+          (name: 'page-2.PNG', bytes: Uint8List.fromList([
+            0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
+          ])),
         ]),
         returnsNormally,
       );
@@ -57,6 +59,18 @@ void main() {
       expect(
         () => ScanDocumentService.validateImportedImages([
           (name: 'page.png', bytes: Uint8List(0)),
+        ]),
+        throwsFormatException,
+      );
+      expect(
+        () => ScanDocumentService.validateImportedImages([
+          (name: 'mislabelled.jpg', bytes: Uint8List.fromList([1, 2, 3, 4])),
+        ]),
+        throwsFormatException,
+      );
+      expect(
+        () => ScanDocumentService.validateImportedImages([
+          (name: 'mislabelled.png', bytes: Uint8List.fromList([0xFF, 0xD8, 0xFF])),
         ]),
         throwsFormatException,
       );

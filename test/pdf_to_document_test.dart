@@ -100,6 +100,12 @@ void main() {
       );
       expect(
         () => PdfToDocumentService.validatePdfBytes(
+          Uint8List.fromList('%PDF-9.9'.codeUnits),
+        ),
+        throwsFormatException,
+      );
+      expect(
+        () => PdfToDocumentService.validatePdfBytes(
           Uint8List.fromList('NOT A PDF'.codeUnits),
         ),
         throwsFormatException,

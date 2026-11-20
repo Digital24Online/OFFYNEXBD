@@ -60,7 +60,8 @@ class WriterContentMetrics {
           : defaultFontSize;
       final color = _parseColor(attributes['color']);
       final background = _parseColor(attributes['background']);
-      final font = attributes['font']?.toString();
+      final font = attributes['font']?.toString().toLowerCase();
+      final isSerif = font == 'serif' || (font?.contains('noto serif') ?? false);
       paragraph.add(TextSpan(
         text: value,
         style: TextStyle(
@@ -70,7 +71,7 @@ class WriterContentMetrics {
           decoration: _decoration(attributes),
           color: color,
           backgroundColor: background,
-          fontFamily: font == 'serif' ? 'serif' : 'sans-serif',
+          fontFamily: isSerif ? 'serif' : 'sans-serif',
         ),
       ));
     }
