@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 /// Converts local OFFYNEXBD Forms responses into a spreadsheet-friendly CSV.
 class FormsResponseCsvCodec {
   const FormsResponseCsvCodec._();
