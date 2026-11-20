@@ -25,6 +25,36 @@ void main() {
     expect(decoded, records);
   });
 
+  test('workspace record codec preserves module-specific and nested metadata', () {
+    final extended = <Map<String, dynamic>>[
+      {
+        ...records.single,
+        'source': 'native_document_scan',
+        'scanPdfPath': '/documents/scans/scan-01.pdf',
+        'pageCount': 3,
+        'ocrLanguage': 'ben+eng',
+        'conversion': {
+          'ocrUsed': true,
+          'pageCount': 3,
+          'layout': {'preserveBangla': true},
+        },
+      },
+    ];
+
+    final encoded = WorkspaceRecordCodec.encode('Scan', extended);
+    final decoded = WorkspaceRecordCodec.decode(
+      encoded,
+      expectedModule: 'Scan',
+    );
+
+    expect(decoded, extended);
+    expect(decoded.single['scanPdfPath'], '/documents/scans/scan-01.pdf');
+    expect(
+      (decoded.single['conversion'] as Map)['layout'],
+      {'preserveBangla': true},
+    );
+  });
+
   test('workspace record codec rejects another module export', () {
     final encoded = WorkspaceRecordCodec.encode('Forms', records);
     expect(
