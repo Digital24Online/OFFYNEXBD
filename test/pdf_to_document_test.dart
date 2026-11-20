@@ -50,6 +50,15 @@ void main() {
       expect(PdfToDocumentService.isSupportedImageName('file.pdf'), isFalse);
       expect(PdfToDocumentService.isSupportedImageName('file.txt'), isFalse);
     });
+    test('validates actual image signatures against file extensions', () {
+      expect(PdfToDocumentService.hasValidImageSignature(
+        Uint8List.fromList([0xFF, 0xD8, 0xFF]), 'scan.jpg'), isTrue);
+      expect(PdfToDocumentService.hasValidImageSignature(
+        Uint8List.fromList([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]), 'scan.png'), isTrue);
+      expect(PdfToDocumentService.hasValidImageSignature(
+        Uint8List.fromList([0xFF, 0xD8, 0xFF]), 'scan.png'), isFalse);
+    });
+
     test('creates an empty editable paragraph for empty input', () {
       expect(PdfToDocumentService.plainTextToDelta('').single['insert'], '\n');
     });
