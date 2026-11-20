@@ -1599,3 +1599,14 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - Every manual/device/Word/LibreOffice/printer acceptance gate stays pending until actual evidence is recorded.
 - Do not merge PR #6 or change the main branch without explicit user approval.
 
+---
+
+## User-approved PR merge and duplicate-control requirement — 2026-11-20
+
+- User has now stated that merge permission was already granted. Treat this as current authorization for PR #6, superseding the earlier historical instruction to keep PR #6 Draft and unmerged. Merge only after the exact final head has passed required CI and the duplicate-option audit is clean.
+- New permanent UX rule: the same command/action must not be exposed twice in the same context. Keep one authoritative control for each action; do not duplicate undo/redo, alignment, list, save, print, zoom or other commands across adjacent toolbars/tabs. Where a compact keyboard toolbar is necessary, avoid duplicating controls already displayed in the active ribbon.
+- Audit found duplicate Home actions: Undo, Redo, paragraph alignment and list commands appeared in both the Home ribbon and the secondary Quill toolbar. The secondary toolbar now hides those duplicate commands while retaining indent actions.
+- Added a widget regression assertion that each Home action icon is rendered exactly once.
+- Restored Writer widget/editor constructor defaults to Bangla, consistent with the app's initial Bangla language setting; the main app continues to pass the explicit user-selected language.
+- The user's approval does not waive the quality gate: no merge until latest PR head CI (Analyze, complete tests, signed Android build, signature/package verification and artifact upload) is successful. Recheck mergeability and exact head SHA immediately before merge.
+
