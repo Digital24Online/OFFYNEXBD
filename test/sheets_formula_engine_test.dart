@@ -466,6 +466,7 @@ void main() {
       expect(engine.evaluateCell('A1'), isNull);
       expect(engine.evaluateCell('A2'), isNull);
       expect(engine.evaluateCell('A3'), isNull);
+    });
 
     test('supports additional Excel-compatible numeric and engineering functions', () {
       final engine = SheetsFormulaEngine({
