@@ -508,9 +508,11 @@ void main() {
         'A5': '=COMBIN(4,5)',
         'A6': '=PERMUT(100,100)',
       });
-      for (var row = 1; row <= 6; row++) {
+      for (final row in [1, 2, 3, 5, 6]) {
         expect(engine.evaluateCell('A$row'), isNull);
       }
+      // Excel's LCM of zero and zero is zero.
+      expect(engine.evaluateCell('A4'), 0);
     });
 
   });
