@@ -136,7 +136,7 @@ class _SlidesEditorScreenState extends State<SlidesEditorScreen> {
       return;
     }
     final encoded = SlidesContentCodec.encode(slides);
-    if (slides.length > 200 || utf8.encode('$title\\n$encoded').length > 5 * 1024 * 1024) {
+    if (slides.length > 200 || utf8.encode('$title\n$encoded').length > 5 * 1024 * 1024) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(_bn
             ? 'সর্বোচ্চ ২০০টি স্লাইড এবং ৫ MB লেখা রাখা যাবে।'
