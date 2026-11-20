@@ -25,7 +25,7 @@ class SlidesContentCodec {
       throw const FormatException('Legacy slide content exceeds supported limits.');
     }
     final slides = value
-        .split(RegExp(r'\\r?\\n'))
+        .split(RegExp(r'\r?\n'))
         .map((item) => item.trim())
         .where((item) => item.isNotEmpty)
         .toList(growable: false);
