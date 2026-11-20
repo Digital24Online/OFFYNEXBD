@@ -110,6 +110,17 @@ class _DatabaseRowsDialogState extends State<DatabaseRowsDialog> {
       if (!mounted) return;
       final imported = DatabaseRowsCsvCodec.decode(bytes, expectedFields: widget.fields);
       if (imported.isEmpty) throw const FormatException('CSV contains no data rows.');
+      for (var rowIndex = 0; rowIndex < imported.length; rowIndex++) {
+        final values = imported[rowIndex]['values'] as Map;
+        for (final field in widget.schema) {
+          final value = values[field.name]?.toString() ?? '';
+          if (!DatabaseFieldCodec.isValueValid(field, value)) {
+            throw FormatException(
+              'CSV row ${rowIndex + 2} has an invalid value for "${field.name}".',
+            );
+          }
+        }
+      }
       final yes = await showDialog<bool>(
         context: context,
         builder: (dialogContext) => AlertDialog(
