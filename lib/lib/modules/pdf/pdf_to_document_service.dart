@@ -160,12 +160,41 @@ class PdfToDocumentService {
       RegExp(r'\.(png|jpe?g|webp|bmp|tif?f)$', caseSensitive: false)
           .hasMatch(name);
 
+  /// Validates image container bytes independently of the file extension.
+  static bool hasValidImageSignature(Uint8List bytes, String sourceName) {
+    if (bytes.isEmpty) return false;
+    switch (sourceName.split('.').last.toLowerCase()) {
+      case 'jpg':
+      case 'jpeg':
+        return bytes.length >= 3 && bytes[0] == 0xFF &&
+            bytes[1] == 0xD8 && bytes[2] == 0xFF;
+      case 'png':
+        return bytes.length >= 8 && bytes[0] == 0x89 && bytes[1] == 0x50 &&
+            bytes[2] == 0x4E && bytes[3] == 0x47 && bytes[4] == 0x0D &&
+            bytes[5] == 0x0A && bytes[6] == 0x1A && bytes[7] == 0x0A;
+      case 'webp':
+        return bytes.length >= 12 &&
+            String.fromCharCodes(bytes.sublist(0, 4)) == 'RIFF' &&
+            String.fromCharCodes(bytes.sublist(8, 12)) == 'WEBP';
+      case 'bmp':
+        return bytes.length >= 2 && bytes[0] == 0x42 && bytes[1] == 0x4D;
+      case 'tif':
+      case 'tiff':
+        return bytes.length >= 4 &&
+            ((bytes[0] == 0x49 && bytes[1] == 0x49 && bytes[2] == 0x2A && bytes[3] == 0) ||
+             (bytes[0] == 0x4D && bytes[1] == 0x4D && bytes[2] == 0 && bytes[3] == 0x2A));
+      default:
+        return false;
+    }
+  }
+
   static Future<PdfConversionResult> convertImage(
     Uint8List imageBytes, {
     required String sourceName,
   }) async {
     if (imageBytes.isEmpty || imageBytes.length > maxImageBytes ||
-        !isSupportedImageName(sourceName)) {
+        !isSupportedImageName(sourceName) ||
+        !hasValidImageSignature(imageBytes, sourceName)) {
       throw const FormatException(
         'সমর্থিত ছবি নির্বাচন করুন: JPG, JPEG, PNG, WEBP, BMP বা TIFF।',
       );
