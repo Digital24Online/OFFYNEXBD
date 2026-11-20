@@ -1645,3 +1645,14 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Fixed the Writer mobile AppBar title overflow detected by Build #563 by constraining the title/subtitle to the available width and applying single-line ellipsis.
 - [x] PR #9 remains OPEN, Draft, and unmerged; current head is mergeable against main. No merge was performed.
 - [ ] This verifies the integrated Writer zoom regression and Sheets analytics batch only. It does not close true Writer pagination, native XLSX chart/rule round-trip, advanced Pivot features, remaining office modules, production backend/security, cross-platform release or physical-device acceptance.
+
+## Integrated Database typed-field batch — 2026-11-20
+
+- Added `DatabaseFieldCodec` with backward-compatible parsing: existing comma-separated field names continue to behave as optional text fields.
+- Added typed schema definitions for text, number, email, date and choice fields, including required fields and bounded/unique choice options.
+- Integrated schema parsing into the Database table workflow and added bilingual guidance for the field syntax.
+- Row editing now provides numeric/email/date controls, date picker, choice dropdown and required/type validation.
+- CSV import validates values against the active typed schema before appending any rows; CSV export retains the existing field order and safety behavior.
+- Stored row values remain strings in the existing `offynex_database_rows_v1` structure, so existing records and CSV schema are not migrated or discarded.
+- Added focused parser and typed-value validation tests. Automated CI for the latest source commit is pending; do not claim this batch verified until Analyze, all tests, signed APK, package/signature checks and artifact upload complete.
+- This is a Database data-entry/validation improvement, not a relational engine. Primary/foreign keys, indexes, joins, query builder/SQL, transactions, migrations and reports remain outstanding.
