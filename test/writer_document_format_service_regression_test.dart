@@ -218,4 +218,41 @@ void main() {
     );
     expect(imported.delta.any((op) => op['insert'] is Map && (op['insert'] as Map).containsKey('offynexbd-writer-page-break')), isTrue);
   });
+
+
+  test('DOCX import rejects relationship paths that escape the archive root', () async {
+    final archive = Archive();
+    const documentXml = '''
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body><w:p><w:r><w:t>Safe text</w:t></w:r></w:p></w:body>
+</w:document>''';
+    const relationshipsXml = '''
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rEscape"
+    Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
+    Target="../../../escape.png"/>
+</Relationships>''';
+    final documentBytes = utf8.encode(documentXml);
+    final relationshipBytes = utf8.encode(relationshipsXml);
+    archive.addFile(ArchiveFile('word/document.xml', documentBytes.length, documentBytes));
+    archive.addFile(
+      ArchiveFile(
+        'word/_rels/document.xml.rels',
+        relationshipBytes.length,
+        relationshipBytes,
+      ),
+    );
+
+    await expectLater(
+      WriterDocumentFormatService.importFile(
+        bytes: Uint8List.fromList(ZipEncoder().encodeBytes(archive)),
+        extension: 'docx',
+        imageDirectory: temp,
+        title: 'unsafe.docx',
+      ),
+      throwsA(isA<FormatException>()),
+    );
+    expect(temp.listSync(), isEmpty);
+  });
+}
 }
