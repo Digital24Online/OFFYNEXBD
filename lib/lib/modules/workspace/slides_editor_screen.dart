@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:material_ui/material_ui.dart';
 
 /// Offline slide editor with editable slide text, ordering and duplication.
@@ -84,14 +86,30 @@ class _SlidesEditorScreenState extends State<SlidesEditorScreen> {
   }
 
   void _addSlide() {
+    if (_slides.length >= 200) {
+      _showLimitMessage();
+      return;
+    }
     setState(() => _slides.add(TextEditingController()));
     _editSlide(_slides.length - 1);
   }
 
   void _duplicateSlide(int index) {
+    if (_slides.length >= 200) {
+      _showLimitMessage();
+      return;
+    }
     setState(() => _slides.insert(
       index + 1,
       TextEditingController(text: _slides[index].text),
+    ));
+  }
+
+  void _showLimitMessage() {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(_bn
+          ? 'একটি প্রেজেন্টেশনে সর্বোচ্চ ২০০টি স্লাইড রাখা যাবে।'
+          : 'A presentation can contain up to 200 slides.'),
     ));
   }
 
@@ -116,6 +134,14 @@ class _SlidesEditorScreenState extends State<SlidesEditorScreen> {
     if (content.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(_bn ? 'কমপক্ষে একটি স্লাইডে লেখা দিন।' : 'Add content to at least one slide.'),
+      ));
+      return;
+    }
+    if (_slides.length > 200 || utf8.encode('$title\\n$content').length > 5 * 1024 * 1024) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(_bn
+            ? 'সর্বোচ্চ ২০০টি স্লাইড এবং ৫ MB লেখা রাখা যাবে।'
+            : 'A presentation is limited to 200 slides and 5 MB of text.'),
       ));
       return;
     }
