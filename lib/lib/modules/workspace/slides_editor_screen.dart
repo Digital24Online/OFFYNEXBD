@@ -119,23 +119,24 @@ class _SlidesEditorScreenState extends State<SlidesEditorScreen> {
 
   void _save() {
     final title = _titleController.text.trim();
-    final content = _slides
+    final slides = _slides
         .map((controller) => controller.text.trim())
         .where((value) => value.isNotEmpty)
-        .join('\n');
+        .toList(growable: false);
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(_bn ? 'প্রেজেন্টেশনের নাম লিখুন।' : 'Enter a presentation title.'),
       ));
       return;
     }
-    if (content.isEmpty) {
+    if (slides.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(_bn ? 'কমপক্ষে একটি স্লাইডে লেখা দিন।' : 'Add content to at least one slide.'),
       ));
       return;
     }
-    if (_slides.length > 200 || utf8.encode('$title\\n$content').length > 5 * 1024 * 1024) {
+    final encoded = SlidesContentCodec.encode(slides);
+    if (slides.length > 200 || utf8.encode('$title\\n$encoded').length > 5 * 1024 * 1024) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(_bn
             ? 'সর্বোচ্চ ২০০টি স্লাইড এবং ৫ MB লেখা রাখা যাবে।'
@@ -143,7 +144,7 @@ class _SlidesEditorScreenState extends State<SlidesEditorScreen> {
       ));
       return;
     }
-    Navigator.pop(context, <String, String>{'title': title, 'content': SlidesContentCodec.encode(_slides.map((item) => item.text).toList())});
+    Navigator.pop(context, <String, String>{'title': title, 'content': encoded});
   }
 
   @override
