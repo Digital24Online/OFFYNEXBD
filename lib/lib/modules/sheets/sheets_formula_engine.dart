@@ -382,13 +382,14 @@ class _FormulaParser {
       'MOD', 'INT', 'SIGN', 'MEDIAN', 'LARGE', 'SMALL',
       'CEILING', 'FLOOR', 'PI', 'EXP', 'LN', 'LOG', 'LOG10',
       'SIN', 'COS', 'TAN', 'ASIN', 'ACOS', 'ATAN',
-      'IF', 'AND', 'OR', 'NOT',
+      'IF', 'IFERROR', 'AND', 'OR', 'NOT',
     };
     if (!supported.contains(name)) {
       throw FormatException('Unsupported function: $name');
     }
     _expect('(');
     if (name == 'IF') return _parseIfFunction();
+    if (name == 'IFERROR') return _parseIfErrorFunction();
     final values = <double>[];
     if (!_accept(')')) {
       while (true) {
@@ -573,6 +574,29 @@ class _FormulaParser {
     final whenFalse = _parseComparison();
     _expect(')');
     return whenFalse;
+  }
+
+  double _parseIfErrorFunction() {
+    double value;
+    try {
+      value = _parseComparison();
+    } on FormatException {
+      _skipFunctionArgument();
+      _expect(',');
+      final fallback = _parseComparison();
+      _expect(')');
+      return fallback;
+    } on RangeError {
+      _skipFunctionArgument();
+      _expect(',');
+      final fallback = _parseComparison();
+      _expect(')');
+      return fallback;
+    }
+    _expect(',');
+    _skipFunctionArgument();
+    _expect(')');
+    return value;
   }
 
   /// Advances over one syntactically nested argument without evaluating it.
