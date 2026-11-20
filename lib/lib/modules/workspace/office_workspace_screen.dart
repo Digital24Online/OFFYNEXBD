@@ -316,6 +316,88 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
     }
   }
 
+  Future<void> _reviewScanText(Map<String, dynamic> item) async {
+    if (_workspaceDataBlocked) return;
+    final controller = TextEditingController(text: item['content']?.toString() ?? '');
+    final edited = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(_bn ? 'OCR লেখা যাচাই ও সংশোধন' : 'Review and correct OCR text'),
+        content: SizedBox(
+          width: 560,
+          child: TextField(
+            controller: controller,
+            autofocus: true,
+            minLines: 6,
+            maxLines: 14,
+            maxLength: 100000,
+            decoration: InputDecoration(
+              hintText: _bn ? 'স্ক্যান থেকে পাওয়া লেখা সংশোধন করুন' : 'Correct the recognized scan text',
+              border: const OutlineInputBorder(),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(_bn ? 'বাতিল' : 'Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, controller.text),
+            child: Text(_bn ? 'সংরক্ষণ' : 'Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (edited == null || !mounted) return;
+    try {
+      final writerId = item['writerDocumentId']?.toString().trim().isNotEmpty == true
+          ? item['writerDocumentId'].toString()
+          : DateTime.now().microsecondsSinceEpoch.toString();
+      final updatedItem = <String, dynamic>{
+        ...item,
+        'content': edited,
+        'updatedAt': DateTime.now().toIso8601String(),
+        if (edited.trim().isNotEmpty) 'writerDocumentId': writerId,
+      };
+      final updatedItems = _items
+          .map((entry) => entry['id'] == item['id'] ? updatedItem : entry)
+          .toList(growable: false);
+      await _save(updatedItems);
+      if (!mounted) return;
+      setState(() => _items = updatedItems);
+
+      final documents = await loadDocuments();
+      final index = documents.indexWhere((document) => document['id']?.toString() == writerId);
+      final writerRecord = <String, dynamic>{
+        if (index >= 0) ...documents[index],
+        'id': writerId,
+        'title': updatedItem['title']?.toString() ?? 'Scanned document',
+        'content': PdfToDocumentService.plainTextToDelta(edited),
+        'updated': DateTime.now().toIso8601String(),
+        'source': 'native_document_scan',
+        'scanPdfPath': updatedItem['scanPdfPath'],
+      };
+      if (index >= 0) {
+        documents[index] = writerRecord;
+      } else if (edited.trim().isNotEmpty) {
+        documents.add(writerRecord);
+      }
+      await storeDocuments(documents);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_bn ? 'OCR লেখা সংশোধন করে সংরক্ষণ হয়েছে।' : 'Corrected OCR text saved.')),
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text((_bn ? 'OCR লেখা সংরক্ষণ ব্যর্থ: ' : 'Could not save OCR text: ') + error.toString())),
+        );
+      }
+    }
+  }
+
   Future<void> _openScanPdf(Map<String, dynamic> item) async {
     final path = item['scanPdfPath'];
     if (path is! String || path.isEmpty) return;
@@ -374,8 +456,12 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
       if (Platform.isAndroid) {
         final captured = await ScanDocumentService.captureAndroid();
         if (captured == null) return;
+        final writerDocumentId = captured.recognizedText.trim().isEmpty
+            ? null
+            : DateTime.now().microsecondsSinceEpoch.toString();
         final scanRecord = <String, dynamic>{
           'id': DateTime.now().microsecondsSinceEpoch.toString(),
+          if (writerDocumentId != null) 'writerDocumentId': writerDocumentId,
           'title': captured.fileName.replaceFirst(RegExp(r'\.pdf$', caseSensitive: false), ''),
           'content': captured.recognizedText,
           'updatedAt': DateTime.now().toIso8601String(),
@@ -391,7 +477,8 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
         if (captured.recognizedText.trim().isNotEmpty) {
           final documents = await loadDocuments();
           documents.add({
-            'id': DateTime.now().microsecondsSinceEpoch.toString(),
+            'id': writerDocumentId!,
+
             'title': scanRecord['title'],
             'content': PdfToDocumentService.plainTextToDelta(captured.recognizedText),
             'updated': DateTime.now().toIso8601String(),
@@ -1317,6 +1404,11 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
                                 )
                               : widget.module == 'Scan'
                                   ? Wrap(spacing: 0, children: [
+                                      IconButton(
+                                        tooltip: _bn ? 'OCR লেখা যাচাই' : 'Review OCR text',
+                                        icon: const Icon(Icons.text_snippet_outlined),
+                                        onPressed: () => _reviewScanText(item),
+                                      ),
                                       IconButton(
                                         tooltip: _bn ? 'PDF দেখুন' : 'View PDF',
                                         icon: const Icon(Icons.picture_as_pdf_outlined),
