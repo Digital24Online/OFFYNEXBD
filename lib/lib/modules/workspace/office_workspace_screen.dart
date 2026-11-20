@@ -1419,9 +1419,7 @@ class _FormResponseDialogState extends State<_FormResponseDialog> {
     );
     if (selected != null) {
       _controllers[index].text =
-          selected.year.toString().padLeft(4, '0') + '-' +
-          selected.month.toString().padLeft(2, '0') + '-' +
-          selected.day.toString().padLeft(2, '0');
+          ${selected.year.toString().padLeft(4, '0')}-${selected.month.toString().padLeft(2, '0')}-${selected.day.toString().padLeft(2, '0')};
     }
   }
 
@@ -1462,7 +1460,7 @@ class _FormResponseDialogState extends State<_FormResponseDialog> {
                     final type = question['type'] as String;
                     final label = question['label'] as String;
                     final required = question['required'] == true;
-                    final title = required ? label + ' *' : label;
+                    final title = required ? '$label *' : label;
                     if (type == 'choice') {
                       final options = (question['options'] as List).cast<String>();
                       return DropdownButtonFormField<String>(
