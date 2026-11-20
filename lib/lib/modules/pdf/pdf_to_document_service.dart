@@ -41,7 +41,7 @@ class PdfToDocumentService {
         : '';
     if (bytes.length < 8 ||
         bytes.length > maxPdfBytes ||
-        !RegExp(r'^%PDF-(?:1\\.[0-7]|2\\.0)
+        !RegExp(r'^%PDF-(?:1\.[0-7]|2\.0)$').hasMatch(header)) {
       throw const FormatException('PDF is invalid, empty or exceeds the 50 MB limit.');
     }
   }
