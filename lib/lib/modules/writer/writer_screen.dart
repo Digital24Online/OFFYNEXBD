@@ -358,10 +358,12 @@ class _WriterScreenState extends State<WriterScreen> {
         title: Row(children: [
           Container(width: 38, height: 38, decoration: BoxDecoration(color: OFFYNEXTheme.blueSoft, borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.description_rounded, color: OFFYNEXTheme.blue)),
           const SizedBox(width: 11),
-          Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-            Text(_t('Writer', 'Writer'), style: const TextStyle(color: OFFYNEXTheme.ink, fontSize: 18, fontWeight: FontWeight.w800)),
-            Text(_t('ডকুমেন্ট ও লেখালেখি', 'Documents and writing'), style: const TextStyle(color: OFFYNEXTheme.muted, fontSize: 10, fontWeight: FontWeight.w500)),
-          ]),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+              Text(_t('Writer', 'Writer'), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: OFFYNEXTheme.ink, fontSize: 17, fontWeight: FontWeight.w800)),
+              Text(_t('ডকুমেন্ট ও লেখালেখি', 'Documents and writing'), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: OFFYNEXTheme.muted, fontSize: 9, fontWeight: FontWeight.w500)),
+            ]),
+          ),
         ]),
         actions: [
           IconButton(tooltip: _t('ডকুমেন্ট Import', 'Import documents'), onPressed: importDocuments, icon: const Icon(Icons.file_download_outlined)),
