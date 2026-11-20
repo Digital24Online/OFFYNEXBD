@@ -374,5 +374,44 @@ void main() {
       expect(tooLong.evaluateCell('A2'), isNull);
     });
 
+
+    test('resolves direct and aggregate references across worksheets', () {
+      final sheets = <String, Map<String, String>>{
+        'Sheet1': {'A1': '7', 'A2': '=Sheet2!A1+1', 'A3': '=SUM(\'Sales Data\'!B1:B3)'},
+        'Sheet2': {'A1': '12'},
+        'Sales Data': {'B1': '2', 'B2': '3', 'B3': '5', 'C1': '=Sheet1!A1*2'},
+      };
+      final engine = SheetsFormulaEngine(
+        sheets['Sheet1']!,
+        worksheets: sheets,
+        activeSheetName: 'Sheet1',
+      );
+      expect(engine.evaluateCell('A2'), 13);
+      expect(engine.evaluateCell('A3'), 10);
+      final salesEngine = SheetsFormulaEngine(
+        sheets['Sales Data']!,
+        worksheets: sheets,
+        activeSheetName: 'Sales Data',
+      );
+      expect(salesEngine.evaluateCell('C1'), 14);
+    });
+
+    test('rejects missing worksheets, invalid cross-sheet ranges and cross-sheet cycles', () {
+      final sheets = <String, Map<String, String>>{
+        'Sheet1': {'A1': '=Missing!A1', 'A2': '=SUM(Sheet2!A1:Sheet3!A1)', 'A3': '=Sheet2!A1'},
+        'Sheet2': {'A1': '=Sheet1!A3'},
+        'Sheet3': {'A1': '4'},
+      };
+      final engine = SheetsFormulaEngine(
+        sheets['Sheet1']!,
+        worksheets: sheets,
+        activeSheetName: 'Sheet1',
+      );
+      expect(engine.evaluateCell('A1'), isNull);
+      expect(engine.evaluateCell('A2'), isNull);
+      expect(engine.evaluateCell('A3'), isNull);
+    });
+
+
   });
 }
