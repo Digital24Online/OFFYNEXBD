@@ -1610,3 +1610,49 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - Restored Writer widget/editor constructor defaults to Bangla, consistent with the app's initial Bangla language setting; the main app continues to pass the explicit user-selected language.
 - The user's approval does not waive the quality gate: no merge until latest PR head CI (Analyze, complete tests, signed Android build, signature/package verification and artifact upload) is successful. Recheck mergeability and exact head SHA immediately before merge.
 
+
+
+## Integrated Sheets analytics port — 2026-11-20
+
+- Ported the previously isolated Sheets charts / Pivot summaries / conditional-formatting feature batch onto a fresh branch based on the current `main`, rather than merging its stale, diverged PR branch.
+- Added bounded cell-range parsing, conditional rules, chart data preparation, Pivot aggregation and validation helpers; added bilingual UI dialogs/widgets.
+- Integrated persistent worksheet metadata and live-grid style/chart/Pivot actions into the current Sheets screen and workbook codec.
+- Added focused analytics and workbook-codec regression tests.
+- Source was ported by applying the reviewed PR #2 hunks to the current `main` files; every hunk matched exactly. Existing newer main-branch changes were retained.
+- This is source integration only until a fresh CI run passes Analyze, all tests, signed Android build and artifact verification. XLSX native chart/conditional-rule round-trip and advanced Pivot filtering/drill-down remain known limitations.
+- No merge to `main` was performed.
+
+
+## Integrated Writer + Sheets batch — CI correction record — 2026-11-20
+
+- Current integrated PR: #9, branch `work/integrated-sheets-analytics-20261120`.
+- Writer mobile Page/Width/Actual fit modes, 50%–300% zoom slider, direct zoom controls and persisted zoom were verified in current main source; added a mobile widget regression test for zoom bounds/action/persistence.
+- Sheets analytics from stale PR #2 was ported by exact-context patch application onto current main files: bounded range parsing, conditional formatting, bar/line chart previews and persisted specs, Pivot summary worksheets, workbook codec validation and tests. Existing current-main workbook code was retained.
+- Build #557 / run `44737184125` reached Flutter Analyze and failed on 11 lint findings introduced by the port (deprecated DropdownButtonFormField.value, missing braces, string concatenation and unnecessary double underscore). Analyze failure correctly stopped tests and APK creation; no artifact was produced.
+- Corrected all 11 reported lint findings in commits `40e0a77475462a6f4fcd27d55103878bf534b035` and `e12345e99195c022d8243e09f52b4eb619fdaa55`.
+- Build #558 / run `44737466194` is queued on exact corrected head `e12345e99195c022d8243e09f52b4eb619fdaa55`. Do not mark the batch verified until Analyze, tests, signed APK, package checks and artifact upload pass.
+- Known Sheets interoperability limits remain: native XLSX charts/conditional-rule metadata are not round-tripped; Pivot filtering/drill-down is limited. Writer true content-aware rich pagination and broader office-suite acceptance remain open.
+- No changes merged to main.
+
+
+## Integrated Writer + Sheets CI verification — 2026-11-20 (Build #564)
+
+- [x] Final integrated branch head: `e56eae96e345b81562c6c7345cf2dc792e83efc3`.
+- [x] Build #564 / run `44739199116` completed SUCCESS on that exact commit.
+- [x] Flutter Analyze and the full configured automated test suite passed.
+- [x] Android release APK built; signing and install metadata verification passed; download package contents verified; artifact upload passed.
+- [x] Artifact: `OFFYNEXBD-Android-APK`, ID `14629763825`, size 51,995,343 bytes; SHA-256 `ff281464938611593599cb2e366c327115bfa8f386d148e99f35cd658be76359`; expires 2026-12-04 13:00:04 UTC.
+- [x] Fixed the Writer mobile AppBar title overflow detected by Build #563 by constraining the title/subtitle to the available width and applying single-line ellipsis.
+- [x] PR #9 remains OPEN, Draft, and unmerged; current head is mergeable against main. No merge was performed.
+- [ ] This verifies the integrated Writer zoom regression and Sheets analytics batch only. It does not close true Writer pagination, native XLSX chart/rule round-trip, advanced Pivot features, remaining office modules, production backend/security, cross-platform release or physical-device acceptance.
+
+## Integrated Database typed-field batch — 2026-11-20
+
+- Added `DatabaseFieldCodec` with backward-compatible parsing: existing comma-separated field names continue to behave as optional text fields.
+- Added typed schema definitions for text, number, email, date and choice fields, including required fields and bounded/unique choice options.
+- Integrated schema parsing into the Database table workflow and added bilingual guidance for the field syntax.
+- Row editing now provides numeric/email/date controls, date picker, choice dropdown and required/type validation.
+- CSV import validates values against the active typed schema before appending any rows; CSV export retains the existing field order and safety behavior.
+- Stored row values remain strings in the existing `offynex_database_rows_v1` structure, so existing records and CSV schema are not migrated or discarded.
+- Added focused parser and typed-value validation tests. Automated CI for the latest source commit is pending; do not claim this batch verified until Analyze, all tests, signed APK, package/signature checks and artifact upload complete.
+- This is a Database data-entry/validation improvement, not a relational engine. Primary/foreign keys, indexes, joins, query builder/SQL, transactions, migrations and reports remain outstanding.

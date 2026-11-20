@@ -85,12 +85,10 @@ class WorkspaceRecordCodec {
           DateTime.tryParse(updatedAt) == null) {
         throw const FormatException('Workspace file contains an invalid record.');
       }
-      return <String, dynamic>{
-        'id': id,
-        'title': title,
-        'content': content,
-        'updatedAt': updatedAt,
-      };
+      // Keep module-specific fields (for example scanPdfPath, pageCount,
+      // OCR metadata and future record extensions) intact during export/import.
+      // Rebuilding only the four core fields silently discarded user data.
+      return Map<String, dynamic>.from(record);
     }).toList(growable: false);
   }
 }

@@ -12,6 +12,10 @@ on:
       - 'test/**'
       - 'pubspec.yaml'
       - 'assets/**'
+      - 'android/**'
+      - 'ios/**'
+      - 'windows/**'
+      - 'macos/**'
       - '.github/workflows/bootstrap.yml'
   pull_request:
     branches:
@@ -22,6 +26,10 @@ on:
       - 'test/**'
       - 'pubspec.yaml'
       - 'assets/**'
+      - 'android/**'
+      - 'ios/**'
+      - 'windows/**'
+      - 'macos/**'
       - '.github/workflows/bootstrap.yml'
 
 permissions:
@@ -80,6 +88,16 @@ jobs:
           sudo apt-get install -y librsvg2-bin
           rsvg-convert --width 1024 --height 1024 assets/branding/offynexbd_icon.svg > assets/branding/offynexbd_app_icon.png
           test -s assets/branding/offynexbd_app_icon.png
+          # Approved Option 2 full wordmark for Android and iOS launch screens.
+          rsvg-convert --width 1024 --height 1024 assets/branding/offynexbd_logo.svg > assets/branding/offynexbd_splash.png
+          test -s assets/branding/offynexbd_splash.png
+          mkdir -p android/app/src/main/res/drawable-nodpi ios/Runner/Assets.xcassets/LaunchImage.imageset
+          cp assets/branding/offynexbd_splash.png android/app/src/main/res/drawable-nodpi/offynexbd_splash.png
+          rsvg-convert --width 512 --height 512 assets/branding/offynexbd_logo.svg > ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage.png
+          rsvg-convert --width 1024 --height 1024 assets/branding/offynexbd_logo.svg > ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage@2x.png
+          rsvg-convert --width 1536 --height 1536 assets/branding/offynexbd_logo.svg > ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage@3x.png
+          test -s android/app/src/main/res/drawable-nodpi/offynexbd_splash.png
+          test -s ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage@3x.png
 
       - name: Get Dependencies
         run: flutter pub get

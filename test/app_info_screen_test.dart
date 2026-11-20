@@ -20,7 +20,7 @@ void main() {
     expect(find.text('Work Smart, Be Productive'), findsNothing);
     expect(find.text('MD PIYARUL ISLAM'), findsOneWidget);
     expect(find.text('Founder & Original Creator'), findsOneWidget);
-    expect(find.text('Rajshahi, Bangladesh'), findsOneWidget);
+    expect(find.text('Rajshahi, Bangladesh'), findsNothing);
 
     final scrollable = find.byType(Scrollable).first;
     await tester.scrollUntilVisible(
@@ -40,5 +40,6 @@ void main() {
     expect(find.text('© 2026 OFFYNEXBD. All Rights Reserved.'), findsOneWidget);
     expect(find.text('MD'), findsNothing);
     expect(find.byType(Image), findsOneWidget);
+    expect(find.text('Founder & Original Creator'), findsOneWidget);
   });
 }

@@ -9,6 +9,7 @@ import 'slides_pdf_export_service.dart';
 import 'slides_preview_screen.dart';
 import 'scan_document_service.dart';
 import 'database_rows_dialog.dart';
+import 'database_field_codec.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
 import 'portable_workspace_backup_service.dart';
@@ -17,6 +18,7 @@ import '../pdf/pdf_to_document_service.dart';
 import 'workspace_backup_codec.dart';
 import 'workspace_record_codec.dart';
 import 'forms_response_csv_codec.dart';
+import 'forms_question_codec.dart';
 import '../writer/writer_screen.dart';
 import '../../theme/offynex_theme.dart';
 
@@ -602,11 +604,11 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
           ? 'বাংলা/ইংরেজি নির্দেশনা ও কাজের খসড়া সংরক্ষণ করুন। প্রকৃত AI উত্তর পেতে নিরাপদ AI service connection প্রয়োজন; এখনো সংযুক্ত নয়।'
           : 'Save Bangla/English prompts and drafts. A secure AI service connection is required for generated answers and is not connected yet.',
       'Forms' => _bn
-          ? 'ফর্মের নাম ও প্রতি লাইনে একটি করে প্রশ্ন লিখুন। Collect response দিয়ে উত্তর নিন এবং Responses থেকে স্থানীয়ভাবে সংরক্ষিত উত্তর দেখুন। অনলাইন শেয়ারিং এখনো যুক্ত হয়নি।'
-          : 'Create a form with one question per line. Collect responses and review locally saved submissions. Online sharing is not connected yet.',
+          ? 'প্রতি লাইনে একটি প্রশ্ন লিখুন। সাধারণ লেখা optional short-answer। প্রয়োজন হলে `required text: নাম`, `email: ইমেইল`, `number: বয়স`, `date: তারিখ`, অথবা `choice: বিভাগ | বিকল্প ১ | বিকল্প ২` ব্যবহার করুন। উত্তর স্থানীয়ভাবে সংরক্ষিত হবে; অনলাইন শেয়ারিং এখনো যুক্ত হয়নি।'
+          : 'Enter one question per line. Plain lines remain optional short answers. You can use `required text: Name`, `email: Email`, `number: Age`, `date: Date`, or `choice: Department | Sales | Support`. Responses are saved locally; online sharing is not connected yet.',
       'Database' => _bn
-          ? 'টেবিলের নাম ও কমা দিয়ে Field লিখুন। Manage table rows দিয়ে Offline-এ Row তৈরি, সম্পাদনা ও মুছতে পারবেন। SQL/relational query engine এখনো যুক্ত হয়নি।'
-          : 'Define table names and comma-separated fields. Manage table rows to create, edit and delete offline records. A SQL/relational query engine is not connected yet.',
+          ? 'পুরোনো কমা-আলাদা Field-ও চলবে। Typed Field: `required Name:text, Age:number, Email:email, Joined:date, Department:choice|Sales|Support`। Row ও CSV Import-এ Number, Email, Date, Choice যাচাই হবে। SQL/relational query engine এখনো যুক্ত হয়নি।'
+          : 'Legacy comma-separated fields still work. Typed fields: `required Name:text, Age:number, Email:email, Joined:date, Department:choice|Sales|Support`. Row editing and CSV import validate number, email, date and choice values. A SQL/relational query engine is not connected yet.',
       _ => '',
     };
     if (help.isEmpty) return const SizedBox.shrink();
@@ -617,17 +619,12 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
   }
 
   Future<void> _manageDatabaseRows(Map<String, dynamic> table) async {
-    final fields = (table['content']?.toString() ?? '')
-        .split(',')
-        .map((field) => field.trim())
-        .where((field) => field.isNotEmpty)
-        .toSet()
-        .toList(growable: false);
-    if (fields.isEmpty || fields.length > 40) {
+    late final List<DatabaseField> schema;
+    try {
+      schema = DatabaseFieldCodec.parse(table['content']?.toString() ?? '');
+    } on FormatException catch (error) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(_bn
-            ? 'টেবিলে ১ থেকে ৪০টি কমা দিয়ে আলাদা করা Field লিখুন।'
-            : 'Define between 1 and 40 comma-separated fields first.'),
+        content: Text('${_bn ? 'Database Field সংজ্ঞা ভুল' : 'Invalid database field definition'}: ${error.message}'),
       ));
       return;
     }
@@ -655,10 +652,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
             final row = Map<String, dynamic>.from(item);
             final id = row['id'];
             final values = row['values'];
-            if (id is! String ||
-                id.trim().isEmpty ||
-                !rowIds.add(id) ||
-                values is! Map) {
+            if (id is! String || id.trim().isEmpty || !rowIds.add(id) || values is! Map) {
               throw const FormatException('Database row has an invalid ID or values.');
             }
             final safeValues = <String, String>{};
@@ -701,7 +695,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
       builder: (_) => DatabaseRowsDialog(
         isBangla: _bn,
         tableName: table['title']?.toString() ?? '',
-        fields: fields,
+        schema: schema,
         initialRows: initialRows,
       ),
     );
@@ -841,11 +835,15 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
   }
 
   Future<void> _collectFormResponse(Map<String, dynamic> form) async {
-    final questions = (form['content']?.toString() ?? '')
-        .split(RegExp(r'\r?\n'))
-        .map((value) => value.trim())
-        .where((value) => value.isNotEmpty)
-        .toList(growable: false);
+    late final List<Map<String, dynamic>> questions;
+    try {
+      questions = FormsQuestionCodec.parse(form['content']?.toString() ?? '');
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text((_bn ? 'ফর্মের প্রশ্নে সমস্যা: ' : 'Invalid form questions: ') + error.toString()),
+      ));
+      return;
+    }
     if (questions.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(_bn ? 'আগে ফর্মে প্রশ্ন যোগ করুন।' : 'Add questions to this form first.'),
@@ -1095,6 +1093,9 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
       return title.contains(query) || content.contains(query);
     }).toList(growable: false);
     return Scaffold(
+      floatingActionButtonLocation: widget.module == 'Database'
+          ? FloatingActionButtonLocation.startFloat
+          : FloatingActionButtonLocation.endFloat,
       backgroundColor: OFFYNEXTheme.canvas,
       appBar: AppBar(
         backgroundColor: OFFYNEXTheme.canvas,
@@ -1349,19 +1350,22 @@ class _FormResponseDialog extends StatefulWidget {
 
   final bool isBangla;
   final String formTitle;
-  final List<String> questions;
+  final List<Map<String, dynamic>> questions;
 
   @override
   State<_FormResponseDialog> createState() => _FormResponseDialogState();
 }
 
 class _FormResponseDialogState extends State<_FormResponseDialog> {
+  final _formKey = GlobalKey<FormState>();
   late final List<TextEditingController> _controllers;
+  late final List<String?> _choices;
 
   @override
   void initState() {
     super.initState();
     _controllers = List.generate(widget.questions.length, (_) => TextEditingController());
+    _choices = List<String?>.filled(widget.questions.length, null);
   }
 
   @override
@@ -1372,27 +1376,131 @@ class _FormResponseDialogState extends State<_FormResponseDialog> {
     super.dispose();
   }
 
+  String? _validate(int index, String? raw) {
+    final question = widget.questions[index];
+    final value = (raw ?? '').trim();
+    if (question['required'] == true && value.isEmpty) {
+      return widget.isBangla ? 'এই ঘরটি পূরণ করুন' : 'This field is required';
+    }
+    if (value.isEmpty) return null;
+    switch (question['type']) {
+      case 'email':
+        final at = value.indexOf('@');
+        final dot = value.lastIndexOf('.');
+        if (at <= 0 || dot <= at + 1 || dot == value.length - 1 || value.contains(' ')) {
+          return widget.isBangla ? 'সঠিক Email দিন' : 'Enter a valid email address';
+        }
+        break;
+      case 'number':
+        if (num.tryParse(value) == null) {
+          return widget.isBangla ? 'শুধু সংখ্যা দিন' : 'Enter a valid number';
+        }
+        break;
+      case 'date':
+        if (DateTime.tryParse(value) == null) {
+          return widget.isBangla ? 'সঠিক তারিখ নির্বাচন করুন' : 'Enter a valid date';
+        }
+        break;
+    }
+    return null;
+  }
+
+  Future<void> _chooseDate(int index) async {
+    final now = DateTime.now();
+    final selected = await showDatePicker(
+      context: context,
+      initialDate: DateTime.tryParse(_controllers[index].text) ?? now,
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2100),
+    );
+    if (selected != null) {
+      _controllers[index].text =
+          '${selected.year.toString().padLeft(4, '0')}-${selected.month.toString().padLeft(2, '0')}-${selected.day.toString().padLeft(2, '0')}';
+    }
+  }
+
+  void _submit() {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    Navigator.pop(
+      context,
+      List<Map<String, String>>.generate(widget.questions.length, (index) {
+        final question = widget.questions[index];
+        return {
+          'question': question['label'] as String,
+          'answer': question['type'] == 'choice'
+              ? (_choices[index] ?? '')
+              : _controllers[index].text.trim(),
+          'type': question['type'] as String,
+          'required': question['required'] == true ? 'true' : 'false',
+        };
+      }),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(widget.formTitle),
       content: SizedBox(
         width: 520,
-        height: 360,
-        child: ListView(
-          children: [
-            for (var index = 0; index < widget.questions.length; index++)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: TextField(
-                  controller: _controllers[index],
-                  decoration: InputDecoration(
-                    labelText: widget.questions[index],
-                    border: const OutlineInputBorder(),
-                  ),
+        height: 380,
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            children: [
+              for (var index = 0; index < widget.questions.length; index++)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Builder(builder: (context) {
+                    final question = widget.questions[index];
+                    final type = question['type'] as String;
+                    final label = question['label'] as String;
+                    final required = question['required'] == true;
+                    final title = required ? '$label *' : label;
+                    if (type == 'choice') {
+                      final options = (question['options'] as List).cast<String>();
+                      return DropdownButtonFormField<String>(
+                        initialValue: _choices[index],
+                        decoration: InputDecoration(
+                          labelText: title,
+                          border: const OutlineInputBorder(),
+                        ),
+                        items: [
+                          for (final option in options)
+                            DropdownMenuItem(value: option, child: Text(option)),
+                        ],
+                        onChanged: (value) => setState(() => _choices[index] = value),
+                        validator: (value) => required && value == null
+                            ? (widget.isBangla ? 'একটি বিকল্প বেছে নিন' : 'Choose an option')
+                            : null,
+                      );
+                    }
+                    return TextFormField(
+                      controller: _controllers[index],
+                      readOnly: type == 'date',
+                      onTap: type == 'date' ? () => _chooseDate(index) : null,
+                      keyboardType: type == 'email'
+                          ? TextInputType.emailAddress
+                          : type == 'number'
+                              ? const TextInputType.numberWithOptions(decimal: true)
+                              : TextInputType.text,
+                      validator: (value) => _validate(index, value),
+                      decoration: InputDecoration(
+                        labelText: title,
+                        border: const OutlineInputBorder(),
+                        suffixIcon: type == 'date'
+                            ? IconButton(
+                                tooltip: widget.isBangla ? 'তারিখ বাছাই' : 'Choose date',
+                                onPressed: () => _chooseDate(index),
+                                icon: const Icon(Icons.calendar_month_outlined),
+                              )
+                            : null,
+                      ),
+                    );
+                  }),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
       actions: [
@@ -1401,16 +1509,7 @@ class _FormResponseDialogState extends State<_FormResponseDialog> {
           child: Text(widget.isBangla ? 'বাতিল' : 'Cancel'),
         ),
         FilledButton(
-          onPressed: () => Navigator.pop(
-            context,
-            List<Map<String, String>>.generate(
-              widget.questions.length,
-              (index) => {
-                'question': widget.questions[index],
-                'answer': _controllers[index].text,
-              },
-            ),
-          ),
+          onPressed: _submit,
           child: Text(widget.isBangla ? 'উত্তর সংরক্ষণ' : 'Save response'),
         ),
       ],

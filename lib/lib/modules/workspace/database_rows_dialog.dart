@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:material_ui/material_ui.dart';
 
+import 'database_field_codec.dart';
 import 'database_rows_csv_codec.dart';
 
 class DatabaseRowsDialog extends StatefulWidget {
@@ -11,14 +12,16 @@ class DatabaseRowsDialog extends StatefulWidget {
     super.key,
     required this.isBangla,
     required this.tableName,
-    required this.fields,
+    required this.schema,
     required this.initialRows,
   });
 
   final bool isBangla;
   final String tableName;
-  final List<String> fields;
+  final List<DatabaseField> schema;
   final List<Map<String, dynamic>> initialRows;
+
+  List<String> get fields => schema.map((field) => field.name).toList(growable: false);
 
   @override
   State<DatabaseRowsDialog> createState() => _DatabaseRowsDialogState();
@@ -45,7 +48,7 @@ class _DatabaseRowsDialogState extends State<DatabaseRowsDialog> {
       context: context,
       builder: (_) => _DatabaseRowEditDialog(
         isBangla: widget.isBangla,
-        fields: widget.fields,
+        schema: widget.schema,
         initialValues: values,
       ),
     );
@@ -105,12 +108,18 @@ class _DatabaseRowsDialogState extends State<DatabaseRowsDialog> {
       if (picked == null || !mounted) return;
       final bytes = await picked.readAsBytes();
       if (!mounted) return;
-      final imported = DatabaseRowsCsvCodec.decode(
-        bytes,
-        expectedFields: widget.fields,
-      );
-      if (imported.isEmpty) {
-        throw const FormatException('CSV contains no data rows.');
+      final imported = DatabaseRowsCsvCodec.decode(bytes, expectedFields: widget.fields);
+      if (imported.isEmpty) throw const FormatException('CSV contains no data rows.');
+      for (var rowIndex = 0; rowIndex < imported.length; rowIndex++) {
+        final values = imported[rowIndex]['values'] as Map;
+        for (final field in widget.schema) {
+          final value = values[field.name]?.toString() ?? '';
+          if (!DatabaseFieldCodec.isValueValid(field, value)) {
+            throw FormatException(
+              'CSV row ${rowIndex + 2} has an invalid value for "${field.name}".',
+            );
+          }
+        }
       }
       final yes = await showDialog<bool>(
         context: context,
@@ -239,12 +248,12 @@ class _DatabaseRowsDialogState extends State<DatabaseRowsDialog> {
 class _DatabaseRowEditDialog extends StatefulWidget {
   const _DatabaseRowEditDialog({
     required this.isBangla,
-    required this.fields,
+    required this.schema,
     required this.initialValues,
   });
 
   final bool isBangla;
-  final List<String> fields;
+  final List<DatabaseField> schema;
   final Map<String, String> initialValues;
 
   @override
@@ -252,14 +261,22 @@ class _DatabaseRowEditDialog extends StatefulWidget {
 }
 
 class _DatabaseRowEditDialogState extends State<_DatabaseRowEditDialog> {
+  final _formKey = GlobalKey<FormState>();
   late final List<TextEditingController> _controllers;
+  late final Map<int, String?> _choices;
 
   @override
   void initState() {
     super.initState();
-    _controllers = widget.fields
-        .map((field) => TextEditingController(text: widget.initialValues[field] ?? ''))
+    _controllers = widget.schema
+        .map((field) => TextEditingController(text: widget.initialValues[field.name] ?? ''))
         .toList(growable: false);
+    _choices = {
+      for (var index = 0; index < widget.schema.length; index++)
+        if (widget.schema[index].type == 'choice' &&
+            widget.schema[index].options.contains(widget.initialValues[widget.schema[index].name]))
+          index: widget.initialValues[widget.schema[index].name],
+    };
   }
 
   @override
@@ -270,27 +287,119 @@ class _DatabaseRowEditDialogState extends State<_DatabaseRowEditDialog> {
     super.dispose();
   }
 
+  Future<void> _chooseDate(int index) async {
+    final current = DateTime.tryParse(_controllers[index].text);
+    final now = DateTime.now();
+    final selected = await showDatePicker(
+      context: context,
+      initialDate: current ?? now,
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2200),
+    );
+    if (selected != null) {
+      _controllers[index].text =
+          '${selected.year.toString().padLeft(4, '0')}-${selected.month.toString().padLeft(2, '0')}-${selected.day.toString().padLeft(2, '0')}';
+    }
+  }
+
+  String? _validate(DatabaseField field, String? raw) {
+    final value = (raw ?? '').trim();
+    if (value.isEmpty) {
+      return field.required
+          ? (widget.isBangla ? 'এই ঘরটি পূরণ করুন' : 'This field is required')
+          : null;
+    }
+    switch (field.type) {
+      case 'number':
+        if (num.tryParse(value) == null) {
+          return widget.isBangla ? 'সঠিক সংখ্যা লিখুন' : 'Enter a valid number';
+        }
+        break;
+      case 'email':
+        if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(value)) {
+          return widget.isBangla ? 'সঠিক ইমেইল লিখুন' : 'Enter a valid email';
+        }
+        break;
+      case 'date':
+        if (DateTime.tryParse(value) == null) {
+          return widget.isBangla ? 'সঠিক তারিখ বাছাই করুন' : 'Choose a valid date';
+        }
+        break;
+    }
+    return null;
+  }
+
+  void _submit() {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    Navigator.pop(context, {
+      for (var index = 0; index < widget.schema.length; index++)
+        widget.schema[index].name: widget.schema[index].type == 'choice'
+            ? (_choices[index] ?? '')
+            : _controllers[index].text.trim(),
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(widget.isBangla ? 'Row তথ্য' : 'Row details'),
       content: SizedBox(
         width: 480,
-        height: 320,
-        child: ListView(
-          children: [
-            for (var index = 0; index < widget.fields.length; index++)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: TextField(
-                  controller: _controllers[index],
-                  decoration: InputDecoration(
-                    labelText: widget.fields[index],
-                    border: const OutlineInputBorder(),
-                  ),
+        height: 360,
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            children: [
+              for (var index = 0; index < widget.schema.length; index++)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Builder(builder: (context) {
+                    final field = widget.schema[index];
+                    final label = field.required ? '${field.name} *' : field.name;
+                    if (field.type == 'choice') {
+                      return DropdownButtonFormField<String>(
+                        initialValue: _choices[index],
+                        decoration: InputDecoration(
+                          labelText: label,
+                          border: const OutlineInputBorder(),
+                        ),
+                        items: [
+                          for (final option in field.options)
+                            DropdownMenuItem(value: option, child: Text(option)),
+                        ],
+                        onChanged: (value) => setState(() => _choices[index] = value),
+                        validator: (value) => field.required && value == null
+                            ? (widget.isBangla ? 'একটি বিকল্প বেছে নিন' : 'Choose an option')
+                            : null,
+                      );
+                    }
+                    final type = field.type;
+                    return TextFormField(
+                      controller: _controllers[index],
+                      readOnly: type == 'date',
+                      onTap: type == 'date' ? () => _chooseDate(index) : null,
+                      keyboardType: type == 'email'
+                          ? TextInputType.emailAddress
+                          : type == 'number'
+                              ? const TextInputType.numberWithOptions(decimal: true)
+                              : TextInputType.text,
+                      validator: (value) => _validate(field, value),
+                      decoration: InputDecoration(
+                        labelText: label,
+                        border: const OutlineInputBorder(),
+                        suffixIcon: type == 'date'
+                            ? IconButton(
+                                tooltip: widget.isBangla ? 'তারিখ বাছাই' : 'Choose date',
+                                onPressed: () => _chooseDate(index),
+                                icon: const Icon(Icons.calendar_month_outlined),
+                              )
+                            : null,
+                      ),
+                    );
+                  }),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
       actions: [
@@ -299,13 +408,7 @@ class _DatabaseRowEditDialogState extends State<_DatabaseRowEditDialog> {
           child: Text(widget.isBangla ? 'বাতিল' : 'Cancel'),
         ),
         FilledButton(
-          onPressed: () => Navigator.pop(
-            context,
-            {
-              for (var index = 0; index < widget.fields.length; index++)
-                widget.fields[index]: _controllers[index].text,
-            },
-          ),
+          onPressed: _submit,
           child: Text(widget.isBangla ? 'Row সংরক্ষণ' : 'Save row'),
         ),
       ],

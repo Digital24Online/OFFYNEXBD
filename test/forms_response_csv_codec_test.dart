@@ -99,6 +99,69 @@ void main() {
       throwsFormatException,
     );
   });
+  test('rejects oversized response counts, answer columns and CSV output', () {
+    final tooManyResponses = List<Map<String, dynamic>>.filled(
+      FormsResponseCsvCodec.maxResponses + 1,
+      const <String, dynamic>{},
+      growable: false,
+    );
+    expect(
+      () => FormsResponseCsvCodec.encode(tooManyResponses),
+      throwsFormatException,
+    );
+
+    final tooManyColumns = <Map<String, dynamic>>[
+      {
+        'formId': 'f1',
+        'formTitle': 'Form',
+        'submittedAt': '2026-11-18T10:00:00.000Z',
+        'answers': [
+          for (var index = 0;
+              index <= FormsResponseCsvCodec.maxAnswerColumns;
+              index++)
+            {'question': 'Q$index', 'answer': 'A'},
+        ],
+      },
+    ];
+    expect(
+      () => FormsResponseCsvCodec.encode(tooManyColumns),
+      throwsFormatException,
+    );
+
+    final tooManyCells = <Map<String, dynamic>>[
+      for (var row = 0; row < 200; row++)
+        {
+          'formId': 'f$row',
+          'formTitle': 'Form $row',
+          'submittedAt': '2026-11-18T10:00:00.000Z',
+          'answers': [
+            for (var column = 0;
+                column < FormsResponseCsvCodec.maxAnswerColumns;
+                column++)
+              {'question': 'Q$column', 'answer': 'A'},
+          ],
+        },
+    ];
+    expect(
+      () => FormsResponseCsvCodec.encode(tooManyCells),
+      throwsFormatException,
+    );
+
+    expect(
+      () => FormsResponseCsvCodec.encode([
+        {
+          'formId': 'f1',
+          'formTitle': 'Form',
+          'submittedAt': '2026-11-18T10:00:00.000Z',
+          'answers': [
+            {'question': 'Large answer', 'answer': ''.padRight(FormsResponseCsvCodec.maxCsvBytes, 'x')},
+          ],
+        },
+      ]),
+      throwsFormatException,
+    );
+  });
+
   test('neutralizes spreadsheet formulas in response values and headers', () {
     final csv = FormsResponseCsvCodec.encode([
       {
