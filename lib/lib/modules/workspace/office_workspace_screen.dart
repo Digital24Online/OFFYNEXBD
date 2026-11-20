@@ -15,6 +15,7 @@ import 'package:path_provider/path_provider.dart';
 import 'portable_workspace_backup_service.dart';
 
 import '../pdf/pdf_to_document_service.dart';
+import '../pdf/pdf_reader_screen.dart';
 import 'workspace_backup_codec.dart';
 import 'workspace_record_codec.dart';
 import 'forms_response_csv_codec.dart';
@@ -311,6 +312,38 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
             content: Text((_bn ? 'তালিকা থেকে সরানো হয়েছে; PDF মুছতে পারেনি: ' : 'Removed from list; PDF delete failed: ') + error.toString()),
           ));
         }
+      }
+    }
+  }
+
+  Future<void> _openScanPdf(Map<String, dynamic> item) async {
+    final path = item['scanPdfPath'];
+    if (path is! String || path.isEmpty) return;
+    try {
+      final file = File(path);
+      if (!await file.exists()) {
+        throw const FileSystemException('Saved scan PDF was not found.');
+      }
+      final bytes = Uint8List.fromList(await file.readAsBytes());
+      PdfToDocumentService.validatePdfBytes(bytes);
+      if (!mounted) return;
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PdfReaderScreen(
+            bytes: bytes,
+            fileName: file.uri.pathSegments.isEmpty
+                ? 'OFFYNEXBD-Scan.pdf'
+                : file.uri.pathSegments.last,
+            isBangla: _bn,
+          ),
+        ),
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text((_bn ? 'স্ক্যান PDF খোলা যায়নি: ' : 'Could not open scan PDF: ') + error.toString())),
+        );
       }
     }
   }
@@ -1243,7 +1276,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
                       title: Text(item['title']?.toString() ?? ''),
                       subtitle: Text(item['content']?.toString() ?? '', maxLines: 2, overflow: TextOverflow.ellipsis),
                       onTap: () => widget.module == 'Scan'
-                          ? _shareScan(item)
+                          ? _openScanPdf(item)
                           : _editItem(item: item),
                       trailing: widget.module == 'Forms'
                           ? Wrap(
@@ -1284,6 +1317,11 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
                                 )
                               : widget.module == 'Scan'
                                   ? Wrap(spacing: 0, children: [
+                                      IconButton(
+                                        tooltip: _bn ? 'PDF দেখুন' : 'View PDF',
+                                        icon: const Icon(Icons.picture_as_pdf_outlined),
+                                        onPressed: () => _openScanPdf(item),
+                                      ),
                                       IconButton(
                                         tooltip: _bn ? 'PDF শেয়ার' : 'Share PDF',
                                         icon: const Icon(Icons.share_outlined),
