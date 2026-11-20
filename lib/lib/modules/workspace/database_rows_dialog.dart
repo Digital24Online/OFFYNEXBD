@@ -72,8 +72,8 @@ class _DatabaseRowsDialogState extends State<DatabaseRowsDialog> {
     setState(() => _fileBusy = true);
     try {
       final csv = DatabaseRowsCsvCodec.encode(fields: widget.fields, rows: _rows);
+      final safeName = widget.tableName
           .replaceAll(RegExp(r'[^a-zA-Z0-9\u0980-\u09FF]+'), '-')
-        if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(value)) {
           .replaceAll(RegExp(r'-+'), '-');
       final saved = await FilePicker.saveFile(
         fileName: 'OFFYNEXBD-${safeName.isEmpty ? 'Database' : safeName}.csv',
@@ -305,7 +305,7 @@ class _DatabaseRowEditDialogState extends State<_DatabaseRowEditDialog> {
         }
         break;
       case 'email':
-        if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+).hasMatch(value)) {
+        if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(value)) {
           return widget.isBangla ? 'সঠিক ইমেইল লিখুন' : 'Enter a valid email';
         }
         break;
