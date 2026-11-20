@@ -34,6 +34,14 @@ class PdfToDocumentService {
   static const int maxPdfBytes = 50 * 1024 * 1024;
   static const int maxPdfPages = 1000;
 
+  static void validatePageCount(int pageCount) {
+    if (pageCount < 1 || pageCount > maxPdfPages) {
+      throw FormatException(
+        'PDF page count must be between 1 and $maxPdfPages.',
+      );
+    }
+  }
+
   static List<Map<String, dynamic>> plainTextToDelta(String text) {
     final normalized = text.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
     final value = normalized.isEmpty || normalized.endsWith('\n')
@@ -56,9 +64,7 @@ class PdfToDocumentService {
     final dynamic pdf = await dc.PdfReader.loadFromBytes(bytes);
     final text = (pdf.text as String? ?? '').trim();
     final pageCount = (pdf.pageCount as int?) ?? 0;
-    if (pageCount > maxPdfPages) {
-      throw const FormatException('PDF exceeds the 1000-page conversion limit.');
-    }
+    validatePageCount(pageCount);
     final images = ((pdf.images as Iterable?) ?? const []).toList();
     final dynamic docx = pdf.toDocx();
     final dynamic exported = await dc.DocxExporter().exportToBytes(docx);
