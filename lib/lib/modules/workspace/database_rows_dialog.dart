@@ -73,7 +73,7 @@ class _DatabaseRowsDialogState extends State<DatabaseRowsDialog> {
     try {
       final csv = DatabaseRowsCsvCodec.encode(fields: widget.fields, rows: _rows);
       final safeName = widget.tableName
-          .replaceAll(RegExp(r'[^a-zA-Z0-9\\u0980-\\u09FF]+'), '-')
+          .replaceAll(RegExp(r'[^a-zA-Z0-9\u0980-\u09FF]+'), '-')
           .replaceAll(RegExp(r'-+'), '-');
       final saved = await FilePicker.saveFile(
         fileName: 'OFFYNEXBD-${safeName.isEmpty ? 'Database' : safeName}.csv',
@@ -303,8 +303,108 @@ class _DatabaseRowEditDialogState extends State<_DatabaseRowEditDialog> {
         if (num.tryParse(value) == null) {
           return widget.isBangla ? 'সঠিক সংখ্যা লিখুন' : 'Enter a valid number';
         }
+        break;
       case 'email':
-        if (!RegExp(r'^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$').hasMatch(value)) {
+        if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+).hasMatch(value)) {
+          return widget.isBangla ? 'সঠিক ইমেইল লিখুন' : 'Enter a valid email';
+        }
+        break;
+      case 'date':
+        if (DateTime.tryParse(value) == null) {
+          return widget.isBangla ? 'সঠিক তারিখ বাছাই করুন' : 'Choose a valid date';
+        }
+        break;
+    }
+    return null;
+  }
+
+  void _submit() {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    Navigator.pop(context, {
+      for (var index = 0; index < widget.schema.length; index++)
+        widget.schema[index].name: widget.schema[index].type == 'choice'
+            ? (_choices[index] ?? '')
+            : _controllers[index].text.trim(),
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.isBangla ? 'Row তথ্য' : 'Row details'),
+      content: SizedBox(
+        width: 480,
+        height: 360,
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            children: [
+              for (var index = 0; index < widget.schema.length; index++)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Builder(builder: (context) {
+                    final field = widget.schema[index];
+                    final label = field.required ? '${field.name} *' : field.name;
+                    if (field.type == 'choice') {
+                      return DropdownButtonFormField<String>(
+                        initialValue: _choices[index],
+                        decoration: InputDecoration(
+                          labelText: label,
+                          border: const OutlineInputBorder(),
+                        ),
+                        items: [
+                          for (final option in field.options)
+                            DropdownMenuItem(value: option, child: Text(option)),
+                        ],
+                        onChanged: (value) => setState(() => _choices[index] = value),
+                        validator: (value) => field.required && value == null
+                            ? (widget.isBangla ? 'একটি বিকল্প বেছে নিন' : 'Choose an option')
+                            : null,
+                      );
+                    }
+                    final type = field.type;
+                    return TextFormField(
+                      controller: _controllers[index],
+                      readOnly: type == 'date',
+                      onTap: type == 'date' ? () => _chooseDate(index) : null,
+                      keyboardType: type == 'email'
+                          ? TextInputType.emailAddress
+                          : type == 'number'
+                              ? const TextInputType.numberWithOptions(decimal: true)
+                              : TextInputType.text,
+                      validator: (value) => _validate(field, value),
+                      decoration: InputDecoration(
+                        labelText: label,
+                        border: const OutlineInputBorder(),
+                        suffixIcon: type == 'date'
+                            ? IconButton(
+                                tooltip: widget.isBangla ? 'তারিখ বাছাই' : 'Choose date',
+                                onPressed: () => _chooseDate(index),
+                                icon: const Icon(Icons.calendar_month_outlined),
+                              )
+                            : null,
+                      ),
+                    );
+                  }),
+                ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(widget.isBangla ? 'বাতিল' : 'Cancel'),
+        ),
+        FilledButton(
+          onPressed: _submit,
+          child: Text(widget.isBangla ? 'Row সংরক্ষণ' : 'Save row'),
+        ),
+      ],
+    );
+  }
+}
+).hasMatch(value)) {
           return widget.isBangla ? 'সঠিক ইমেইল লিখুন' : 'Enter a valid email';
         }
       case 'date':
