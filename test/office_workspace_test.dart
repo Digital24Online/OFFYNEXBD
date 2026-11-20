@@ -76,9 +76,24 @@ void main() {
     expect(saved, hasLength(1));
     expect(saved.single['formId'], 'form-1');
     expect(saved.single['answers'], [
-      {'question': 'Full name', 'answer': 'Test User'},
-      {'question': 'Mobile number', 'answer': '01700000000'},
-      {'question': 'Address', 'answer': 'Rajshahi'},
+      {
+        'question': 'Full name',
+        'answer': 'Test User',
+        'type': 'text',
+        'required': 'false',
+      },
+      {
+        'question': 'Mobile number',
+        'answer': '01700000000',
+        'type': 'text',
+        'required': 'false',
+      },
+      {
+        'question': 'Address',
+        'answer': 'Rajshahi',
+        'type': 'text',
+        'required': 'false',
+      },
     ]);
 
     await tester.tap(find.text('Responses'));
