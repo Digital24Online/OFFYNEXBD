@@ -3,17 +3,17 @@ import 'package:offynexbd/lib/modules/workspace/slides_content_codec.dart';
 
 void main() {
   test('decodes legacy one-line-per-slide presentations', () {
-    expect(SlidesContentCodec.decode('Opening\\nSummary'), ['Opening', 'Summary']);
+    expect(SlidesContentCodec.decode('Opening\nSummary'), ['Opening', 'Summary']);
   });
 
   test('round trips multiline slide text without splitting slides', () {
-    final slides = ['Title\\nFirst paragraph\\nSecond paragraph', 'Closing'];
+    final slides = ['Title\nFirst paragraph\nSecond paragraph', 'Closing'];
     expect(SlidesContentCodec.decode(SlidesContentCodec.encode(slides)), slides);
   });
 
   test('rejects malformed structured slide data', () {
     expect(
-      () => SlidesContentCodec.decode('OFFYNEXBD_SLIDES_V1\\n{"not":"a list"}'),
+      () => SlidesContentCodec.decode('OFFYNEXBD_SLIDES_V1\n{"not":"a list"}'),
       throwsFormatException,
     );
   });
