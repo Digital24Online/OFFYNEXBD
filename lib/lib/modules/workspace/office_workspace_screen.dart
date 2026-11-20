@@ -607,8 +607,8 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
           ? 'প্রতি লাইনে একটি প্রশ্ন লিখুন। সাধারণ লেখা optional short-answer। প্রয়োজন হলে `required text: নাম`, `email: ইমেইল`, `number: বয়স`, `date: তারিখ`, অথবা `choice: বিভাগ | বিকল্প ১ | বিকল্প ২` ব্যবহার করুন। উত্তর স্থানীয়ভাবে সংরক্ষিত হবে; অনলাইন শেয়ারিং এখনো যুক্ত হয়নি।'
           : 'Enter one question per line. Plain lines remain optional short answers. You can use `required text: Name`, `email: Email`, `number: Age`, `date: Date`, or `choice: Department | Sales | Support`. Responses are saved locally; online sharing is not connected yet.',
       'Database' => _bn
-          ? 'টেবিলের নাম ও কমা দিয়ে Field লিখুন। Manage table rows দিয়ে Offline-এ Row তৈরি, সম্পাদনা ও মুছতে পারবেন। SQL/relational query engine এখনো যুক্ত হয়নি।'
-          : 'Define table names and comma-separated fields. Manage table rows to create, edit and delete offline records. A SQL/relational query engine is not connected yet.',
+          ? 'পুরোনো কমা-আলাদা Field-ও চলবে। Typed Field: `required Name:text, Age:number, Email:email, Joined:date, Department:choice|Sales|Support`। Row ও CSV Import-এ Number, Email, Date, Choice যাচাই হবে। SQL/relational query engine এখনো যুক্ত হয়নি।'
+          : 'Legacy comma-separated fields still work. Typed fields: `required Name:text, Age:number, Email:email, Joined:date, Department:choice|Sales|Support`. Row editing and CSV import validate number, email, date and choice values. A SQL/relational query engine is not connected yet.',
       _ => '',
     };
     if (help.isEmpty) return const SizedBox.shrink();
