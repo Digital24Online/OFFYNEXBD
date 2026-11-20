@@ -1,6 +1,6 @@
 # OFFYNEX Sheets
 
-OFFYNEX Sheets is an offline-first, single-worksheet spreadsheet workspace with a mobile-friendly grid and desktop-style Ribbon.
+OFFYNEX Sheets is an offline-first, multi-worksheet spreadsheet workspace with a mobile-friendly grid and desktop-style Ribbon.
 
 ## Implemented and CI-tested foundations
 
@@ -8,7 +8,8 @@ OFFYNEX Sheets is an offline-first, single-worksheet spreadsheet workspace with 
 - Local workbook autosave and reload using SharedPreferences.
 - Row and column growth; populated edge rows/columns are protected from removal.
 - Cell formatting: bold, italic, underline, font size, font color, fill, horizontal/vertical alignment, wrapping, borders and basic number formats.
-- XLSX import/export for the active worksheet, including a supported subset of cell values, formulas and formatting. Import explicitly lets users choose one worksheet from a multi-sheet file; other worksheets remain in the original XLSX and are not silently merged or discarded. Worksheets larger than the supported 1,000 × 100 grid are rejected before replacing saved data.
+- XLSX import/export for all worksheets, including a supported subset of cell values, formulas, formatting and fixed dropdown validation. Worksheets larger than the supported 1,000 × 100 grid are rejected before replacing saved data.
+- Cross-worksheet formula references for direct cells and bounded aggregate ranges, including quoted worksheet names with spaces; missing sheets, invalid ranges and circular references return formula errors.
 - CSV import/export for cell values and formulas, with UTF-8/Bengali text, optional UTF-8 BOM, commas, escaped quotes, CRLF/LF line endings and quoted multiline fields. Import confirms before replacing the active sheet and enforces the same 1,000 × 100 grid limit.
 - Display-only sorting and filtering by the selected column: A→Z / Z→A sorting, case-insensitive substring filtering, combined sort + filter, blank cells last, stable original-order ties, and Clear sort/filter. The worksheet's underlying cell data, formulas, styles and formula references are not moved; clearing the view restores original row order. CSV/XLSX import and Clear Sheet reset the view state.
 - A4 landscape PDF export and print pipeline with Bengali OpenType shaping, English/Unicode fallback, supported cell styles, gridline visibility and page numbering.
@@ -19,7 +20,7 @@ OFFYNEX Sheets is an offline-first, single-worksheet spreadsheet workspace with 
 
 ## Known limitations — not Excel parity
 
-- Workbook currently has one active worksheet; multi-sheet tabs and cross-sheet references are not implemented.
+- Cross-worksheet formula references currently support numeric direct references and aggregate ranges; full Excel reference syntax, external workbook references and 3-D references are not implemented.
 - Formula compatibility is partial. Logical, text, date/time, lookup, conditional aggregate, array/dynamic and financial function families are not implemented.
 - Charts, pivot tables, data validation, conditional formatting, named ranges, external links and macros are not implemented.
 - XLSX import/export preserves only the supported subset; complex workbook structures, charts, merged cells, formulas outside the supported engine and advanced styles need compatibility work.
