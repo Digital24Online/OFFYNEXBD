@@ -5,9 +5,13 @@ class SlidesContentCodec {
   static const String marker = 'OFFYNEXBD_SLIDES_V1\n';
   static const int maxSlides = 200;
   static const int maxTextBytes = 5 * 1024 * 1024;
+  static const int maxSerializedBytes = 10 * 1024 * 1024;
 
   static List<String> decode(String? source) {
     final value = source ?? '';
+    if (utf8.encode(value).length > maxSerializedBytes) {
+      throw const FormatException('Serialized slide document exceeds the 10 MB limit.');
+    }
     if (value.startsWith(marker)) {
       final decoded = jsonDecode(value.substring(marker.length));
       if (decoded is! List ||
