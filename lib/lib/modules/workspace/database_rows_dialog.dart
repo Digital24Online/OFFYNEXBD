@@ -73,7 +73,7 @@ class _DatabaseRowsDialogState extends State<DatabaseRowsDialog> {
     try {
       final csv = DatabaseRowsCsvCodec.encode(fields: widget.fields, rows: _rows);
       final safeName = widget.tableName
-          .replaceAll(RegExp(r'[^a-zA-Z0-9\u0980-\u09FF]+'), '-')
+        if (!RegExp(r'^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$').hasMatch(value)) {
           .replaceAll(RegExp(r'-+'), '-');
       final saved = await FilePicker.saveFile(
         fileName: 'OFFYNEXBD-${safeName.isEmpty ? 'Database' : safeName}.csv',
