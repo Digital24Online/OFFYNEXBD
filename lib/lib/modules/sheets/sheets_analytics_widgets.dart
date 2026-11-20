@@ -71,7 +71,7 @@ class _SheetsConditionalRuleDialogState
           ),
           const SizedBox(height: 10),
           DropdownButtonFormField<String>(
-            value: _operator,
+            initialValue: _operator,
             decoration: InputDecoration(labelText: t('শর্ত', 'Condition')),
             items: operators.entries.map((entry) => DropdownMenuItem(
               value: entry.key,
@@ -86,7 +86,7 @@ class _SheetsConditionalRuleDialogState
             ),
           const SizedBox(height: 10),
           DropdownButtonFormField<String>(
-            value: _fill,
+            initialValue: _fill,
             decoration: InputDecoration(labelText: t('Cell রং', 'Cell fill')),
             items: colors.entries.map((entry) => DropdownMenuItem(
               value: entry.key,
@@ -99,7 +99,7 @@ class _SheetsConditionalRuleDialogState
             onChanged: (value) => setState(() => _fill = value ?? _fill),
           ),
           DropdownButtonFormField<String>(
-            value: _font,
+            initialValue: _font,
             decoration: InputDecoration(labelText: t('লেখার রং', 'Font color')),
             items: const {
               '1B5E20': 'Green',
@@ -182,7 +182,7 @@ class _SheetsChartDialogState extends State<SheetsChartDialog> {
       TextField(controller: _range, decoration: const InputDecoration(labelText: 'Data range', hintText: 'A1:C10')),
       const SizedBox(height: 10),
       DropdownButtonFormField<String>(
-        value: _type,
+        initialValue: _type,
         decoration: InputDecoration(labelText: t('Chart ধরন', 'Chart type')),
         items: [
           DropdownMenuItem(value: 'bar', child: Text(t('Bar Chart', 'Bar chart'))),
@@ -264,7 +264,7 @@ class _SheetsPivotDialogState extends State<SheetsPivotDialog> {
       ]),
       const SizedBox(height: 10),
       DropdownButtonFormField<String>(
-        value: _aggregation,
+        initialValue: _aggregation,
         decoration: InputDecoration(labelText: t('হিসাবের ধরন', 'Summarize values by')),
         items: [
           DropdownMenuItem(value: 'sum', child: Text(t('যোগফল', 'Sum'))),
@@ -369,7 +369,11 @@ class _SheetsChartPainter extends CustomPainter {
         for (var i = 0; i < values.length; i++) {
           final x = left + (count <= 1 ? plotWidth / 2 : plotWidth * i / (count - 1));
           final y = yFor(values[i]);
-          if (i == 0) path.moveTo(x, y); else path.lineTo(x, y);
+          if (i == 0) {
+            path.moveTo(x, y);
+          } else {
+            path.lineTo(x, y);
+          }
         }
         canvas.drawPath(path, paint);
         final dot = Paint()..color = colors[seriesIndex % colors.length];
