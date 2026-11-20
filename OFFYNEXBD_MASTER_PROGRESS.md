@@ -1630,3 +1630,15 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - Uploaded artifact: `OFFYNEXBD-Android-APK`, artifact ID `14626758685`, size 51,941,819 bytes; SHA-256 `de4cb96ffda9a61532f34d00971ec65a6fb3af25618cd77620a82874a1b6cc7c`; expires 2026-12-04 12:09:09 UTC.
 - This CI result proves the PR source can produce a signed Android APK. It does not prove visual correctness on the user's phone, iOS/Windows/macOS appearance, or full suite acceptance.
 - PR #7 remains OPEN and Draft. It is mergeable according to GitHub but its branch is one commit behind current `main`; reconcile and rerun CI on the updated head before considering merge. No merge is performed without the user's explicit approval.
+
+
+## Unified branding and cross-platform CI trigger batch — 2026-11-20
+
+- Consolidated the approved Option 2 splash/launcher branding and App Info creator proof from this branch with the native-platform CI path-filter correction previously tracked in PR #8.
+- Both `push` and `pull_request` filters now include `android/**`, `ios/**`, `windows/**`, and `macos/**`, so platform-only edits trigger validation for every declared target.
+- PR #7 source before this integration passed Build #553 / run `44733754656`: Flutter Analyze, tests, signed Android APK build, signing/package verification and artifact upload. Artifact ID `14627793435`.
+- PR #8 source before this integration passed Build #554 / run `44733991779`: the same Analyze, test, signed APK, verification and artifact-upload gates. Artifact ID `14628182078`.
+- These two independent CI successes do not verify the newly combined head. A fresh workflow run is required after this integration.
+- This branch remains separate from `main`; no pull request has been merged. The branch also remains one commit behind the current main base and must be reconciled before any merge consideration.
+- The creator portrait asset and App Info regression checks are part of this batch; no address, separate About page, or GitHub history/release record is added to App Info.
+- This batch closes only branding/App Info source changes and native-platform CI path coverage. It does not close the remaining Writer, Sheets, Slides, PDF, Fonts, AI, Cloud, Forms, Scan, Database, backend/security, interoperability or physical-device acceptance requirements.
