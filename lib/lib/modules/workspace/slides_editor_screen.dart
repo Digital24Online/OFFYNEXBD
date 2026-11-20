@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:material_ui/material_ui.dart';
 
+import 'slides_content_codec.dart';
+
 /// Offline slide editor with editable slide text, ordering and duplication.
 /// The saved newline-delimited content remains compatible with legacy records.
 class SlidesEditorScreen extends StatefulWidget {
@@ -30,11 +32,7 @@ class _SlidesEditorScreenState extends State<SlidesEditorScreen> {
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.title);
-    final initial = widget.content
-        .split(RegExp(r'\r?\n'))
-        .map((value) => value.trim())
-        .where((value) => value.isNotEmpty)
-        .toList();
+    final initial = SlidesContentCodec.decode(widget.content);
     _slides = initial
         .map((value) => TextEditingController(text: value))
         .toList();
@@ -145,7 +143,7 @@ class _SlidesEditorScreenState extends State<SlidesEditorScreen> {
       ));
       return;
     }
-    Navigator.pop(context, <String, String>{'title': title, 'content': content});
+    Navigator.pop(context, <String, String>{'title': title, 'content': SlidesContentCodec.encode(_slides.map((item) => item.text).toList())});
   }
 
   @override
