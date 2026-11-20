@@ -66,5 +66,25 @@ void main() {
       );
     });
 
+
+    test('validates PDF page bounds and DOCX ZIP signatures', () {
+      expect(() => PdfToDocumentService.validatePageCount(1), returnsNormally);
+      expect(() => PdfToDocumentService.validatePageCount(1000), returnsNormally);
+      expect(() => PdfToDocumentService.validatePageCount(0), throwsFormatException);
+      expect(() => PdfToDocumentService.validatePageCount(1001), throwsFormatException);
+      expect(
+        PdfToDocumentService.isValidDocxBytes(
+          Uint8List.fromList([0x50, 0x4B, 0x03, 0x04]),
+        ),
+        isTrue,
+      );
+      expect(
+        PdfToDocumentService.isValidDocxBytes(
+          Uint8List.fromList([0x50, 0x4B, 0x00, 0x00]),
+        ),
+        isFalse,
+      );
+    });
+
   });
 }
