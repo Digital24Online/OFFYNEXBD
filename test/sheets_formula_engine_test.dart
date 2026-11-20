@@ -155,6 +155,33 @@ void main() {
       expect(engine.evaluateCell('A6'), isNull);
     });
 
+    test('IFERROR returns fallback only for formula errors and is lazy', () {
+      final engine = SheetsFormulaEngine({
+        'A1': '=IFERROR(10/0,7)',
+        'A2': '=IFERROR(A3,9)',
+        'A3': '=A3+1',
+        'A4': '=IFERROR(5,1/0)',
+        'A5': '=IFERROR(IF(1=1,4,1/0),1/0)',
+        'A6': '=IFERROR(1/0,IF(2=2,8,1/0))',
+      });
+      expect(engine.evaluateCell('A1'), 7);
+      expect(engine.evaluateCell('A2'), 9);
+      expect(engine.evaluateCell('A4'), 5);
+      expect(engine.evaluateCell('A5'), 4);
+      expect(engine.evaluateCell('A6'), 8);
+    });
+
+    test('rejects malformed IFERROR arguments', () {
+      final engine = SheetsFormulaEngine({
+        'A1': '=IFERROR(1/0)',
+        'A2': '=IFERROR(2,)',
+        'A3': '=IFERROR(,2)',
+      });
+      for (var row = 1; row <= 3; row++) {
+        expect(engine.evaluateCell('A$row'), isNull);
+      }
+    });
+
     test('rejects malformed comparisons and invalid logical argument counts', () {
       final engine = SheetsFormulaEngine({
         'A1': '=1>2>3',
