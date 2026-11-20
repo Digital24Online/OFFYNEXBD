@@ -5,5 +5,5 @@
         android:width="220dp"
         android:height="220dp"
         android:gravity="center"
-        android:drawable="@drawable/offynexbd_launcher_icon" />
+        android:drawable="@drawable/offynexbd_splash" />
 </layer-list>

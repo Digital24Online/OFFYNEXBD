@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'lib/modules/writer/writer_screen.dart';
@@ -577,8 +575,8 @@ class AppInfoScreen extends StatelessWidget {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(80),
-                    child: Image.memory(
-                      base64Decode(_founderPortraitBase64),
+                    child: Image.asset(
+                      'assets/branding/founder_profile.jpg',
                       width: 116,
                       height: 116,
                       fit: BoxFit.cover,
@@ -623,14 +621,6 @@ class AppInfoScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.location_on_outlined, size: 16, color: muted),
-                      SizedBox(width: 4),
-                      Text('Rajshahi, Bangladesh', style: TextStyle(color: muted, fontSize: 12)),
-                    ],
-                  ),
                 ],
               ),
             ),
@@ -681,4 +671,3 @@ class AppInfoScreen extends StatelessWidget {
   }
 }
 
-const String _founderPortraitBase64 = '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';
