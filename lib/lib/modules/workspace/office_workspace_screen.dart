@@ -514,89 +514,88 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
     if (_busy) return;
     setState(() => _busy = true);
     try {
+      ScanCaptureResult? captured;
       if (Platform.isAndroid) {
-        final captured = await ScanDocumentService.captureAndroid();
-        if (captured == null) return;
-        final writerDocumentId = captured.recognizedText.trim().isEmpty
-            ? null
-            : DateTime.now().microsecondsSinceEpoch.toString();
-        final scanRecord = <String, dynamic>{
-          'id': DateTime.now().microsecondsSinceEpoch.toString(),
-          'writerDocumentId': ?writerDocumentId,
-          'title': captured.fileName.replaceFirst(RegExp(r'\.pdf$', caseSensitive: false), ''),
-          'content': captured.recognizedText,
-          'updatedAt': DateTime.now().toIso8601String(),
-          'source': 'native_document_scan',
+        captured = await ScanDocumentService.captureAndroid();
+      } else {
+        // iOS/desktop fallback: import multiple JPEG/PNG pages together and
+        // preserve them as one ordered, multi-page PDF with OCR text.
+        final selection = await FilePicker.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: const ['jpg', 'jpeg', 'png'],
+          allowMultiple: true,
+          withData: true,
+        );
+        if (selection == null || selection.files.isEmpty) return;
+        if (selection.files.length > ScanDocumentService.maxPages) {
+          throw FormatException(
+            _bn
+                ? 'একবারে সর্বোচ্চ ${ScanDocumentService.maxPages}টি পৃষ্ঠা নেওয়া যাবে।'
+                : 'You can scan up to ${ScanDocumentService.maxPages} pages at once.',
+          );
+        }
+        final images = <({String name, Uint8List bytes})>[];
+        for (final file in selection.files) {
+          final bytes = file.bytes ?? await file.readAsBytes();
+          images.add((name: file.name, bytes: bytes));
+        }
+        captured = await ScanDocumentService.captureImportedImages(images);
+      }
+      if (captured == null) return;
+
+      final writerDocumentId = captured.recognizedText.trim().isEmpty
+          ? null
+          : DateTime.now().microsecondsSinceEpoch.toString();
+      final scanRecord = <String, dynamic>{
+        'id': DateTime.now().microsecondsSinceEpoch.toString(),
+        if (writerDocumentId != null) 'writerDocumentId': writerDocumentId,
+        'title': captured.fileName.replaceFirst(
+          RegExp(r'\\.pdf$', caseSensitive: false),
+          '',
+        ),
+        'content': captured.recognizedText,
+        'updatedAt': DateTime.now().toIso8601String(),
+        'source': Platform.isAndroid ? 'native_document_scan' : 'imported_image_scan',
+        'scanPdfPath': captured.pdfPath,
+        'pageCount': captured.pageCount,
+        'ocrLanguage': 'ben+eng',
+      };
+      final updatedScans = [scanRecord, ..._items];
+      await _save(updatedScans);
+      if (!mounted) return;
+      setState(() => _items = updatedScans);
+
+      if (writerDocumentId != null) {
+        final documents = await loadDocuments();
+        documents.add({
+          'id': writerDocumentId,
+          'title': scanRecord['title'],
+          'content': PdfToDocumentService.plainTextToDelta(captured.recognizedText),
+          'updated': DateTime.now().toIso8601String(),
+          'source': scanRecord['source'],
           'scanPdfPath': captured.pdfPath,
           'pageCount': captured.pageCount,
           'ocrLanguage': 'ben+eng',
-        };
-        final updatedScans = [scanRecord, ..._items];
-        await _save(updatedScans);
-        if (!mounted) return;
-        setState(() => _items = updatedScans);
-        if (captured.recognizedText.trim().isNotEmpty) {
-          final documents = await loadDocuments();
-          documents.add({
-            'id': writerDocumentId!,
-
-            'title': scanRecord['title'],
-            'content': PdfToDocumentService.plainTextToDelta(captured.recognizedText),
-            'updated': DateTime.now().toIso8601String(),
-            'source': 'native_document_scan',
-            'scanPdfPath': captured.pdfPath,
-            'pageCount': captured.pageCount,
-            'ocrLanguage': 'ben+eng',
-          });
-          await storeDocuments(documents);
-        }
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(_bn
-              ? '${captured.pageCount} পৃষ্ঠা স্ক্যান PDF হিসেবে সংরক্ষিত হয়েছে। ${captured.recognizedText.trim().isEmpty ? 'OCR লেখা পাওয়া যায়নি।' : 'লেখা Writer-এও সংরক্ষিত হয়েছে।'}'
-              : '${captured.pageCount} pages saved as a scanned PDF. ${captured.recognizedText.trim().isEmpty ? 'No OCR text was detected.' : 'Recognized text was also saved to Writer.'}'),
-          action: SnackBarAction(
-            label: _bn ? 'PDF শেয়ার' : 'Share PDF',
-            onPressed: () => _shareScan(scanRecord),
-          ),
-          duration: const Duration(seconds: 8),
-        ));
-        return;
+        });
+        await storeDocuments(documents);
       }
-
-      // Keep the existing gallery OCR route on platforms without the Android scanner.
-      final file = await FilePicker.pickFile(
-        type: FileType.custom,
-        allowedExtensions: const ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'tif', 'tiff'],
-      );
-      if (file == null) return;
-      final size = file.lengthSync() ?? await file.length();
-      if (size == null || size == 0 || size > 30 * 1024 * 1024) {
-        throw FormatException(_bn ? 'ছবির সাইজ ১ বাইট থেকে ৩০ MB হতে হবে।' : 'Image must be between 1 byte and 30 MB.');
-      }
-      final Uint8List bytes = await file.readAsBytes();
-      final converted = await PdfToDocumentService.convertImage(bytes, sourceName: file.name);
-      final documents = await loadDocuments();
-      documents.add({
-        'id': DateTime.now().microsecondsSinceEpoch.toString(),
-        'title': converted.title,
-        'content': converted.writerDelta,
-        'updated': DateTime.now().toIso8601String(),
-        'source': 'scan_ocr',
-        'sourceImageName': file.name,
-        'conversion': {'pageCount': converted.pageCount, 'ocrUsed': true},
-      });
-      await storeDocuments(documents);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(_bn ? 'স্ক্যানের লেখা Writer-এ সংরক্ষিত হয়েছে।' : 'Scanned text saved to Writer.'),
+        content: Text(_bn
+            ? '${captured.pageCount} পৃষ্ঠা স্ক্যান PDF হিসেবে সংরক্ষিত হয়েছে। ${captured.recognizedText.trim().isEmpty ? 'OCR লেখা পাওয়া যায়নি।' : 'লেখা Writer-এও সংরক্ষিত হয়েছে।'}'
+            : '${captured.pageCount} pages saved as a scanned PDF. ${captured.recognizedText.trim().isEmpty ? 'No OCR text was detected.' : 'Recognized text was also saved to Writer.'}'),
         action: SnackBarAction(
-          label: _bn ? 'Writer খুলুন' : 'Open Writer',
-          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => WriterScreen(isBangla: _bn))),
+          label: _bn ? 'PDF শেয়ার' : 'Share PDF',
+          onPressed: () => _shareScan(scanRecord),
         ),
+        duration: const Duration(seconds: 8),
       ));
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
