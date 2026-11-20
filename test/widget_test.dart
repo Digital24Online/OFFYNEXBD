@@ -29,7 +29,8 @@ void main() {
     await tester.tap(find.text('পিডিএফ'));
     await tester.pumpAndSettle();
     expect(find.text('PDF থেকে Document'), findsOneWidget);
-    expect(find.text('PDF নির্বাচন করুন'), findsOneWidget);
+    expect(find.text('রূপান্তর করুন'), findsOneWidget);
+    expect(find.text('PDF খুলুন'), findsOneWidget);
     expect(find.text('ছবি থেকে Document'), findsOneWidget);
   });
 
