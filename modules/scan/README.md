@@ -31,7 +31,9 @@ components. No app camera permission is required by this ML Kit flow.
 
 ## Limits and notes
 
-- Native scanner PDF output is limited to 50 MB.
+- Native scanner PDF output is limited to 50 MB and is checked for a valid PDF header and a 1–50 page count before it is retained.
+- PDF writes are staged and renamed only after the full byte count is verified; OCR failures do not discard the saved scan.
+- Scan history supports opening the saved PDF in the shared PDF Reader, sharing and confirmed deletion.
 - Each OCR page image is limited to 30 MB.
 - Scanner capabilities depend on Google Play services and device support.
 - This implementation does not yet provide a standalone scan-history manager
@@ -39,5 +41,4 @@ components. No app camera permission is required by this ML Kit flow.
 
 ## Status
 
-Native Android scanning and multi-page OCR integration added; automated
-Analyze, tests and release APK validation are pending.
+Native Android scanning, multi-page OCR integration, validated atomic PDF storage and PDF Reader handoff are implemented in source. Automated Analyze, tests and release APK validation for the current branch are pending. Non-Android native scanning, advanced scan-history editing, OCR review and physical-device acceptance remain incomplete.
