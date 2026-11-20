@@ -7,6 +7,7 @@ class FormsResponseCsvCodec {
   static const int maxCsvBytes = 10 * 1024 * 1024;
   static const int maxResponses = 100000;
   static const int maxAnswerColumns = 512;
+  static const int maxCsvCells = 100000;
 
   static List<Map<String, dynamic>> filter(
     List<Map<String, dynamic>> responses,
@@ -76,6 +77,9 @@ class FormsResponseCsvCodec {
           labels[key] = label;
         }
         answerValues.putIfAbsent(key, () => answer['answer'] as String);
+      }
+      if ((normalized.length + 1) * (columns.length + 2) > maxCsvCells) {
+        throw const FormatException('Forms CSV exceeds the 100,000-cell export limit.');
       }
       normalized.add({
         'formTitle': formTitle,
