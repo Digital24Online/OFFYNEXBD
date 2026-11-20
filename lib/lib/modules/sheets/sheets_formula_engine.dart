@@ -569,7 +569,7 @@ class _FormulaParser {
         var result = 1.0;
         final count = name == 'COMBIN' ? math.min(k, n - k) : k;
         for (var i = 1; i <= count; i++) {
-          result *= (name == 'COMBIN' ? n - count + i : n - i + 1) / i;
+          result *= name == 'COMBIN' ? (n - count + i) / i : (n - i + 1);
           if (!result.isFinite || result > 9007199254740991) {
             throw const FormatException('Result exceeds safe integer range');
           }
