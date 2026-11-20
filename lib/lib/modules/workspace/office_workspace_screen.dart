@@ -1101,14 +1101,9 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
         backgroundColor: OFFYNEXTheme.canvas,
         surfaceTintColor: Colors.transparent,
         title: Text(title, style: const TextStyle(color: OFFYNEXTheme.ink, fontWeight: FontWeight.w800)),
-        actions: [
-          if (widget.module != 'Scan' && widget.module != 'Cloud' && !_workspaceDataBlocked)
-            IconButton(
-              tooltip: _bn ? 'নতুন তৈরি' : 'Create new',
-              onPressed: () => _editItem(),
-              icon: const Icon(Icons.add),
-            ),
-        ],
+        // Creation is exposed only by the floating action button below.
+        // Keeping a single entry point avoids duplicate Create commands.
+        actions: const [],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())

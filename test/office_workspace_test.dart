@@ -454,4 +454,15 @@ void main() {
   });
 
 
+  testWidgets('workspace exposes only one Create action', (tester) async {
+    await tester.pumpWidget(const MaterialApp(
+      home: OfficeWorkspaceScreen(module: 'Slides', isBangla: false),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(FloatingActionButton), findsOneWidget);
+    expect(find.byTooltip('Create new'), findsNothing);
+  });
+
+
 }
