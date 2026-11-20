@@ -35,6 +35,14 @@ class PdfToDocumentService {
   static const int maxPdfPages = 1000;
   static const int maxImageBytes = 30 * 1024 * 1024;
 
+  static void validatePdfBytes(Uint8List bytes) {
+    if (bytes.length < 8 ||
+        bytes.length > maxPdfBytes ||
+        String.fromCharCodes(bytes.take(5)) != '%PDF-') {
+      throw const FormatException('PDF is invalid, empty or exceeds the 50 MB limit.');
+    }
+  }
+
   static void validatePageCount(int pageCount) {
     if (pageCount < 1 || pageCount > maxPdfPages) {
       throw FormatException('PDF page count must be between 1 and $maxPdfPages.');
@@ -61,12 +69,7 @@ class PdfToDocumentService {
     required String sourceName,
     bool runOcr = true,
   }) async {
-    if (bytes.length > maxPdfBytes) {
-      throw const FormatException('PDF exceeds the 50 MB conversion limit.');
-    }
-    if (bytes.length < 8 || String.fromCharCodes(bytes.take(5)) != '%PDF-') {
-      throw const FormatException('নির্বাচিত ফাইলটি সঠিক PDF নয়।');
-    }
+    validatePdfBytes(bytes);
     final dynamic pdf = await dc.PdfReader.loadFromBytes(bytes);
     final text = (pdf.text as String? ?? '').trim();
     final pageCount = (pdf.pageCount as int?) ?? 0;
