@@ -100,14 +100,9 @@ void main() {
     );
   });
   test('rejects oversized response counts, answer columns and CSV output', () {
-    final tooManyResponses = List<Map<String, dynamic>>.generate(
+    final tooManyResponses = List<Map<String, dynamic>>.filled(
       FormsResponseCsvCodec.maxResponses + 1,
-      (index) => {
-        'formId': 'f$index',
-        'formTitle': 'Form $index',
-        'submittedAt': '2026-11-18T10:00:00.000Z',
-        'answers': <Map<String, String>>[],
-      },
+      const <String, dynamic>{},
       growable: false,
     );
     expect(
@@ -140,7 +135,7 @@ void main() {
           'formTitle': 'Form',
           'submittedAt': '2026-11-18T10:00:00.000Z',
           'answers': [
-            {'question': 'Large answer', 'answer': 'x' * FormsResponseCsvCodec.maxCsvBytes},
+            {'question': 'Large answer', 'answer': ''.padRight(FormsResponseCsvCodec.maxCsvBytes, 'x')},
           ],
         },
       ]),
