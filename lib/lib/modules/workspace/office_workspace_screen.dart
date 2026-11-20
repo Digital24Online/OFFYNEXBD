@@ -461,7 +461,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
             : DateTime.now().microsecondsSinceEpoch.toString();
         final scanRecord = <String, dynamic>{
           'id': DateTime.now().microsecondsSinceEpoch.toString(),
-          if (writerDocumentId != null) 'writerDocumentId': writerDocumentId,
+          'writerDocumentId': ?writerDocumentId,
           'title': captured.fileName.replaceFirst(RegExp(r'\.pdf$', caseSensitive: false), ''),
           'content': captured.recognizedText,
           'updatedAt': DateTime.now().toIso8601String(),
