@@ -1742,6 +1742,14 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - This tranche is not complete until all source-level gaps are implemented and every applicable acceptance gate has evidence. Do not merge based only on a passing CI run.
 
 
+
+### Sheets formula correctness follow-up — 2026-11-20
+- Added lazy evaluation for the `IF(condition, value_if_true, value_if_false)` function. Only the selected branch is evaluated, so a division-by-zero or circular-reference formula in the unused branch no longer incorrectly fails the whole IF expression.
+- Nested IF branches are supported by the same parser path; malformed or missing branches still return a safe formula error.
+- Added regression tests for both branch directions, nested IF, and malformed arguments.
+- New verification run #622 is running against commit `04e49139ee86285370db0edeb9bb0065f8a7732c`; do not mark this follow-up verified until the run completes successfully.
+
+
 ### Follow-up in the four-module tranche
 - **Scan OCR review:** added a correction dialog in Scan history. Corrected OCR text is saved back to the scan record and synchronized to its linked Writer document by stable document ID; this avoids creating duplicate Writer documents on repeated corrections.
 - **Scan PDF Reader handoff:** opening a scan history record validates and previews the saved original PDF; share and confirmed delete remain separate actions.
