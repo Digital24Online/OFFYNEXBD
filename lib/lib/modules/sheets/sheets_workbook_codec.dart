@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'sheets_workbook_limits.dart';
+import 'sheets_analytics.dart';
 
 class SheetsWorksheet {
   SheetsWorksheet({
@@ -12,9 +13,15 @@ class SheetsWorksheet {
     Map<String, Map<String, dynamic>>? styles,
     this.freezeTopRow = false,
     Map<String, List<String>>? validations,
+    List<Map<String, dynamic>>? conditionalFormats,
+    List<Map<String, dynamic>>? charts,
+    Map<String, dynamic>? pivotConfig,
   })  : cells = cells ?? <String, String>{},
         styles = styles ?? <String, Map<String, dynamic>>{},
-        validations = validations ?? <String, List<String>>{};
+        validations = validations ?? <String, List<String>>{},
+        conditionalFormats = conditionalFormats ?? <Map<String, dynamic>>[],
+        charts = charts ?? <Map<String, dynamic>>[],
+        pivotConfig = pivotConfig == null ? null : Map<String, dynamic>.from(pivotConfig);
 
   final String id;
   String name;
@@ -24,6 +31,9 @@ class SheetsWorksheet {
   final Map<String, Map<String, dynamic>> styles;
   bool freezeTopRow;
   final Map<String, List<String>> validations;
+  final List<Map<String, dynamic>> conditionalFormats;
+  final List<Map<String, dynamic>> charts;
+  Map<String, dynamic>? pivotConfig;
 }
 
 class SheetsWorkbook {
@@ -79,6 +89,14 @@ class SheetsWorkbookCodec {
       }
       sheets.add(sheet);
     }
+    for (final sheet in sheets) {
+      final pivot = sheet.pivotConfig;
+      if (pivot == null) continue;
+      final sourceId = pivot['sourceSheetId']?.toString() ?? '';
+      if (!ids.contains(sourceId) || sourceId == sheet.id) {
+        throw const FormatException('Pivot source worksheet is missing or invalid.');
+      }
+    }
     final activeId = data['activeSheetId']?.toString() ?? '';
     if (!ids.contains(activeId)) {
       throw const FormatException('Active worksheet does not exist.');
@@ -124,6 +142,21 @@ class SheetsWorkbookCodec {
     if (rawValidations != null && rawValidations is! Map) {
       throw const FormatException('Invalid cell validation settings.');
     }
+    final rawConditionalFormats = data['conditionalFormats'];
+    final rawCharts = data['charts'];
+    final rawPivotConfig = data['pivotConfig'];
+    if (rawConditionalFormats != null &&
+        (rawConditionalFormats is! List ||
+            rawConditionalFormats.length > SheetsAnalytics.maxConditionalRules)) {
+      throw const FormatException('Invalid conditional formatting rules.');
+    }
+    if (rawCharts != null &&
+        (rawCharts is! List || rawCharts.length > SheetsAnalytics.maxCharts)) {
+      throw const FormatException('Invalid chart collection.');
+    }
+    if (rawPivotConfig != null && rawPivotConfig is! Map) {
+      throw const FormatException('Invalid Pivot Table configuration.');
+    }
     if (rawCells is! Map || rawStyles is! Map) {
       throw const FormatException('Invalid worksheet cell data.');
     }
@@ -160,6 +193,54 @@ class SheetsWorkbookCodec {
       }
       styles[key] = Map<String, dynamic>.from(entry.value as Map);
     }
+    final conditionalFormats = <Map<String, dynamic>>[];
+    if (rawConditionalFormats is List) {
+      for (final item in rawConditionalFormats) {
+        if (item is! Map) throw const FormatException('Invalid conditional formatting rule.');
+        final rule = Map<String, dynamic>.from(item);
+        conditionalFormats.add(SheetsAnalytics.createConditionalRule(
+          range: rule['range']?.toString() ?? '',
+          operator: rule['operator']?.toString() ?? '',
+          value: rule['value']?.toString() ?? '',
+          fillColor: rule['fillColor']?.toString() ?? '',
+          fontColor: rule['fontColor']?.toString() ?? '',
+        ));
+      }
+    }
+    final charts = <Map<String, dynamic>>[];
+    if (rawCharts is List) {
+      for (final item in rawCharts) {
+        if (item is! Map) throw const FormatException('Invalid chart record.');
+        final chart = Map<String, dynamic>.from(item);
+        final type = chart['type']?.toString() ?? '';
+        final title = chart['title']?.toString().trim() ?? '';
+        final range = chart['range']?.toString() ?? '';
+        if (!{'bar', 'line'}.contains(type) || title.isEmpty || title.length > 100) {
+          throw const FormatException('Invalid chart settings.');
+        }
+        final chartRange = SheetsAnalytics.parseRange(range);
+        if (chartRange.rows < 2 || chartRange.columns < 2) {
+          throw const FormatException('Chart range must include labels and at least one data series.');
+        }
+        charts.add({'type': type, 'title': title, 'range': range});
+      }
+    }
+    Map<String, dynamic>? pivotConfig;
+    if (rawPivotConfig is Map) {
+      pivotConfig = Map<String, dynamic>.from(rawPivotConfig);
+      final sourceSheetId = pivotConfig['sourceSheetId']?.toString() ?? '';
+      final range = pivotConfig['range']?.toString() ?? '';
+      final groupColumn = pivotConfig['groupColumn']?.toString() ?? '';
+      final valueColumn = pivotConfig['valueColumn']?.toString() ?? '';
+      final aggregation = pivotConfig['aggregation']?.toString() ?? '';
+      if (sourceSheetId.isEmpty ||
+          !SheetsAnalytics.pivotAggregations.contains(aggregation)) {
+        throw const FormatException('Invalid Pivot Table settings.');
+      }
+      SheetsAnalytics.parseRange(range);
+      SheetsAnalytics.columnNumber(groupColumn);
+      SheetsAnalytics.columnNumber(valueColumn);
+    }
     return SheetsWorksheet(
       id: id,
       name: name,
@@ -169,6 +250,9 @@ class SheetsWorkbookCodec {
       styles: styles,
       freezeTopRow: rawFreezeTopRow == true,
       validations: validations,
+      conditionalFormats: conditionalFormats,
+      charts: charts,
+      pivotConfig: pivotConfig,
     );
   }
 
@@ -219,6 +303,9 @@ class SheetsWorkbookCodec {
         'styles': sheet.styles,
         'freezeTopRow': sheet.freezeTopRow,
         'validations': sheet.validations,
+        'conditionalFormats': sheet.conditionalFormats,
+        'charts': sheet.charts,
+        if (sheet.pivotConfig != null) 'pivotConfig': sheet.pivotConfig,
       });
     }
     if (!ids.contains(workbook.activeSheetId)) {
