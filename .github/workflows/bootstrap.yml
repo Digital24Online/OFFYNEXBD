@@ -9,6 +9,10 @@ on:
     paths:
       - 'lib/**'
       - 'modules/**'
+      - 'android/**'
+      - 'ios/**'
+      - 'windows/**'
+      - 'macos/**'
       - 'test/**'
       - 'pubspec.yaml'
       - 'assets/**'
@@ -19,6 +23,10 @@ on:
     paths:
       - 'lib/**'
       - 'modules/**'
+      - 'android/**'
+      - 'ios/**'
+      - 'windows/**'
+      - 'macos/**'
       - 'test/**'
       - 'pubspec.yaml'
       - 'assets/**'

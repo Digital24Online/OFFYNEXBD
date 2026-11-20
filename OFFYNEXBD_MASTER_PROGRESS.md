@@ -1610,3 +1610,10 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - Restored Writer widget/editor constructor defaults to Bangla, consistent with the app's initial Bangla language setting; the main app continues to pass the explicit user-selected language.
 - The user's approval does not waive the quality gate: no merge until latest PR head CI (Analyze, complete tests, signed Android build, signature/package verification and artifact upload) is successful. Recheck mergeability and exact head SHA immediately before merge.
 
+
+
+## Platform CI path-filter correction — 2026-11-20
+
+- Added `android/**`, `ios/**`, `windows/**`, and `macos/**` to both `push` and `pull_request` path filters in `.github/workflows/bootstrap.yml`.
+- Previously, native platform-only changes could be skipped by CI even though the project targets all four platform families. The correction makes those changes trigger validation.
+- Implemented on branch `fix/platform-ci-path-filters-20261120`; awaiting pull-request CI. This change does not alter app runtime code.
