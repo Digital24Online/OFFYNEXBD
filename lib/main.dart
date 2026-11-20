@@ -250,13 +250,15 @@ void openModule(OfficeModule module) {
               child: SvgPicture.asset('assets/branding/offynexbd_icon.svg', fit: BoxFit.contain),
             ),
             const SizedBox(width: 11),
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('OFFYNEXBD', style: TextStyle(color: OFFYNEXTheme.ink, fontSize: 17, fontWeight: FontWeight.w800, letterSpacing: 0.35)),
-                Text('OFFICE PRODUCTIVITY SUITE', style: TextStyle(color: OFFYNEXTheme.muted, fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 1.05)),
-              ],
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('OFFYNEXBD', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: OFFYNEXTheme.ink, fontSize: 17, fontWeight: FontWeight.w800, letterSpacing: 0.35)),
+                  Text('OFFICE PRODUCTIVITY SUITE', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: OFFYNEXTheme.muted, fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 1.05)),
+                ],
+              ),
             ),
           ],
         ),
@@ -363,10 +365,12 @@ void openModule(OfficeModule module) {
                               ),
                             ),
                             const SizedBox(height: 21),
-                            Row(
+                            Wrap(
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              spacing: 8,
+                              runSpacing: 4,
                               children: [
                                 const Icon(Icons.auto_awesome_rounded, color: Color(0xFFFFD27A), size: 17),
-                                const SizedBox(width: 8),
                                 Text('OFFYNEXBD  •  The Future of Office Productivity', style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.2)),
                               ],
                             ),
