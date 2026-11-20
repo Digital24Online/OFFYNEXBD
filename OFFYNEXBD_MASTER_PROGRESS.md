@@ -1766,3 +1766,11 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] Scan uses the same shared OCR entry point, so imported scan images receive the same signature validation.
 - [x] Added regression coverage for JPEG-as-PNG and PNG-as-JPEG spoofing.
 - [ ] Analyze, full automated tests and signed Android APK build are pending GitHub Actions verification for this commit.
+
+
+## Integrated Sheets formula compatibility batch — 2026-11-20
+
+- Added Excel-style numeric functions: TRUNC, FACT, EVEN, ODD, RADIANS, DEGREES, GCD, LCM, COMBIN, PERMUT and QUOTIENT.
+- Added bounded integer validation, factorial/result overflow guards and regression tests for valid and invalid inputs.
+- This extends numeric formula coverage; it does not establish full Excel compatibility. Text/date/time/lookup/financial/dynamic-array functions, formula strings and full XLSX interoperability remain open.
+- CI verification is pending for this commit; do not mark the batch verified until Analyze, the full test suite and signed Android build pass.
