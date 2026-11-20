@@ -5,7 +5,7 @@ import 'package:material_ui/material_ui.dart';
 import 'slides_content_codec.dart';
 
 /// Offline slide editor with editable slide text, ordering and duplication.
-/// The saved newline-delimited content remains compatible with legacy records.
+/// Structured storage preserves paragraphs; legacy newline records still load.
 class SlidesEditorScreen extends StatefulWidget {
   const SlidesEditorScreen({
     super.key,
