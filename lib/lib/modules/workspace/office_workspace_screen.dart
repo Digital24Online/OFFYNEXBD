@@ -1605,3 +1605,4 @@ class _WorkspaceItemDialogState extends State<_WorkspaceItemDialog> {
       ],
     );
   }
+}
