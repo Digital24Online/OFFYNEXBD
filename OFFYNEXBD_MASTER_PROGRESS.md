@@ -1610,3 +1610,14 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - Restored Writer widget/editor constructor defaults to Bangla, consistent with the app's initial Bangla language setting; the main app continues to pass the explicit user-selected language.
 - The user's approval does not waive the quality gate: no merge until latest PR head CI (Analyze, complete tests, signed Android build, signature/package verification and artifact upload) is successful. Recheck mergeability and exact head SHA immediately before merge.
 
+
+
+## PR #7 Android splash resource-link failure and correction — 2026-11-20
+
+- Build #548 / run `44731309181` completed FAILURE at Android `processReleaseResources`. Flutter Analyze, configured automated tests, branding asset generation, launcher-icon generation and signing-key fingerprint validation all passed.
+- Exact failure: `drawable-v21/launch_background.xml:3` used the literal color `#062A68` as an `android:drawable`, which Android resource linking rejects.
+- Corrected both Android launch background XML files to reference `@color/offynexbd_splash_background`; added `android/app/src/main/res/values/offynexbd_colors.xml` defining the approved `#062A68` color.
+- Correction commits are on PR #7 branch `feature/app-info-founder-branding-20261120`; latest known head: `cd3420628386b9c9ccd9ff6eeae9cec5f9afdef0`.
+- The corrected XML files and color resource were fetched back from GitHub and verified. A successful Android APK build, signature/install metadata verification and Actions artifact upload are NOT yet confirmed; await a fresh run on the corrected head.
+- PR #7 remains OPEN and Draft. Do not merge until the new head passes the complete CI gate and the user explicitly approves the merge.
+- This fix addresses only the concrete Android resource-linking failure. It does not close the larger Writer, Sheets, Slides, PDF, Fonts, AI, Cloud, Forms, Scan, Database, backend/security or physical-device acceptance gaps recorded in this handoff.
