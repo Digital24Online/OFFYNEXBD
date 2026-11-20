@@ -61,6 +61,40 @@ class _PdfToDocumentScreenState extends State<PdfToDocumentScreen> {
   }
 
 
+  Future<void> _openPdfFile() async {
+    if (busy) return;
+    try {
+      final file = await FilePicker.pickFile(
+        type: FileType.custom,
+        allowedExtensions: const ['pdf'],
+      );
+      if (file == null || !mounted) return;
+      final length = file.lengthSync() ?? await file.length();
+      if (length == null || length == 0 || length > PdfToDocumentService.maxPdfBytes) {
+        throw const FormatException('PDF must be between 1 byte and 50 MB.');
+      }
+      final bytes = await file.readAsBytes();
+      PdfToDocumentService.validatePdfBytes(bytes);
+      if (!mounted) return;
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PdfReaderScreen(
+            bytes: bytes,
+            fileName: file.name,
+            isBangla: widget.isBangla,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        );
+      }
+    }
+  }
+
   Future<void> _convertImage() async {
     if (busy) return;
     setState(() { busy = true; error = null; result = null; });
@@ -191,8 +225,13 @@ class _PdfToDocumentScreenState extends State<PdfToDocumentScreen> {
               Wrap(spacing: 10, runSpacing: 10, children: [
                 FilledButton.icon(
                   onPressed: busy ? null : _convert,
+                  icon: const Icon(Icons.text_snippet_outlined),
+                  label: Text(bn ? 'PDF থেকে Document' : 'PDF to Document'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: busy ? null : _openPdfFile,
                   icon: const Icon(Icons.picture_as_pdf),
-                  label: Text(bn ? 'PDF নির্বাচন করুন' : 'Choose PDF'),
+                  label: Text(bn ? 'PDF খুলুন' : 'Open PDF'),
                 ),
                 OutlinedButton.icon(
                   onPressed: busy ? null : _convertImage,
