@@ -2,6 +2,10 @@
 class FormsResponseCsvCodec {
   const FormsResponseCsvCodec._();
 
+  static const int maxCsvBytes = 10 * 1024 * 1024;
+  static const int maxResponses = 100000;
+  static const int maxAnswerColumns = 512;
+
   static List<Map<String, dynamic>> filter(
     List<Map<String, dynamic>> responses,
     String query,
@@ -29,6 +33,9 @@ class FormsResponseCsvCodec {
     if (responses.isEmpty) {
       throw const FormatException('There are no form responses to export.');
     }
+    if (responses.length > maxResponses) {
+      throw const FormatException('Forms CSV exceeds the 100,000-response limit.');
+    }
     final columns = <String>[];
     final labels = <String, String>{};
     final normalized = <Map<String, dynamic>>[];
@@ -40,6 +47,7 @@ class FormsResponseCsvCodec {
       if (formId is! String ||
           formId.trim().isEmpty ||
           formTitle is! String ||
+          formTitle.trim().isEmpty ||
           submittedAt is! String ||
           DateTime.tryParse(submittedAt) == null ||
           answers is! List) {
@@ -59,6 +67,9 @@ class FormsResponseCsvCodec {
         final key = '$formId\u0000$question';
         final label = '$formTitle — $question';
         if (!labels.containsKey(key)) {
+          if (columns.length >= maxAnswerColumns) {
+            throw const FormatException('Forms CSV exceeds the 512-answer-column limit.');
+          }
           columns.add(key);
           labels[key] = label;
         }
@@ -96,6 +107,10 @@ class FormsResponseCsvCodec {
     }
     final csv = rows.map((row) => row.map(quote).join(',')).join('\r\n');
     // UTF-8 BOM helps spreadsheet applications detect Bengali text correctly.
-    return '\uFEFF$csv\r\n';
+    final result = '\uFEFF$csv\r\n';
+    if (utf8.encode(result).length > maxCsvBytes) {
+      throw const FormatException('Forms CSV exceeds the 10 MB export limit.');
+    }
+    return result;
   }
 }
