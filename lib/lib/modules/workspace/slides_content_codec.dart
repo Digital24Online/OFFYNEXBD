@@ -21,12 +21,15 @@ class SlidesContentCodec {
       }
       return slides;
     }
+    if (utf8.encode(value).length > maxTextBytes) {
+      throw const FormatException('Legacy slide content exceeds supported limits.');
+    }
     final slides = value
-        .split(RegExp(r'\r?\n'))
+        .split(RegExp(r'\\r?\\n'))
         .map((item) => item.trim())
         .where((item) => item.isNotEmpty)
         .toList(growable: false);
-    if (slides.length > maxSlides || utf8.encode(value).length > maxTextBytes) {
+    if (slides.length > maxSlides) {
       throw const FormatException('Legacy slide content exceeds supported limits.');
     }
     return slides;
@@ -39,6 +42,6 @@ class SlidesContentCodec {
         utf8.encode(slides.join('\n')).length > maxTextBytes) {
       throw const FormatException('Slide content exceeds supported limits.');
     }
-    return '$marker\${jsonEncode(slides)}';
+    return marker + jsonEncode(slides);
   }
 }
