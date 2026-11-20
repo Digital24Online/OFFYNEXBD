@@ -520,14 +520,12 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
       } else {
         // iOS/desktop fallback: import multiple JPEG/PNG pages together and
         // preserve them as one ordered, multi-page PDF with OCR text.
-        final selection = await FilePicker.pickFiles(
+        final selectedFiles = await FilePicker.pickFiles(
           type: FileType.custom,
           allowedExtensions: const ['jpg', 'jpeg', 'png'],
-          allowMultiple: true,
-          withData: true,
         );
-        if (selection == null || selection.files.isEmpty) return;
-        if (selection.files.length > ScanDocumentService.maxPages) {
+        if (selectedFiles.isEmpty) return;
+        if (selectedFiles.length > ScanDocumentService.maxPages) {
           throw FormatException(
             _bn
                 ? 'একবারে সর্বোচ্চ ${ScanDocumentService.maxPages}টি পৃষ্ঠা নেওয়া যাবে।'
@@ -535,9 +533,8 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
           );
         }
         final images = <({String name, Uint8List bytes})>[];
-        for (final file in selection.files) {
-          final bytes = file.bytes ?? await file.readAsBytes();
-          images.add((name: file.name, bytes: bytes));
+        for (final file in selectedFiles) {
+          images.add((name: file.name, bytes: await file.readAsBytes()));
         }
         captured = await ScanDocumentService.captureImportedImages(images);
       }
@@ -548,7 +545,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
           : DateTime.now().microsecondsSinceEpoch.toString();
       final scanRecord = <String, dynamic>{
         'id': DateTime.now().microsecondsSinceEpoch.toString(),
-        if (writerDocumentId != null) 'writerDocumentId': writerDocumentId,
+        'writerDocumentId': writerDocumentId,
         'title': captured.fileName.replaceFirst(
           RegExp(r'\\.pdf$', caseSensitive: false),
           '',
