@@ -388,6 +388,7 @@ class _FormulaParser {
       throw FormatException('Unsupported function: $name');
     }
     _expect('(');
+    if (name == 'IF') return _parseIfFunction();
     final values = <double>[];
     if (!_accept(')')) {
       while (true) {
@@ -555,6 +556,48 @@ class _FormulaParser {
         return math.atan(values.first);
     }
     throw const FormatException('Unsupported function');
+  }
+
+  double _parseIfFunction() {
+    final condition = _parseComparison();
+    _expect(',');
+    if (condition != 0) {
+      final whenTrue = _parseComparison();
+      _expect(',');
+      _skipFunctionArgument();
+      _expect(')');
+      return whenTrue;
+    }
+    _skipFunctionArgument();
+    _expect(',');
+    final whenFalse = _parseComparison();
+    _expect(')');
+    return whenFalse;
+  }
+
+  /// Advances over one syntactically nested argument without evaluating it.
+  /// This gives IF spreadsheet-style lazy branch evaluation.
+  void _skipFunctionArgument() {
+    if (current == null || current == ',' || current == ')') {
+      throw const FormatException('IF argument is missing');
+    }
+    var depth = 0;
+    var consumed = false;
+    while (current != null) {
+      final token = current!;
+      if (depth == 0 && (token == ',' || token == ')')) break;
+      if (token == '(') {
+        depth++;
+      } else if (token == ')') {
+        if (depth == 0) break;
+        depth--;
+      }
+      position++;
+      consumed = true;
+    }
+    if (!consumed || depth != 0) {
+      throw const FormatException('Invalid IF argument');
+    }
   }
 
   bool _isAggregateFunction(String name) => const {
