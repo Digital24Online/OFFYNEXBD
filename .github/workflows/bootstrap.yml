@@ -111,6 +111,14 @@ jobs:
 
       - name: Run Tests
         run: flutter test
+\n      - name: Run Android keyboard integration test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          script: flutter test integration_test/writer_keyboard_test.dart -d emulator-5554
 
       - name: Decode Android Signing Key
         env:
