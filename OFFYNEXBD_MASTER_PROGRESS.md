@@ -1941,3 +1941,31 @@ A module is complete only after its actual workflows exist, tests cover them, th
 - Failure 1: Slides editor widget test assumed all lazy ReorderableListView children were mounted simultaneously. Added stable keys to slide text fields and changed the test to scroll to the third slide before editing/duplicating it.
 - Failure 2: legacy 200-slide guard test used a literal backslash-n separator instead of actual newline characters. Corrected test input to join with `\n` (newline).
 - No APK/artifact was produced from these failed runs. Re-run full Analyze/tests and APK package verification on the corrective commit.
+
+
+## Integrated chat-decision correction and verification — 2026-11-21
+
+### User decisions reconciled from the WPS অ্যাপ পরিচিতি discussions
+- OFFYNEXBD remains a desktop-class office productivity suite, not a basic phone-only editor; target platforms remain Android, iPhone, Windows and macOS.
+- Preserve the ten-module scope: Writer, Sheets, Slides, PDF, Fonts, AI, Cloud, Forms, Scan and Database.
+- The approved brand remains logo Option 2, with the full OFFYNEXBD wordmark for suitable large placements and the symbol-only mark for compact app/icon placements.
+- Writer's page must receive the largest practical phone viewport; keep the ribbon compact (about 2–3 lines), preserve the complete page/zoom controls, and do not let toolbars displace the document canvas.
+- Bangla and English are first-class. Verify conjuncts, kar/fola/reph, mixed-script wrapping, PDF and print output; font embedding alone is not proof of correct shaping.
+- All incomplete work must be audited and advanced in integrated batches, preserving existing features and saved data. A passing CI run or a placeholder screen is not module completion.
+- Creator proof must be inside the app but **outside App Info**. The separate Creator page shows the approved portrait, full name **MD PIYARUL ISLAM**, **Founder & Original Creator**, creator statement and copyright. Do not display an address, GitHub work history or release records.
+
+### Corrected creator-page placement
+- Added `CreatorAttributionScreen` as a dedicated in-app page and a separate Home-screen action.
+- App Info now contains product identity/description only; creator portrait, name, role, statement and copyright are not inside App Info.
+- Added separate widget coverage for the Creator page and updated App Info tests to assert that creator ownership details are absent there.
+- This supersedes earlier progress notes that incorrectly placed the creator attribution inside App Info.
+
+### Writer keyboard regression investigation
+- Run #779/#780 on commit `f4ccfabfdcc0e5e7bf5ddd9370b095a61d24664d` failed at Analyze because the new focus test had been placed outside `main()`; corrected in commit `43c99a544f4453b158eba6e85c64d898a40d4ba4`.
+- Run #782 on that corrected test commit passed Analyze but failed the new focus assertion: 262 tests passed, 1 failed. The test showed that tapping the Writer page body did not put the Quill editor's FocusNode into focus; no APK was produced.
+- Added a non-gesture `Listener.onPointerDown` around the Writer editor to request focus without competing with Quill's tap/selection recognizers. Source change is in commit `02d4a1629b734215b4352b234547f3f6881ee658`.
+- The Creator page and App Info separation were added in commits `890e16a1e3250b6e21721b32bfc9fcca65006eb3`, `0bd96016254d1a6de223e068b3f71f981b42fcd1` and `298168f7e5f8696837cd854baed5e58fe6654eb5`.
+- Latest source head at this documentation update: `298168f7e5f8696837cd854baed5e58fe6654eb5`.
+- Current CI runs for this source head: #788 (run ID `44902043457`) and #789 (run ID `44902046435`); both were pending at the last check. Verify Analyze, the complete test suite, signed Android APK, signing/package checks and artifact upload on the exact final head before reporting success.
+- The keyboard is **not** yet declared fixed. Even if the automated focus test passes, actual Android soft-keyboard opening, Bangla typing, selection, zoom and toolbar behavior still require physical-device acceptance.
+- PR #13 remains Draft/Open and unmerged. Do not merge or claim all modules complete based on this batch.

@@ -4,7 +4,7 @@
 
 ## 1. Product invariants — do not break
 - Brand remains OFFYNEXBD, tagline “The Future of Office Productivity”, selected logo Option 2.
-- App Info creator attribution remains inside App Info: **MD PIYARUL ISLAM — Founder & Original Creator**, using the approved portrait. No address, GitHub work history or release record.
+- App Info contains OFFYNEXBD product identity and description only. Creator attribution is on a separate in-app Creator page, reachable independently from the Home screen: **MD PIYARUL ISLAM — Founder & Original Creator**, using the approved portrait. Do not show an address, GitHub work history or release records.
 - Preserve Writer documents/Delta, tables, images, comments, citations, revisions, page settings and recovery data.
 - Preserve Sheets workbooks, formulas, worksheets, formatting, validation, chart/pivot/conditional-format records and recovery data.
 - Preserve Forms responses, Database rows/schema, Scan PDFs/OCR and existing portable backups.

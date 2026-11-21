@@ -1,6 +1,6 @@
 # OFFYNEXBD — Repository File Audit
 
-**Audited ref:** `94c18043b74ead0a1f4e38ea3e77a17a6ccdce9a`  
+**Audited ref:** `298168f7e5f8696837cd854baed5e58fe6654eb5`  
 **Branch:** `work/writer-sheets-pdf-scan-completion-20261120`  
 **Audit date:** 2026-11-21  
 **Purpose:** Reconcile the actual tracked repository files with the ten-module completion blueprint. This is an inventory, not a claim that listed files or modules are complete.
@@ -9,9 +9,9 @@
 
 | Area | Count |
 |---|---:|
-| All tracked files | 248 |
-| Dart source and test files | 85 |
-| Automated Dart test files | 42 |
+| All tracked files | 254 |
+| Dart source and test files | 91 |
+| Automated Dart test files | 45 |
 | Bundled assets | 13 |
 | Native platform files (Android/iOS/Windows/macOS) | 121 |
 | Documentation/specification files | 15 |
@@ -42,6 +42,7 @@ The repository uses a generated Flutter project at its root and currently stores
 - `lib/lib/modules/workspace/forms_question_codec.dart`
 - `lib/lib/modules/workspace/forms_response_csv_codec.dart`
 - `lib/lib/modules/workspace/office_workspace_screen.dart`
+- `lib/lib/modules/workspace/creator_attribution_screen.dart`
 - `lib/lib/modules/workspace/portable_workspace_backup_service.dart`
 - `lib/lib/modules/workspace/scan_document_service.dart`
 - `lib/lib/modules/workspace/slides_document_codec.dart`
@@ -66,6 +67,7 @@ The repository uses a generated Flutter project at its root and currently stores
 ## 3. Automated test inventory
 
 - `test/app_info_screen_test.dart`
+- `test/creator_attribution_screen_test.dart`
 - `test/database_field_codec_test.dart`
 - `test/database_rows_csv_codec_test.dart`
 - `test/forms_question_codec_test.dart`
