@@ -145,6 +145,31 @@ void main() {
       );
     });
 
+    test('keeps unqualified references after a qualified reference in same-sheet formulas', () {
+      final workbook = SheetsWorkbook(
+        activeSheetId: 'sales',
+        sheets: [
+          SheetsWorksheet(
+            id: 'sales',
+            name: 'Sales',
+            rows: 30,
+            columns: 8,
+            cells: {'A1': '=Summary!A1+B30'},
+          ),
+          SheetsWorksheet(id: 'summary', name: 'Summary', rows: 40, columns: 8),
+        ],
+      );
+
+      expect(
+        SheetsReferenceGuard.referencesRow(
+          workbook: workbook,
+          targetSheetId: 'sales',
+          row: 30,
+        ),
+        isTrue,
+      );
+    });
+
     test('protects chart, Pivot and conditional-format ranges', () {
       final workbook = SheetsWorkbook(
         activeSheetId: 'data',
