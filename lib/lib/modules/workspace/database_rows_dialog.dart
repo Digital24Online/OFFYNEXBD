@@ -273,8 +273,7 @@ class _DatabaseRowEditDialogState extends State<_DatabaseRowEditDialog> {
         .toList(growable: false);
     _choices = {
       for (var index = 0; index < widget.schema.length; index++)
-        if (widget.schema[index].type == 'choice' &&
-            widget.schema[index].options.contains(widget.initialValues[widget.schema[index].name]))
+        if (widget.schema[index].type == 'choice')
           index: widget.initialValues[widget.schema[index].name],
     };
   }
@@ -357,20 +356,47 @@ class _DatabaseRowEditDialogState extends State<_DatabaseRowEditDialog> {
                     final field = widget.schema[index];
                     final label = field.required ? '${field.name} *' : field.name;
                     if (field.type == 'choice') {
+                      final selected = _choices[index];
+                      final savedLegacyValue = selected != null &&
+                          !field.options.contains(selected);
                       return DropdownButtonFormField<String>(
-                        initialValue: _choices[index],
+                        initialValue: selected,
                         decoration: InputDecoration(
                           labelText: label,
+                          helperText: savedLegacyValue
+                              ? (widget.isBangla
+                                  ? 'আগের সংরক্ষিত মানটি রাখা হয়েছে; চাইলে নতুন বিকল্প বাছুন।'
+                                  : 'The previously saved value is preserved; choose a new option if needed.')
+                              : null,
                           border: const OutlineInputBorder(),
                         ),
                         items: [
+                          if (savedLegacyValue)
+                            DropdownMenuItem(
+                              value: selected,
+                              child: Text(widget.isBangla
+                                  ? '$selected (আগের মান)'
+                                  : '$selected (saved value)'),
+                            ),
                           for (final option in field.options)
                             DropdownMenuItem(value: option, child: Text(option)),
                         ],
                         onChanged: (value) => setState(() => _choices[index] = value),
-                        validator: (value) => field.required && value == null
-                            ? (widget.isBangla ? 'একটি বিকল্প বেছে নিন' : 'Choose an option')
-                            : null,
+                        validator: (value) {
+                          if (field.required && value == null) {
+                            return widget.isBangla
+                                ? 'একটি বিকল্প বেছে নিন'
+                                : 'Choose an option';
+                          }
+                          if (value != null &&
+                              !field.options.contains(value) &&
+                              value != widget.initialValues[field.name]) {
+                            return widget.isBangla
+                                ? 'তালিকার একটি বিকল্প বাছুন'
+                                : 'Choose an available option';
+                          }
+                          return null;
+                        },
                       );
                     }
                     final type = field.type;
