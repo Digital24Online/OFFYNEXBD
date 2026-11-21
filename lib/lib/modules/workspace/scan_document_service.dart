@@ -221,5 +221,5 @@ class ScanDocumentService {
   static String combineRecognizedPages(Iterable<String> pages) => pages
       .map((page) => page.trim())
       .where((page) => page.isNotEmpty)
-      .join('\\n\\n');
+      .join('\n\n')
 }
