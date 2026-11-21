@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - main
+      - work/writer-sheets-pdf-scan-completion-20261120
     paths:
       - 'lib/**'
       - 'modules/**'
