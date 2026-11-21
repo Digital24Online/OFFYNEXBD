@@ -118,8 +118,9 @@ class SheetsReferenceGuard {
     final escapedName = sheetName.replaceAll("'", "''");
     final quoted = RegExp.escape("'$escapedName'");
     final unquoted = RegExp.escape(sheetName);
+    const cellReference = r'\\$?[A-Z]{1,3}\\$?[1-9]\\d*';
     final prefix = RegExp(
-      '(?:$quoted|$unquoted)\\s*!([^,;)]*)',
+      '(?:$quoted|$unquoted)\\s*!\\s*($cellReference(?:\\s*:\\s*$cellReference)?)',
       caseSensitive: false,
     );
     for (final match in prefix.allMatches(formula)) {
