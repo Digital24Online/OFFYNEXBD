@@ -6,8 +6,8 @@ import 'package:offynexbd/lib/modules/workspace/slides_editor_screen.dart';
 void main() {
   testWidgets('Slides editor adds and duplicates slides and saves in order', (tester) async {
     Map<String, String>? saved;
-    await tester.view.setPhysicalSize(const Size(900, 1600));
-    await tester.view.setDevicePixelRatio(1);
+    tester.view.physicalSize = const Size(900, 1600);
+    tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
@@ -22,7 +22,7 @@ void main() {
                   builder: (_) => const SlidesEditorScreen(
                     isBangla: false,
                     title: 'Quarterly plan',
-                    content: 'Opening\nSummary',
+                    content: 'Opening\\nSummary',
                   ),
                 ),
               );
