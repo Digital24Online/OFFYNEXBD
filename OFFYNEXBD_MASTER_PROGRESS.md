@@ -1868,3 +1868,10 @@ A module is complete only after its actual workflows exist, tests cover them, th
 - Commit `ce655766bcb44c4627b9f8532f952f29ad64140a` removes the expanding Spacer from the narrow header, reduces the document icon footprint, and gives the popup-menu control a fixed compact 28×28 constraint while retaining rename/delete actions.
 - [ ] Re-run Flutter Analyze, all tests, signed Android APK, signature/install metadata, package verification and artifact upload on this commit. Do not mark the overflow fixed until the compact-phone regression test passes.
 - All ten module completion gaps and physical-device acceptance gates listed above remain open; this is one verified root-cause correction, not a claim of project completion.
+
+## Writer compact-phone card header — exact Build #717 root cause and fix in progress — 2026-11-21
+
+- Build #717 full Flutter diagnostic identifies the failing RenderFlex at `lib/lib/modules/writer/writer_screen.dart:424`, inside the Writer document-card header Row. It is constrained to only 79.3 logical pixels and overflows by 0.667 px; this is not the Table Editor dialog.
+- Corrected the header's minimum footprint by reducing the document icon to 28×32 (18 px glyph), reducing the popup-menu hit box to 24×24 (16 px glyph), and removing the unnecessary space-between layout. Existing rename/delete menu actions remain unchanged.
+- This is a source correction only. Await a fresh CI run for Analyze, all tests, signed APK, signature/install metadata, package verification and artifact upload. The physical Android device still requires user acceptance testing.
+- This change does not mark all modules complete. The remaining feature/compatibility/device-validation gaps documented above remain open.
