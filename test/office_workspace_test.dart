@@ -204,7 +204,7 @@ void main() {
     await tester.tap(find.text('Add row'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField).at(0), 'Test Customer');
-    await tester.enterText(find.byType(TextField).at(2), '01700000000');
+    await tester.enterText(find.byType(TextFormField).at(1), '01700000000');
     await tester.tap(find.text('Save row'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Save changes'));
