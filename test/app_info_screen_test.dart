@@ -44,6 +44,7 @@ void main() {
     expect(find.text('তৈরি ও উন্নয়নে:'), findsOneWidget);
     expect(find.text('MD PIYARUL ISLAM'), findsOneWidget);
     expect(find.text('প্রতিষ্ঠাতা ও মূল নির্মাতা'), findsOneWidget);
+    await tester.ensureVisible(find.text('© 2026 OFFYNEXBD. All Rights Reserved.'));
     expect(find.text('© 2026 OFFYNEXBD. All Rights Reserved.'), findsOneWidget);
   });
 }
