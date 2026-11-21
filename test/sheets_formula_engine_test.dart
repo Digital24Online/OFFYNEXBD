@@ -325,6 +325,21 @@ void main() {
       expect(engine.evaluateCell('C7'), 4);
     });
 
+    test('supports Excel escaped wildcard criteria', () {
+      final engine = SheetsFormulaEngine({
+        'A1': 'A*',
+        'A2': 'AB',
+        'A3': 'A?',
+        'A4': 'A~',
+        'B1': '=COUNTIF(A1:A4,"A~*")',
+        'B2': '=COUNTIF(A1:A4,"A~?")',
+        'B3': '=COUNTIF(A1:A4,"A~~")',
+      });
+      expect(engine.evaluateCell('B1'), 1);
+      expect(engine.evaluateCell('B2'), 1);
+      expect(engine.evaluateCell('B3'), 1);
+    });
+
     test('cross-sheet expansion leaves quoted text criteria untouched', () {
       final engine = SheetsFormulaEngine(
         {
