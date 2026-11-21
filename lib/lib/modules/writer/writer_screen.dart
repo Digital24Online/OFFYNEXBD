@@ -3407,13 +3407,15 @@ Future<void> insertWriterImage() async {
                                   ),
                                   child: Listener(
                                     // Quill handles caret placement and selection;
-                                    // this non-gesture pointer listener ensures a
-                                    // tap on the page body also gives the editor
-                                    // focus so Android can show its soft keyboard.
+                                    // this non-gesture listener catches taps on
+                                    // blank page space as well as the placeholder.
+                                    behavior: HitTestBehavior.translucent,
                                     onPointerDown: (_) {
-                                      if (!editorFocusNode.hasFocus) {
-                                        editorFocusNode.requestFocus();
-                                      }
+                                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                                        if (mounted && !editorFocusNode.hasFocus) {
+                                          editorFocusNode.requestFocus();
+                                        }
+                                      });
                                     },
                                     child: QuillEditor.basic(
                                       controller: quillController,
