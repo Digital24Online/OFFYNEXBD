@@ -610,18 +610,6 @@ class AppInfoScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
-            const Center(
-              child: Text(
-                '© 2026 OFFYNEXBD. All Rights Reserved.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: muted,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
           ],
         ),
       ),
