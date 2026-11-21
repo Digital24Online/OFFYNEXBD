@@ -20,6 +20,7 @@ import 'sheets_row_view.dart';
 import 'sheets_find_replace.dart';
 import 'sheets_data_validation.dart';
 import 'sheets_xlsx_validation_codec.dart';
+import 'sheets_xlsx_export_guard.dart';
 import 'sheets_analytics.dart';
 import 'sheets_analytics_widgets.dart';
 import '../../theme/offynex_theme.dart';
@@ -1437,7 +1438,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
           title: Text(_t('সব Worksheet Import করবেন?', 'Import all worksheets?')),
           content: Text(_t(
             '${imported.length}টি Worksheet এবং $totalCellsটি Cell বর্তমান Workbook-এর জায়গায় আসবে। আগের Workbook-এর Backup রাখা হবে।',
-            '${imported.length} worksheets and $totalCells cells will replace the current workbook. A backup will be kept.',
+            '${imported.length} worksheets and $totalCells cells will replace the current workbook. A backup will be kept. Some advanced XLSX features (charts, PivotTables, conditional formatting, merged cells and images) may not be preserved yet.',
           )),
           actions: [
             TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(_t('বাতিল', 'Cancel'))),
@@ -1546,6 +1547,18 @@ class _SheetsScreenState extends State<SheetsScreen> {
   }
 
   Future<void> _exportWorkbook() async {
+    final unsupported = SheetsXlsxExportGuard.unsupportedFeatures(_workbook);
+    if (unsupported.isNotEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(_t(
+          'এই Workbook-এ Chart, Pivot বা Conditional Formatting আছে। XLSX Export-এ এগুলো অক্ষত রাখা যাচ্ছে না—তথ্য হারানো ঠেকাতে Export বন্ধ করা হয়েছে। সম্পূর্ণ ডেটার জন্য OFFYNEXBD Backup ব্যবহার করুন।',
+          'This workbook contains charts, Pivot settings or conditional formatting that XLSX export cannot preserve yet. Export was stopped to prevent silent data loss. Use an OFFYNEXBD backup for a complete copy.',
+        )),
+        duration: const Duration(seconds: 8),
+      ));
+      return;
+    }
     try {
       final workbook = xlsx.Excel.createExcel();
       final firstName = _workbook.sheets.first.name;
