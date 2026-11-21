@@ -57,6 +57,13 @@ void main() {
   });
 
   testWidgets('Writer table editor does not overflow on a compact phone viewport', (tester) async {
+    final flutterErrors = <FlutterErrorDetails>[];
+    final previousFlutterErrorHandler = FlutterError.onError;
+    FlutterError.onError = (details) {
+      flutterErrors.add(details);
+      previousFlutterErrorHandler?.call(details);
+    };
+    addTearDown(() => FlutterError.onError = previousFlutterErrorHandler);
     SharedPreferences.setMockInitialValues({});
     await tester.binding.setSurfaceSize(const Size(360, 640));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -82,7 +89,12 @@ void main() {
     expect(find.text('Edit Table'), findsNWidgets(2));
     expect(find.text('Insert Above'), findsOneWidget);
     expect(find.text('Insert Left'), findsOneWidget);
-    expect(tester.takeException(), isNull);
+    final renderException = tester.takeException();
+    expect(
+      renderException,
+      isNull,
+      reason: flutterErrors.map((details) => details.toString()).join('\n'),
+    );
   });
 
   testWidgets('Writer ribbon follows Bangla and English app language', (tester) async {
