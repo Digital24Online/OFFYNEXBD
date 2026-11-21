@@ -1799,3 +1799,31 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - Initial CI on the earlier UI-test commit found two test assertion issues (not product failures): the Writer dialog exposes two matching Edit Table labels, and Database dropdown options are only visible after opening the field. Both test assertions were corrected in subsequent commits. Re-run the full suite on the latest branch head before treating this design batch as verified.
 - This is the master design blueprint and shared-token foundation, not a claim that all ten module screens have already been rebuilt. Each screen must be migrated to these shared templates, every option must be connected to a real operation, and responsive screenshots plus device checks must pass before design completion.
 - International reference sources: Microsoft 365 mobile apps (https://support.microsoft.com/en-us/office/foundations-experiences/microsoft-365-mobile-apps); WPS feature suite (https://www.wps.com/feature/); WPS mobile suite (https://www.wps.com/office/ios/); Adobe Acrobat mobile FAQ (https://helpx.adobe.com/acrobat/mobile/get-started/faqs.html); CamScanner (https://www.camscanner.com/); Notion features (https://www.notion.com/product/features); Notion mobile behavior (https://www.notion.com/help/notion-for-mobile).
+
+
+## Integrated Verification and Fix Batch — 2026-11-21
+
+### Repository verification
+- Branch: `work/writer-sheets-pdf-scan-completion-20261120`
+- Latest source commit at this checkpoint: `ab7fd680b7531831db86d2b5ae21f530210a5b31`
+- Draft PR #13 remains open; do not merge until all quality gates and real-device acceptance checks pass.
+- Build #686 (`44880040455`) failed at tests: 244 passed, 1 failed. The failing case was the compact-phone Writer table-editor test; the recorded rendering exception originated in the Writer document-library card header at `writer_screen.dart:421`, where a horizontal Row overflowed by 29 px.
+- Corrected the library card header to use a wrapping layout and compact popup-menu constraints. Commit: `da23579df3e62ad67699877bdd91b094148e2c0e`.
+- Flutter SVG logs also reported unsupported `<filter/>` elements in the selected OFFYNEXBD logo/icon. Removed the unsupported filter and shadow path while retaining the approved logo geometry, gradients, colors and text. Commits: `7dd07403bcf9c7c3e4a12ce51f1949e6e4479a55`, `ab7fd680b7531831db86d2b5ae21f530210a5b31`.
+- New Actions runs #690 and #691 were queued for the current commit at the time of this note. Their results must be checked before calling the source verified. Earlier runs on older commits are not evidence for this source.
+
+### Current module status — do not overstate completion
+- Writer: rich-text editing, ribbon, page setup, zoom, tables, image support, document recovery and PDF/DOCX/ODT foundations exist. Still needs real pagination/content-aware page layout, deeper table editing, mobile toolbar overlap cleanup, spelling/review completeness, broader DOCX/ODT fidelity and Android device validation.
+- Sheets: workbook/grid, formula engine, multiple worksheets, XLSX/CSV import/export, validation, analytics, PDF export and recovery exist. Still needs broader Excel function/format compatibility, chart editing, conditional formatting/pivots and robust round-trip verification on real files.
+- Slides: saved presentation records, preview and PDF export exist; this is not yet a complete slide editor. Needs canvas editing, themes/layouts, slide assets, transitions/animations and PPTX import/export.
+- PDF: PDF-to-Document and image-to-document conversion plus read/print/share preview exist. The PDF reader is read-only; direct text/object editing, annotations, page organization, OCR correction workflow, compression, protection and signatures remain.
+- Fonts: current saved-record workspace is not a complete font manager. Needs safe font import/validation, preview specimens, activation and embedding checks.
+- AI Assistant: currently offline prompt/record workspace only. A real AI provider service, secure credential handling, consent/context controls and result insertion are required; do not imply AI generation is live.
+- Cloud: local backup/export foundations exist. Authentication, remote storage, sync, conflict resolution, sharing and version history require a backend and security model.
+- Forms: question/response collection and CSV export foundations exist. Needs a full visual form builder, conditional logic, public publishing, validation UX and response analytics.
+- Scan: Android native document scanner/OCR, multipage PDF and scan history/review flows exist. Other platform support and real-device camera/OCR quality checks remain.
+- Database: local typed fields/rows/CSV foundations exist. Needs relations, filtering/sorting/query tools, schema migrations, larger datasets and backup/restore verification.
+- Platform: Android is the active verification target. iOS, Windows and macOS builds and native feature parity have not been verified.
+
+### Acceptance rule
+A module is complete only after its actual workflows exist, tests cover them, the relevant CI run passes, and platform/device checks are performed. A design specification, navigation tile or placeholder screen is not feature completion.
