@@ -1857,6 +1857,8 @@ class _SheetsScreenState extends State<SheetsScreen> {
       case 3:
         for (final function in [
           'SUM', 'AVERAGE', 'COUNT', 'MIN', 'MAX', 'PRODUCT', 'MEDIAN',
+          'SUMSQ', 'DEVSQ', 'AVEDEV', 'GEOMEAN', 'HARMEAN',
+          'VARP', 'VARS', 'STDEVP', 'STDEVS',
           'LARGE', 'SMALL', 'ABS', 'ROUND', 'ROUNDUP', 'ROUNDDOWN',
           'CEILING', 'FLOOR', 'SQRT', 'POWER', 'MOD', 'INT', 'SIGN',
           'PI', 'EXP', 'LN', 'LOG', 'LOG10', 'SIN', 'COS', 'TAN',
