@@ -333,7 +333,6 @@ void main() {
       );
     }
   });
-}
 
   testWidgets('Writer document body receives tap focus for Android text input', (tester) async {
     SharedPreferences.setMockInitialValues({});
@@ -360,4 +359,4 @@ void main() {
       reason: 'Tapping the Writer document body must focus its editable text input so Android can show the soft keyboard.',
     );
   });
-
+}
