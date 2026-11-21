@@ -23,6 +23,8 @@ class WriterDocumentFormatService {
   static const int maxExpandedBytes = 60 * 1024 * 1024;
   static const int maxEntries = 2000;
   static const int maxImageBytes = 15 * 1024 * 1024;
+  static const int maxImportedTableRows = 100;
+  static const int maxImportedTableColumns = 50;
 
   static Future<WriterImportedDocument> importFile({
     required Uint8List bytes,
@@ -395,15 +397,19 @@ class WriterDocumentFormatService {
     // blank span slots prevents subsequent columns from shifting left.
     final rows = <List<String>>[];
     for (final row in _elementChildren(table).where((e) => e.name.local == 'tr')) {
-      if (rows.length >= 20) break;
+      if (rows.length >= maxImportedTableRows) {
+        throw const FormatException('DOCX table exceeds the 100-row Writer import limit.');
+      }
       final cells = <String>[];
       for (final cell in _elementChildren(row).where((e) => e.name.local == 'tc')) {
-        if (cells.length >= 10) break;
+        if (cells.length >= maxImportedTableColumns) {
+          throw const FormatException('DOCX table exceeds the 50-column Writer import limit.');
+        }
         final value = _descendants(cell, 'p').map(_plainText).join('\n');
         final properties = _firstChild(cell, 'tcPr');
         final spanNode = properties == null ? null : _firstChild(properties, 'gridSpan');
         final span = (int.tryParse(spanNode == null ? '1' : _attribute(spanNode, 'val') ?? '1') ?? 1)
-            .clamp(1, 10 - cells.length).toInt();
+            .clamp(1, maxImportedTableColumns - cells.length).toInt();
         cells.add(value);
         for (var index = 1; index < span; index++) {
           cells.add('');
@@ -577,20 +583,24 @@ class WriterDocumentFormatService {
   static List<List<String>> _odtTable(XmlElement table) {
     final rows = <List<String>>[];
     for (final row in _descendants(table, 'table-row')) {
-      if (rows.length >= 20) break;
+      if (rows.length >= maxImportedTableRows) {
+        throw const FormatException('ODT table exceeds the 100-row Writer import limit.');
+      }
       final cells = <String>[];
       for (final cell in _elementChildren(row).where((e) => e.name.local == 'table-cell' || e.name.local == 'covered-table-cell')) {
-        if (cells.length >= 10) break;
+        if (cells.length >= maxImportedTableColumns) {
+          throw const FormatException('ODT table exceeds the 50-column Writer import limit.');
+        }
         final value = _descendants(cell, 'p').map(_plainText).join('\n');
         final repeated = (int.tryParse(_attribute(cell, 'number-columns-repeated') ?? '1') ?? 1)
-            .clamp(1, 10 - cells.length).toInt();
+            .clamp(1, maxImportedTableColumns - cells.length).toInt();
         for (var index = 0; index < repeated; index++) {
           cells.add(cell.name.local == 'covered-table-cell' ? '' : value);
         }
       }
       if (cells.isEmpty) continue;
       final repeatedRows = (int.tryParse(_attribute(row, 'number-rows-repeated') ?? '1') ?? 1)
-          .clamp(1, 20 - rows.length).toInt();
+          .clamp(1, maxImportedTableRows - rows.length).toInt();
       for (var index = 0; index < repeatedRows; index++) {
         rows.add(List<String>.from(cells));
       }

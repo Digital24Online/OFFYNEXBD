@@ -50,6 +50,28 @@ void main() {
     expect(imported.delta.any((op) => op['insert'] is Map && (op['insert'] as Map).containsKey('offynexbd-writer-table')), isTrue);
   });
 
+  test('DOCX table import preserves more than twenty rows and ten columns', () async {
+    final archive = Archive();
+    final tableRows = List.generate(25, (row) =>
+      '<w:tr>${List.generate(12, (column) =>
+        '<w:tc><w:p><w:r><w:t>R${row + 1}C${column + 1}</w:t></w:r></w:p></w:tc>'
+      ).join()}</w:tr>'
+    ).join();
+    final xml = '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:tbl>$tableRows</w:tbl><w:sectPr/></w:body></w:document>';
+    final data = utf8.encode(xml);
+    archive.addFile(ArchiveFile('word/document.xml', data.length, data));
+    final imported = await WriterDocumentFormatService.importFile(
+      bytes: Uint8List.fromList(ZipEncoder().encodeBytes(archive)),
+      extension: 'docx', imageDirectory: temp, title: 'large-table.docx',
+    );
+    final table = imported.delta.firstWhere((op) =>
+      op['insert'] is Map && (op['insert'] as Map).containsKey('offynexbd-writer-table'));
+    final tableData = jsonDecode((table['insert'] as Map)['offynexbd-writer-table'] as String);
+    expect((tableData['rows'] as List).length, 25);
+    expect((tableData['rows'] as List).first.length, 12);
+    expect((tableData['rows'] as List).last.last, 'R25C12');
+  });
+
   test('DOCX import preserves ordered and bullet numbering formats', () async {
     final archive = Archive();
     const documentXml = '''
