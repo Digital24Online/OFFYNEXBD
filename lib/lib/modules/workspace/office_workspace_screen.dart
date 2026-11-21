@@ -151,7 +151,6 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
         }
       }
     }
-    if (!mounted) return;
     if (recoveryMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(recoveryMessage), duration: const Duration(seconds: 10)),
@@ -169,15 +168,6 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
       );
       if (picked == null) return;
       final bytes = await picked.readAsBytes();
-      final family = OffynexFontService.validateAndReadFamily(bytes);
-      if (_items.any((item) => item['fontFamily'] == family)) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(_bn ? 'এই ফন্টটি আগে থেকেই লাইব্রেরিতে আছে।' : 'This font is already in your library.'),
-          ));
-        }
-        return;
-      }
       final imported = await OffynexFontService.importFont(
         bytes,
         sourceName: picked.name,
@@ -186,7 +176,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
       final record = <String, dynamic>{
         'id': DateTime.now().microsecondsSinceEpoch.toString(),
         'title': imported.family,
-        'content': 'Imported ${picked.name}',
+        'content': 'Imported ' + picked.name,
         'fontFamily': imported.family,
         'fontPath': imported.file.path,
         'updatedAt': DateTime.now().toIso8601String(),
@@ -197,13 +187,13 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
       setState(() => _items = updated);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(_bn
-            ? '${imported.family} ফন্ট যোগ ও সক্রিয় হয়েছে।'
-            : '${imported.family} was imported and activated.'),
+            ? imported.family + ' ফন্ট যোগ ও সক্রিয় হয়েছে।'
+            : imported.family + ' was imported and activated.'),
       ));
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('${_bn ? 'ফন্ট Import ব্যর্থ' : 'Font import failed'}: $error'),
+          content: Text((_bn ? 'ফন্ট Import ব্যর্থ: ' : 'Font import failed: ') + error.toString()),
         ));
       }
     } finally {
@@ -387,13 +377,8 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
     if (mounted) {
       setState(() => _items = updated);
     }
-    final path = widget.module == 'Scan'
-        ? item['scanPdfPath']
-        : widget.module == 'Fonts'
-            ? item['fontPath']
-            : null;
-    if ((widget.module == 'Scan' || widget.module == 'Fonts') &&
-        path is String && path.isNotEmpty) {
+    final path = item['scanPdfPath'];
+    if (widget.module == 'Scan' && path is String && path.isNotEmpty) {
       try {
         final file = File(path);
         if (await file.exists()) {
@@ -402,7 +387,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
       } catch (error) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('${_bn ? 'তালিকা থেকে সরানো হয়েছে; সংরক্ষিত ফাইল মুছতে পারেনি' : 'Removed from the library; saved file could not be deleted'}: $error'),
+            content: Text((_bn ? 'তালিকা থেকে সরানো হয়েছে; PDF মুছতে পারেনি: ' : 'Removed from list; PDF delete failed: ') + error.toString()),
           ));
         }
       }

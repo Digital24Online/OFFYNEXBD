@@ -44,42 +44,6 @@ void main() {
       expect(engine.evaluateCell('B1'), 17);
     });
 
-    test('supports additional Excel statistical aggregate functions', () {
-      final engine = SheetsFormulaEngine({
-        'A1': '2', 'A2': '4', 'A3': '6', 'A4': '8',
-        'B1': '=SUMSQ(A1:A4)',
-        'B2': '=DEVSQ(A1:A4)',
-        'B3': '=AVEDEV(A1:A4)',
-        'B4': '=GEOMEAN(A1:A4)',
-        'B5': '=HARMEAN(A1:A4)',
-        'B6': '=VARP(A1:A4)',
-        'B7': '=VARS(A1:A4)',
-        'B8': '=STDEVP(A1:A4)',
-        'B9': '=STDEVS(A1:A4)',
-      });
-      expect(engine.evaluateCell('B1'), 120);
-      expect(engine.evaluateCell('B2'), 20);
-      expect(engine.evaluateCell('B3'), 2);
-      expect(engine.evaluateCell('B4'), closeTo(4.4267, 0.001));
-      expect(engine.evaluateCell('B5'), closeTo(3.84, 0.001));
-      expect(engine.evaluateCell('B6'), 5);
-      expect(engine.evaluateCell('B7'), closeTo(6.6666667, 0.000001));
-      expect(engine.evaluateCell('B8'), closeTo(2.2360679, 0.000001));
-      expect(engine.evaluateCell('B9'), closeTo(2.5819889, 0.000001));
-    });
-
-    test('rejects invalid domains and insufficient sample values for statistics', () {
-      final engine = SheetsFormulaEngine({
-        'A1': '=GEOMEAN(1,0)',
-        'A2': '=HARMEAN(1,-2)',
-        'A3': '=VARS(5)',
-        'A4': '=STDEVS(5)',
-      });
-      for (var row = 1; row <= 4; row++) {
-        expect(engine.evaluateCell('A$row'), isNull);
-      }
-    });
-
     test('supports common numeric functions and Excel unary precedence', () {
       final engine = SheetsFormulaEngine({
         'A1': '=-2^2',

@@ -459,7 +459,7 @@ class _FormulaParser {
         return values.fold<double>(0, (sum, value) => sum + value * value);
       case 'DEVSQ': {
         final mean = values.reduce((a, b) => a + b) / values.length;
-        return values.fold<double>(0, (sum, value) => sum + math.pow(value - mean, 2));
+        return values.fold<double>(0, (sum, value) => sum + math.pow(value - mean, 2).toDouble());
       }
       case 'AVEDEV': {
         final mean = values.reduce((a, b) => a + b) / values.length;
