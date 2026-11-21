@@ -10,6 +10,10 @@ class FormsQuestionCodec {
   const FormsQuestionCodec._();
 
   static const _types = {'text', 'email', 'number', 'date', 'choice'};
+  static const maxQuestions = 100;
+  static const maxChoiceOptions = 50;
+  static const maxLabelLength = 200;
+  static const maxOptionLength = 100;
 
   static List<Map<String, dynamic>> parse(String source) {
     final questions = <Map<String, dynamic>>[];
@@ -38,21 +42,26 @@ class FormsQuestionCodec {
           ? rawLabel.split('|').map((value) => value.trim()).toList(growable: false)
           : <String>[rawLabel];
       final label = parts.first;
-      if (label.isEmpty ||
-          (type == 'choice' &&
-              (parts.length < 3 ||
-                  parts.skip(1).any((value) => value.isEmpty) ||
-                  parts.skip(1).toSet().length != parts.length - 1))) {
-        throw const FormatException('A choice question needs a label and at least two unique options.');
+      final options = type == 'choice' ? parts.skip(1).toList(growable: false) : const <String>[];
+      final normalizedOptions = options.map((value) => value.toLowerCase()).toSet();
+      if (label.isEmpty || label.length > maxLabelLength) {
+        throw const FormatException('A question label must contain 1–200 characters.');
+      }
+      if (type == 'choice' &&
+          (options.length < 2 ||
+              options.length > maxChoiceOptions ||
+              options.any((value) => value.isEmpty || value.length > maxOptionLength) ||
+              normalizedOptions.length != options.length)) {
+        throw const FormatException('A choice question needs 2–50 unique options of up to 100 characters each.');
       }
       questions.add({
         'type': type,
         'label': label,
         'required': match.group(1) != null,
-        'options': type == 'choice' ? parts.skip(1).toList(growable: false) : <String>[],
+        'options': options,
       });
     }
-    if (questions.length > 100) {
+    if (questions.length > maxQuestions) {
       throw const FormatException('A form can contain up to 100 questions.');
     }
     return questions;
