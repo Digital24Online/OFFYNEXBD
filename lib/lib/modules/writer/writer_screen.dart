@@ -412,40 +412,46 @@ class _WriterScreenState extends State<WriterScreen> {
                       child: InkWell(
                         borderRadius: BorderRadius.circular(20), onTap: () => openDocument(document),
                         child: Container(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(20), border: Border.all(color: OFFYNEXTheme.border),
                             boxShadow: [BoxShadow(color: OFFYNEXTheme.ink.withValues(alpha: 0.035), blurRadius: 16, offset: const Offset(0, 6))],
                           ),
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Wrap(
-                              alignment: WrapAlignment.spaceBetween,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              spacing: 8,
-                              runSpacing: 4,
-                              children: [
-                                Container(width: 44, height: 50, decoration: BoxDecoration(color: OFFYNEXTheme.blueSoft, borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.description_rounded, color: OFFYNEXTheme.blue, size: 25)),
-                                PopupMenuButton<String>(
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                                  tooltip: _t('আরও অপশন', 'More options'),
-                                  onSelected: (value) { if (value == 'rename') renameDocument(document); if (value == 'delete') deleteDocument(document); },
-                                  itemBuilder: (_) => [
-                                    PopupMenuItem(value: 'rename', child: Text(_t('নাম পরিবর্তন', 'Rename'))),
-                                    PopupMenuItem(value: 'delete', child: Text(_t('মুছুন', 'Delete'))),
-                                  ],
-                                ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 34,
+                                    height: 38,
+                                    decoration: BoxDecoration(color: OFFYNEXTheme.blueSoft, borderRadius: BorderRadius.circular(10)),
+                                    child: const Icon(Icons.description_rounded, color: OFFYNEXTheme.blue, size: 21),
+                                  ),
+                                  const Spacer(),
+                                  PopupMenuButton<String>(
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                                    tooltip: _t('আরও অপশন', 'More options'),
+                                    onSelected: (value) { if (value == 'rename') renameDocument(document); if (value == 'delete') deleteDocument(document); },
+                                    itemBuilder: (_) => [
+                                      PopupMenuItem(value: 'rename', child: Text(_t('নাম পরিবর্তন', 'Rename'))),
+                                      PopupMenuItem(value: 'delete', child: Text(_t('মুছুন', 'Delete'))),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: OFFYNEXTheme.ink, fontSize: 13, fontWeight: FontWeight.w800, height: 1.2)),
+                              const SizedBox(height: 3),
+                              Text(_t('ডিভাইসে সংরক্ষিত', 'Saved on device'), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: OFFYNEXTheme.muted, fontSize: 10)),
+                              if (updated != null) ...[
+                                const SizedBox(height: 2),
+                                Text(updated.replaceFirst('T', '  '), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: OFFYNEXTheme.muted, fontSize: 8)),
                               ],
-                            ),
-                            const Spacer(),
-                            Text(title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: OFFYNEXTheme.ink, fontSize: 15, fontWeight: FontWeight.w800, height: 1.3)),
-                            const SizedBox(height: 6),
-                            Text(_t('ডিভাইসে সংরক্ষিত', 'Saved on device'), style: const TextStyle(color: OFFYNEXTheme.muted, fontSize: 11)),
-                            if (updated != null) ...[
-                              const SizedBox(height: 4),
-                              Text(updated.replaceFirst('T', '  '), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: OFFYNEXTheme.muted, fontSize: 9)),
                             ],
-                          ]),
+                          ),
                         ),
                       ),
                     );
