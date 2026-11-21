@@ -111,14 +111,14 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
     rowHeights = List<double>.generate(
       cells.length,
       (index) => rawHeights is List && index < rawHeights.length
-          ? (rawHeights[index] as num?)?.toDouble().clamp(36.0, 240.0) ?? 56.0
+          ? (rawHeights[index] as num?)?.toDouble().clamp(36.0, 240.0).toDouble() ?? 56.0
           : 56.0,
     );
     final rawWidths = data?['columnWidths'];
     columnWidths = List<double>.generate(
       columnCount,
       (index) => rawWidths is List && index < rawWidths.length
-          ? (rawWidths[index] as num?)?.toDouble().clamp(70.0, 480.0) ?? 150.0
+          ? (rawWidths[index] as num?)?.toDouble().clamp(70.0, 480.0).toDouble() ?? 150.0
           : 150.0,
     );
   }
@@ -141,7 +141,7 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
 
   void insertRowBefore() {
     setState(() {
-      final index = selectedRow.clamp(0, cells.length);
+      final index = selectedRow.clamp(0, cells.length).toInt();
       cells.insert(index, List.generate(columnCount, (_) => TextEditingController()));
       rowHeights.insert(index, 56.0);
     });
@@ -149,7 +149,7 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
 
   void insertRowAfter() {
     setState(() {
-      final index = (selectedRow + 1).clamp(0, cells.length);
+      final index = (selectedRow + 1).clamp(0, cells.length).toInt();
       cells.insert(index, List.generate(columnCount, (_) => TextEditingController()));
       rowHeights.insert(index, 56.0);
       selectedRow = index;
@@ -159,12 +159,12 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
   void removeRow() {
     if (cells.length <= 1) return;
     setState(() {
-      final index = selectedRow.clamp(0, cells.length - 1);
+      final index = selectedRow.clamp(0, cells.length - 1).toInt();
       for (final controller in cells.removeAt(index)) {
         controller.dispose();
       }
       rowHeights.removeAt(index);
-      selectedRow = index.clamp(0, cells.length - 1);
+      selectedRow = index.clamp(0, cells.length - 1).toInt();
     });
   }
 
@@ -179,7 +179,7 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
 
   void insertColumnBefore() {
     setState(() {
-      final index = selectedColumn.clamp(0, columnCount);
+      final index = selectedColumn.clamp(0, columnCount).toInt();
       for (final row in cells) {
         row.insert(index, TextEditingController());
       }
@@ -189,7 +189,7 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
 
   void insertColumnAfter() {
     setState(() {
-      final index = (selectedColumn + 1).clamp(0, columnCount);
+      final index = (selectedColumn + 1).clamp(0, columnCount).toInt();
       for (final row in cells) {
         row.insert(index, TextEditingController());
       }
@@ -201,26 +201,26 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
   void removeColumn() {
     if (columnCount <= 1) return;
     setState(() {
-      final index = selectedColumn.clamp(0, columnCount - 1);
+      final index = selectedColumn.clamp(0, columnCount - 1).toInt();
       for (final row in cells) {
         row.removeAt(index).dispose();
       }
       columnWidths.removeAt(index);
-      selectedColumn = index.clamp(0, columnCount - 1);
+      selectedColumn = index.clamp(0, columnCount - 1).toInt();
     });
   }
 
   void resizeSelectedRow(double delta) {
     setState(() {
-      final index = selectedRow.clamp(0, rowHeights.length - 1);
-      rowHeights[index] = (rowHeights[index] + delta).clamp(36.0, 240.0);
+      final index = selectedRow.clamp(0, rowHeights.length - 1).toInt();
+      rowHeights[index] = (rowHeights[index] + delta).clamp(36.0, 240.0).toDouble();
     });
   }
 
   void resizeSelectedColumn(double delta) {
     setState(() {
-      final index = selectedColumn.clamp(0, columnWidths.length - 1);
-      columnWidths[index] = (columnWidths[index] + delta).clamp(70.0, 480.0);
+      final index = selectedColumn.clamp(0, columnWidths.length - 1).toInt();
+      columnWidths[index] = (columnWidths[index] + delta).clamp(70.0, 480.0).toDouble();
     });
   }
 
