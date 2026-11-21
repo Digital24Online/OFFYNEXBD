@@ -10,6 +10,7 @@ import 'slides_preview_screen.dart';
 import 'slides_document_codec.dart';
 import 'slides_editor_screen.dart';
 import 'scan_document_service.dart';
+import '../fonts/offynex_font_service.dart';
 import 'database_rows_dialog.dart';
 import 'database_field_codec.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -133,10 +134,70 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
       _workspaceRecoveryKey = recoveryKey;
       _loading = false;
     });
+    if (widget.module == 'Fonts' && !dataBlocked) {
+      for (final item in loaded) {
+        final path = item['fontPath'];
+        final family = item['fontFamily'];
+        if (path is! String || family is! String) continue;
+        try {
+          final file = File(path);
+          if (await file.exists()) {
+            final bytes = await file.readAsBytes();
+            await OffynexFontService.activate(bytes, family);
+          }
+        } catch (_) {
+          // A missing or invalid imported font must not prevent the font
+          // catalogue or the rest of the workspace from opening.
+        }
+      }
+    }
     if (recoveryMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(recoveryMessage), duration: const Duration(seconds: 10)),
       );
+    }
+  }
+
+  Future<void> _importFont() async {
+    if (_workspaceDataBlocked || _busy) return;
+    setState(() => _busy = true);
+    try {
+      final picked = await FilePicker.pickFile(
+        type: FileType.custom,
+        allowedExtensions: const ['ttf', 'otf'],
+      );
+      if (picked == null) return;
+      final bytes = await picked.readAsBytes();
+      final imported = await OffynexFontService.importFont(
+        bytes,
+        sourceName: picked.name,
+      );
+      await OffynexFontService.activate(bytes, imported.family);
+      final record = <String, dynamic>{
+        'id': DateTime.now().microsecondsSinceEpoch.toString(),
+        'title': imported.family,
+        'content': 'Imported ' + picked.name,
+        'fontFamily': imported.family,
+        'fontPath': imported.file.path,
+        'updatedAt': DateTime.now().toIso8601String(),
+      };
+      final updated = [record, ..._items];
+      await _save(updated);
+      if (!mounted) return;
+      setState(() => _items = updated);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(_bn
+            ? imported.family + ' ফন্ট যোগ ও সক্রিয় হয়েছে।'
+            : imported.family + ' was imported and activated.'),
+      ));
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text((_bn ? 'ফন্ট Import ব্যর্থ: ' : 'Font import failed: ') + error.toString()),
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -1356,6 +1417,12 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
                         ],
                       ),
                     ),
+                  ),
+                if (widget.module == 'Fonts')
+                  FilledButton.icon(
+                    onPressed: _busy ? null : _importFont,
+                    icon: const Icon(Icons.add_circle_outline),
+                    label: Text(_bn ? 'TTF / OTF ফন্ট Import করুন' : 'Import TTF / OTF font'),
                   ),
                 if (widget.module == 'Scan')
                   FilledButton.icon(
