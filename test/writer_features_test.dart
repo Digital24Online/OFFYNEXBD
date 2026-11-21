@@ -346,21 +346,16 @@ void main() {
 
     final editor = find.byType(QuillEditor);
     expect(editor, findsOneWidget);
-    final editable = find.descendant(
-      of: editor,
-      matching: find.byType(EditableText),
-    );
-    expect(editable, findsOneWidget);
-    await tester.ensureVisible(editable);
-    await tester.tap(editable);
+    await tester.ensureVisible(editor);
+    await tester.tapAt(tester.getCenter(editor));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    final editableField = tester.widget<EditableText>(editable);
+    final quillEditor = tester.widget<QuillEditor>(editor);
     expect(
-      editableField.focusNode.hasFocus,
+      quillEditor.focusNode.hasFocus,
       isTrue,
-      reason: 'Tapping the Writer editable text area must focus its input so Android can show the soft keyboard.',
+      reason: 'Tapping the Writer document body must focus the Quill editor so Android can show the soft keyboard.',
     );
   });
 }
