@@ -169,6 +169,17 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
       );
       if (picked == null) return;
       final bytes = await picked.readAsBytes();
+      final family = OffynexFontService.validateAndReadFamily(bytes);
+      if (_items.any((item) => item['fontFamily'] == family)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(_bn
+                ? 'এই ফন্টটি আগে থেকেই লাইব্রেরিতে আছে।'
+                : 'This font is already in your library.'),
+          ));
+        }
+        return;
+      }
       final imported = await OffynexFontService.importFont(
         bytes,
         sourceName: picked.name,
@@ -378,8 +389,13 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
     if (mounted) {
       setState(() => _items = updated);
     }
-    final path = item['scanPdfPath'];
-    if (widget.module == 'Scan' && path is String && path.isNotEmpty) {
+    final path = widget.module == 'Scan'
+        ? item['scanPdfPath']
+        : widget.module == 'Fonts'
+            ? item['fontPath']
+            : null;
+    if ((widget.module == 'Scan' || widget.module == 'Fonts') &&
+        path is String && path.isNotEmpty) {
       try {
         final file = File(path);
         if (await file.exists()) {
@@ -388,7 +404,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
       } catch (error) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text((_bn ? 'তালিকা থেকে সরানো হয়েছে; PDF মুছতে পারেনি: ' : 'Removed from list; PDF delete failed: ') + error.toString()),
+            content: Text('${_bn ? 'তালিকা থেকে সরানো হয়েছে; সংরক্ষিত ফাইল মুছতে পারেনি' : 'Removed from the library; saved file could not be deleted'}: $error'),
           ));
         }
       }
@@ -851,8 +867,8 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
           ? 'প্রতি লাইনে একটি স্লাইডের লেখা দিন। Export Slides PDF দিয়ে প্রতিটি স্লাইড আলাদা Landscape PDF পৃষ্ঠায় সংরক্ষণ করুন। PPTX ও পূর্ণ Slideshow renderer এখনো বাকি।'
           : 'Enter one slide per line. Export Slides PDF saves each slide on a separate landscape PDF page. PPTX and the full slideshow renderer are still pending.',
       'Fonts' => _bn
-          ? 'TTF/OTF ফন্ট নিরাপদে যাচাই করে অ্যাপের নিজস্ব Font Library-তে Import ও সক্রিয় করা যায়। Android সিস্টেমে ফন্ট ইনস্টল হয় না; Writer-এর Font Family তালিকার সাথে সম্পূর্ণ সংযোগ এখনো বাকি।'
-          : 'Validate, import and activate TTF/OTF fonts in the app-scoped Font Library. Fonts are not installed system-wide; full integration with the Writer font-family picker remains pending.',
+          ? 'TTF/OTF ফন্ট নিরাপদে Import, সক্রিয়, Writer-এর Font Family তালিকায় ব্যবহার ও লাইব্রেরি থেকে মুছে ফেলা যায়। ফন্ট শুধু OFFYNEXBD অ্যাপের ভেতরেই সক্রিয় থাকে।'
+          : 'Validate, import, activate, use TTF/OTF fonts in the Writer font-family picker, and remove them from the app-scoped library. Fonts are not installed system-wide.',
       'AI Assistant' => _bn
           ? 'বাংলা/ইংরেজি নির্দেশনা ও কাজের খসড়া সংরক্ষণ করুন। প্রকৃত AI উত্তর পেতে নিরাপদ AI service connection প্রয়োজন; এখনো সংযুক্ত নয়।'
           : 'Save Bangla/English prompts and drafts. A secure AI service connection is required for generated answers and is not connected yet.',
