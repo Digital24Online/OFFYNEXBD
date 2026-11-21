@@ -1,22 +1,22 @@
 # OFFYNEXBD — Repository File Audit
 
-**Audited ref:** `a7a7cc74d2ceca5349443a11d6ba0235478222f2`  
+**Audited ref:** `926778930cb9843a6b0f9f9d3b84831b0ce84547`  
 **Branch:** `work/writer-sheets-pdf-scan-completion-20261120`  
 **Audit date:** 2026-11-21  
-**Purpose:** Reconcile the actual tracked repository files with the ten-module completion blueprint before the next implementation batch. This is an inventory, not a claim that listed files or modules are complete.
+**Purpose:** Reconcile the actual tracked repository files with the ten-module completion blueprint. This is an inventory, not a claim that listed files or modules are complete.
 
 ## 1. Tracked-file baseline
 
 | Area | Count |
 |---|---:|
-| All tracked files | 243 |
-| Dart source and test files | 81 |
-| Automated Dart test files | 40 |
+| All tracked files | 247 |
+| Dart source and test files | 84 |
+| Automated Dart test files | 41 |
 | Bundled assets | 13 |
 | Native platform files (Android/iOS/Windows/macOS) | 121 |
-| Documentation/specification files | 14 |
+| Documentation/specification files | 15 |
 
-The repository uses a generated Flutter project at its root and currently stores application Dart code under `lib/lib/`. Preserve this layout until all imports, generation steps, workflows and tests are audited together.
+The repository uses a generated Flutter project at its root and currently stores application Dart code under `lib/lib/`. Preserve this layout until imports, generation steps, workflows and tests are audited together.
 
 ## 2. Application source inventory
 
@@ -44,6 +44,8 @@ The repository uses a generated Flutter project at its root and currently stores
 - `lib/lib/modules/workspace/office_workspace_screen.dart`
 - `lib/lib/modules/workspace/portable_workspace_backup_service.dart`
 - `lib/lib/modules/workspace/scan_document_service.dart`
+- `lib/lib/modules/workspace/slides_document_codec.dart`
+- `lib/lib/modules/workspace/slides_editor_screen.dart`
 - `lib/lib/modules/workspace/slides_pdf_export_service.dart`
 - `lib/lib/modules/workspace/slides_preview_screen.dart`
 - `lib/lib/modules/workspace/workspace_backup_codec.dart`
@@ -89,6 +91,7 @@ The repository uses a generated Flutter project at its root and currently stores
 - `test/sheets_workbook_recovery_test.dart`
 - `test/sheets_xlsx_round_trip_test.dart`
 - `test/sheets_xlsx_validation_codec_test.dart`
+- `test/slides_document_codec_test.dart`
 - `test/slides_pdf_export_test.dart`
 - `test/widget_test.dart`
 - `test/workspace_backup_codec_test.dart`
@@ -104,7 +107,7 @@ The repository uses a generated Flutter project at its root and currently stores
 - `test/writer_pdf_export_test.dart`
 - `test/writer_viewport_test.dart`
 
-Coverage inventory is not proof of feature completeness. Tests must be mapped to actual acceptance behavior, and missing cases must be added with implementation.
+Coverage inventory is not proof of feature completeness. Tests must be mapped to acceptance behavior; missing cases must be added with implementation.
 
 ## 4. Branding, typography and OCR assets
 
@@ -122,7 +125,7 @@ Coverage inventory is not proof of feature completeness. Tests must be mapped to
 - `assets/tessdata/eng.traineddata`
 - `assets/tessdata_config.json`
 
-Preserve the approved Option 2 branding, founder portrait and Bengali font/OCR assets. Verify licensing, shaping and rendered output separately; asset presence alone does not prove correct rendering.
+Preserve approved Option 2 branding, founder portrait and Bengali font/OCR assets. Verify licensing, shaping and rendered output separately; asset presence alone does not prove correct rendering.
 
 ## 5. Build, dependency and platform configuration
 
@@ -261,12 +264,13 @@ Preserve the approved Option 2 branding, founder portrait and Bengali font/OCR a
 - `windows/runner/win32_window.cpp`
 - `windows/runner/win32_window.h`
 
-Android CI does not establish iOS, Windows or macOS build/runtime acceptance. Keep those platform gates explicitly open until independently built and tested.
+Android CI does not establish iOS, Windows or macOS build/runtime acceptance. Keep those platform gates open until independently built and tested.
 
 ## 6. Specification and project documentation
 
 - `docs/OFFYNEXBD_COMPLETION_BLUEPRINT.md`
 - `docs/OFFYNEXBD_GLOBAL_DESIGN_SYSTEM.md`
+- `docs/OFFYNEXBD_REPOSITORY_FILE_AUDIT.md`
 - `modules/ai/README.md`
 - `modules/cloud/README.md`
 - `modules/database/README.md`
@@ -280,17 +284,18 @@ Android CI does not establish iOS, Windows or macOS build/runtime acceptance. Ke
 - `modules/writer/writer_table.dart`
 - `security/README.md`
 
-Also retain the root `README.md`, `OFFYNEXBD_MASTER_PROGRESS.md` and `WRITER_MASTER_REQUIREMENTS.md` as project navigation/history/requirements records.
+Also retain root `README.md`, `OFFYNEXBD_MASTER_PROGRESS.md` and `WRITER_MASTER_REQUIREMENTS.md` as project navigation/history/requirements records.
 
 ## 7. Cross-check findings and rules
 
-- The root `pubspec.yaml` declares the Flutter dependencies and bundled branding, Bengali fonts and OCR data. Dependency upgrades require compatibility and license review.
-- The CI workflow generates font/OCR and branding assets, runs Analyze and the complete configured tests, then signs and verifies an Android APK. Workflow success must be checked on the exact final source commit.
+- Root `pubspec.yaml` declares Flutter dependencies and bundled branding, Bengali fonts and OCR data. Dependency upgrades require compatibility and license review.
+- CI generates font/OCR and branding assets, runs Analyze and configured tests, then signs and verifies an Android APK. Check workflow success on the exact final source commit.
 - The application entry point exposes all ten modules. Slides, Fonts, AI Assistant, Cloud, Forms, Scan and Database still share `office_workspace_screen.dart`; a shared workspace shell or local records do not establish full module capability.
-- Existing Writer, Sheets, PDF, Scan, backup/recovery, branding and App Info work must be preserved while the remaining capability gaps are implemented.
-- Backend and database architecture documents are currently planning records; they do not establish a provisioned backend, remote database, authentication or cloud service.
-- The module specifications and completion blueprint remain the authoritative feature backlog. This inventory is the authoritative tracked-file baseline for the audited ref only; refresh it after source files are added, removed or moved.
+- Slides now has a dedicated editable text-slide workflow and versioned storage with legacy newline compatibility. The object/canvas editor and PPTX/ODP remain open.
+- Existing Writer, Sheets, PDF, Scan, backup/recovery, branding and App Info work must be preserved while remaining capabilities are implemented.
+- Backend and database architecture documents are planning records; they do not establish a provisioned backend, remote database, authentication or cloud service.
+- Module specifications and the completion blueprint remain the authoritative feature backlog. Refresh this inventory whenever files are added, removed or moved.
 
 ## 8. Integrated implementation gate
 
-Before declaring a module complete, connect every user-visible control to a real operation, preserve existing data formats and backward compatibility, add regression tests for the changed behavior, run Analyze and the complete test suite, build and verify the signed Android package on the same commit, and record physical-device / interoperability / platform acceptance separately.
+Before declaring a module complete, connect every user-visible control to a real operation, preserve existing data formats and backward compatibility, add regression tests for changed behavior, run Analyze and the complete test suite, build and verify the signed Android package on the same commit, and record physical-device / interoperability / platform acceptance separately.
