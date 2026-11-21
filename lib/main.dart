@@ -632,6 +632,16 @@ class AppInfoScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 14),
+                  Text(
+                    isBangla ? 'তৈরি ও উন্নয়নে:' : 'Created & Developed By:',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: muted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
                   const Text(
                     'MD PIYARUL ISLAM',
                     textAlign: TextAlign.center,
@@ -686,6 +696,18 @@ class AppInfoScreen extends StatelessWidget {
                     ),
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 18),
+            const Center(
+              child: Text(
+                '© 2026 OFFYNEXBD. All Rights Reserved.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: muted,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
