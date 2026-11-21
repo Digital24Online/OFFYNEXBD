@@ -51,9 +51,39 @@ class ScanDocumentService {
     final normalizedPath = pdfPath.trim();
     if (normalizedPath.isEmpty) return false;
     return writerDocuments.any(
-      (document) => document['scanPdfPath'] is String &&
-          (document['scanPdfPath'] as String).trim() == normalizedPath,
+      (document) => _containsPathReference(document, normalizedPath),
     );
+  }
+
+  /// Writer records may store a scan PDF path in legacy metadata or inside a
+  /// Quill Delta embed (for example, an image/file source). Walk the complete
+  /// JSON-compatible record instead of checking only one metadata key.
+  static bool _containsPathReference(Object? value, String targetPath) {
+    if (value is String) {
+      final candidate = value.trim();
+      if (candidate == targetPath) return true;
+      if (candidate.startsWith('file://')) {
+        try {
+          if (Uri.parse(candidate).toFilePath() == targetPath) return true;
+        } catch (_) {
+          // An invalid file URI is not a usable reference.
+        }
+      }
+      return false;
+    }
+    if (value is Map) {
+      return value.entries.any(
+        (entry) =>
+            _containsPathReference(entry.key, targetPath) ||
+            _containsPathReference(entry.value, targetPath),
+      );
+    }
+    if (value is Iterable) {
+      return value.any(
+        (item) => _containsPathReference(item, targetPath),
+      );
+    }
+    return false;
   }
 
   /// Removes only a final PDF extension for a clean scan-library title.
