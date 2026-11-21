@@ -476,14 +476,16 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
               const Divider(height: 1),
               Padding(
                 padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                child: Wrap(
+                  alignment: WrapAlignment.end,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 4,
                   children: [
                     TextButton(
                       onPressed: () => Navigator.of(context).pop(),
                       child: Text(_t('বাতিল', 'Cancel')),
                     ),
-                    const SizedBox(width: 8),
                     FilledButton.icon(
                       onPressed: saveTable,
                       icon: const Icon(Icons.check),
