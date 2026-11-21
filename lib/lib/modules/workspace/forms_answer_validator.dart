@@ -12,10 +12,10 @@ class FormsAnswerValidator {
   static String? validate({
     required String type,
     required String value,
-    required bool isRequired,
+    required bool required,
   }) {
     final normalized = value.trim();
-    if (isRequired && normalized.isEmpty) return requiredError;
+    if (required && normalized.isEmpty) return requiredError;
     if (normalized.isEmpty) return null;
 
     switch (type) {
