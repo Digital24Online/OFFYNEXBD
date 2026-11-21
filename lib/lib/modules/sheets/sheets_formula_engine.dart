@@ -924,12 +924,31 @@ class _FormulaParser {
         _ => false,
       };
     }
-    final hasWildcard = expected.contains('*') || expected.contains('?');
+    final pattern = StringBuffer();
+    var hasWildcard = false;
+    for (var index = 0; index < expected.length; index++) {
+      final character = expected[index];
+      if (character == '~' && index + 1 < expected.length) {
+        final escaped = expected[index + 1];
+        if (escaped == '*' || escaped == '?' || escaped == '~') {
+          pattern.write(RegExp.escape(escaped));
+          index++;
+          continue;
+        }
+      }
+      if (character == '*') {
+        pattern.write('.*');
+        hasWildcard = true;
+      } else if (character == '?') {
+        pattern.write('.');
+        hasWildcard = true;
+      } else {
+        pattern.write(RegExp.escape(character));
+      }
+    }
     if (hasWildcard && raw.isEmpty) return false;
-    final pattern = RegExp.escape(expected)
-        .replaceAll(r'\*', '.*')
-        .replaceAll(r'\?', '.');
-    final matches = RegExp('^$pattern' r'$', caseSensitive: false).hasMatch(raw);
+    final matches = RegExp('^${pattern.toString()}' r'$', caseSensitive: false)
+        .hasMatch(raw);
     return operator == '<>' ? !matches : matches;
   }
 
