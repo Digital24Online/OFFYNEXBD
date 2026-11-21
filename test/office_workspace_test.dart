@@ -313,6 +313,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
+    final choiceField = find.byType(DropdownButtonFormField<String>);
+    expect(choiceField, findsOneWidget);
+    await tester.tap(choiceField);
+    await tester.pumpAndSettle();
     expect(find.text('Sales'), findsOneWidget);
     expect(find.text('Support'), findsOneWidget);
   });
