@@ -1875,3 +1875,17 @@ A module is complete only after its actual workflows exist, tests cover them, th
 - Corrected the header's minimum footprint by reducing the document icon to 28×32 (18 px glyph), reducing the popup-menu hit box to 24×24 (16 px glyph), and removing the unnecessary space-between layout. Existing rename/delete menu actions remain unchanged.
 - This is a source correction only. Await a fresh CI run for Analyze, all tests, signed APK, signature/install metadata, package verification and artifact upload. The physical Android device still requires user acceptance testing.
 - This change does not mark all modules complete. The remaining feature/compatibility/device-validation gaps documented above remain open.
+
+
+## Build #734 verified checkpoint — 2026-11-21
+
+- Latest verified source branch: `work/writer-sheets-pdf-scan-completion-20261120`.
+- Exact source commit: `f381883a155e69419bf9990385efc478ce24e6a8` (scan service syntax repair).
+- GitHub Actions run #734, ID `44888798161`, completed with conclusion `success` on this exact commit.
+- Verified job steps: Flutter dependency setup, branding generation, launcher icon generation, Flutter Analyze, full configured tests, Android release APK build, APK signature/install metadata verification, signing-file cleanup, package-content verification and artifact upload all passed. The generated-source save step was skipped by workflow design.
+- Artifact: `OFFYNEXBD-Android-APK`, ID `14701666681`, size 52,809,559 bytes, SHA-256 `bc2ae84cacd67f1f8604bff6427bd98ac161ec855004bf18cbe7cbab9c251fb5`, expires 2026-12-05.
+- App Info source inspection confirms the selected OFFYNEXBD icon, `founder_profile.jpg`, full creator name `MD PIYARUL ISLAM`, and “Founder & Original Creator” / Bangla equivalent are already wired. No address, GitHub work history or release record is displayed. The app's creator statement is a declared attribution, not external legal verification.
+- Branding workflow successfully rasterized the approved SVG assets and generated Android/iOS launcher-icon inputs. This CI result verifies generation steps, not visual appearance on a physical device or final launcher/splash rendering; those still require device acceptance.
+- PR #13 remains Draft and must not be merged until implementation gaps and physical-device acceptance are completed and the user approves.
+- Build success does not close product gaps. The previously recorded module gaps remain open: Writer true pagination/table and format fidelity/mobile toolbar; Sheets broader Excel compatibility/charts/pivots/conditional formatting/ODS; Slides full canvas editor and PPTX; PDF editing/annotation/page management/OCR review/security tools; Fonts safe TTF/OTF import and editor activation; live AI service; authenticated encrypted Cloud Sync; online Forms publishing/conditional logic; physical-camera scanner enhancement and OCR acceptance; Database relations/query tools/migrations; plus cross-platform builds, accessibility, performance and device/print validation.
+- Do not repeat completed logo/App Info implementation as new work. Continue from this commit and address the remaining functional gaps while preserving existing user data and workflows.
