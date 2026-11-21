@@ -21,17 +21,28 @@ class OFFYNEXTheme {
 
   // Module accents are limited to icons and small active-state markers.
   // Shared surfaces, controls and typography must remain consistent.
+  static const Color writerAccent = Color(0xFF2878DB);
+  static const Color sheetsAccent = Color(0xFF159B68);
+  static const Color slidesAccent = Color(0xFFE58A28);
+  static const Color pdfAccent = Color(0xFFE34B50);
+  static const Color fontsAccent = Color(0xFF8055D9);
+  static const Color aiAccent = Color(0xFF0C9CA6);
+  static const Color cloudAccent = Color(0xFF4386D9);
+  static const Color formsAccent = Color(0xFFCB7B35);
+  static const Color scanAccent = Color(0xFF347F9D);
+  static const Color databaseAccent = Color(0xFF6875B8);
+
   static const Map<String, Color> moduleAccents = {
-    'Writer': Color(0xFF2878DB),
-    'Sheets': Color(0xFF159B68),
-    'Slides': Color(0xFFE58A28),
-    'PDF': Color(0xFFE34B50),
-    'Fonts': Color(0xFF8055D9),
-    'AI Assistant': Color(0xFF0C9CA6),
-    'Cloud': Color(0xFF4386D9),
-    'Forms': Color(0xFFCB7B35),
-    'Scan': Color(0xFF347F9D),
-    'Database': Color(0xFF6875B8),
+    'Writer': writerAccent,
+    'Sheets': sheetsAccent,
+    'Slides': slidesAccent,
+    'PDF': pdfAccent,
+    'Fonts': fontsAccent,
+    'AI Assistant': aiAccent,
+    'Cloud': cloudAccent,
+    'Forms': formsAccent,
+    'Scan': scanAccent,
+    'Database': databaseAccent,
   };
 
   static Color accentFor(String module) => moduleAccents[module] ?? blue;
