@@ -30,6 +30,7 @@ void main() {
     expect(documentXml, contains('w:top="720"'));
     expect(documentXml, contains('<w:header w:type="default"'));
     expect(documentXml, contains('<w:footer w:type="default"'));
+    expect(documentXml, contains('Custom font text'));
     expect(documentXml, contains('w:ascii="SolaimanLipi"'));
     expect(documentXml, contains('w:eastAsia="SolaimanLipi"'));
     expect(documentXml, contains('w:cs="SolaimanLipi"'));
