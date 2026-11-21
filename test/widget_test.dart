@@ -447,4 +447,38 @@ void main() {
     expect(raw, contains('Writer keyboard test লেখা'));
   });
 
+
+  testWidgets(
+    'Writer title keeps the same focused input when compact keyboard layout appears',
+    (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({});
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(const OFFYNEXBDApp());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('রাইটার'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('নতুন ডকুমেন্ট'));
+      await tester.pumpAndSettle();
+
+      final titleField = find.byType(TextField).first;
+      await tester.tap(titleField);
+      await tester.pump();
+      final originalFocusNode = tester.widget<TextField>(titleField).focusNode;
+      expect(originalFocusNode, isNotNull);
+      expect(originalFocusNode!.hasFocus, isTrue);
+
+      tester.view.viewInsets = const FakeViewPadding(bottom: 320);
+      await tester.pump();
+
+      final compactTitleField = tester.widget<TextField>(
+        find.byType(TextField).first,
+      );
+      expect(identical(compactTitleField.focusNode, originalFocusNode), isTrue);
+      expect(originalFocusNode.hasFocus, isTrue);
+    },
+  );
 }
