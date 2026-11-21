@@ -38,7 +38,11 @@ void main() {
     await tester.tap(find.text('Add slide'));
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.byKey(const ValueKey('slides-editor-field-2')));
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('slides-editor-field-2')),
+      400,
+      scrollable: find.byType(Scrollable).last,
+    );
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('slides-editor-field-2')),

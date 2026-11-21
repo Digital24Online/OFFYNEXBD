@@ -30,7 +30,7 @@ void main() {
     });
 
     test('rejects more than 200 legacy slides', () {
-      final source = List<String>.generate(201, (index) => 'Slide $index').join('\\n');
+      final source = List<String>.generate(201, (index) => 'Slide $index').join('\n');
       expect(() => SlidesDocumentCodec.decode(source), throwsFormatException);
     });
 
