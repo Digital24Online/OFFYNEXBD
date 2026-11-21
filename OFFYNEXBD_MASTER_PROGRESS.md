@@ -1849,3 +1849,13 @@ A module is complete only after its actual workflows exist, tests cover them, th
 - These are source corrections only until the new workflow passes Analyze, all tests, signed Android APK build, signature/install metadata checks and artifact upload. Do not mark fixed/verified until CI confirms.
 - Build #694 (run ID 44880890820) was cancelled before Analyze/Tests; it provides no verification evidence.
 - App Info recheck: `assets/branding/founder_profile.jpg` exists in the branch (7,313 bytes); `assets/branding/offynexbd_icon.svg` and `offynexbd_logo.svg` also exist. The `test/app_info_screen_test.dart` test passed in Build #693, confirming the creator attribution and selected portrait are wired into the App Info view. This does not constitute a legal identity verification; it is the app's declared creator attribution.
+
+
+## Writer compact-phone overflow — root cause and correction — 2026-11-21
+
+- Re-read Build #709 job log and verified the exact assertion: the compact-phone Writer table-editor test fails with `A RenderFlex overflowed by 2.7 pixels on the right`; Flutter Analyze passes and 244 tests pass, 1 fails.
+- Inspected the actual table dialog widget tree and confirmed the remaining narrow-screen risk is the icon-and-label action buttons inside a `Wrap`: `OutlinedButton.icon` internally lays out an icon and an unconstrained text label in a Row. Wrapping the buttons does not constrain the label inside each button, so a long translated label can still overflow by a few pixels.
+- Replaced the 12 table-editor icon action buttons with a shared responsive action-button builder. It uses a constrained Row with a Flexible label so long English/Bangla labels wrap inside the button while preserving the existing actions, keys, and callbacks.
+- Fix commit: `8ff1bdc888469d2b7b777090536cc620558ba13f`.
+- [ ] The source correction is not verified until a fresh run on this exact commit passes Analyze, all tests, signed APK build, signature/install metadata checks and artifact upload.
+- [ ] The remaining cross-module implementation and device acceptance gaps listed above remain open; this correction does not mark the whole project complete.
