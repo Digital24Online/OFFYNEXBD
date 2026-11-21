@@ -61,9 +61,13 @@ class _WriterTableDialog extends StatefulWidget {
 
 class _WriterTableDialogState extends State<_WriterTableDialog> {
   late List<List<TextEditingController>> cells;
+  late List<double> rowHeights;
+  late List<double> columnWidths;
   String _t(String bn, String en) => widget.isBangla ? bn : en;
   int borderColor = 0xFF333333;
   int backgroundColor = 0xFFFFFFFF;
+  int selectedRow = 0;
+  int selectedColumn = 0;
 
   @override
   void initState() {
@@ -88,9 +92,9 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
       final columnCount = values.fold<int>(
         1,
         (count, row) => row.length > count ? row.length : count,
-      ).clamp(1, 10).toInt();
+      ).toInt();
 
-      cells = values.take(20).map<List<TextEditingController>>((row) {
+      cells = values.map<List<TextEditingController>>((row) {
         return List.generate(
           columnCount,
           (index) => TextEditingController(
@@ -102,48 +106,121 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
     } else {
       cells = _createEmptyCells();
     }
+
+    final rawHeights = data?['rowHeights'];
+    rowHeights = List<double>.generate(
+      cells.length,
+      (index) => rawHeights is List && index < rawHeights.length
+          ? (rawHeights[index] as num?)?.toDouble().clamp(36.0, 240.0).toDouble() ?? 56.0
+          : 56.0,
+    );
+    final rawWidths = data?['columnWidths'];
+    columnWidths = List<double>.generate(
+      columnCount,
+      (index) => rawWidths is List && index < rawWidths.length
+          ? (rawWidths[index] as num?)?.toDouble().clamp(70.0, 480.0).toDouble() ?? 150.0
+          : 150.0,
+    );
   }
 
   List<List<TextEditingController>> _createEmptyCells() {
     return List.generate(
-      3,
-      (_) => List.generate(3, (_) => TextEditingController()),
+      1,
+      (_) => List.generate(1, (_) => TextEditingController()),
     );
   }
 
   int get columnCount => cells.isEmpty ? 1 : cells.first.length;
 
   void addRow() {
-    if (cells.length >= 20) return;
     setState(() {
       cells.add(List.generate(columnCount, (_) => TextEditingController()));
+      rowHeights.add(56.0);
+    });
+  }
+
+  void insertRowBefore() {
+    setState(() {
+      final index = selectedRow.clamp(0, cells.length).toInt();
+      cells.insert(index, List.generate(columnCount, (_) => TextEditingController()));
+      rowHeights.insert(index, 56.0);
+    });
+  }
+
+  void insertRowAfter() {
+    setState(() {
+      final index = (selectedRow + 1).clamp(0, cells.length).toInt();
+      cells.insert(index, List.generate(columnCount, (_) => TextEditingController()));
+      rowHeights.insert(index, 56.0);
+      selectedRow = index;
     });
   }
 
   void removeRow() {
     if (cells.length <= 1) return;
     setState(() {
-      for (final controller in cells.removeLast()) {
+      final index = selectedRow.clamp(0, cells.length - 1).toInt();
+      for (final controller in cells.removeAt(index)) {
         controller.dispose();
       }
+      rowHeights.removeAt(index);
+      selectedRow = index.clamp(0, cells.length - 1).toInt();
     });
   }
 
   void addColumn() {
-    if (columnCount >= 10) return;
     setState(() {
       for (final row in cells) {
         row.add(TextEditingController());
       }
+      columnWidths.add(150.0);
+    });
+  }
+
+  void insertColumnBefore() {
+    setState(() {
+      final index = selectedColumn.clamp(0, columnCount).toInt();
+      for (final row in cells) {
+        row.insert(index, TextEditingController());
+      }
+      columnWidths.insert(index, 150.0);
+    });
+  }
+
+  void insertColumnAfter() {
+    setState(() {
+      final index = (selectedColumn + 1).clamp(0, columnCount).toInt();
+      for (final row in cells) {
+        row.insert(index, TextEditingController());
+      }
+      columnWidths.insert(index, 150.0);
+      selectedColumn = index;
     });
   }
 
   void removeColumn() {
     if (columnCount <= 1) return;
     setState(() {
+      final index = selectedColumn.clamp(0, columnCount - 1).toInt();
       for (final row in cells) {
-        row.removeLast().dispose();
+        row.removeAt(index).dispose();
       }
+      columnWidths.removeAt(index);
+      selectedColumn = index.clamp(0, columnCount - 1).toInt();
+    });
+  }
+
+  void resizeSelectedRow(double delta) {
+    setState(() {
+      final index = selectedRow.clamp(0, rowHeights.length - 1).toInt();
+      rowHeights[index] = (rowHeights[index] + delta).clamp(36.0, 240.0).toDouble();
+    });
+  }
+
+  void resizeSelectedColumn(double delta) {
+    setState(() {
+      final index = selectedColumn.clamp(0, columnWidths.length - 1).toInt();
+      columnWidths[index] = (columnWidths[index] + delta).clamp(70.0, 480.0).toDouble();
     });
   }
 
@@ -210,6 +287,8 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
       'version': 1,
       'borderColor': borderColor,
       'backgroundColor': backgroundColor,
+      'rowHeights': rowHeights,
+      'columnWidths': columnWidths,
     });
   }
 
@@ -223,42 +302,137 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
     super.dispose();
   }
 
+  /// Keeps icon-and-label actions inside the available phone width.
+  /// A Flexible label wraps long translations instead of overflowing its Row.
+  Widget _actionButton({
+    Key? key,
+    required VoidCallback? onPressed,
+    required Widget icon,
+    required Widget label,
+  }) {
+    return OutlinedButton(
+      key: key,
+      onPressed: onPressed,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          icon,
+          const SizedBox(width: 8),
+          Flexible(child: label),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      scrollable: false,
-      title: Text(widget.initialData == null
-          ? _t('টেবিল তৈরি করুন', 'Create Table')
-          : _t('টেবিল সম্পাদনা', 'Edit Table')),
-      content: SizedBox(
-        width: (MediaQuery.sizeOf(context).width * 0.88).clamp(280.0, 720.0),
-        height: (MediaQuery.sizeOf(context).height * 0.62).clamp(260.0, 620.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                OutlinedButton.icon(
-                  onPressed: cells.length >= 20 ? null : addRow,
+    final screenSize = MediaQuery.sizeOf(context);
+    final screenHeight = screenSize.height;
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: screenHeight * 0.88),
+        child: SizedBox(
+          width: (screenSize.width * 0.88).clamp(280.0, 720.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 10),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    widget.initialData == null
+                        ? _t('টেবিল তৈরি করুন', 'Create Table')
+                        : _t('টেবিল সম্পাদনা', 'Edit Table'),
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+            SizedBox(
+              height: (MediaQuery.sizeOf(context).height * 0.18).clamp(88.0, 140.0),
+              child: SingleChildScrollView(
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                _actionButton(
+                  onPressed: addRow,
                   icon: const Icon(Icons.add),
                   label: Text(_t('সারি যোগ', 'Add Row')),
                 ),
-                OutlinedButton.icon(
+                _actionButton(
+                  key: const ValueKey('writer-table-insert-row-before'),
+                  onPressed: insertRowBefore,
+                  icon: const Icon(Icons.arrow_upward),
+                  label: Text(_t('উপরে সারি', 'Insert Above')),
+                ),
+                _actionButton(
+                  key: const ValueKey('writer-table-insert-row-after'),
+                  onPressed: insertRowAfter,
+                  icon: const Icon(Icons.arrow_downward),
+                  label: Text(_t('নিচে সারি', 'Insert Below')),
+                ),
+                _actionButton(
+                  key: const ValueKey('writer-table-delete-selected-row'),
                   onPressed: cells.length <= 1 ? null : removeRow,
                   icon: const Icon(Icons.remove),
-                  label: Text(_t('সারি সরান', 'Remove Row')),
+                  label: Text(_t('নির্বাচিত সারি মুছুন', 'Delete Selected Row')),
                 ),
-                OutlinedButton.icon(
-                  onPressed: columnCount >= 10 ? null : addColumn,
+                _actionButton(
+                  onPressed: addColumn,
                   icon: const Icon(Icons.add),
                   label: Text(_t('কলাম যোগ', 'Add Column')),
                 ),
-                OutlinedButton.icon(
+                _actionButton(
+                  key: const ValueKey('writer-table-insert-column-before'),
+                  onPressed: insertColumnBefore,
+                  icon: const Icon(Icons.arrow_back),
+                  label: Text(_t('বামে কলাম', 'Insert Left')),
+                ),
+                _actionButton(
+                  key: const ValueKey('writer-table-insert-column-after'),
+                  onPressed: insertColumnAfter,
+                  icon: const Icon(Icons.arrow_forward),
+                  label: Text(_t('ডানে কলাম', 'Insert Right')),
+                ),
+                _actionButton(
+                  key: const ValueKey('writer-table-delete-selected-column'),
                   onPressed: columnCount <= 1 ? null : removeColumn,
                   icon: const Icon(Icons.remove),
-                  label: Text(_t('কলাম সরান', 'Remove Column')),
+                  label: Text(_t('নির্বাচিত কলাম মুছুন', 'Delete Selected Column')),
+                ),
+                _actionButton(
+                  key: const ValueKey('writer-table-row-height-decrease'),
+                  onPressed: () => resizeSelectedRow(-8),
+                  icon: const Icon(Icons.height),
+                  label: Text(_t('সারি ছোট', 'Shorter Row')),
+                ),
+                _actionButton(
+                  key: const ValueKey('writer-table-row-height-increase'),
+                  onPressed: () => resizeSelectedRow(8),
+                  icon: const Icon(Icons.height),
+                  label: Text(_t('সারি বড়', 'Taller Row')),
+                ),
+                _actionButton(
+                  key: const ValueKey('writer-table-column-width-decrease'),
+                  onPressed: () => resizeSelectedColumn(-12),
+                  icon: const Icon(Icons.width_normal),
+                  label: Text(_t('কলাম সরু', 'Narrower Column')),
+                ),
+                _actionButton(
+                  key: const ValueKey('writer-table-column-width-increase'),
+                  onPressed: () => resizeSelectedColumn(12),
+                  icon: const Icon(Icons.width_full),
+                  label: Text(_t('কলাম চওড়া', 'Wider Column')),
                 ),
                 OutlinedButton(
                   onPressed: () => chooseColor(chooseBorder: true),
@@ -267,13 +441,18 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
                 OutlinedButton(
                   onPressed: () => chooseColor(chooseBorder: false),
                   child: Text(_t('ঘরের রং', 'Cell Fill')),
-                ),
-              ],
+                  ),
+                ],
+              ),
+            ),
             ),
             const SizedBox(height: 10),
             Text(_t('${cells.length} সারি  ·  $columnCount কলাম', '${cells.length} rows  ·  $columnCount columns')),
             const SizedBox(height: 8),
-            Expanded(
+            Text(_t('নির্বাচিত ঘর: ${selectedRow + 1}, ${selectedColumn + 1}', 'Selected cell: ${selectedRow + 1}, ${selectedColumn + 1}')),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: (screenHeight * 0.14).clamp(72.0, 112.0),
               child: SingleChildScrollView(
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -284,9 +463,16 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
                       return TableRow(
                         children: List.generate(columnCount, (columnIndex) {
                           return Container(
+                            constraints: BoxConstraints(minHeight: rowHeights[rowIndex]),
                             color: Color(backgroundColor),
                             padding: const EdgeInsets.all(5),
                             child: TextField(
+                              onTap: () {
+                                setState(() {
+                                  selectedRow = rowIndex;
+                                  selectedColumn = columnIndex;
+                                });
+                              },
                               controller: cells[rowIndex][columnIndex],
                               maxLines: 3,
                               minLines: 1,
@@ -304,20 +490,36 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
                 ),
               ),
             ),
-          ],
+
+                    ],
+                  ),
+                ),
+              ),
+              const Divider(height: 1),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                child: Wrap(
+                  alignment: WrapAlignment.end,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text(_t('বাতিল', 'Cancel')),
+                    ),
+                    FilledButton.icon(
+                      onPressed: saveTable,
+                      icon: const Icon(Icons.check),
+                      label: Text(_t('টেবিল প্রয়োগ', 'Apply Table')),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(_t('বাতিল', 'Cancel')),
-        ),
-        FilledButton.icon(
-          onPressed: saveTable,
-          icon: const Icon(Icons.check),
-          label: Text(_t('টেবিল প্রয়োগ', 'Apply Table')),
-        ),
-      ],
     );
   }
 }
@@ -368,6 +570,20 @@ class WriterTableEmbedBuilder extends EmbedBuilder {
     final background = data['backgroundColor'] is int
         ? data['backgroundColor'] as int
         : 0xFFFFFFFF;
+    final rawWidths = data['columnWidths'];
+    final widths = List<double>.generate(
+      columnCount,
+      (index) => rawWidths is List && index < rawWidths.length
+          ? (rawWidths[index] as num?)?.toDouble().clamp(70.0, 480.0) ?? 150.0
+          : 150.0,
+    );
+    final rawHeights = data['rowHeights'];
+    final heights = List<double>.generate(
+      rows.length,
+      (index) => rawHeights is List && index < rawHeights.length
+          ? (rawHeights[index] as num?)?.toDouble().clamp(36.0, 240.0) ?? 56.0
+          : 56.0,
+    );
 
     return Container(
       width: double.infinity,
@@ -400,7 +616,10 @@ class WriterTableEmbedBuilder extends EmbedBuilder {
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Table(
-                defaultColumnWidth: const IntrinsicColumnWidth(),
+                columnWidths: {
+                  for (var index = 0; index < columnCount; index++)
+                    index: FixedColumnWidth(widths[index]),
+                },
                 border: TableBorder.all(color: Color(border)),
                 children: List.generate(rows.length, (rowIndex) {
                   final row = rows[rowIndex];
@@ -415,6 +634,7 @@ class WriterTableEmbedBuilder extends EmbedBuilder {
                           ? row[columnIndex]
                           : '';
                       return Container(
+                        constraints: BoxConstraints(minHeight: heights[rowIndex]),
                         color: Color(background),
                         padding: const EdgeInsets.all(8),
                         child: Text(

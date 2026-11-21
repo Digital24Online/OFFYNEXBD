@@ -7,6 +7,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:printing/printing.dart';
 import 'slides_pdf_export_service.dart';
 import 'slides_preview_screen.dart';
+import 'slides_document_codec.dart';
+import 'slides_editor_screen.dart';
 import 'scan_document_service.dart';
 import 'database_rows_dialog.dart';
 import 'database_field_codec.dart';
@@ -15,10 +17,12 @@ import 'package:path_provider/path_provider.dart';
 import 'portable_workspace_backup_service.dart';
 
 import '../pdf/pdf_to_document_service.dart';
+import '../pdf/pdf_reader_screen.dart';
 import 'workspace_backup_codec.dart';
 import 'workspace_record_codec.dart';
 import 'forms_response_csv_codec.dart';
 import 'forms_question_codec.dart';
+import 'forms_answer_validator.dart';
 import '../writer/writer_screen.dart';
 import '../../theme/offynex_theme.dart';
 
@@ -147,16 +151,30 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
 
   Future<void> _editItem({Map<String, dynamic>? item}) async {
     if (_workspaceDataBlocked) return;
-    final result = await showDialog<Map<String, String>>(
-      context: context,
-      builder: (_) => _WorkspaceItemDialog(
-        isBangla: _bn,
-        title: item?['title']?.toString() ?? '',
-        content: item?['content']?.toString() ?? '',
-        contentLabel: _contentLabel,
-        isNew: item == null,
-      ),
-    );
+    final Map<String, String>? result;
+    if (widget.module == 'Slides') {
+      result = await Navigator.push<Map<String, String>>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SlidesEditorScreen(
+            isBangla: _bn,
+            title: item?['title']?.toString() ?? '',
+            content: item?['content']?.toString() ?? '',
+          ),
+        ),
+      );
+    } else {
+      result = await showDialog<Map<String, String>>(
+        context: context,
+        builder: (_) => _WorkspaceItemDialog(
+          isBangla: _bn,
+          title: item?['title']?.toString() ?? '',
+          content: item?['content']?.toString() ?? '',
+          contentLabel: _contentLabel,
+          isNew: item == null,
+        ),
+      );
+    }
     if (result == null || result['title']!.trim().isEmpty) return;
     final now = DateTime.now().toIso8601String();
     final updated = _items.map((entry) => Map<String, dynamic>.from(entry)).toList();
@@ -315,6 +333,181 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
     }
   }
 
+  Future<void> _reviewScanText(Map<String, dynamic> item) async {
+    if (_workspaceDataBlocked) return;
+    final controller = TextEditingController(text: item['content']?.toString() ?? '');
+    final edited = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(_bn ? 'OCR লেখা যাচাই ও সংশোধন' : 'Review and correct OCR text'),
+        content: SizedBox(
+          width: 560,
+          child: TextField(
+            controller: controller,
+            autofocus: true,
+            minLines: 6,
+            maxLines: 14,
+            maxLength: 100000,
+            decoration: InputDecoration(
+              hintText: _bn ? 'স্ক্যান থেকে পাওয়া লেখা সংশোধন করুন' : 'Correct the recognized scan text',
+              border: const OutlineInputBorder(),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(_bn ? 'বাতিল' : 'Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, controller.text),
+            child: Text(_bn ? 'সংরক্ষণ' : 'Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (edited == null || !mounted) return;
+    try {
+      final writerId = item['writerDocumentId']?.toString().trim().isNotEmpty == true
+          ? item['writerDocumentId'].toString()
+          : DateTime.now().microsecondsSinceEpoch.toString();
+      final updatedItem = <String, dynamic>{
+        ...item,
+        'content': edited,
+        'updatedAt': DateTime.now().toIso8601String(),
+        if (edited.trim().isNotEmpty) 'writerDocumentId': writerId,
+      };
+      final updatedItems = _items
+          .map((entry) => entry['id'] == item['id'] ? updatedItem : entry)
+          .toList(growable: false);
+      await _save(updatedItems);
+      if (!mounted) return;
+      setState(() => _items = updatedItems);
+
+      final documents = await loadDocuments();
+      final index = documents.indexWhere((document) => document['id']?.toString() == writerId);
+      final writerRecord = <String, dynamic>{
+        if (index >= 0) ...documents[index],
+        'id': writerId,
+        'title': updatedItem['title']?.toString() ?? 'Scanned document',
+        'content': PdfToDocumentService.plainTextToDelta(edited),
+        'updated': DateTime.now().toIso8601String(),
+        'source': 'native_document_scan',
+        'scanPdfPath': updatedItem['scanPdfPath'],
+      };
+      if (index >= 0) {
+        documents[index] = writerRecord;
+      } else if (edited.trim().isNotEmpty) {
+        documents.add(writerRecord);
+      }
+      await storeDocuments(documents);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_bn ? 'OCR লেখা সংশোধন করে সংরক্ষণ হয়েছে।' : 'Corrected OCR text saved.')),
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text((_bn ? 'OCR লেখা সংরক্ষণ ব্যর্থ: ' : 'Could not save OCR text: ') + error.toString())),
+        );
+      }
+    }
+  }
+
+  Future<void> _openScanInWriter(Map<String, dynamic> item) async {
+    if (_workspaceDataBlocked) return;
+    try {
+      final documents = await loadDocuments();
+      if (writerLibraryDataBlocked) {
+        throw StateError('Writer library is protected because its stored data needs recovery.');
+      }
+      final existingId = item['writerDocumentId']?.toString().trim() ?? '';
+      final documentId = existingId.isNotEmpty
+          ? existingId
+          : DateTime.now().microsecondsSinceEpoch.toString();
+      final index = documents.indexWhere(
+        (document) => document['id']?.toString() == documentId,
+      );
+      final record = <String, dynamic>{
+        if (index >= 0) ...documents[index],
+        'id': documentId,
+        'title': item['title']?.toString().trim().isNotEmpty == true
+            ? item['title'].toString()
+            : (_bn ? 'স্ক্যান করা ডকুমেন্ট' : 'Scanned document'),
+        'content': PdfToDocumentService.plainTextToDelta(
+          item['content']?.toString() ?? '',
+        ),
+        'updated': DateTime.now().toIso8601String(),
+        'source': 'native_document_scan',
+        'scanPdfPath': item['scanPdfPath'],
+      };
+      if (index >= 0) {
+        documents[index] = record;
+      } else {
+        documents.add(record);
+      }
+      await storeDocuments(documents);
+      if (existingId.isEmpty) {
+        final updated = _items
+            .map((entry) => entry['id'] == item['id']
+                ? {...entry, 'writerDocumentId': documentId}
+                : entry)
+            .toList(growable: false);
+        await _save(updated);
+        if (mounted) setState(() => _items = updated);
+      }
+      if (!mounted) return;
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => WriterEditorScreen(
+            document: record,
+            isBangla: _bn,
+          ),
+        ),
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text((_bn ? 'Writer-এ খোলা যায়নি: ' : 'Could not open in Writer: ') + error.toString())),
+        );
+      }
+    }
+  }
+
+  Future<void> _openScanPdf(Map<String, dynamic> item) async {
+    final path = item['scanPdfPath'];
+    if (path is! String || path.isEmpty) return;
+    try {
+      final file = File(path);
+      if (!await file.exists()) {
+        throw const FileSystemException('Saved scan PDF was not found.');
+      }
+      final bytes = Uint8List.fromList(await file.readAsBytes());
+      PdfToDocumentService.validatePdfBytes(bytes);
+      if (!mounted) return;
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PdfReaderScreen(
+            bytes: bytes,
+            fileName: file.uri.pathSegments.isEmpty
+                ? 'OFFYNEXBD-Scan.pdf'
+                : file.uri.pathSegments.last,
+            isBangla: _bn,
+          ),
+        ),
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text((_bn ? 'স্ক্যান PDF খোলা যায়নি: ' : 'Could not open scan PDF: ') + error.toString())),
+        );
+      }
+    }
+  }
+
   Future<void> _shareScan(Map<String, dynamic> item) async {
     final path = item['scanPdfPath'];
     if (path is! String || path.isEmpty) return;
@@ -338,84 +531,82 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
     if (_busy) return;
     setState(() => _busy = true);
     try {
+      ScanCaptureResult? captured;
       if (Platform.isAndroid) {
-        final captured = await ScanDocumentService.captureAndroid();
-        if (captured == null) return;
-        final scanRecord = <String, dynamic>{
-          'id': DateTime.now().microsecondsSinceEpoch.toString(),
-          'title': captured.fileName.replaceFirst(RegExp(r'\.pdf$', caseSensitive: false), ''),
-          'content': captured.recognizedText,
-          'updatedAt': DateTime.now().toIso8601String(),
-          'source': 'native_document_scan',
+        captured = await ScanDocumentService.captureAndroid();
+      } else {
+        // iOS/desktop fallback: import multiple JPEG/PNG pages together and
+        // preserve them as one ordered, multi-page PDF with OCR text.
+        final selectedFiles = await FilePicker.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: const ['jpg', 'jpeg', 'png'],
+        );
+        if (selectedFiles.isEmpty) return;
+        if (selectedFiles.length > ScanDocumentService.maxPages) {
+          throw FormatException(
+            _bn
+                ? 'একবারে সর্বোচ্চ ${ScanDocumentService.maxPages}টি পৃষ্ঠা নেওয়া যাবে।'
+                : 'You can scan up to ${ScanDocumentService.maxPages} pages at once.',
+          );
+        }
+        final images = <({String name, Uint8List bytes})>[];
+        for (final file in selectedFiles) {
+          images.add((name: file.name, bytes: await file.readAsBytes()));
+        }
+        captured = await ScanDocumentService.captureImportedImages(images);
+      }
+      if (captured == null) return;
+
+      final writerDocumentId = captured.recognizedText.trim().isEmpty
+          ? null
+          : DateTime.now().microsecondsSinceEpoch.toString();
+      final scanRecord = <String, dynamic>{
+        'id': DateTime.now().microsecondsSinceEpoch.toString(),
+        'writerDocumentId': writerDocumentId,
+        'title': ScanDocumentService.displayTitleFromPdfFileName(captured.fileName),
+        'content': captured.recognizedText,
+        'updatedAt': DateTime.now().toIso8601String(),
+        'source': Platform.isAndroid ? 'native_document_scan' : 'imported_image_scan',
+        'scanPdfPath': captured.pdfPath,
+        'pageCount': captured.pageCount,
+        'ocrLanguage': 'ben+eng',
+      };
+      final updatedScans = [scanRecord, ..._items];
+      await _save(updatedScans);
+      if (!mounted) return;
+      setState(() => _items = updatedScans);
+
+      if (writerDocumentId != null) {
+        final documents = await loadDocuments();
+        documents.add({
+          'id': writerDocumentId,
+          'title': scanRecord['title'],
+          'content': PdfToDocumentService.plainTextToDelta(captured.recognizedText),
+          'updated': DateTime.now().toIso8601String(),
+          'source': scanRecord['source'],
           'scanPdfPath': captured.pdfPath,
           'pageCount': captured.pageCount,
           'ocrLanguage': 'ben+eng',
-        };
-        final updatedScans = [scanRecord, ..._items];
-        await _save(updatedScans);
-        if (!mounted) return;
-        setState(() => _items = updatedScans);
-        if (captured.recognizedText.trim().isNotEmpty) {
-          final documents = await loadDocuments();
-          documents.add({
-            'id': DateTime.now().microsecondsSinceEpoch.toString(),
-            'title': scanRecord['title'],
-            'content': PdfToDocumentService.plainTextToDelta(captured.recognizedText),
-            'updated': DateTime.now().toIso8601String(),
-            'source': 'native_document_scan',
-            'scanPdfPath': captured.pdfPath,
-            'pageCount': captured.pageCount,
-            'ocrLanguage': 'ben+eng',
-          });
-          await storeDocuments(documents);
-        }
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(_bn
-              ? '${captured.pageCount} পৃষ্ঠা স্ক্যান PDF হিসেবে সংরক্ষিত হয়েছে। ${captured.recognizedText.trim().isEmpty ? 'OCR লেখা পাওয়া যায়নি।' : 'লেখা Writer-এও সংরক্ষিত হয়েছে।'}'
-              : '${captured.pageCount} pages saved as a scanned PDF. ${captured.recognizedText.trim().isEmpty ? 'No OCR text was detected.' : 'Recognized text was also saved to Writer.'}'),
-          action: SnackBarAction(
-            label: _bn ? 'PDF শেয়ার' : 'Share PDF',
-            onPressed: () => _shareScan(scanRecord),
-          ),
-          duration: const Duration(seconds: 8),
-        ));
-        return;
+        });
+        await storeDocuments(documents);
       }
-
-      // Keep the existing gallery OCR route on platforms without the Android scanner.
-      final file = await FilePicker.pickFile(
-        type: FileType.custom,
-        allowedExtensions: const ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'tif', 'tiff'],
-      );
-      if (file == null) return;
-      final size = file.lengthSync() ?? await file.length();
-      if (size == null || size == 0 || size > 30 * 1024 * 1024) {
-        throw FormatException(_bn ? 'ছবির সাইজ ১ বাইট থেকে ৩০ MB হতে হবে।' : 'Image must be between 1 byte and 30 MB.');
-      }
-      final Uint8List bytes = await file.readAsBytes();
-      final converted = await PdfToDocumentService.convertImage(bytes, sourceName: file.name);
-      final documents = await loadDocuments();
-      documents.add({
-        'id': DateTime.now().microsecondsSinceEpoch.toString(),
-        'title': converted.title,
-        'content': converted.writerDelta,
-        'updated': DateTime.now().toIso8601String(),
-        'source': 'scan_ocr',
-        'sourceImageName': file.name,
-        'conversion': {'pageCount': converted.pageCount, 'ocrUsed': true},
-      });
-      await storeDocuments(documents);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(_bn ? 'স্ক্যানের লেখা Writer-এ সংরক্ষিত হয়েছে।' : 'Scanned text saved to Writer.'),
+        content: Text(_bn
+            ? '${captured.pageCount} পৃষ্ঠা স্ক্যান PDF হিসেবে সংরক্ষিত হয়েছে। ${captured.recognizedText.trim().isEmpty ? 'OCR লেখা পাওয়া যায়নি।' : 'লেখা Writer-এও সংরক্ষিত হয়েছে।'}'
+            : '${captured.pageCount} pages saved as a scanned PDF. ${captured.recognizedText.trim().isEmpty ? 'No OCR text was detected.' : 'Recognized text was also saved to Writer.'}'),
         action: SnackBarAction(
-          label: _bn ? 'Writer খুলুন' : 'Open Writer',
-          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => WriterScreen(isBangla: _bn))),
+          label: _bn ? 'PDF শেয়ার' : 'Share PDF',
+          onPressed: () => _shareScan(scanRecord),
         ),
+        duration: const Duration(seconds: 8),
       ));
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -711,11 +902,17 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
   }
 
   Future<void> _previewSlides(Map<String, dynamic> presentation) async {
-    final slides = (presentation['content']?.toString() ?? '')
-        .split(RegExp(r'\r?\n'))
-        .map((value) => value.trim())
-        .where((value) => value.isNotEmpty)
-        .toList(growable: false);
+    final List<String> slides;
+    try {
+      slides = SlidesDocumentCodec.decode(
+        presentation['content']?.toString() ?? '',
+      );
+    } on FormatException catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text((_bn ? 'স্লাইড ডেটা পড়া যায়নি: ' : 'Could not read slide data: ') + error.message),
+      ));
+      return;
+    }
     if (slides.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(_bn ? 'প্রিভিউয়ের আগে স্লাইডের লেখা যোগ করুন।' : 'Add slide content before opening the preview.'),
@@ -737,11 +934,9 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
   Future<void> _exportSlidePdf(Map<String, dynamic> slide) async {
     try {
       final title = slide['title']?.toString().trim() ?? '';
-      final slideTexts = (slide['content']?.toString() ?? '')
-          .split(RegExp(r'\r?\n'))
-          .map((value) => value.trim())
-          .where((value) => value.isNotEmpty)
-          .toList(growable: false);
+      final slideTexts = SlidesDocumentCodec.decode(
+        slide['content']?.toString() ?? '',
+      );
       final bytes = await SlidesPdfExportService.build(
         title: title,
         slideTexts: slideTexts,
@@ -1243,7 +1438,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
                       title: Text(item['title']?.toString() ?? ''),
                       subtitle: Text(item['content']?.toString() ?? '', maxLines: 2, overflow: TextOverflow.ellipsis),
                       onTap: () => widget.module == 'Scan'
-                          ? _shareScan(item)
+                          ? _openScanPdf(item)
                           : _editItem(item: item),
                       trailing: widget.module == 'Forms'
                           ? Wrap(
@@ -1284,6 +1479,21 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
                                 )
                               : widget.module == 'Scan'
                                   ? Wrap(spacing: 0, children: [
+                                      IconButton(
+                                        tooltip: _bn ? 'Writer-এ খুলুন' : 'Open in Writer',
+                                        icon: const Icon(Icons.description_outlined),
+                                        onPressed: () => _openScanInWriter(item),
+                                      ),
+                                      IconButton(
+                                        tooltip: _bn ? 'OCR লেখা যাচাই' : 'Review OCR text',
+                                        icon: const Icon(Icons.text_snippet_outlined),
+                                        onPressed: () => _reviewScanText(item),
+                                      ),
+                                      IconButton(
+                                        tooltip: _bn ? 'PDF দেখুন' : 'View PDF',
+                                        icon: const Icon(Icons.picture_as_pdf_outlined),
+                                        onPressed: () => _openScanPdf(item),
+                                      ),
                                       IconButton(
                                         tooltip: _bn ? 'PDF শেয়ার' : 'Share PDF',
                                         icon: const Icon(Icons.share_outlined),
@@ -1373,31 +1583,24 @@ class _FormResponseDialogState extends State<_FormResponseDialog> {
 
   String? _validate(int index, String? raw) {
     final question = widget.questions[index];
-    final value = (raw ?? '').trim();
-    if (question['required'] == true && value.isEmpty) {
-      return widget.isBangla ? 'এই ঘরটি পূরণ করুন' : 'This field is required';
+    final error = FormsAnswerValidator.validate(
+      type: question['type'] as String,
+      value: raw ?? '',
+      required: question['required'] == true,
+    );
+    if (error == null) return null;
+    switch (error) {
+      case FormsAnswerValidator.requiredError:
+        return widget.isBangla ? 'এই ঘরটি পূরণ করুন' : 'This field is required';
+      case FormsAnswerValidator.emailError:
+        return widget.isBangla ? 'সঠিক Email দিন' : 'Enter a valid email address';
+      case FormsAnswerValidator.numberError:
+        return widget.isBangla ? 'সীমার মধ্যে সঠিক সংখ্যা দিন' : 'Enter a finite valid number';
+      case FormsAnswerValidator.dateError:
+        return widget.isBangla ? 'সঠিক তারিখ নির্বাচন করুন' : 'Enter a real date in YYYY-MM-DD format';
+      default:
+        return widget.isBangla ? 'সঠিক তথ্য দিন' : 'Enter a valid value';
     }
-    if (value.isEmpty) return null;
-    switch (question['type']) {
-      case 'email':
-        final at = value.indexOf('@');
-        final dot = value.lastIndexOf('.');
-        if (at <= 0 || dot <= at + 1 || dot == value.length - 1 || value.contains(' ')) {
-          return widget.isBangla ? 'সঠিক Email দিন' : 'Enter a valid email address';
-        }
-        break;
-      case 'number':
-        if (num.tryParse(value) == null) {
-          return widget.isBangla ? 'শুধু সংখ্যা দিন' : 'Enter a valid number';
-        }
-        break;
-      case 'date':
-        if (DateTime.tryParse(value) == null) {
-          return widget.isBangla ? 'সঠিক তারিখ নির্বাচন করুন' : 'Enter a valid date';
-        }
-        break;
-    }
-    return null;
   }
 
   Future<void> _chooseDate(int index) async {

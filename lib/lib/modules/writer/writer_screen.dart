@@ -399,9 +399,9 @@ class _WriterScreenState extends State<WriterScreen> {
                   padding: EdgeInsets.fromLTRB(horizontalPadding, 12, horizontalPadding, 100),
                   itemCount: documents.length,
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: width >= 1100 ? 4 : width >= 700 ? 3 : width >= 360 ? 2 : 1,
+                    crossAxisCount: width >= 1100 ? 4 : width >= 700 ? 3 : width >= 480 ? 2 : 1,
                     crossAxisSpacing: 16, mainAxisSpacing: 16,
-                    childAspectRatio: width >= 900 ? 1.12 : 0.78,
+                    childAspectRatio: width >= 900 ? 1.12 : width >= 480 ? 0.78 : 1.25,
                   ),
                   itemBuilder: (context, index) {
                     final document = documents[index];
@@ -412,33 +412,49 @@ class _WriterScreenState extends State<WriterScreen> {
                       child: InkWell(
                         borderRadius: BorderRadius.circular(20), onTap: () => openDocument(document),
                         child: Container(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(20), border: Border.all(color: OFFYNEXTheme.border),
                             boxShadow: [BoxShadow(color: OFFYNEXTheme.ink.withValues(alpha: 0.035), blurRadius: 16, offset: const Offset(0, 6))],
                           ),
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Row(children: [
-                              Container(width: 44, height: 50, decoration: BoxDecoration(color: OFFYNEXTheme.blueSoft, borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.description_rounded, color: OFFYNEXTheme.blue, size: 25)),
-                              const Spacer(),
-                              PopupMenuButton<String>(
-                                tooltip: _t('আরও অপশন', 'More options'),
-                                onSelected: (value) { if (value == 'rename') renameDocument(document); if (value == 'delete') deleteDocument(document); },
-                                itemBuilder: (_) => [
-                                  PopupMenuItem(value: 'rename', child: Text(_t('নাম পরিবর্তন', 'Rename'))),
-                                  PopupMenuItem(value: 'delete', child: Text(_t('মুছুন', 'Delete'))),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  const Spacer(),
+                                  Container(
+                                    width: 28,
+                                    height: 32,
+                                    decoration: BoxDecoration(color: OFFYNEXTheme.blueSoft, borderRadius: BorderRadius.circular(9)),
+                                    child: const Icon(Icons.description_rounded, color: OFFYNEXTheme.blue, size: 18),
+                                  ),
+                                  const SizedBox(width: 2),
+                                  PopupMenuButton<String>(
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints.tightFor(width: 24, height: 24),
+                                    iconSize: 16,
+                                    tooltip: _t('আরও অপশন', 'More options'),
+                                    onSelected: (value) { if (value == 'rename') renameDocument(document); if (value == 'delete') deleteDocument(document); },
+                                    itemBuilder: (_) => [
+                                      PopupMenuItem(value: 'rename', child: Text(_t('নাম পরিবর্তন', 'Rename'))),
+                                      PopupMenuItem(value: 'delete', child: Text(_t('মুছুন', 'Delete'))),
+                                    ],
+                                  ),
                                 ],
                               ),
-                            ]),
-                            const Spacer(),
-                            Text(title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: OFFYNEXTheme.ink, fontSize: 15, fontWeight: FontWeight.w800, height: 1.3)),
-                            const SizedBox(height: 6),
-                            Text(_t('ডিভাইসে সংরক্ষিত', 'Saved on device'), style: const TextStyle(color: OFFYNEXTheme.muted, fontSize: 11)),
-                            if (updated != null) ...[
-                              const SizedBox(height: 4),
-                              Text(updated.replaceFirst('T', '  '), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: OFFYNEXTheme.muted, fontSize: 9)),
+                              const SizedBox(height: 6),
+                              Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: OFFYNEXTheme.ink, fontSize: 13, fontWeight: FontWeight.w800, height: 1.2)),
+                              const SizedBox(height: 3),
+                              Text(_t('ডিভাইসে সংরক্ষিত', 'Saved on device'), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: OFFYNEXTheme.muted, fontSize: 10)),
+                              if (updated != null) ...[
+                                const SizedBox(height: 2),
+                                Text(updated.replaceFirst('T', '  '), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: OFFYNEXTheme.muted, fontSize: 8)),
+                              ],
                             ],
-                          ]),
+                          ),
                         ),
                       ),
                     );
@@ -3334,15 +3350,11 @@ Future<void> insertWriterImage() async {
                   1,
                   page.height - (marginTop + marginBottom) * 96,
                 ).toDouble();
-                final contentHeight = WriterContentMetrics.estimateHeight(
+                final estimatedPageCount = WriterContentMetrics.estimatePageCount(
                   delta: quillController.document.toDelta().toJson(),
                   maxWidth: pageContentWidth,
                   pageContentHeight: pageContentHeight,
                   textDirection: Directionality.of(context),
-                );
-                final estimatedPageCount = math.max(
-                  1,
-                  (contentHeight / pageContentHeight).ceil(),
                 );
                 final documentCanvasHeight =
                     displayHeight * estimatedPageCount;
@@ -3352,7 +3364,12 @@ Future<void> insertWriterImage() async {
                   minScale: 0.5,
                   maxScale: 4.0,
                   constrained: false,
-                  panEnabled: true,
+                  // Keep one-finger taps and text selection available to
+                  // QuillEditor. The parent pan recognizer was competing with
+                  // the editor's tap/long-press recognizers, preventing the
+                  // Android keyboard from opening reliably. Pinch zoom remains
+                  // available; page zoom buttons remain the reliable fallback.
+                  panEnabled: false,
                   scaleEnabled: true,
                   boundaryMargin: const EdgeInsets.all(120),
                   alignment: Alignment.topCenter,
@@ -3388,21 +3405,34 @@ Future<void> insertWriterImage() async {
                                     marginRight * 96 * scale,
                                     marginBottom * 96 * scale,
                                   ),
-                                  child: QuillEditor.basic(
-                                    controller: quillController,
-                                    focusNode: editorFocusNode,
-                                    config: QuillEditorConfig(
-                                      expands: true,
-                                      padding: EdgeInsets.zero,
-                                      placeholder: _t('এখানে আপনার লেখা শুরু করুন...', 'Start writing here...'),
-                                      embedBuilders: [
-                                        WriterTableEmbedBuilder(
-                                          onEdit: editWriterTable,
-                                          isBangla: widget.isBangla,
-                                        ),
-                                        WriterImageEmbedBuilder(),
-                                        WriterPageBreakEmbedBuilder(),
-                                      ],
+                                  child: Listener(
+                                    // Quill handles caret placement and selection;
+                                    // this non-gesture listener catches taps on
+                                    // blank page space as well as the placeholder.
+                                    behavior: HitTestBehavior.translucent,
+                                    onPointerDown: (_) {
+                                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                                        if (mounted && !editorFocusNode.hasFocus) {
+                                          editorFocusNode.requestFocus();
+                                        }
+                                      });
+                                    },
+                                    child: QuillEditor.basic(
+                                      controller: quillController,
+                                      focusNode: editorFocusNode,
+                                      config: QuillEditorConfig(
+                                        expands: true,
+                                        padding: EdgeInsets.zero,
+                                        placeholder: _t('এখানে আপনার লেখা শুরু করুন...', 'Start writing here...'),
+                                        embedBuilders: [
+                                          WriterTableEmbedBuilder(
+                                            onEdit: editWriterTable,
+                                            isBangla: widget.isBangla,
+                                          ),
+                                          WriterImageEmbedBuilder(),
+                                          WriterPageBreakEmbedBuilder(),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),

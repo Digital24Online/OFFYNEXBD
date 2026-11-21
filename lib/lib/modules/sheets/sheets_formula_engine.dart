@@ -7,9 +7,15 @@ class SheetsFormulaEngine {
   static const int maxFormulaLength = 4096;
   static const int maxFormulaTokens = 2048;
 
-  SheetsFormulaEngine(this.cells);
+  SheetsFormulaEngine(
+    this.cells, {
+    this.worksheets = const <String, Map<String, String>>{},
+    this.activeSheetName = 'Sheet1',
+  });
 
   final Map<String, String> cells;
+  final Map<String, Map<String, String>> worksheets;
+  final String activeSheetName;
 
   double? evaluateCell(String reference, [Set<String>? visiting]) {
     final key = reference.toUpperCase();
@@ -23,16 +29,138 @@ class SheetsFormulaEngine {
 
     if (raw.length > maxFormulaLength) return null;
     final active = visiting ?? <String>{};
-    if (!active.add(key)) return null;
+    final visitKey = '${activeSheetName.toLowerCase()}!$key';
+    if (!active.add(visitKey)) return null;
     try {
-      return _FormulaParser(raw.substring(1), this, active).parse();
+      final formula = _expandCrossSheetReferences(raw.substring(1), active);
+      return _FormulaParser(formula, this, active).parse();
     } on FormatException {
       return null;
     } on RangeError {
       return null;
     } finally {
-      active.remove(key);
+      active.remove(visitKey);
     }
+  }
+
+
+  Map<String, String> _cellsForSheet(String sheetName) {
+    if (sheetName.toLowerCase() == activeSheetName.toLowerCase()) {
+      return cells;
+    }
+    for (final entry in worksheets.entries) {
+      if (entry.key.toLowerCase() == sheetName.toLowerCase()) {
+        return entry.value;
+      }
+    }
+    throw FormatException('Unknown worksheet: $sheetName');
+  }
+
+  double? _readQualifiedCell(
+    String sheetName,
+    String reference,
+    Set<String> visiting,
+  ) {
+    final target = _cellsForSheet(sheetName);
+    final key = reference.toUpperCase();
+    final raw = target[key]?.trim() ?? '';
+    if (raw.isEmpty) return 0;
+    if (!raw.startsWith('=')) {
+      final value = double.tryParse(raw);
+      return value != null && value.isFinite ? value : null;
+    }
+    return SheetsFormulaEngine(
+      target,
+      worksheets: worksheets,
+      activeSheetName: sheetName,
+    ).evaluateCell(key, visiting);
+  }
+
+  List<double> _readQualifiedRange(
+    String sheetName,
+    String start,
+    String end,
+    Set<String> visiting,
+  ) {
+    final first = _splitCellReference(start.toUpperCase());
+    final last = _splitCellReference(end.toUpperCase());
+    if (first == null || last == null) {
+      throw const FormatException('Invalid cross-worksheet range');
+    }
+    final minColumn = math.min(first.$1, last.$1).toInt();
+    final maxColumn = math.max(first.$1, last.$1).toInt();
+    final minRow = math.min(first.$2, last.$2).toInt();
+    final maxRow = math.max(first.$2, last.$2).toInt();
+    final count = (maxColumn - minColumn + 1) * (maxRow - minRow + 1);
+    if (count > 10000) {
+      throw const FormatException('Cross-worksheet range is too large');
+    }
+    final target = _cellsForSheet(sheetName);
+    final values = <double>[];
+    for (var row = minRow; row <= maxRow; row++) {
+      for (var column = minColumn; column <= maxColumn; column++) {
+        final key = _columnName(column) + row.toString();
+        final raw = target[key]?.trim() ?? '';
+        if (raw.isEmpty) continue;
+        final value = _readQualifiedCell(sheetName, key, visiting);
+        if (value == null) {
+          if (raw.startsWith('=')) {
+            throw const FormatException('Invalid or circular formula in cross-worksheet range');
+          }
+          continue;
+        }
+        values.add(value);
+      }
+    }
+    return values;
+  }
+
+  String _expandCrossSheetReferences(
+    String formula,
+    Set<String> visiting,
+  ) {
+    final sheetToken = r"(?:'(?:[^']|'')+'|[A-Za-z_][A-Za-z0-9_]*)";
+    final cellToken = r'[A-Z]+[1-9]\d*';
+    final rangePattern = RegExp(
+      '($sheetToken)!($cellToken):($sheetToken!)?($cellToken)',
+      caseSensitive: false,
+    );
+    var expanded = formula.replaceAllMapped(rangePattern, (match) {
+      final sheetName = _decodeSheetName(match.group(1)!);
+      final endSheetToken = match.group(3);
+      if (endSheetToken != null &&
+          _decodeSheetName(endSheetToken.substring(0, endSheetToken.length - 1)).toLowerCase() !=
+              sheetName.toLowerCase()) {
+        throw const FormatException('A range cannot span worksheets.');
+      }
+      final values = _readQualifiedRange(
+        sheetName,
+        match.group(2)!,
+        match.group(4)!,
+        visiting,
+      );
+      return values.map((value) => value.toString()).join(',');
+    });
+    final cellPattern = RegExp(
+      '($sheetToken)!($cellToken)',
+      caseSensitive: false,
+    );
+    expanded = expanded.replaceAllMapped(cellPattern, (match) {
+      final sheetName = _decodeSheetName(match.group(1)!);
+      final value = _readQualifiedCell(sheetName, match.group(2)!, visiting);
+      if (value == null) {
+        throw const FormatException('Cross-worksheet reference is not numeric or contains an error.');
+      }
+      return value.toString();
+    });
+    return expanded;
+  }
+
+  static String _decodeSheetName(String token) {
+    if (token.startsWith("'") && token.endsWith("'")) {
+      return token.substring(1, token.length - 1).replaceAll("''", "'");
+    }
+    return token;
   }
 
   double? _readCell(String reference, Set<String> visiting) =>
@@ -105,7 +233,7 @@ class _FormulaParser {
   _FormulaParser(this.source, this.engine, this.visiting) {
     final pattern = RegExp(
       r'\s+|(?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][+-]?\d+)?|[A-Za-z]+[0-9]+|'
-      r'[A-Za-z_][A-Za-z0-9_]*|>=|<=|<>|[=<>()+\-*/^,:]',
+      r'[A-Za-z_][A-Za-z0-9_]*|>=|<=|<>|[=<>()+\-*/^%,:]',
     );
     var offset = 0;
     for (final match in pattern.allMatches(source)) {
@@ -211,7 +339,12 @@ class _FormulaParser {
   double _parseUnary() {
     if (_accept('+')) return _parseUnary();
     if (_accept('-')) return -_parseUnary();
-    return _parsePower();
+    var value = _parsePower();
+    // Excel-style postfix percentage: 25% evaluates to 0.25.
+    while (_accept('%')) {
+      value /= 100;
+    }
+    return value;
   }
 
   double _parsePower() {
@@ -253,13 +386,17 @@ class _FormulaParser {
       'ABS', 'ROUND', 'ROUNDUP', 'ROUNDDOWN', 'SQRT', 'POWER',
       'MOD', 'INT', 'SIGN', 'MEDIAN', 'LARGE', 'SMALL',
       'CEILING', 'FLOOR', 'PI', 'EXP', 'LN', 'LOG', 'LOG10',
-      'SIN', 'COS', 'TAN', 'ASIN', 'ACOS', 'ATAN',
-      'IF', 'AND', 'OR', 'NOT',
+      'TRUNC', 'FACT', 'EVEN', 'ODD', 'RADIANS', 'DEGREES',
+      'GCD', 'LCM', 'COMBIN', 'PERMUT', 'QUOTIENT',
+      'SIN', 'COS', 'TAN', 'ASIN', 'ACOS', 'ATAN', 'ATAN2', 'COT', 'SINH', 'COSH', 'TANH', 'MROUND',
+      'IF', 'IFERROR', 'AND', 'OR', 'NOT',
     };
     if (!supported.contains(name)) {
       throw FormatException('Unsupported function: $name');
     }
     _expect('(');
+    if (name == 'IF') return _parseIfFunction();
+    if (name == 'IFERROR') return _parseIfErrorFunction();
     final values = <double>[];
     if (!_accept(')')) {
       while (true) {
@@ -370,6 +507,78 @@ class _FormulaParser {
       case 'INT':
         _expectNoExtraArguments(name, values, 1);
         return values.first.floorToDouble();
+      case 'TRUNC':
+        if (values.isEmpty || values.length > 2) {
+          throw const FormatException('TRUNC expects one or two arguments');
+        }
+        final digits = values.length == 2 ? _integerArgument(values[1]) : 0;
+        return _roundTowardZero(values[0], digits);
+      case 'FACT':
+        _expectNoExtraArguments(name, values, 1);
+        final n = _integerArgument(values.first);
+        if (n < 0 || n > 170) throw const FormatException('FACT argument out of range');
+        var factorial = 1.0;
+        for (var i = 2; i <= n; i++) {
+          factorial *= i;
+        }
+        return factorial;
+      case 'EVEN':
+      case 'ODD':
+        _expectNoExtraArguments(name, values, 1);
+        final value = values.first;
+        final rounded = value.isNegative ? value.floor() : value.ceil();
+        if (name == 'EVEN') {
+          final even = rounded.abs().isEven ? rounded : rounded + (rounded.isNegative ? -1 : 1);
+          return even.toDouble();
+        }
+        final odd = rounded.abs().isOdd ? rounded : rounded + (rounded.isNegative ? -1 : 1);
+        return odd.toDouble();
+      case 'RADIANS':
+        _expectNoExtraArguments(name, values, 1);
+        return values.first * math.pi / 180;
+      case 'DEGREES':
+        _expectNoExtraArguments(name, values, 1);
+        return values.first * 180 / math.pi;
+      case 'GCD':
+      case 'LCM':
+        if (values.isEmpty || values.length > 255) {
+          throw FormatException('$name expects between 1 and 255 arguments');
+        }
+        var aggregate = name == 'GCD' ? 0 : 1;
+        for (final value in values) {
+          final integer = _integerArgument(value).abs();
+          if (name == 'GCD') {
+            aggregate = _greatestCommonDivisor(aggregate, integer);
+          } else {
+            if (integer == 0) return 0;
+            aggregate = (aggregate ~/ _greatestCommonDivisor(aggregate, integer)) * integer;
+            if (aggregate > 9007199254740991) {
+              throw const FormatException('LCM result exceeds safe integer range');
+            }
+          }
+        }
+        return aggregate.toDouble();
+      case 'COMBIN':
+      case 'PERMUT':
+        _expectNoExtraArguments(name, values, 2);
+        final n = _integerArgument(values[0]);
+        final k = _integerArgument(values[1]);
+        if (n < 0 || k < 0 || k > n) {
+          throw const FormatException('Invalid combination/permutation arguments');
+        }
+        var result = 1.0;
+        final count = name == 'COMBIN' ? math.min(k, n - k) : k;
+        for (var i = 1; i <= count; i++) {
+          result *= name == 'COMBIN' ? (n - count + i) / i : (n - i + 1);
+          if (!result.isFinite || result > 9007199254740991) {
+            throw const FormatException('Result exceeds safe integer range');
+          }
+        }
+        return result;
+      case 'QUOTIENT':
+        _expectNoExtraArguments(name, values, 2);
+        if (values[1] == 0) throw const FormatException('Division by zero');
+        return (values[0] / values[1]).truncateToDouble();
       case 'SIGN':
         _expectNoExtraArguments(name, values, 1);
         return values.first.sign.toDouble();
@@ -389,6 +598,28 @@ class _FormulaParser {
         _expectNoExtraArguments(name, values, 1);
         if (values.first <= 0) throw const FormatException('LOG10 domain error');
         return math.log(values.first) / math.ln10;
+      case 'MROUND':
+        _expectNoExtraArguments(name, values, 2);
+        if (values[1] == 0 || values[0].sign != values[1].sign && values[0] != 0) {
+          throw const FormatException('MROUND number and multiple must have the same sign.');
+        }
+        return (values[0] / values[1]).roundToDouble() * values[1];
+      case 'SINH':
+        _expectNoExtraArguments(name, values, 1);
+        return (math.exp(values.first) - math.exp(-values.first)) / 2;
+      case 'COSH':
+        _expectNoExtraArguments(name, values, 1);
+        return (math.exp(values.first) + math.exp(-values.first)) / 2;
+      case 'TANH':
+        _expectNoExtraArguments(name, values, 1);
+        final positive = math.exp(values.first);
+        final negative = math.exp(-values.first);
+        return (positive - negative) / (positive + negative);
+      case 'COT':
+        _expectNoExtraArguments(name, values, 1);
+        final tangent = math.tan(values.first);
+        if (tangent.abs() < 1e-15) throw const FormatException('COT domain error');
+        return 1 / tangent;
       case 'SIN':
         _expectNoExtraArguments(name, values, 1);
         return math.sin(values.first);
@@ -425,14 +656,115 @@ class _FormulaParser {
       case 'ATAN':
         _expectNoExtraArguments(name, values, 1);
         return math.atan(values.first);
+      case 'ATAN2':
+        _expectNoExtraArguments(name, values, 2);
+        if (values[0] == 0 && values[1] == 0) {
+          throw const FormatException('ATAN2 is undefined for (0, 0).');
+        }
+        return math.atan2(values[1], values[0]);
     }
     throw const FormatException('Unsupported function');
+  }
+
+  double _parseIfFunction() {
+    final condition = _parseComparison();
+    _expect(',');
+    if (condition != 0) {
+      final whenTrue = _parseComparison();
+      _expect(',');
+      _skipFunctionArgument();
+      _expect(')');
+      return whenTrue;
+    }
+    _skipFunctionArgument();
+    _expect(',');
+    final whenFalse = _parseComparison();
+    _expect(')');
+    return whenFalse;
+  }
+
+  double _parseIfErrorFunction() {
+    double value;
+    try {
+      value = _parseComparison();
+    } on FormatException {
+      if (current != ',') _skipFunctionArgument();
+      _expect(',');
+      final fallback = _parseComparison();
+      _expect(')');
+      return fallback;
+    } on RangeError {
+      if (current != ',') _skipFunctionArgument();
+      _expect(',');
+      final fallback = _parseComparison();
+      _expect(')');
+      return fallback;
+    }
+    _expect(',');
+    _skipFunctionArgument();
+    _expect(')');
+    return value;
+  }
+
+  /// Advances over one syntactically nested argument without evaluating it.
+  /// This gives IF spreadsheet-style lazy branch evaluation.
+  void _skipFunctionArgument() {
+    if (current == null || current == ',' || current == ')') {
+      throw const FormatException('IF argument is missing');
+    }
+    var depth = 0;
+    var consumed = false;
+    while (current != null) {
+      final token = current!;
+      if (depth == 0 && (token == ',' || token == ')')) break;
+      if (token == '(') {
+        depth++;
+      } else if (token == ')') {
+        if (depth == 0) break;
+        depth--;
+      }
+      position++;
+      consumed = true;
+    }
+    if (!consumed || depth != 0) {
+      throw const FormatException('Invalid IF argument');
+    }
   }
 
   bool _isAggregateFunction(String name) => const {
     'SUM', 'AVERAGE', 'COUNT', 'MIN', 'MAX', 'PRODUCT',
     'MEDIAN', 'LARGE', 'SMALL',
   }.contains(name);
+
+  int _integerArgument(double value) {
+    if (!value.isFinite || value != value.truncateToDouble() ||
+        value.abs() > 9007199254740991) {
+      throw const FormatException('Expected a safe integer argument');
+    }
+    return value.toInt();
+  }
+
+  int _greatestCommonDivisor(int a, int b) {
+    var left = a;
+    var right = b;
+    while (right != 0) {
+      final remainder = left % right;
+      left = right;
+      right = remainder;
+    }
+    return left;
+  }
+
+  double _roundTowardZero(double number, int digits) {
+    if (digits > 308) return number;
+    if (digits < -308) return 0;
+    final factor = math.pow(10, digits).toDouble();
+    if (!factor.isFinite) return number;
+    if (factor == 0) return 0;
+    final scaled = number * factor;
+    if (!scaled.isFinite) return number;
+    return scaled.truncateToDouble() / factor;
+  }
 
   double _roundWithPrecision(double number, double precision, String mode) {
     if (!precision.isFinite || precision != precision.truncateToDouble()) {

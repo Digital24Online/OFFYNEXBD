@@ -138,6 +138,50 @@ void main() {
       expect(engine.evaluateCell('A14'), 7);
     });
 
+    test('IF evaluates only the selected branch, including nested branches', () {
+      final engine = SheetsFormulaEngine({
+        'A1': '=IF(1=1,9,1/0)',
+        'A2': '=IF(1=0,1/0,8)',
+        'A3': '=IF(1=1,IF(2=2,6,1/0),1/0)',
+        'A4': '=IF(1=0,IF(2=2,1/0,4),IF(3=3,5,1/0))',
+        'A5': '=IF(1=1,2,)',
+        'A6': '=IF(1=0,,2)',
+      });
+      expect(engine.evaluateCell('A1'), 9);
+      expect(engine.evaluateCell('A2'), 8);
+      expect(engine.evaluateCell('A3'), 6);
+      expect(engine.evaluateCell('A4'), 5);
+      expect(engine.evaluateCell('A5'), isNull);
+      expect(engine.evaluateCell('A6'), isNull);
+    });
+
+    test('IFERROR returns fallback only for formula errors and is lazy', () {
+      final engine = SheetsFormulaEngine({
+        'A1': '=IFERROR(10/0,7)',
+        'A2': '=IFERROR(A3,9)',
+        'A3': '=A3+1',
+        'A4': '=IFERROR(5,1/0)',
+        'A5': '=IFERROR(IF(1=1,4,1/0),1/0)',
+        'A6': '=IFERROR(1/0,IF(2=2,8,1/0))',
+      });
+      expect(engine.evaluateCell('A1'), 7);
+      expect(engine.evaluateCell('A2'), 9);
+      expect(engine.evaluateCell('A4'), 5);
+      expect(engine.evaluateCell('A5'), 4);
+      expect(engine.evaluateCell('A6'), 8);
+    });
+
+    test('rejects malformed IFERROR arguments', () {
+      final engine = SheetsFormulaEngine({
+        'A1': '=IFERROR(1/0)',
+        'A2': '=IFERROR(2,)',
+        'A3': '=IFERROR(,2)',
+      });
+      for (var row = 1; row <= 3; row++) {
+        expect(engine.evaluateCell('A$row'), isNull);
+      }
+    });
+
     test('rejects malformed comparisons and invalid logical argument counts', () {
       final engine = SheetsFormulaEngine({
         'A1': '=1>2>3',
@@ -198,6 +242,18 @@ void main() {
       expect(rangeEngine.evaluateCell('B2'), 3);
       expect(rangeEngine.evaluateCell('B3'), 5);
       expect(rangeEngine.evaluateCell('B4'), 3);
+    });
+
+    test('evaluates Excel-style postfix percentages', () {
+      final engine = SheetsFormulaEngine({
+        'A1': '=25%', 'A2': '=50%*200', 'A3': '=10+5%',
+        'A4': '=-25%', 'A5': '=200*12.5%',
+      });
+      expect(engine.evaluateCell('A1'), 0.25);
+      expect(engine.evaluateCell('A2'), 100);
+      expect(engine.evaluateCell('A3'), 10.05);
+      expect(engine.evaluateCell('A4'), -0.25);
+      expect(engine.evaluateCell('A5'), 25);
     });
 
     test('parses scientific notation in formula numbers', () {
@@ -372,6 +428,116 @@ void main() {
       });
       expect(tooLong.evaluateCell('A1'), isNull);
       expect(tooLong.evaluateCell('A2'), isNull);
+    });
+
+
+    test('resolves direct and aggregate references across worksheets', () {
+      final sheets = <String, Map<String, String>>{
+        'Sheet1': {'A1': '7', 'A2': '=Sheet2!A1+1', 'A3': '=SUM(\'Sales Data\'!B1:B3)'},
+        'Sheet2': {'A1': '12'},
+        'Sales Data': {'B1': '2', 'B2': '3', 'B3': '5', 'C1': '=Sheet1!A1*2'},
+      };
+      final engine = SheetsFormulaEngine(
+        sheets['Sheet1']!,
+        worksheets: sheets,
+        activeSheetName: 'Sheet1',
+      );
+      expect(engine.evaluateCell('A2'), 13);
+      expect(engine.evaluateCell('A3'), 10);
+      final salesEngine = SheetsFormulaEngine(
+        sheets['Sales Data']!,
+        worksheets: sheets,
+        activeSheetName: 'Sales Data',
+      );
+      expect(salesEngine.evaluateCell('C1'), 14);
+    });
+
+    test('rejects missing worksheets, invalid cross-sheet ranges and cross-sheet cycles', () {
+      final sheets = <String, Map<String, String>>{
+        'Sheet1': {'A1': '=Missing!A1', 'A2': '=SUM(Sheet2!A1:Sheet3!A1)', 'A3': '=Sheet2!A1'},
+        'Sheet2': {'A1': '=Sheet1!A3'},
+        'Sheet3': {'A1': '4'},
+      };
+      final engine = SheetsFormulaEngine(
+        sheets['Sheet1']!,
+        worksheets: sheets,
+        activeSheetName: 'Sheet1',
+      );
+      expect(engine.evaluateCell('A1'), isNull);
+      expect(engine.evaluateCell('A2'), isNull);
+      expect(engine.evaluateCell('A3'), isNull);
+    });
+
+    test('supports additional Excel-compatible numeric and engineering functions', () {
+      final engine = SheetsFormulaEngine({
+        'A1': '=TRUNC(-8.9)',
+        'A2': '=TRUNC(123.456,2)',
+        'A3': '=TRUNC(1234,-2)',
+        'A4': '=FACT(5)',
+        'A5': '=EVEN(-3)',
+        'A6': '=ODD(-2)',
+        'A7': '=RADIANS(180)',
+        'A8': '=DEGREES(PI())',
+        'A9': '=GCD(24,36,60)',
+        'A10': '=LCM(4,6,10)',
+        'A11': '=COMBIN(5,2)',
+        'A12': '=PERMUT(5,2)',
+        'A13': '=QUOTIENT(-7,2)',
+      });
+      expect(engine.evaluateCell('A1'), -8);
+      expect(engine.evaluateCell('A2'), closeTo(123.45, 1e-12));
+      expect(engine.evaluateCell('A3'), 1200);
+      expect(engine.evaluateCell('A4'), 120);
+      expect(engine.evaluateCell('A5'), -4);
+      expect(engine.evaluateCell('A6'), -3);
+      expect(engine.evaluateCell('A7'), closeTo(math.pi, 1e-12));
+      expect(engine.evaluateCell('A8'), closeTo(180, 1e-12));
+      expect(engine.evaluateCell('A9'), 12);
+      expect(engine.evaluateCell('A10'), 60);
+      expect(engine.evaluateCell('A11'), 10);
+      expect(engine.evaluateCell('A12'), 20);
+      expect(engine.evaluateCell('A13'), -3);
+    });
+
+    test('rejects invalid integer arguments and unsafe combinatoric results', () {
+      final engine = SheetsFormulaEngine({
+        'A1': '=FACT(-1)',
+        'A2': '=FACT(2.5)',
+        'A3': '=GCD(2,2.5)',
+        'A4': '=LCM(0,0)',
+        'A5': '=COMBIN(4,5)',
+        'A6': '=PERMUT(100,100)',
+      });
+      for (final row in [1, 2, 3, 5, 6]) {
+        expect(engine.evaluateCell('A$row'), isNull);
+      }
+      // Excel's LCM of zero and zero is zero.
+      expect(engine.evaluateCell('A4'), 0);
+    });
+
+    test('supports MROUND and extended trigonometric functions with domain checks', () {
+      final engine = SheetsFormulaEngine({
+        'A1': '=MROUND(10,3)',
+        'A2': '=MROUND(-10,-3)',
+        'A3': '=SINH(0)',
+        'A4': '=COSH(0)',
+        'A5': '=TANH(0)',
+        'A6': '=COT(PI()/4)',
+        'A7': '=ATAN2(1,1)',
+        'A8': '=MROUND(10,-3)',
+        'A9': '=COT(0)',
+        'A10': '=ATAN2(0,0)',
+      });
+      expect(engine.evaluateCell('A1'), 9);
+      expect(engine.evaluateCell('A2'), -9);
+      expect(engine.evaluateCell('A3'), 0);
+      expect(engine.evaluateCell('A4'), 1);
+      expect(engine.evaluateCell('A5'), 0);
+      expect(engine.evaluateCell('A6'), closeTo(1, 1e-12));
+      expect(engine.evaluateCell('A7'), closeTo(math.pi / 4, 1e-12));
+      expect(engine.evaluateCell('A8'), isNull);
+      expect(engine.evaluateCell('A9'), isNull);
+      expect(engine.evaluateCell('A10'), isNull);
     });
 
   });

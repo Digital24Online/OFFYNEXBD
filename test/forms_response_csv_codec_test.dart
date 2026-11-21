@@ -74,6 +74,33 @@ void main() {
     expect(csv, contains('"করিম"'));
   });
 
+  test('preserves repeated question labels as separate CSV columns', () {
+    final csv = FormsResponseCsvCodec.encode([
+      {
+        'formId': 'f1',
+        'formTitle': 'Registration',
+        'submittedAt': '2026-11-18T10:00:00.000Z',
+        'answers': [
+          {'question': 'Contact number', 'answer': '01711111111'},
+          {'question': 'Contact number', 'answer': '01822222222'},
+        ],
+      },
+      {
+        'formId': 'f1',
+        'formTitle': 'Registration',
+        'submittedAt': '2026-11-18T11:00:00.000Z',
+        'answers': [
+          {'question': 'Contact number', 'answer': '01933333333'},
+          {'question': 'Contact number', 'answer': '01644444444'},
+        ],
+      },
+    ]);
+
+    expect(csv, contains('"Registration — Contact number","Registration — Contact number (2)"'));
+    expect(csv, contains('"01711111111","01822222222"'));
+    expect(csv, contains('"01933333333","01644444444"'));
+  });
+
   test('rejects empty or malformed response archives', () {
     expect(() => FormsResponseCsvCodec.encode([]), throwsFormatException);
     expect(

@@ -57,6 +57,7 @@ class FormsResponseCsvCodec {
         throw const FormatException('A form response contains invalid metadata.');
       }
       final answerValues = <String, String>{};
+      final questionOccurrences = <String, int>{};
       for (final answer in answers) {
         if (answer is! Map ||
             answer['question'] is! String ||
@@ -67,8 +68,13 @@ class FormsResponseCsvCodec {
         if (question.isEmpty) {
           throw const FormatException('A form response contains an empty question.');
         }
-        final key = '$formId\u0000$question';
-        final label = '$formTitle — $question';
+        // Two fields may intentionally share the same visible question text.
+        // Keep their ordinal position so CSV export never silently drops one.
+        final occurrence = (questionOccurrences[question] ?? 0) + 1;
+        questionOccurrences[question] = occurrence;
+        final key = '$formId\u0000$question\u0000$occurrence';
+        final suffix = occurrence == 1 ? '' : ' ($occurrence)';
+        final label = '$formTitle — $question$suffix';
         if (!labels.containsKey(key)) {
           if (columns.length >= maxAnswerColumns) {
             throw const FormatException('Forms CSV exceeds the 512-answer-column limit.');
@@ -76,7 +82,7 @@ class FormsResponseCsvCodec {
           columns.add(key);
           labels[key] = label;
         }
-        answerValues.putIfAbsent(key, () => answer['answer'] as String);
+        answerValues[key] = answer['answer'] as String;
       }
       if ((normalized.length + 1) * (columns.length + 2) > maxCsvCells) {
         throw const FormatException('Forms CSV exceeds the 100,000-cell export limit.');

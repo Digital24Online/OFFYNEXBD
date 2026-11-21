@@ -56,6 +56,47 @@ void main() {
     expect(find.text('Apply Table'), findsOneWidget);
   });
 
+  testWidgets('Writer table editor does not overflow on a compact phone viewport', (tester) async {
+    final flutterErrors = <FlutterErrorDetails>[];
+    final previousFlutterErrorHandler = FlutterError.onError;
+    FlutterError.onError = (details) {
+      flutterErrors.add(details);
+      previousFlutterErrorHandler?.call(details);
+    };
+    addTearDown(() => FlutterError.onError = previousFlutterErrorHandler);
+    SharedPreferences.setMockInitialValues({});
+    await tester.binding.setSurfaceSize(const Size(360, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: false)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('New Document'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Insert'));
+    await tester.tap(find.text('Insert'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Table'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Apply Table'));
+    await tester.pumpAndSettle();
+
+    final editTable = find.text('Edit Table').first;
+    await tester.ensureVisible(editTable);
+    await tester.tap(editTable);
+    await tester.pumpAndSettle();
+
+    // The dialog title and its action label may both be visible.
+    expect(find.text('Edit Table'), findsNWidgets(2));
+    expect(find.text('Insert Above'), findsOneWidget);
+    expect(find.text('Insert Left'), findsOneWidget);
+    final renderException = tester.takeException();
+    expect(
+      renderException,
+      isNull,
+      reason: flutterErrors.map((details) => details.toString()).join('\n'),
+    );
+  });
+
   testWidgets('Writer ribbon follows Bangla and English app language', (tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: true)));
@@ -291,5 +332,30 @@ void main() {
         reason: 'Duplicate Home option detected for $icon',
       );
     }
+  });
+
+  testWidgets('Writer document body receives tap focus for Android text input', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.binding.setSurfaceSize(const Size(400, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: true)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('নতুন ডকুমেন্ট'));
+    await tester.pumpAndSettle();
+
+    final editor = find.byType(QuillEditor);
+    expect(editor, findsOneWidget);
+    await tester.ensureVisible(editor);
+    await tester.tapAt(tester.getCenter(editor));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final quillEditor = tester.widget<QuillEditor>(editor);
+    expect(
+      quillEditor.focusNode.hasFocus,
+      isTrue,
+      reason: 'Tapping the Writer document body must focus the Quill editor so Android can show the soft keyboard.',
+    );
   });
 }

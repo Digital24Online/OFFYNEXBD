@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
-/// Creates a portable landscape PDF presentation from one-line-per-slide text.
+/// Creates a portable landscape PDF presentation from ordered slide text.
 class SlidesPdfExportService {
   static const int maxSlides = 200;
   static const int maxTextBytes = 5 * 1024 * 1024;
@@ -13,11 +13,8 @@ class SlidesPdfExportService {
     required String title,
     required List<String> slideTexts,
   }) async {
-    final slides = slideTexts
-        .map((value) => value.trim())
-        .where((value) => value.isNotEmpty)
-        .toList(growable: false);
-    if (slides.isEmpty) {
+    final slides = slideTexts.map((value) => value.trim()).toList(growable: false);
+    if (slides.isEmpty || slides.every((value) => value.isEmpty)) {
       throw const FormatException('A presentation needs at least one slide.');
     }
     if (slides.length > maxSlides) {

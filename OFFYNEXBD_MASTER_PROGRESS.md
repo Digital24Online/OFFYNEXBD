@@ -1708,3 +1708,287 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - [x] PR #10 marked Ready and squash-merged; merge commit `9eb527fbca74426fb9f9ea4bcb83f5aabb67158f`.
 - [ ] This is a workspace navigation/UX correction only. It does not complete Slides, Fonts, AI, Forms, Database or any other module.
 - Continue with real editor workflows and module capabilities; keep implementation and CI acceptance distinct.
+
+
+## Priority four-module completion work — Writer, Sheets, PDF, Scan — 2026-11-20
+
+### Work branch
+- Branch: `work/writer-sheets-pdf-scan-completion-20261120`
+- Based on current `main`; no changes merged.
+- Scope is deliberately limited to Writer, Sheets, PDF and Scan until these four modules pass their completion gates.
+
+### Implemented in this tranche (source changes; CI pending)
+- **Sheets:** formula evaluation now resolves bounded direct references and aggregate ranges across worksheets, including quoted worksheet names with spaces. Missing worksheet names, cross-worksheet ranges spanning different sheets, and cross-sheet circular references fail safely. The Sheets screen supplies the workbook worksheet map to formula evaluation and Pivot source calculations. Added focused tests.
+- **PDF:** shared PDF byte validation is available for reader and conversion flows; validates the PDF signature, non-empty minimum and 50 MB limit. Conversion validates page count (1–1,000) and verifies DOCX ZIP output signatures. Added boundary and signature tests.
+- **PDF Reader:** added a PDF preview screen using the existing printing stack, with print/share actions. PDF-to-Document can open the original imported PDF in Reader without replacing the source bytes.
+- **Scan:** native Android scanner output now validates PDF signature, page count (1–50) and 50 MB limit. Saved PDF writes use a staged file and rename only after byte-count verification. OCR image byte limits are centralized. Added validation tests.
+- **Scan-to-PDF:** Scan history can open the saved PDF in Reader, open OCR text in an editable Writer document, review/correct OCR text and synchronize the correction back to Writer; sharing and confirmed deletion remain available.
+- Updated four module READMEs to state current implementation and remaining limits accurately.
+
+### Still blocking a claim of full completion
+- **Writer:** true content-aware pagination is not implemented. Current canvas remains one continuous QuillEditor with estimated painted page backgrounds. Rich/merged-cell table model, per-section layout/header-footer behavior, full DOCX/ODT fidelity, genuine Bangla spellcheck and arbitrary user-font import are not complete. Phone, keyboard, Bangla glyph and printer interoperability acceptance remain pending.
+- **Sheets:** broad Excel formula compatibility (text/date/time/lookup/financial/dynamic arrays), native XLSX chart and conditional-formatting round-trip, advanced Pivot filtering/drill-down, ODS support and complete Excel compatibility remain open.
+- **PDF:** Reader preview is not a full PDF editor. Editing text/images, merge/split/page reorder/delete, compression, annotation/redaction, forms, signatures, encryption/password, OCR review/search layer, metadata and batch tools remain open.
+- **Scan:** native document scanner is Android-only in the current dependency. Other-platform native scanner parity, full scan-history editing, OCR correction/review and real camera/device acceptance remain open.
+
+### Verification state
+- [ ] Flutter Analyze on this exact branch head.
+- [ ] Full automated test suite on this exact branch head.
+- [ ] Signed Android release APK.
+- [ ] Signing certificate and install metadata verification.
+- [ ] APK package contents verification and Actions artifact upload.
+- [ ] Physical Android tests: Writer page fit/zoom/keyboard/selection/Bangla; Sheets multi-sheet/cross-sheet formulas/XLSX; PDF open/print/share; Scan camera, multipage, OCR, save/share/delete.
+- [ ] Representative DOCX/ODT and Bangla PDF visual checks with Word/LibreOffice and a real printer.
+- This tranche is not complete until all source-level gaps are implemented and every applicable acceptance gate has evidence. Do not merge based only on a passing CI run.
+
+
+
+### Sheets formula correctness follow-up — 2026-11-20
+- Added lazy evaluation for the `IF(condition, value_if_true, value_if_false)` function. Only the selected branch is evaluated, so a division-by-zero or circular-reference formula in the unused branch no longer incorrectly fails the whole IF expression.
+- Nested IF branches are supported by the same parser path; malformed or missing branches still return a safe formula error.
+- Added regression tests for both branch directions, nested IF, and malformed arguments.
+- New verification run #622 is running against commit `04e49139ee86285370db0edeb9bb0065f8a7732c`; do not mark this follow-up verified until the run completes successfully.
+
+
+### Follow-up in the four-module tranche
+- **Scan OCR review:** added a correction dialog in Scan history. Corrected OCR text is saved back to the scan record and synchronized to its linked Writer document by stable document ID; this avoids creating duplicate Writer documents on repeated corrections.
+- **Scan PDF Reader handoff:** opening a scan history record validates and previews the saved original PDF; share and confirmed delete remain separate actions.
+- CI must run again on the latest branch head after these follow-up changes.
+
+
+- **PDF direct open:** added a separate Open PDF action so users can preview/print/share an original PDF without first converting it to Writer. The PDF-to-Document conversion action remains distinct and retains the source bytes.
+- The current PR head changed after the previous Actions run was queued; a fresh run on the final head is required.
+
+
+### Integrated OCR Input Validation — 2026-11-20
+- [x] PDF-to-Document OCR now verifies that image bytes match the declared extension before writing a temporary OCR input; malformed or extension-spoofed files are rejected before reaching the OCR engine.
+- [x] Embedded PDF images are identified by their actual JPEG/PNG/WEBP/BMP/TIFF signatures before OCR; unsupported or malformed image payloads are skipped rather than mislabeled as PNG.
+- [x] Scan uses the same shared OCR entry point, so imported scan images receive the same signature validation.
+- [x] Added regression coverage for JPEG-as-PNG and PNG-as-JPEG spoofing.
+- [ ] Analyze, full automated tests and signed Android APK build are pending GitHub Actions verification for this commit.
+
+
+## Integrated Sheets formula compatibility batch — 2026-11-20
+
+- Added Excel-style numeric functions: TRUNC, FACT, EVEN, ODD, RADIANS, DEGREES, GCD, LCM, COMBIN, PERMUT and QUOTIENT.
+- Added bounded integer validation, factorial/result overflow guards and regression tests for valid and invalid inputs.
+- This extends numeric formula coverage; it does not establish full Excel compatibility. Text/date/time/lookup/financial/dynamic-array functions, formula strings and full XLSX interoperability remain open.
+- CI verification is pending for this commit; do not mark the batch verified until Analyze, the full test suite and signed Android build pass.
+
+## Verification update — 2026-11-21 (Build #654)
+
+- [x] Exact PR #13 head `51c0930a7202ffd541971ee6289a5bd6d67aab92` passed Flutter Analyze.
+- [x] Full configured Flutter automated test suite passed on the same commit.
+- [x] Signed Android release APK build passed.
+- [x] Existing Android signing certificate and install package metadata verification passed.
+- [x] Download package contents verification and Actions artifact upload passed.
+- Artifact: `OFFYNEXBD-Android-APK`, artifact ID `14695934431`, size 52,809,773 bytes; expires 2026-12-05.
+- Run: https://github.com/Digital24Online/OFFYNEXBD/actions/runs/44876261148
+- [ ] Physical Android, keyboard, Bangla rendering, camera, printer, Word/LibreOffice and cross-platform acceptance remain unverified.
+- [ ] This successful build verifies the current source only; it does not close the implementation gaps listed above. PR #13 remains Draft and must not be merged as a completed product.
+
+
+## International design audit and unified UI system — 2026-11-21
+
+- Reviewed official Microsoft 365, WPS Office, Adobe Acrobat, CamScanner and Notion feature/mobile documentation. The implementation takes proven interaction patterns only; it does not copy brand identity or assume every competitor feature is available on mobile.
+- Added the master specification at `docs/OFFYNEXBD_GLOBAL_DESIGN_SYSTEM.md`. It maps navigation and option groups for all ten modules: Writer, Sheets, Slides, PDF, Fonts, AI Assistant, Cloud, Forms, Scan and Database.
+- The specification defines one brand palette, semantic status colors, typography scale, 4 dp spacing rhythm, touch-target dimensions, shared dashboard/editor/library/settings/dialog templates, phone/tablet/desktop behavior, Bangla and accessibility requirements, and release acceptance gates.
+- Expanded `lib/lib/theme/offynex_theme.dart` with canonical module accents, shared spacing/radius/touch tokens, typography styles and Material 3 color/button tokens.
+- Updated the Home dashboard module colors to consume the shared theme accent constants instead of maintaining a second set of unrelated hard-coded values.
+- Added `test/offynex_theme_test.dart` for module accent coverage and shared theme/touch-target invariants.
+- Initial CI on the earlier UI-test commit found two test assertion issues (not product failures): the Writer dialog exposes two matching Edit Table labels, and Database dropdown options are only visible after opening the field. Both test assertions were corrected in subsequent commits. Re-run the full suite on the latest branch head before treating this design batch as verified.
+- This is the master design blueprint and shared-token foundation, not a claim that all ten module screens have already been rebuilt. Each screen must be migrated to these shared templates, every option must be connected to a real operation, and responsive screenshots plus device checks must pass before design completion.
+- International reference sources: Microsoft 365 mobile apps (https://support.microsoft.com/en-us/office/foundations-experiences/microsoft-365-mobile-apps); WPS feature suite (https://www.wps.com/feature/); WPS mobile suite (https://www.wps.com/office/ios/); Adobe Acrobat mobile FAQ (https://helpx.adobe.com/acrobat/mobile/get-started/faqs.html); CamScanner (https://www.camscanner.com/); Notion features (https://www.notion.com/product/features); Notion mobile behavior (https://www.notion.com/help/notion-for-mobile).
+
+
+## Integrated Verification and Fix Batch — 2026-11-21
+
+### Repository verification
+- Branch: `work/writer-sheets-pdf-scan-completion-20261120`
+- Latest source commit at this checkpoint: `ab7fd680b7531831db86d2b5ae21f530210a5b31`
+- Draft PR #13 remains open; do not merge until all quality gates and real-device acceptance checks pass.
+- Build #686 (`44880040455`) failed at tests: 244 passed, 1 failed. The failing case was the compact-phone Writer table-editor test; the recorded rendering exception originated in the Writer document-library card header at `writer_screen.dart:421`, where a horizontal Row overflowed by 29 px.
+- Corrected the library card header to use a wrapping layout and compact popup-menu constraints. Commit: `da23579df3e62ad67699877bdd91b094148e2c0e`.
+- Flutter SVG logs also reported unsupported `<filter/>` elements in the selected OFFYNEXBD logo/icon. Removed the unsupported filter and shadow path while retaining the approved logo geometry, gradients, colors and text. Commits: `7dd07403bcf9c7c3e4a12ce51f1949e6e4479a55`, `ab7fd680b7531831db86d2b5ae21f530210a5b31`.
+- New Actions runs #690 and #691 were queued for the current commit at the time of this note. Their results must be checked before calling the source verified. Earlier runs on older commits are not evidence for this source.
+
+### Current module status — do not overstate completion
+- Writer: rich-text editing, ribbon, page setup, zoom, tables, image support, document recovery and PDF/DOCX/ODT foundations exist. Still needs real pagination/content-aware page layout, deeper table editing, mobile toolbar overlap cleanup, spelling/review completeness, broader DOCX/ODT fidelity and Android device validation.
+- Sheets: workbook/grid, formula engine, multiple worksheets, XLSX/CSV import/export, validation, analytics, PDF export and recovery exist. Still needs broader Excel function/format compatibility, chart editing, conditional formatting/pivots and robust round-trip verification on real files.
+- Slides: saved presentation records, preview and PDF export exist; this is not yet a complete slide editor. Needs canvas editing, themes/layouts, slide assets, transitions/animations and PPTX import/export.
+- PDF: PDF-to-Document and image-to-document conversion plus read/print/share preview exist. The PDF reader is read-only; direct text/object editing, annotations, page organization, OCR correction workflow, compression, protection and signatures remain.
+- Fonts: current saved-record workspace is not a complete font manager. Needs safe font import/validation, preview specimens, activation and embedding checks.
+- AI Assistant: currently offline prompt/record workspace only. A real AI provider service, secure credential handling, consent/context controls and result insertion are required; do not imply AI generation is live.
+- Cloud: local backup/export foundations exist. Authentication, remote storage, sync, conflict resolution, sharing and version history require a backend and security model.
+- Forms: question/response collection and CSV export foundations exist. Needs a full visual form builder, conditional logic, public publishing, validation UX and response analytics.
+- Scan: Android native document scanner/OCR, multipage PDF and scan history/review flows exist. Other platform support and real-device camera/OCR quality checks remain.
+- Database: local typed fields/rows/CSV foundations exist. Needs relations, filtering/sorting/query tools, schema migrations, larger datasets and backup/restore verification.
+- Platform: Android is the active verification target. iOS, Windows and macOS builds and native feature parity have not been verified.
+
+### Acceptance rule
+A module is complete only after its actual workflows exist, tests cover them, the relevant CI run passes, and platform/device checks are performed. A design specification, navigation tile or placeholder screen is not feature completion.
+
+
+## Follow-up verification correction — 2026-11-21
+
+- Re-checked completed CI runs #690 and #692 and read the failing test log, rather than relying on the previous summary.
+- Both runs failed the same test: `Writer table editor does not overflow on a compact phone viewport`. The actual reported error is a vertical RenderFlex overflow of 138 px at the end of the table-edit dialog test. 244 tests passed and 1 failed in each run.
+- Correction to the earlier diagnosis: the 29 px horizontal overflow in the Writer library card was the earlier failure recorded in #686. The later #690/#692 failure is a separate vertical overflow in the table editor dialog; the card-header wrapping patch does not resolve it.
+- Updated `lib/lib/modules/writer/writer_table.dart` in commit `2082f71cb5ffb5901430fecc8a2bd46a4a9e0ef6`: dialog content is scrollable, dialog content height is bounded to 54% of the available screen height, and the table preview receives its own bounded vertical viewport.
+- Build #693, run ID `44880886363`, is running on the exact table-dialog fix commit. Do not mark it fixed until Analyze and all tests pass; then verify signed APK packaging as well.
+- Latest verified branch head at this note: `2082f71cb5ffb5901430fecc8a2bd46a4a9e0ef6`.
+
+
+## Compact Writer overflow follow-up — 2026-11-21 (verified failure analysis and second correction)
+
+- Rechecked Build #693 (run ID 44880886363) job logs: Analyze succeeded; Tests failed with 244 passed / 1 failed. The failure was not fixed by the first dialog sizing patch.
+- Exact test: `Writer table editor does not overflow on a compact phone viewport` in `test/writer_features_test.dart`.
+- Logs revealed TWO simultaneous vertical overflows in that same test: (1) Writer document-library card Column at `writer_screen.dart:420`, constrained to a narrow card width/height; (2) table editor dialog content Column at `writer_table.dart:316`, overflowing by 34 px. The larger 138 px card overflow was the primary exception; the dialog also overflowed.
+- Second correction committed: `821135ac0e5be2ace03b5f89bb4f75dc284581d8` reduces compact dialog toolbar/preview heights so all dialog controls fit the bounded viewport while retaining scrollable controls and preview.
+- Second correction committed: `42667eb294f04c71bb0efeda5225059b643aadc8` changes Writer library to one column below 480 logical px and adjusts the compact one-column card aspect ratio, avoiding the cramped two-column card on 360 px phones.
+- These are source corrections only until the new workflow passes Analyze, all tests, signed Android APK build, signature/install metadata checks and artifact upload. Do not mark fixed/verified until CI confirms.
+- Build #694 (run ID 44880890820) was cancelled before Analyze/Tests; it provides no verification evidence.
+- App Info recheck: `assets/branding/founder_profile.jpg` exists in the branch (7,313 bytes); `assets/branding/offynexbd_icon.svg` and `offynexbd_logo.svg` also exist. The `test/app_info_screen_test.dart` test passed in Build #693, confirming the creator attribution and selected portrait are wired into the App Info view. This does not constitute a legal identity verification; it is the app's declared creator attribution.
+
+
+## Writer compact-phone overflow — root cause and correction — 2026-11-21
+
+- Re-read Build #709 job log and verified the exact assertion: the compact-phone Writer table-editor test fails with `A RenderFlex overflowed by 2.7 pixels on the right`; Flutter Analyze passes and 244 tests pass, 1 fails.
+- Inspected the actual table dialog widget tree and confirmed the remaining narrow-screen risk is the icon-and-label action buttons inside a `Wrap`: `OutlinedButton.icon` internally lays out an icon and an unconstrained text label in a Row. Wrapping the buttons does not constrain the label inside each button, so a long translated label can still overflow by a few pixels.
+- Replaced the 12 table-editor icon action buttons with a shared responsive action-button builder. It uses a constrained Row with a Flexible label so long English/Bangla labels wrap inside the button while preserving the existing actions, keys, and callbacks.
+- Fix commit: `8ff1bdc888469d2b7b777090536cc620558ba13f`.
+- [ ] The source correction is not verified until a fresh run on this exact commit passes Analyze, all tests, signed APK build, signature/install metadata checks and artifact upload.
+- [ ] The remaining cross-module implementation and device acceptance gaps listed above remain open; this correction does not mark the whole project complete.
+
+
+## Writer compact-card overflow — corrected diagnosis and responsive fix — 2026-11-21
+
+- Build #714 full test diagnostics located the 2.7 px right overflow in the Writer document-library card header Row in `lib/lib/modules/writer/writer_screen.dart`, not in the Table Editor action buttons.
+- The previous progress note attributing the remaining overflow to Table Editor action-button labels was incorrect. The Table Editor button refactor remains in the branch but was not the root-cause fix for Build #714.
+- Commit `ce655766bcb44c4627b9f8532f952f29ad64140a` removes the expanding Spacer from the narrow header, reduces the document icon footprint, and gives the popup-menu control a fixed compact 28×28 constraint while retaining rename/delete actions.
+- [ ] Re-run Flutter Analyze, all tests, signed Android APK, signature/install metadata, package verification and artifact upload on this commit. Do not mark the overflow fixed until the compact-phone regression test passes.
+- All ten module completion gaps and physical-device acceptance gates listed above remain open; this is one verified root-cause correction, not a claim of project completion.
+
+## Writer compact-phone card header — exact Build #717 root cause and fix in progress — 2026-11-21
+
+- Build #717 full Flutter diagnostic identifies the failing RenderFlex at `lib/lib/modules/writer/writer_screen.dart:424`, inside the Writer document-card header Row. It is constrained to only 79.3 logical pixels and overflows by 0.667 px; this is not the Table Editor dialog.
+- Corrected the header's minimum footprint by reducing the document icon to 28×32 (18 px glyph), reducing the popup-menu hit box to 24×24 (16 px glyph), and removing the unnecessary space-between layout. Existing rename/delete menu actions remain unchanged.
+- This is a source correction only. Await a fresh CI run for Analyze, all tests, signed APK, signature/install metadata, package verification and artifact upload. The physical Android device still requires user acceptance testing.
+- This change does not mark all modules complete. The remaining feature/compatibility/device-validation gaps documented above remain open.
+
+
+## Build #734 verified checkpoint — 2026-11-21
+
+- Latest verified source branch: `work/writer-sheets-pdf-scan-completion-20261120`.
+- Exact source commit: `f381883a155e69419bf9990385efc478ce24e6a8` (scan service syntax repair).
+- GitHub Actions run #734, ID `44888798161`, completed with conclusion `success` on this exact commit.
+- Verified job steps: Flutter dependency setup, branding generation, launcher icon generation, Flutter Analyze, full configured tests, Android release APK build, APK signature/install metadata verification, signing-file cleanup, package-content verification and artifact upload all passed. The generated-source save step was skipped by workflow design.
+- Artifact: `OFFYNEXBD-Android-APK`, ID `14701666681`, size 52,809,559 bytes, SHA-256 `bc2ae84cacd67f1f8604bff6427bd98ac161ec855004bf18cbe7cbab9c251fb5`, expires 2026-12-05.
+- App Info source inspection confirms the selected OFFYNEXBD icon, `founder_profile.jpg`, full creator name `MD PIYARUL ISLAM`, and “Founder & Original Creator” / Bangla equivalent are already wired. No address, GitHub work history or release record is displayed. The app's creator statement is a declared attribution, not external legal verification.
+- Branding workflow successfully rasterized the approved SVG assets and generated Android/iOS launcher-icon inputs. This CI result verifies generation steps, not visual appearance on a physical device or final launcher/splash rendering; those still require device acceptance.
+- PR #13 remains Draft and must not be merged until implementation gaps and physical-device acceptance are completed and the user approves.
+- Build success does not close product gaps. The previously recorded module gaps remain open: Writer true pagination/table and format fidelity/mobile toolbar; Sheets broader Excel compatibility/charts/pivots/conditional formatting/ODS; Slides full canvas editor and PPTX; PDF editing/annotation/page management/OCR review/security tools; Fonts safe TTF/OTF import and editor activation; live AI service; authenticated encrypted Cloud Sync; online Forms publishing/conditional logic; physical-camera scanner enhancement and OCR acceptance; Database relations/query tools/migrations; plus cross-platform builds, accessibility, performance and device/print validation.
+- Do not repeat completed logo/App Info implementation as new work. Continue from this commit and address the remaining functional gaps while preserving existing user data and workflows.
+
+
+## Integrated file-preparation phase — 2026-11-21
+
+- User direction: prepare the project files first; include every known incomplete requirement in the corresponding files; audit the complete file set before beginning the next implementation batch. Do not implement tiny isolated changes while the master file set remains incomplete.
+- Added the cross-module source-of-truth blueprint: `docs/OFFYNEXBD_COMPLETION_BLUEPRINT.md`.
+- Replaced all ten module README files with source-audited implementation status, complete remaining feature requirements, source-file maps and acceptance gates.
+- Updated `security/README.md` with the project-wide security/privacy requirements.
+- Important correction: the previous Sheets README incorrectly said charts, Pivot tables and conditional formatting were absent. The current source contains chart creation/gallery, pivot summary create/refresh and conditional-format rule foundations; the updated file records those foundations accurately while retaining the real gaps.
+- Existing completed branding/App Info, Writer backup and portable workspace backup are invariants to preserve, not tasks to rebuild.
+- This commit is a documentation/specification preparation batch only. It does not implement the listed product features or change runtime behavior.
+- Next phase begins only after verifying that the blueprint and all module files are present on the branch and the file inventory is reconciled with source/tests/assets/workflows. Then implement the grouped source changes in integrated batches, with tests and CI on the exact resulting commit.
+
+
+## Repository file inventory audit — 2026-11-21
+
+- Audited the recursive Git tree at `a7a7cc74d2ceca5349443a11d6ba0235478222f2` on `work/writer-sheets-pdf-scan-completion-20261120`.
+- Baseline: 243 tracked files, 81 Dart files, 40 test files, 13 bundled assets and 121 native platform files.
+- Added `docs/OFFYNEXBD_REPOSITORY_FILE_AUDIT.md` with the exact source/test/assets/platform/configuration/documentation inventory and cross-check findings; linked it from the root README and completion blueprint.
+- This is file preparation and inventory reconciliation only. It does not implement runtime feature gaps or claim that the ten modules are complete.
+
+
+## Slides editor implementation batch — 2026-11-21
+
+- Added `SlidesDocumentCodec`: versioned structured slide-text storage, legacy newline format compatibility, 200-slide and 5 MB limits, and strict validation.
+- Added a dedicated Slides editor screen with presentation title editing, slide add/duplicate/delete/reorder and individual slide text editing.
+- Routed Slides create/edit through the dedicated editor; preview and PDF export now read both legacy and structured presentations. Blank slides are retained in the presentation and PDF page sequence.
+- Added codec regression tests for legacy read, structured round-trip/order, blank slides, invalid versions and invalid entries.
+- Updated Slides specification. This is an editable text-slide workflow, not a full object/canvas editor; shapes, images, tables, charts, themes, notes, transitions and PPTX/ODP remain open.
+- Pending verification: Analyze, full tests and signed Android package on the resulting source commit.
+
+
+## Slides Analyze correction — 2026-11-21
+
+- First CI Analyze caught three lint findings in the new Slides editor: two string-concatenation infos and one deprecated reorder callback.
+- Replaced concatenation with interpolation and switched to Flutter's `onReorderItem` callback (which already supplies the adjusted insertion index).
+- Added a 200-slide bound to legacy decoding, a safe preview error state for invalid structured records, and a widget regression test for add/duplicate/edit/save ordering.
+- Await a fresh Analyze, full test suite and signed Android package verification on the next commit.
+
+
+## Slides reorder callback compatibility — 2026-11-21
+
+- Flutter 3.50 uses `ReorderableListView.onReorderItem`, which already adjusts the insertion index after removing the old item. Removed the legacy manual index decrement to prevent off-by-one reordering.
+- Refreshed the repository file audit against commit `94c18043b74ead0a1f4e38ea3e77a17a6ccdce9a`; the exact tracked-file and test counts are in `docs/OFFYNEXBD_REPOSITORY_FILE_AUDIT.md`.
+
+
+## CI test failure investigation and correction — 2026-11-21
+
+- Latest workflow run `44891631426` / PR run `44891635022`: Flutter Analyze passed; full tests failed with 250 passed and 2 failed, so APK build and signing steps were correctly skipped.
+- Failure 1: Slides editor widget test assumed all lazy ReorderableListView children were mounted simultaneously. Added stable keys to slide text fields and changed the test to scroll to the third slide before editing/duplicating it.
+- Failure 2: legacy 200-slide guard test used a literal backslash-n separator instead of actual newline characters. Corrected test input to join with `\n` (newline).
+- No APK/artifact was produced from these failed runs. Re-run full Analyze/tests and APK package verification on the corrective commit.
+
+
+## Integrated chat-decision correction and verification — 2026-11-21
+
+### User decisions reconciled from the WPS অ্যাপ পরিচিতি discussions
+- OFFYNEXBD remains a desktop-class office productivity suite, not a basic phone-only editor; target platforms remain Android, iPhone, Windows and macOS.
+- Preserve the ten-module scope: Writer, Sheets, Slides, PDF, Fonts, AI, Cloud, Forms, Scan and Database.
+- The approved brand remains logo Option 2, with the full OFFYNEXBD wordmark for suitable large placements and the symbol-only mark for compact app/icon placements.
+- Writer's page must receive the largest practical phone viewport; keep the ribbon compact (about 2–3 lines), preserve the complete page/zoom controls, and do not let toolbars displace the document canvas.
+- Bangla and English are first-class. Verify conjuncts, kar/fola/reph, mixed-script wrapping, PDF and print output; font embedding alone is not proof of correct shaping.
+- All incomplete work must be audited and advanced in integrated batches, preserving existing features and saved data. A passing CI run or a placeholder screen is not module completion.
+- Creator proof must be inside the app but **outside App Info**. The separate Creator page shows the approved portrait, full name **MD PIYARUL ISLAM**, **Founder & Original Creator**, creator statement and copyright. Do not display an address, GitHub work history or release records.
+
+### Corrected creator-page placement
+- Added `CreatorAttributionScreen` as a dedicated in-app page and a separate Home-screen action.
+- App Info now contains product identity/description only; creator portrait, name, role, statement and copyright are not inside App Info.
+- Added separate widget coverage for the Creator page and updated App Info tests to assert that creator ownership details are absent there.
+- This supersedes earlier progress notes that incorrectly placed the creator attribution inside App Info.
+
+### Writer keyboard regression investigation
+- Run #779/#780 on commit `f4ccfabfdcc0e5e7bf5ddd9370b095a61d24664d` failed at Analyze because the new focus test had been placed outside `main()`; corrected in commit `43c99a544f4453b158eba6e85c64d898a40d4ba4`.
+- Run #782 on that corrected test commit passed Analyze but failed the new focus assertion: 262 tests passed, 1 failed. The test showed that tapping the Writer page body did not put the Quill editor's FocusNode into focus; no APK was produced.
+- Added a non-gesture `Listener.onPointerDown` around the Writer editor to request focus without competing with Quill's tap/selection recognizers. Source change is in commit `02d4a1629b734215b4352b234547f3f6881ee658`.
+- The Creator page and App Info separation were added in commits `890e16a1e3250b6e21721b32bfc9fcca65006eb3`, `0bd96016254d1a6de223e068b3f71f981b42fcd1` and `298168f7e5f8696837cd854baed5e58fe6654eb5`.
+- Latest source head at this documentation update: `298168f7e5f8696837cd854baed5e58fe6654eb5`.
+- Current CI runs for this source head: #788 (run ID `44902043457`) and #789 (run ID `44902046435`); both were pending at the last check. Verify Analyze, the complete test suite, signed Android APK, signing/package checks and artifact upload on the exact final head before reporting success.
+- The keyboard is **not** yet declared fixed. Even if the automated focus test passes, actual Android soft-keyboard opening, Bangla typing, selection, zoom and toolbar behavior still require physical-device acceptance.
+- PR #13 remains Draft/Open and unmerged. Do not merge or claim all modules complete based on this batch.
+
+
+## Latest correction — creator proof placement and Writer focus test — 2026-11-21
+
+- The user's latest clarification is that creator/about proof must **not** be inside App Info. The earlier assistant proposal to add a separate Home/main-menu shortcut was also not accepted. No later explicit placement was found in the retrieved historical context.
+- Accordingly, App Info remains product identity/description only. The standalone `CreatorAttributionScreen` component and its direct widget test are retained as prepared UI, but the Home/main-menu shortcut was removed. Its final in-app navigation placement is unresolved; do not claim the creator proof is currently accessible until the user-specified placement is known.
+- No address, GitHub work history or release records are included in the creator page. The selected portrait asset remains `assets/branding/founder_profile.jpg`.
+- Run #788 (source `298168f7e5f8696837cd854baed5e58fe6654eb5`) passed Analyze but failed tests: the legacy `widget_test.dart` still expected the creator name in App Info, and the focus regression test's center tap did not focus the editable input. Both expectations were corrected in later commits.
+- Run #794/#795 (source `83b91c58fcec89d6c368a0195e827662a9e00451`) passed Analyze but the new Writer test failed before checking focus because the Quill placeholder is not exposed as a Text widget. This was a test-targeting error; the test now taps the actual `EditableText` descendant of `QuillEditor` and checks that field's FocusNode.
+- Latest source/test commit: `895258ac6722261f7e53e1535a36c20711eabe8f`. Runs #799 (push, ID `44902715387`) and #800 (PR, ID `44902719632`) were pending at this update. Verify Analyze, all tests, signed APK, signature/package checks and artifact upload on this exact head.
+- Writer focus/Android soft-keyboard behavior remains unverified until the editable-field regression test passes and the physical Android device is tested. Do not infer keyboard visibility from focus alone.
+- PR #13 remains Draft/Open and unmerged. No module is declared complete by this correction.
+
+
+## CI check — 2026-11-21 (latest)
+
+- Checked the latest source head `75ebfe29bcdf1c3dd2d00dfc55b585fff1bae010`; PR #13 points to this exact commit and remains Draft/Open/Unmerged.
+- Run #801 / ID `44902818365` on prior head `dd4953ee262ba0d3b29f14014d492be422346a46`: Analyze passed; 262 tests passed and one failed. The new Writer focus test incorrectly searched for an `EditableText` descendant, but flutter_quill 11.6.0 exposes the editor's own public `focusNode` on `QuillEditor`; no such descendant was found by the test.
+- Corrected the regression test in commit `75ebfe29bcdf1c3dd2d00dfc55b585fff1bae010` to tap the page's `QuillEditor` and assert `QuillEditor.focusNode.hasFocus` directly. This removes the invalid EditableText assumption. It is still only a focus test, not proof that the Android OS keyboard visibly opens.
+- Run #803 / ID `44903176801` was triggered for the corrected head and was still in Setup Flutter at the last check. Analyze, tests, signed APK, signature/package verification and artifact upload are not yet confirmed on this commit.
+- Logo files verified present: `assets/branding/offynexbd_icon.svg` and `assets/branding/offynexbd_logo.svg`; approved founder portrait `assets/branding/founder_profile.jpg` also exists. Run #801's asset-preparation and launcher-icon generation steps passed, but a release APK has not been produced from the corrected head.
+- Creator attribution component and portrait/name/role are present; App Info does not contain creator details. No approved in-app navigation route is currently connected, so creator proof is not yet accessible through the app UI.
+- Do not claim Writer keyboard fixed, creator proof visible, APK ready, or any module complete until the relevant tests/build/device checks pass.

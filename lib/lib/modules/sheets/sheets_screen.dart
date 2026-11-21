@@ -160,7 +160,11 @@ class _SheetsScreenState extends State<SheetsScreen> {
   }
 
   double? _numericValue(String reference, [Set<String>? visiting]) {
-    return SheetsFormulaEngine(_cells).evaluateCell(reference, visiting);
+    return SheetsFormulaEngine(
+      _cells,
+      worksheets: {for (final sheet in _workbook.sheets) sheet.name: sheet.cells},
+      activeSheetName: _sheetName,
+    ).evaluateCell(reference, visiting);
   }
 
   String _displayValue(String key) {
@@ -363,7 +367,11 @@ class _SheetsScreenState extends State<SheetsScreen> {
   }
 
   Map<String, String> _resolvedSheetValues(SheetsWorksheet sheet) {
-    final engine = SheetsFormulaEngine(sheet.cells);
+    final engine = SheetsFormulaEngine(
+      sheet.cells,
+      worksheets: {for (final item in _workbook.sheets) item.name: item.cells},
+      activeSheetName: sheet.name,
+    );
     return {
       for (final entry in sheet.cells.entries)
         entry.key: entry.value.startsWith('=')
@@ -1462,7 +1470,11 @@ class _SheetsScreenState extends State<SheetsScreen> {
 
   void _writeWorksheetToExcel(xlsx.Excel workbook, SheetsWorksheet source) {
     final sheet = workbook[source.name];
-    final engine = SheetsFormulaEngine(source.cells);
+    final engine = SheetsFormulaEngine(
+        source.cells,
+        worksheets: {for (final item in _workbook.sheets) item.name: item.cells},
+        activeSheetName: source.name,
+      );
     for (final key in {...source.cells.keys, ...source.styles.keys}) {
       final value = source.cells[key] ?? '';
       final cell = sheet.cell(xlsx.CellIndex.indexByString(key.toUpperCase()));

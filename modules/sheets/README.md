@@ -1,32 +1,39 @@
-# OFFYNEX Sheets
+# OFFYNEX Sheets — implementation and completion specification
 
-OFFYNEX Sheets is an offline-first, single-worksheet spreadsheet workspace with a mobile-friendly grid and desktop-style Ribbon.
+## Current implemented foundation
+- Offline workbook with multiple worksheets, cell selection/editing, formula bar, local autosave and recovery.
+- Lazy/virtualized grid, fixed header, row/column operations, formatting, wrapping, borders and number formats.
+- XLSX and CSV import/export for supported subsets; Bengali/UTF-8 CSV handling and safety limits.
+- Formula engine with arithmetic, references, ranges, error propagation, circular-reference protection and a growing function set.
+- Freeze top row, find/replace, validation dropdowns, display-only sorting/filtering, PDF export and print.
+- Source contains chart data creation/gallery, Pivot summary creation/refresh, conditional-format rules and related tests. These are foundations; do not document them as absent or as full Excel parity.
 
-## Implemented and CI-tested foundations
+## Remaining implementation — all must be addressed
+### Formula and workbook compatibility
+- Expand text, date/time, lookup/reference, conditional aggregate, financial, statistical, dynamic-array and modern Excel function families.
+- Improve Excel-compatible coercion, blank/text/boolean handling, dates, error types, formula locale separators and formula serialization.
+- Add named ranges, structured table references, external workbook behavior and robust cross-sheet reference semantics.
+- Improve XLSX round-trip for styles, merged cells, widths/heights, validations, charts, conditional formats, named ranges, print settings and unsupported-feature warnings.
+- Add ODS import/export and verify with real LibreOffice/Excel files.
 
-- Cell selection, editing, formula bar and formula recalculation.
-- Local workbook autosave and reload using SharedPreferences.
-- Row and column growth; populated edge rows/columns are protected from removal.
-- Cell formatting: bold, italic, underline, font size, font color, fill, horizontal/vertical alignment, wrapping, borders and basic number formats.
-- XLSX import/export for the active worksheet, including a supported subset of cell values, formulas and formatting. Import explicitly lets users choose one worksheet from a multi-sheet file; other worksheets remain in the original XLSX and are not silently merged or discarded. Worksheets larger than the supported 1,000 × 100 grid are rejected before replacing saved data.
-- CSV import/export for cell values and formulas, with UTF-8/Bengali text, optional UTF-8 BOM, commas, escaped quotes, CRLF/LF line endings and quoted multiline fields. Import confirms before replacing the active sheet and enforces the same 1,000 × 100 grid limit.
-- Display-only sorting and filtering by the selected column: A→Z / Z→A sorting, case-insensitive substring filtering, combined sort + filter, blank cells last, stable original-order ties, and Clear sort/filter. The worksheet's underlying cell data, formulas, styles and formula references are not moved; clearing the view restores original row order. CSV/XLSX import and Clear Sheet reset the view state.
-- A4 landscape PDF export and print pipeline with Bengali OpenType shaping, English/Unicode fallback, supported cell styles, gridline visibility and page numbering.
-- Formula engine with 31 functions:
-  `SUM, AVERAGE, COUNT, MIN, MAX, PRODUCT, ABS, ROUND, ROUNDUP, ROUNDDOWN, SQRT, POWER, MOD, INT, SIGN, MEDIAN, LARGE, SMALL, CEILING, FLOOR, PI, EXP, LN, LOG, LOG10, SIN, COS, TAN, ASIN, ACOS, ATAN`.
-- Formula parsing supports arithmetic precedence, parentheses, cell references, ranges, nested calculations, circular-reference detection and range-error propagation.
-- Bangla and English UI labels.
+### Analysis and visual tools
+- Make charts fully editable: type, series, labels, axes, legend, titles, colors, data range, move/resize and export.
+- Expand Pivot tools: multiple row/column/value fields, filters, grouping, sort, subtotal/grand-total choices and refresh behavior.
+- Complete conditional formatting: multiple prioritized rules, formula rules, color scales/data bars/icon sets where supported.
+- Add named ranges, robust data validation types and validation interoperability.
 
-## Known limitations — not Excel parity
+### Printing, navigation and scale
+- Add editable print preview, page breaks, margins/orientation/scale, repeated titles, print area and page headers/footers.
+- Freeze columns and arbitrary panes; improve desktop keyboard navigation, accessibility and large workbook performance.
+- Validate formula dependencies, undo/redo, autosave/recovery and import cancellation.
 
-- Workbook currently has one active worksheet; multi-sheet tabs and cross-sheet references are not implemented.
-- Formula compatibility is partial. Logical, text, date/time, lookup, conditional aggregate, array/dynamic and financial function families are not implemented.
-- Charts, pivot tables, data validation, conditional formatting, named ranges, external links and macros are not implemented.
-- XLSX import/export preserves only the supported subset; complex workbook structures, charts, merged cells, formulas outside the supported engine and advanced styles need compatibility work.
-- ODS import/export is not implemented. CSV does not store cell formatting, workbook formulas are exported as formula text, and CSV import creates unformatted cells.
-- Print preview controls, custom page scaling, repeated print titles and page-break editing remain pending.
-- The mobile grid virtualizes rows; very large workbook performance and full desktop keyboard navigation need further testing.
+## Required source/test areas
+- `sheets_screen.dart`, `sheets_formula_engine.dart`, `sheets_analytics.dart`, `sheets_analytics_widgets.dart`
+- `sheets_workbook_codec.dart`, `sheets_xlsx_validation_codec.dart`, `sheets_data_validation.dart`, `sheets_pdf_export_service.dart`
+- Tests: all `test/sheets_*.dart`
 
-## Verification policy
-
-A feature is considered verified only after GitHub Actions Flutter Analyze, all automated tests, Android release APK build and artifact upload succeed. CI does not replace visual inspection on physical devices and printers.
+## Acceptance gates
+- Formula regression and workbook import/export round-trip tests using real fixtures.
+- Charts, pivots, conditional formatting and validation tested after save/reload and export.
+- Analyze + complete tests + signed Android build/package checks pass on the same commit.
+- Physical device, large workbook, Excel/LibreOffice and Bengali print/PDF comparisons recorded separately.

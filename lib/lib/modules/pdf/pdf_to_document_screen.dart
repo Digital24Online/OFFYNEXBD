@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../writer/writer_screen.dart';
 import 'pdf_to_document_service.dart';
+import 'pdf_reader_screen.dart';
 import '../../theme/offynex_theme.dart';
 
 class PdfToDocumentScreen extends StatefulWidget {
@@ -19,6 +20,7 @@ class _PdfToDocumentScreenState extends State<PdfToDocumentScreen> {
   PdfConversionResult? result;
   String? sourceName;
   Map<String, dynamic>? savedDocument;
+  Uint8List? sourcePdfBytes;
   String? error;
   bool busy = false;
 
@@ -51,13 +53,47 @@ class _PdfToDocumentScreenState extends State<PdfToDocumentScreen> {
       documents.add(record);
       await storeDocuments(documents);
       if (!mounted) return;
-      setState(() { sourceName = file.name; savedDocument = record; result = converted; busy = false; });
+      setState(() { sourceName = file.name; sourcePdfBytes = bytes; savedDocument = record; result = converted; busy = false; });
     } catch (e) {
       if (!mounted) return;
       setState(() { error = e.toString().replaceFirst('Exception: ', ''); busy = false; });
     }
   }
 
+
+  Future<void> _openPdfFile() async {
+    if (busy) return;
+    try {
+      final file = await FilePicker.pickFile(
+        type: FileType.custom,
+        allowedExtensions: const ['pdf'],
+      );
+      if (file == null || !mounted) return;
+      final length = file.lengthSync() ?? await file.length();
+      if (length == null || length == 0 || length > PdfToDocumentService.maxPdfBytes) {
+        throw const FormatException('PDF must be between 1 byte and 50 MB.');
+      }
+      final bytes = await file.readAsBytes();
+      PdfToDocumentService.validatePdfBytes(bytes);
+      if (!mounted) return;
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PdfReaderScreen(
+            bytes: bytes,
+            fileName: file.name,
+            isBangla: widget.isBangla,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        );
+      }
+    }
+  }
 
   Future<void> _convertImage() async {
     if (busy) return;
@@ -89,6 +125,7 @@ class _PdfToDocumentScreenState extends State<PdfToDocumentScreen> {
       if (!mounted) return;
       setState(() {
         sourceName = file.name;
+        sourcePdfBytes = null;
         savedDocument = record;
         result = converted;
         busy = false;
@@ -122,6 +159,21 @@ class _PdfToDocumentScreenState extends State<PdfToDocumentScreen> {
     } finally {
       if (mounted) setState(() => busy = false);
     }
+  }
+
+  Future<void> _openPdfPreview() async {
+    final bytes = sourcePdfBytes;
+    if (bytes == null || sourceName == null || !mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PdfReaderScreen(
+          bytes: bytes,
+          fileName: sourceName!,
+          isBangla: widget.isBangla,
+        ),
+      ),
+    );
   }
 
   Future<void> _openWriter() async {
@@ -173,8 +225,13 @@ class _PdfToDocumentScreenState extends State<PdfToDocumentScreen> {
               Wrap(spacing: 10, runSpacing: 10, children: [
                 FilledButton.icon(
                   onPressed: busy ? null : _convert,
+                  icon: const Icon(Icons.text_snippet_outlined),
+                  label: Text(bn ? 'রূপান্তর করুন' : 'Convert PDF'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: busy ? null : _openPdfFile,
                   icon: const Icon(Icons.picture_as_pdf),
-                  label: Text(bn ? 'PDF নির্বাচন করুন' : 'Choose PDF'),
+                  label: Text(bn ? 'PDF খুলুন' : 'Open PDF'),
                 ),
                 OutlinedButton.icon(
                   onPressed: busy ? null : _convertImage,
@@ -217,6 +274,12 @@ class _PdfToDocumentScreenState extends State<PdfToDocumentScreen> {
               ),
               const SizedBox(height: 14),
               Wrap(spacing: 10, runSpacing: 10, children: [
+                if (sourcePdfBytes != null)
+                  OutlinedButton.icon(
+                    onPressed: busy ? null : _openPdfPreview,
+                    icon: const Icon(Icons.picture_as_pdf_outlined),
+                    label: Text(bn ? 'PDF দেখুন' : 'View PDF'),
+                  ),
                 FilledButton.icon(
                   onPressed: busy ? null : _openWriter,
                   icon: const Icon(Icons.edit_document),

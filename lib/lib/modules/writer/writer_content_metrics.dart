@@ -60,7 +60,8 @@ class WriterContentMetrics {
           : defaultFontSize;
       final color = _parseColor(attributes['color']);
       final background = _parseColor(attributes['background']);
-      final font = attributes['font']?.toString();
+      final font = attributes['font']?.toString().toLowerCase();
+      final isSerif = font == 'serif' || (font?.contains('noto serif') ?? false);
       paragraph.add(TextSpan(
         text: value,
         style: TextStyle(
@@ -70,7 +71,7 @@ class WriterContentMetrics {
           decoration: _decoration(attributes),
           color: color,
           backgroundColor: background,
-          fontFamily: font == 'serif' ? 'serif' : 'sans-serif',
+          fontFamily: isSerif ? 'serif' : 'sans-serif',
         ),
       ));
     }
@@ -116,6 +117,25 @@ class WriterContentMetrics {
 
     if (paragraph.isNotEmpty || totalHeight == 0) flushParagraph();
     return math.max(totalHeight, defaultFontSize * 1.35).toDouble();
+  }
+
+  /// Content-aware page estimate for the editing canvas. PDF export performs
+  /// its own final pagination.
+  static int estimatePageCount({
+    required List<Map<String, dynamic>> delta,
+    required double maxWidth,
+    required double pageContentHeight,
+    TextDirection textDirection = TextDirection.ltr,
+    double defaultFontSize = 16,
+  }) {
+    final height = estimateHeight(
+      delta: delta,
+      maxWidth: maxWidth,
+      pageContentHeight: pageContentHeight,
+      textDirection: textDirection,
+      defaultFontSize: defaultFontSize,
+    );
+    return math.max(1, (height / pageContentHeight).ceil());
   }
 
   static double _estimateTableHeight(
