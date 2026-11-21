@@ -47,7 +47,7 @@ void main() {
             name: 'Summary',
             rows: 20,
             columns: 8,
-            cells: {'A1': "=SUM('Sales Data'!$B$2:$B$30)"},
+            cells: {'A1': "=SUM('Sales Data'!\$B\$2:\$B\$30)"},
           ),
         ],
       );
@@ -110,15 +110,20 @@ void main() {
             charts: [
               {'type': 'bar', 'title': 'Sales', 'range': 'A1:B30'},
             ],
+          ),
+          SheetsWorksheet(
+            id: 'summary',
+            name: 'Summary',
+            rows: 30,
+            columns: 8,
             pivotConfig: {
-              'sourceSheetId': 'summary',
+              'sourceSheetId': 'data',
               'range': 'A1:B30',
               'groupColumn': 'A',
               'valueColumn': 'B',
               'aggregation': 'sum',
             },
           ),
-          SheetsWorksheet(id: 'summary', name: 'Summary', rows: 30, columns: 8),
         ],
       );
 
