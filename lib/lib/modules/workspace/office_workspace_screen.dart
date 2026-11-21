@@ -151,6 +151,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
         }
       }
     }
+    if (!mounted) return;
     if (recoveryMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(recoveryMessage), duration: const Duration(seconds: 10)),
@@ -176,7 +177,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
       final record = <String, dynamic>{
         'id': DateTime.now().microsecondsSinceEpoch.toString(),
         'title': imported.family,
-        'content': 'Imported ' + picked.name,
+        'content': 'Imported ${picked.name}',
         'fontFamily': imported.family,
         'fontPath': imported.file.path,
         'updatedAt': DateTime.now().toIso8601String(),
@@ -187,13 +188,13 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
       setState(() => _items = updated);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(_bn
-            ? imported.family + ' ফন্ট যোগ ও সক্রিয় হয়েছে।'
-            : imported.family + ' was imported and activated.'),
+            ? '${imported.family} ফন্ট যোগ ও সক্রিয় হয়েছে।'
+            : '${imported.family} was imported and activated.'),
       ));
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text((_bn ? 'ফন্ট Import ব্যর্থ: ' : 'Font import failed: ') + error.toString()),
+          content: Text('${_bn ? 'ফন্ট Import ব্যর্থ' : 'Font import failed'}: $error'),
         ));
       }
     } finally {
