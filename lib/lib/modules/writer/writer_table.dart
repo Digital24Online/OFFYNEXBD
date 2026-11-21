@@ -312,10 +312,11 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
           : _t('টেবিল সম্পাদনা', 'Edit Table')),
       content: SizedBox(
         width: (MediaQuery.sizeOf(context).width * 0.88).clamp(280.0, 720.0),
-        height: (screenHeight * 0.54).clamp(240.0, 420.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
             SizedBox(
               height: (MediaQuery.sizeOf(context).height * 0.18).clamp(88.0, 140.0),
               child: SingleChildScrollView(
@@ -449,7 +450,8 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
                 ),
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ),
       actions: [
