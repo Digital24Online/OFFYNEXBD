@@ -108,8 +108,8 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
 
   List<List<TextEditingController>> _createEmptyCells() {
     return List.generate(
-      3,
-      (_) => List.generate(3, (_) => TextEditingController()),
+      1,
+      (_) => List.generate(1, (_) => TextEditingController()),
     );
   }
 
