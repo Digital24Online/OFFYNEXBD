@@ -49,7 +49,7 @@ void main() {
       title: 'Custom font test',
       delta: [
         {'insert': 'কাস্টম বাংলা ফন্ট', 'attributes': {'font': 'OFFYNEX Test Bengali'}},
-        {'insert': '\\n'},
+        {'insert': '\n'},
       ],
       sansFontData: sans,
       serifFontData: serif,
