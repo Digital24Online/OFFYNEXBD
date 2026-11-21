@@ -1981,3 +1981,14 @@ A module is complete only after its actual workflows exist, tests cover them, th
 - Latest source/test commit: `895258ac6722261f7e53e1535a36c20711eabe8f`. Runs #799 (push, ID `44902715387`) and #800 (PR, ID `44902719632`) were pending at this update. Verify Analyze, all tests, signed APK, signature/package checks and artifact upload on this exact head.
 - Writer focus/Android soft-keyboard behavior remains unverified until the editable-field regression test passes and the physical Android device is tested. Do not infer keyboard visibility from focus alone.
 - PR #13 remains Draft/Open and unmerged. No module is declared complete by this correction.
+
+
+## CI check — 2026-11-21 (latest)
+
+- Checked the latest source head `75ebfe29bcdf1c3dd2d00dfc55b585fff1bae010`; PR #13 points to this exact commit and remains Draft/Open/Unmerged.
+- Run #801 / ID `44902818365` on prior head `dd4953ee262ba0d3b29f14014d492be422346a46`: Analyze passed; 262 tests passed and one failed. The new Writer focus test incorrectly searched for an `EditableText` descendant, but flutter_quill 11.6.0 exposes the editor's own public `focusNode` on `QuillEditor`; no such descendant was found by the test.
+- Corrected the regression test in commit `75ebfe29bcdf1c3dd2d00dfc55b585fff1bae010` to tap the page's `QuillEditor` and assert `QuillEditor.focusNode.hasFocus` directly. This removes the invalid EditableText assumption. It is still only a focus test, not proof that the Android OS keyboard visibly opens.
+- Run #803 / ID `44903176801` was triggered for the corrected head and was still in Setup Flutter at the last check. Analyze, tests, signed APK, signature/package verification and artifact upload are not yet confirmed on this commit.
+- Logo files verified present: `assets/branding/offynexbd_icon.svg` and `assets/branding/offynexbd_logo.svg`; approved founder portrait `assets/branding/founder_profile.jpg` also exists. Run #801's asset-preparation and launcher-icon generation steps passed, but a release APK has not been produced from the corrected head.
+- Creator attribution component and portrait/name/role are present; App Info does not contain creator details. No approved in-app navigation route is currently connected, so creator proof is not yet accessible through the app UI.
+- Do not claim Writer keyboard fixed, creator proof visible, APK ready, or any module complete until the relevant tests/build/device checks pass.
