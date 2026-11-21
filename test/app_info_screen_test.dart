@@ -17,6 +17,7 @@ void main() {
 
     expect(find.text('OFFYNEXBD'), findsOneWidget);
     expect(find.text('The Future of Office Productivity'), findsOneWidget);
+    expect(find.text('© 2026 OFFYNEXBD. All Rights Reserved.'), findsNothing);
     expect(find.text('MD PIYARUL ISLAM'), findsNothing);
     expect(find.text('Founder & Original Creator'), findsNothing);
     expect(find.text('Creator Statement'), findsNothing);
