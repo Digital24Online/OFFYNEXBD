@@ -1586,7 +1586,7 @@ class _FormResponseDialogState extends State<_FormResponseDialog> {
     final error = FormsAnswerValidator.validate(
       type: question['type'] as String,
       value: raw ?? '',
-      required: question['required'] == true,
+      isRequired: question['required'] == true,
     );
     if (error == null) return null;
     switch (error) {
