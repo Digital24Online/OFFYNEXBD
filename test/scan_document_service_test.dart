@@ -5,7 +5,7 @@ import 'package:offynexbd/lib/modules/workspace/scan_document_service.dart';
 
 void main() {
   group('ScanDocumentService', () {
-    test('keeps a scan PDF while a Writer document references it', () {
+    test('keeps a scan PDF referenced anywhere in a Writer record', () {
       const path = '/OFFYNEXBD/Scans/scan-1.pdf';
       expect(
         ScanDocumentService.isPdfReferencedByWriterDocuments(path, [
@@ -15,18 +15,48 @@ void main() {
       );
       expect(
         ScanDocumentService.isPdfReferencedByWriterDocuments(path, [
-          {'id': 'writer-1', 'scanPdfPath': ' /OFFYNEXBD/Scans/scan-1.pdf '},
+          {
+            'id': 'writer-2',
+            'content': [
+              {'insert': {'image': path}},
+            ],
+          },
         ]),
         isTrue,
       );
       expect(
         ScanDocumentService.isPdfReferencedByWriterDocuments(path, [
-          {'id': 'writer-2', 'scanPdfPath': '/OFFYNEXBD/Scans/other.pdf'},
+          {
+            'id': 'writer-3',
+            'content': {
+              'ops': [
+                {'insert': {'file': 'file:///OFFYNEXBD/Scans/scan-1.pdf'}},
+              ],
+            },
+          },
+        ]),
+        isTrue,
+      );
+      expect(
+        ScanDocumentService.isPdfReferencedByWriterDocuments(path, [
+          {'id': 'writer-4', 'content': ' /OFFYNEXBD/Scans/scan-1.pdf '},
+        ]),
+        isTrue,
+      );
+      expect(
+        ScanDocumentService.isPdfReferencedByWriterDocuments(path, [
+          {'id': 'writer-5', 'scanPdfPath': '/OFFYNEXBD/Scans/other.pdf'},
         ]),
         isFalse,
       );
       expect(
         ScanDocumentService.isPdfReferencedByWriterDocuments(path, const []),
+        isFalse,
+      );
+      expect(
+        ScanDocumentService.isPdfReferencedByWriterDocuments('  ', [
+          {'id': 'writer-6', 'scanPdfPath': path},
+        ]),
         isFalse,
       );
     });
