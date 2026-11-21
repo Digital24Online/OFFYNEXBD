@@ -36,6 +36,33 @@ void main() {
     expect(result.map((row) => row['id']), ['r3', 'r1', 'r2']);
   });
 
+  test('mixed-type sorting is deterministic and keeps blank values last', () {
+    final mixedRows = <Map<String, dynamic>>[
+      {'id': 'text', 'values': {'Value': 'Alpha'}},
+      {'id': 'blank', 'values': {'Value': ' '}},
+      {'id': 'date', 'values': {'Value': '2025-01-01'}},
+      {'id': 'number', 'values': {'Value': '12'}},
+      {'id': 'number2', 'values': {'Value': '3'}},
+    ];
+    final ascending = DatabaseRowsQuery.apply(
+      rows: mixedRows,
+      fields: const ['Value'],
+      sortField: 'Value',
+    );
+    expect(ascending.map((row) => row['id']), [
+      'number2', 'number', 'date', 'text', 'blank',
+    ]);
+    final descending = DatabaseRowsQuery.apply(
+      rows: mixedRows,
+      fields: const ['Value'],
+      sortField: 'Value',
+      ascending: false,
+    );
+    expect(descending.map((row) => row['id']), [
+      'text', 'date', 'number', 'number2', 'blank',
+    ]);
+  });
+
   test('query operation does not mutate the stored row order or values', () {
     final original = rows.map((row) => Map<String, dynamic>.from(row)).toList();
     DatabaseRowsQuery.apply(
