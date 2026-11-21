@@ -1,9 +1,7 @@
 /// Enforces the currently supported OFFYNEX Sheets grid size before XLSX import.
 class SheetsWorkbookLimits {
-  // Match the Excel worksheet grid so valid XLSX files are not rejected
-  // by an arbitrary OFFYNEXBD-only row/column ceiling.
-  static const int maxRows = 1048576;
-  static const int maxColumns = 16384;
+  static const int maxRows = 1000;
+  static const int maxColumns = 100;
   static const int maxImportBytes = 20 * 1024 * 1024;
 
   static void validateImportBytes(int bytes) {
