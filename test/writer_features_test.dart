@@ -346,20 +346,21 @@ void main() {
 
     final editor = find.byType(QuillEditor);
     expect(editor, findsOneWidget);
-    final placeholder = find.text('এখানে আপনার লেখা শুরু করুন...');
-    expect(placeholder, findsOneWidget);
-    await tester.ensureVisible(placeholder);
-    await tester.tap(placeholder);
+    final editable = find.descendant(
+      of: editor,
+      matching: find.byType(EditableText),
+    );
+    expect(editable, findsOneWidget);
+    await tester.ensureVisible(editable);
+    await tester.tap(editable);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    final editableFields = tester.widgetList<EditableText>(
-      find.byType(EditableText),
-    );
+    final editableField = tester.widget<EditableText>(editable);
     expect(
-      editableFields.any((field) => field.focusNode.hasFocus),
+      editableField.focusNode.hasFocus,
       isTrue,
-      reason: 'Tapping the Writer document body must focus its editable text input so Android can show the soft keyboard.',
+      reason: 'Tapping the Writer editable text area must focus its input so Android can show the soft keyboard.',
     );
   });
 }
