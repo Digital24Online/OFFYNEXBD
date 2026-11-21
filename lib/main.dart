@@ -21,6 +21,8 @@ class OFFYNEXBDApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      builder: (context, child) =>
+          MaterialUiCompatibilityBridge(child: child!),
       title: 'OFFYNEXBD',
       debugShowCheckedModeBanner: false,
       localizationsDelegates: [
