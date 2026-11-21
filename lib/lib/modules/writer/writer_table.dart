@@ -64,6 +64,8 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
   String _t(String bn, String en) => widget.isBangla ? bn : en;
   int borderColor = 0xFF333333;
   int backgroundColor = 0xFFFFFFFF;
+  int selectedRow = 0;
+  int selectedColumn = 0;
 
   @override
   void initState() {
@@ -119,12 +121,34 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
     });
   }
 
+  void insertRowBefore() {
+    setState(() {
+      cells.insert(
+        selectedRow.clamp(0, cells.length),
+        List.generate(columnCount, (_) => TextEditingController()),
+      );
+    });
+  }
+
+  void insertRowAfter() {
+    setState(() {
+      final index = (selectedRow + 1).clamp(0, cells.length);
+      cells.insert(
+        index,
+        List.generate(columnCount, (_) => TextEditingController()),
+      );
+      selectedRow = index;
+    });
+  }
+
   void removeRow() {
     if (cells.length <= 1) return;
     setState(() {
-      for (final controller in cells.removeLast()) {
+      final index = selectedRow.clamp(0, cells.length - 1);
+      for (final controller in cells.removeAt(index)) {
         controller.dispose();
       }
+      selectedRow = index.clamp(0, cells.length - 1);
     });
   }
 
@@ -136,12 +160,33 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
     });
   }
 
+  void insertColumnBefore() {
+    setState(() {
+      final index = selectedColumn.clamp(0, columnCount);
+      for (final row in cells) {
+        row.insert(index, TextEditingController());
+      }
+    });
+  }
+
+  void insertColumnAfter() {
+    setState(() {
+      final index = (selectedColumn + 1).clamp(0, columnCount);
+      for (final row in cells) {
+        row.insert(index, TextEditingController());
+      }
+      selectedColumn = index;
+    });
+  }
+
   void removeColumn() {
     if (columnCount <= 1) return;
     setState(() {
+      final index = selectedColumn.clamp(0, columnCount - 1);
       for (final row in cells) {
-        row.removeLast().dispose();
+        row.removeAt(index).dispose();
       }
+      selectedColumn = index.clamp(0, columnCount - 1);
     });
   }
 
@@ -244,9 +289,22 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
                   label: Text(_t('সারি যোগ', 'Add Row')),
                 ),
                 OutlinedButton.icon(
+                  key: const ValueKey('writer-table-insert-row-before'),
+                  onPressed: insertRowBefore,
+                  icon: const Icon(Icons.arrow_upward),
+                  label: Text(_t('উপরে সারি', 'Insert Above')),
+                ),
+                OutlinedButton.icon(
+                  key: const ValueKey('writer-table-insert-row-after'),
+                  onPressed: insertRowAfter,
+                  icon: const Icon(Icons.arrow_downward),
+                  label: Text(_t('নিচে সারি', 'Insert Below')),
+                ),
+                OutlinedButton.icon(
+                  key: const ValueKey('writer-table-delete-selected-row'),
                   onPressed: cells.length <= 1 ? null : removeRow,
                   icon: const Icon(Icons.remove),
-                  label: Text(_t('সারি সরান', 'Remove Row')),
+                  label: Text(_t('নির্বাচিত সারি মুছুন', 'Delete Selected Row')),
                 ),
                 OutlinedButton.icon(
                   onPressed: addColumn,
@@ -254,9 +312,22 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
                   label: Text(_t('কলাম যোগ', 'Add Column')),
                 ),
                 OutlinedButton.icon(
+                  key: const ValueKey('writer-table-insert-column-before'),
+                  onPressed: insertColumnBefore,
+                  icon: const Icon(Icons.arrow_back),
+                  label: Text(_t('বামে কলাম', 'Insert Left')),
+                ),
+                OutlinedButton.icon(
+                  key: const ValueKey('writer-table-insert-column-after'),
+                  onPressed: insertColumnAfter,
+                  icon: const Icon(Icons.arrow_forward),
+                  label: Text(_t('ডানে কলাম', 'Insert Right')),
+                ),
+                OutlinedButton.icon(
+                  key: const ValueKey('writer-table-delete-selected-column'),
                   onPressed: columnCount <= 1 ? null : removeColumn,
                   icon: const Icon(Icons.remove),
-                  label: Text(_t('কলাম সরান', 'Remove Column')),
+                  label: Text(_t('নির্বাচিত কলাম মুছুন', 'Delete Selected Column')),
                 ),
                 OutlinedButton(
                   onPressed: () => chooseColor(chooseBorder: true),
@@ -270,6 +341,8 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
             ),
             const SizedBox(height: 10),
             Text(_t('${cells.length} সারি  ·  $columnCount কলাম', '${cells.length} rows  ·  $columnCount columns')),
+            const SizedBox(height: 8),
+            Text(_t('নির্বাচিত ঘর: ${selectedRow + 1}, ${selectedColumn + 1}', 'Selected cell: ${selectedRow + 1}, ${selectedColumn + 1}')),
             const SizedBox(height: 8),
             Expanded(
               child: SingleChildScrollView(
@@ -285,6 +358,12 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
                             color: Color(backgroundColor),
                             padding: const EdgeInsets.all(5),
                             child: TextField(
+                              onTap: () {
+                                setState(() {
+                                  selectedRow = rowIndex;
+                                  selectedColumn = columnIndex;
+                                });
+                              },
                               controller: cells[rowIndex][columnIndex],
                               maxLines: 3,
                               minLines: 1,
