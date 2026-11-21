@@ -4,7 +4,7 @@
 
 ## 1. Product invariants — do not break
 - Brand remains OFFYNEXBD, tagline “The Future of Office Productivity”, selected logo Option 2.
-- App Info contains OFFYNEXBD product identity and description only. Creator attribution is on a separate in-app Creator page, reachable independently from the Home screen: **MD PIYARUL ISLAM — Founder & Original Creator**, using the approved portrait. Do not show an address, GitHub work history or release records.
+- App Info must not contain the creator proof. A separate creator-attribution page component has been prepared with **MD PIYARUL ISLAM — Founder & Original Creator** and the approved portrait, but its navigation placement is intentionally unresolved: the user rejected both App Info placement and the assistant's separate Home/main-menu shortcut. Do not expose it through an unapproved route or claim the creator proof is visible in the app until the user-specified placement is known. Do not show an address, GitHub work history or release records.
 - Preserve Writer documents/Delta, tables, images, comments, citations, revisions, page settings and recovery data.
 - Preserve Sheets workbooks, formulas, worksheets, formatting, validation, chart/pivot/conditional-format records and recovery data.
 - Preserve Forms responses, Database rows/schema, Scan PDFs/OCR and existing portable backups.
@@ -16,6 +16,7 @@
 ## 2. Repository source map
 ### App shell and shared foundation
 - `lib/main.dart` — app routes, dashboard and App Info.
+- `lib/lib/modules/workspace/creator_attribution_screen.dart` — prepared creator-attribution page; not currently routed pending confirmed placement.
 - `lib/lib/theme/offynex_theme.dart` — shared theme tokens.
 - `docs/OFFYNEXBD_GLOBAL_DESIGN_SYSTEM.md` — global UI and responsive behavior contract.
 - `security/README.md` — security and privacy requirements.

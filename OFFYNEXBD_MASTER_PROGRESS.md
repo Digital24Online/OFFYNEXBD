@@ -1969,3 +1969,15 @@ A module is complete only after its actual workflows exist, tests cover them, th
 - Current CI runs for this source head: #788 (run ID `44902043457`) and #789 (run ID `44902046435`); both were pending at the last check. Verify Analyze, the complete test suite, signed Android APK, signing/package checks and artifact upload on the exact final head before reporting success.
 - The keyboard is **not** yet declared fixed. Even if the automated focus test passes, actual Android soft-keyboard opening, Bangla typing, selection, zoom and toolbar behavior still require physical-device acceptance.
 - PR #13 remains Draft/Open and unmerged. Do not merge or claim all modules complete based on this batch.
+
+
+## Latest correction — creator proof placement and Writer focus test — 2026-11-21
+
+- The user's latest clarification is that creator/about proof must **not** be inside App Info. The earlier assistant proposal to add a separate Home/main-menu shortcut was also not accepted. No later explicit placement was found in the retrieved historical context.
+- Accordingly, App Info remains product identity/description only. The standalone `CreatorAttributionScreen` component and its direct widget test are retained as prepared UI, but the Home/main-menu shortcut was removed. Its final in-app navigation placement is unresolved; do not claim the creator proof is currently accessible until the user-specified placement is known.
+- No address, GitHub work history or release records are included in the creator page. The selected portrait asset remains `assets/branding/founder_profile.jpg`.
+- Run #788 (source `298168f7e5f8696837cd854baed5e58fe6654eb5`) passed Analyze but failed tests: the legacy `widget_test.dart` still expected the creator name in App Info, and the focus regression test's center tap did not focus the editable input. Both expectations were corrected in later commits.
+- Run #794/#795 (source `83b91c58fcec89d6c368a0195e827662a9e00451`) passed Analyze but the new Writer test failed before checking focus because the Quill placeholder is not exposed as a Text widget. This was a test-targeting error; the test now taps the actual `EditableText` descendant of `QuillEditor` and checks that field's FocusNode.
+- Latest source/test commit: `895258ac6722261f7e53e1535a36c20711eabe8f`. Runs #799 (push, ID `44902715387`) and #800 (PR, ID `44902719632`) were pending at this update. Verify Analyze, all tests, signed APK, signature/package checks and artifact upload on this exact head.
+- Writer focus/Android soft-keyboard behavior remains unverified until the editable-field regression test passes and the physical Android device is tested. Do not infer keyboard visibility from focus alone.
+- PR #13 remains Draft/Open and unmerged. No module is declared complete by this correction.
