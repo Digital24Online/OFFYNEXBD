@@ -22,7 +22,7 @@ void main() {
                   builder: (_) => const SlidesEditorScreen(
                     isBangla: false,
                     title: 'Quarterly plan',
-                    content: 'Opening\\nSummary',
+                    content: 'Opening\nSummary',
                   ),
                 ),
               );
