@@ -78,7 +78,8 @@ void main() {
     await tester.tap(editTable);
     await tester.pumpAndSettle();
 
-    expect(find.text('Edit Table'), findsOneWidget);
+    // The dialog title and its action label may both be visible.
+    expect(find.text('Edit Table'), findsNWidgets(2));
     expect(find.text('Insert Above'), findsOneWidget);
     expect(find.text('Insert Left'), findsOneWidget);
     expect(tester.takeException(), isNull);
