@@ -232,6 +232,20 @@ class _WriterScreenState extends State<WriterScreen> {
       'title': 'Untitled Document',
       'content': '',
       'updated': DateTime.now().toIso8601String(),
+      'writerMeta': {
+        'zoom': 1.0,
+        'fontFamily': 'sans-serif',
+        'viewFit': 'Page',
+        'viewFitVersion': 2,
+        'showRuler': true,
+        'showStatusBar': true,
+        'showPageBorder': true,
+        'captureRevisions': false,
+        'focusMode': false,
+        'comments': <Map<String, dynamic>>[],
+        'citations': <Map<String, dynamic>>[],
+        'revisions': <Map<String, dynamic>>[],
+      },
     };
 
     final updated = [...documents, document];
