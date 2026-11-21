@@ -91,7 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
       description: 'Create and edit documents',
       banglaDescription: 'ডকুমেন্ট তৈরি ও সম্পাদনা',
       icon: Icons.description_rounded,
-      color: Color(0xFF2878DB),
+      color: OFFYNEXTheme.writerAccent,
     ),
     OfficeModule(
       name: 'Sheets',
@@ -99,7 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
       description: 'Spreadsheets and calculations',
       banglaDescription: 'হিসাব ও স্প্রেডশিট',
       icon: Icons.table_chart_rounded,
-      color: Color(0xFF159B68),
+      color: OFFYNEXTheme.sheetsAccent,
     ),
     OfficeModule(
       name: 'Slides',
@@ -107,7 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
       description: 'Create presentations',
       banglaDescription: 'প্রেজেন্টেশন তৈরি',
       icon: Icons.slideshow_rounded,
-      color: Color(0xFFE58A28),
+      color: OFFYNEXTheme.slidesAccent,
     ),
     OfficeModule(
       name: 'PDF',
@@ -115,7 +115,7 @@ class _HomeScreenState extends State<HomeScreen> {
       description: 'Read, edit and manage PDFs',
       banglaDescription: 'পিডিএফ পড়া ও সম্পাদনা',
       icon: Icons.picture_as_pdf_rounded,
-      color: Color(0xFFE34B50),
+      color: OFFYNEXTheme.pdfAccent,
     ),
     OfficeModule(
       name: 'Fonts',
@@ -123,7 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
       description: 'Fonts and typography',
       banglaDescription: 'ফন্ট ব্যবস্থাপনা',
       icon: Icons.font_download_rounded,
-      color: Color(0xFF8055D9),
+      color: OFFYNEXTheme.fontsAccent,
     ),
     OfficeModule(
       name: 'AI Assistant',
@@ -131,7 +131,7 @@ class _HomeScreenState extends State<HomeScreen> {
       description: 'Smart productivity assistant',
       banglaDescription: 'স্মার্ট কাজের সহকারী',
       icon: Icons.auto_awesome_rounded,
-      color: Color(0xFF0C9CA6),
+      color: OFFYNEXTheme.aiAccent,
     ),
     OfficeModule(
       name: 'Cloud',
@@ -139,7 +139,7 @@ class _HomeScreenState extends State<HomeScreen> {
       description: 'Store and sync your files',
       banglaDescription: 'ফাইল সংরক্ষণ ও সিঙ্ক',
       icon: Icons.cloud_rounded,
-      color: Color(0xFF4386D9),
+      color: OFFYNEXTheme.cloudAccent,
     ),
     OfficeModule(
       name: 'Forms',
@@ -147,7 +147,7 @@ class _HomeScreenState extends State<HomeScreen> {
       description: 'Create digital forms',
       banglaDescription: 'ডিজিটাল ফর্ম তৈরি',
       icon: Icons.dynamic_form_rounded,
-      color: Color(0xFFCB7B35),
+      color: OFFYNEXTheme.formsAccent,
     ),
     OfficeModule(
       name: 'Scan',
@@ -155,7 +155,7 @@ class _HomeScreenState extends State<HomeScreen> {
       description: 'Scan documents and OCR',
       banglaDescription: 'ডকুমেন্ট স্ক্যান ও OCR',
       icon: Icons.document_scanner_rounded,
-      color: Color(0xFF347F9D),
+      color: OFFYNEXTheme.scanAccent,
     ),
     OfficeModule(
       name: 'Database',
@@ -163,7 +163,7 @@ class _HomeScreenState extends State<HomeScreen> {
       description: 'Organize and manage data',
       banglaDescription: 'তথ্য সংরক্ষণ ও ব্যবস্থাপনা',
       icon: Icons.storage_rounded,
-      color: Color(0xFF6875B8),
+      color: OFFYNEXTheme.databaseAccent,
     ),
   ];
 
