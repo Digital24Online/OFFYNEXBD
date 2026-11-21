@@ -905,6 +905,8 @@ class _FormulaParser {
         _ => false,
       };
     }
+    final hasWildcard = expected.contains('*') || expected.contains('?');
+    if (hasWildcard && raw.isEmpty) return false;
     final pattern = RegExp.escape(expected)
         .replaceAll(r'\*', '.*')
         .replaceAll(r'\?', '.');

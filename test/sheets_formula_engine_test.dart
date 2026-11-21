@@ -313,6 +313,8 @@ void main() {
         'C4': '=COUNTIF(B1:B4,">=5")',
         'C5': '=SUMIF(B1:B4,">5")',
         'C6': '=COUNTIF(A1:A4,"A*")',
+        'C7': '=COUNTIF(A1:A5,"*")',
+        'A5': '',
       });
       expect(engine.evaluateCell('C1'), 2);
       expect(engine.evaluateCell('C2'), 10);
@@ -320,6 +322,7 @@ void main() {
       expect(engine.evaluateCell('C4'), 3);
       expect(engine.evaluateCell('C5'), 16);
       expect(engine.evaluateCell('C6'), 2);
+      expect(engine.evaluateCell('C7'), 4);
     });
 
     test('cross-sheet expansion leaves quoted text criteria untouched', () {
