@@ -302,6 +302,28 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
     super.dispose();
   }
 
+  /// Keeps icon-and-label actions inside the available phone width.
+  /// A Flexible label wraps long translations instead of overflowing its Row.
+  Widget _actionButton({
+    Key? key,
+    required VoidCallback? onPressed,
+    required Widget icon,
+    required Widget label,
+  }) {
+    return OutlinedButton(
+      key: key,
+      onPressed: onPressed,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          icon,
+          const SizedBox(width: 8),
+          Flexible(child: label),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.sizeOf(context);
@@ -342,71 +364,71 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                OutlinedButton.icon(
+                _actionButton(
                   onPressed: addRow,
                   icon: const Icon(Icons.add),
                   label: Text(_t('সারি যোগ', 'Add Row')),
                 ),
-                OutlinedButton.icon(
+                _actionButton(
                   key: const ValueKey('writer-table-insert-row-before'),
                   onPressed: insertRowBefore,
                   icon: const Icon(Icons.arrow_upward),
                   label: Text(_t('উপরে সারি', 'Insert Above')),
                 ),
-                OutlinedButton.icon(
+                _actionButton(
                   key: const ValueKey('writer-table-insert-row-after'),
                   onPressed: insertRowAfter,
                   icon: const Icon(Icons.arrow_downward),
                   label: Text(_t('নিচে সারি', 'Insert Below')),
                 ),
-                OutlinedButton.icon(
+                _actionButton(
                   key: const ValueKey('writer-table-delete-selected-row'),
                   onPressed: cells.length <= 1 ? null : removeRow,
                   icon: const Icon(Icons.remove),
                   label: Text(_t('নির্বাচিত সারি মুছুন', 'Delete Selected Row')),
                 ),
-                OutlinedButton.icon(
+                _actionButton(
                   onPressed: addColumn,
                   icon: const Icon(Icons.add),
                   label: Text(_t('কলাম যোগ', 'Add Column')),
                 ),
-                OutlinedButton.icon(
+                _actionButton(
                   key: const ValueKey('writer-table-insert-column-before'),
                   onPressed: insertColumnBefore,
                   icon: const Icon(Icons.arrow_back),
                   label: Text(_t('বামে কলাম', 'Insert Left')),
                 ),
-                OutlinedButton.icon(
+                _actionButton(
                   key: const ValueKey('writer-table-insert-column-after'),
                   onPressed: insertColumnAfter,
                   icon: const Icon(Icons.arrow_forward),
                   label: Text(_t('ডানে কলাম', 'Insert Right')),
                 ),
-                OutlinedButton.icon(
+                _actionButton(
                   key: const ValueKey('writer-table-delete-selected-column'),
                   onPressed: columnCount <= 1 ? null : removeColumn,
                   icon: const Icon(Icons.remove),
                   label: Text(_t('নির্বাচিত কলাম মুছুন', 'Delete Selected Column')),
                 ),
-                OutlinedButton.icon(
+                _actionButton(
                   key: const ValueKey('writer-table-row-height-decrease'),
                   onPressed: () => resizeSelectedRow(-8),
                   icon: const Icon(Icons.height),
                   label: Text(_t('সারি ছোট', 'Shorter Row')),
                 ),
-                OutlinedButton.icon(
+                _actionButton(
                   key: const ValueKey('writer-table-row-height-increase'),
                   onPressed: () => resizeSelectedRow(8),
                   icon: const Icon(Icons.height),
                   label: Text(_t('সারি বড়', 'Taller Row')),
                 ),
-                OutlinedButton.icon(
+                _actionButton(
                   key: const ValueKey('writer-table-column-width-decrease'),
                   onPressed: () => resizeSelectedColumn(-12),
                   icon: const Icon(Icons.width_normal),
                   label: Text(_t('কলাম সরু', 'Narrower Column')),
                 ),
-                OutlinedButton.icon(
+                _actionButton(
                   key: const ValueKey('writer-table-column-width-increase'),
                   onPressed: () => resizeSelectedColumn(12),
                   icon: const Icon(Icons.width_full),
