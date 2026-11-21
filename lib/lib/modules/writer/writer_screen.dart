@@ -498,6 +498,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   String _t(String bn, String en) => widget.isBangla ? bn : en;
 
   late final TextEditingController titleController;
+  late final FocusNode titleFocusNode;
   late final FocusNode editorFocusNode;
   final GlobalKey<EditorState> _writerEditorKey = GlobalKey<EditorState>();
   late QuillController quillController;
@@ -572,6 +573,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   void initState() {
     super.initState();
 
+    titleFocusNode = FocusNode();
     editorFocusNode = FocusNode();
     titleController = TextEditingController(
       text: widget.document['title']?.toString() ??
@@ -3273,6 +3275,7 @@ Future<void> insertWriterImage() async {
 
     _pageTransformController.dispose();
     editorFocusNode.dispose();
+    titleFocusNode.dispose();
     titleController.dispose();
     quillController.dispose();
 
@@ -3294,6 +3297,7 @@ Future<void> insertWriterImage() async {
         elevation: 0,
         title: TextField(
           controller: titleController,
+          focusNode: titleFocusNode,
           onChanged: (_) => scheduleSave(),
           maxLines: 1,
           textInputAction: TextInputAction.done,
@@ -3338,6 +3342,7 @@ Future<void> insertWriterImage() async {
                   alignment: Alignment.centerLeft,
                   child: TextField(
                     controller: titleController,
+                    focusNode: titleFocusNode,
                     onChanged: (_) => scheduleSave(),
                     maxLines: 1,
                     textInputAction: TextInputAction.done,
