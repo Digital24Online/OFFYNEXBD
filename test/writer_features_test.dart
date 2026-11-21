@@ -273,6 +273,26 @@ void main() {
     expect(slider.value, closeTo(1.0, 0.001));
   });
 
+  testWidgets('new Writer documents open in Full Page view', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: true)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('নতুন ডকুমেন্ট'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('ভিউ'));
+    await tester.tap(find.text('ভিউ'));
+    await tester.pumpAndSettle();
+
+    final fullPageLabel = find.text('সম্পূর্ণ পৃষ্ঠা').first;
+    final fullPageChip = tester.widget<ChoiceChip>(
+      find.ancestor(
+        of: fullPageLabel,
+        matching: find.byType(ChoiceChip),
+      ).first,
+    );
+    expect(fullPageChip.selected, isTrue);
+  });
+
   testWidgets('Writer opens with page width filling the mobile editor viewport', (tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.binding.setSurfaceSize(const Size(600, 1200));
