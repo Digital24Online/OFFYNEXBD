@@ -317,7 +317,7 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             SizedBox(
-              height: (MediaQuery.sizeOf(context).height * 0.24).clamp(96.0, 190.0),
+              height: (MediaQuery.sizeOf(context).height * 0.18).clamp(88.0, 140.0),
               child: SingleChildScrollView(
                 child: Wrap(
                   spacing: 8,
@@ -411,7 +411,7 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
             Text(_t('নির্বাচিত ঘর: ${selectedRow + 1}, ${selectedColumn + 1}', 'Selected cell: ${selectedRow + 1}, ${selectedColumn + 1}')),
             const SizedBox(height: 8),
             SizedBox(
-              height: (screenHeight * 0.18).clamp(90.0, 150.0),
+              height: (screenHeight * 0.14).clamp(72.0, 112.0),
               child: SingleChildScrollView(
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
