@@ -3348,7 +3348,12 @@ Future<void> insertWriterImage() async {
                   minScale: 0.5,
                   maxScale: 4.0,
                   constrained: false,
-                  panEnabled: true,
+                  // Keep one-finger taps and text selection available to
+                  // QuillEditor. The parent pan recognizer was competing with
+                  // the editor's tap/long-press recognizers, preventing the
+                  // Android keyboard from opening reliably. Pinch zoom remains
+                  // available; page zoom buttons remain the reliable fallback.
+                  panEnabled: false,
                   scaleEnabled: true,
                   boundaryMargin: const EdgeInsets.all(120),
                   alignment: Alignment.topCenter,
