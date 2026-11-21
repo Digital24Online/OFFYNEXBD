@@ -1909,3 +1909,13 @@ A module is complete only after its actual workflows exist, tests cover them, th
 - Baseline: 243 tracked files, 81 Dart files, 40 test files, 13 bundled assets and 121 native platform files.
 - Added `docs/OFFYNEXBD_REPOSITORY_FILE_AUDIT.md` with the exact source/test/assets/platform/configuration/documentation inventory and cross-check findings; linked it from the root README and completion blueprint.
 - This is file preparation and inventory reconciliation only. It does not implement runtime feature gaps or claim that the ten modules are complete.
+
+
+## Slides editor implementation batch — 2026-11-21
+
+- Added `SlidesDocumentCodec`: versioned structured slide-text storage, legacy newline format compatibility, 200-slide and 5 MB limits, and strict validation.
+- Added a dedicated Slides editor screen with presentation title editing, slide add/duplicate/delete/reorder and individual slide text editing.
+- Routed Slides create/edit through the dedicated editor; preview and PDF export now read both legacy and structured presentations. Blank slides are retained in the presentation and PDF page sequence.
+- Added codec regression tests for legacy read, structured round-trip/order, blank slides, invalid versions and invalid entries.
+- Updated Slides specification. This is an editable text-slide workflow, not a full object/canvas editor; shapes, images, tables, charts, themes, notes, transitions and PPTX/ODP remain open.
+- Pending verification: Analyze, full tests and signed Android package on the resulting source commit.
