@@ -1837,3 +1837,15 @@ A module is complete only after its actual workflows exist, tests cover them, th
 - Updated `lib/lib/modules/writer/writer_table.dart` in commit `2082f71cb5ffb5901430fecc8a2bd46a4a9e0ef6`: dialog content is scrollable, dialog content height is bounded to 54% of the available screen height, and the table preview receives its own bounded vertical viewport.
 - Build #693, run ID `44880886363`, is running on the exact table-dialog fix commit. Do not mark it fixed until Analyze and all tests pass; then verify signed APK packaging as well.
 - Latest verified branch head at this note: `2082f71cb5ffb5901430fecc8a2bd46a4a9e0ef6`.
+
+
+## Compact Writer overflow follow-up — 2026-11-21 (verified failure analysis and second correction)
+
+- Rechecked Build #693 (run ID 44880886363) job logs: Analyze succeeded; Tests failed with 244 passed / 1 failed. The failure was not fixed by the first dialog sizing patch.
+- Exact test: `Writer table editor does not overflow on a compact phone viewport` in `test/writer_features_test.dart`.
+- Logs revealed TWO simultaneous vertical overflows in that same test: (1) Writer document-library card Column at `writer_screen.dart:420`, constrained to a narrow card width/height; (2) table editor dialog content Column at `writer_table.dart:316`, overflowing by 34 px. The larger 138 px card overflow was the primary exception; the dialog also overflowed.
+- Second correction committed: `821135ac0e5be2ace03b5f89bb4f75dc284581d8` reduces compact dialog toolbar/preview heights so all dialog controls fit the bounded viewport while retaining scrollable controls and preview.
+- Second correction committed: `42667eb294f04c71bb0efeda5225059b643aadc8` changes Writer library to one column below 480 logical px and adjusts the compact one-column card aspect ratio, avoiding the cramped two-column card on 360 px phones.
+- These are source corrections only until the new workflow passes Analyze, all tests, signed Android APK build, signature/install metadata checks and artifact upload. Do not mark fixed/verified until CI confirms.
+- Build #694 (run ID 44880890820) was cancelled before Analyze/Tests; it provides no verification evidence.
+- App Info recheck: `assets/branding/founder_profile.jpg` exists in the branch (7,313 bytes); `assets/branding/offynexbd_icon.svg` and `offynexbd_logo.svg` also exist. The `test/app_info_screen_test.dart` test passed in Build #693, confirming the creator attribution and selected portrait are wired into the App Info view. This does not constitute a legal identity verification; it is the app's declared creator attribution.
