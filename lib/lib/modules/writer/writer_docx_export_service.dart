@@ -160,7 +160,7 @@ class WriterDocxExportService {
               ? 'Noto Sans Bengali'
               : rawFont.replaceAll(RegExp(r'[^A-Za-z0-9 _-]'), '').trim();
       if (font.isEmpty) continue;
-      for (final part in insert.split('\\n').where((part) => part.isNotEmpty)) {
+      for (final part in insert.split('\n').where((part) => part.isNotEmpty)) {
         fontSegments.add(_WriterFontSegment(part, font));
       }
     }
@@ -390,9 +390,9 @@ class WriterDocxExportService {
   ) {
     if (fontSegments.isEmpty) return documentXml;
     final pending = List<bool>.filled(fontSegments.length, true);
-    final paragraphPattern = RegExp(r'<w:p\\b[^>]*>[\\s\\S]*?</w:p>');
-    final runPattern = RegExp(r'<w:r\\b[^>]*>[\\s\\S]*?</w:r>');
-    final textPattern = RegExp(r'<w:t(?:\\s[^>]*)?>([\\s\\S]*?)</w:t>');
+    final paragraphPattern = RegExp(r'<w:p\b[^>]*>[\s\S]*?</w:p>');
+    final runPattern = RegExp(r'<w:r\b[^>]*>[\s\S]*?</w:r>');
+    final textPattern = RegExp(r'<w:t(?:\s[^>]*)?>([\s\S]*?)</w:t>');
     return documentXml.replaceAllMapped(paragraphPattern, (paragraphMatch) {
       final paragraph = paragraphMatch.group(0)!;
       final runs = runPattern.allMatches(paragraph).toList();
@@ -447,10 +447,10 @@ class WriterDocxExportService {
     final escaped = _escape(font);
     final fontProperties = '<w:rFonts w:ascii="$escaped" w:hAnsi="$escaped" '
         'w:eastAsia="$escaped" w:cs="$escaped"/>';
-    final runProperties = RegExp(r'<w:rPr\\b[^>]*>');
+    final runProperties = RegExp(r'<w:rPr\b[^>]*>');
     final existingProperties = runProperties.firstMatch(runXml);
     if (existingProperties == null) {
-      final runStart = RegExp(r'<w:r\\b[^>]*>').firstMatch(runXml);
+      final runStart = RegExp(r'<w:r\b[^>]*>').firstMatch(runXml);
       if (runStart == null) return runXml;
       return runXml.replaceRange(runStart.end, runStart.end, '<w:rPr>$fontProperties</w:rPr>');
     }
@@ -458,7 +458,7 @@ class WriterDocxExportService {
     if (propertiesEnd < 0) return runXml;
     var properties = runXml.substring(existingProperties.end, propertiesEnd);
     properties = properties.replaceAll(
-      RegExp(r'<w:rFonts\\b[^>]*/>|<w:rFonts\\b[^>]*>[\\s\\S]*?</w:rFonts>'),
+      RegExp(r'<w:rFonts\b[^>]*/>|<w:rFonts\b[^>]*>[\s\S]*?</w:rFonts>'),
       '',
     );
     properties = '$fontProperties$properties';
