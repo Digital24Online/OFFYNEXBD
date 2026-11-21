@@ -399,4 +399,37 @@ void main() {
 
 
 
+
+  testWidgets('Writer opens the keyboard on editor tap and saves typed text',
+      (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const OFFYNEXBDApp());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('রাইটার'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('নতুন ডকুমেন্ট'));
+    await tester.pumpAndSettle();
+
+    final editable = find.byType(EditableText).last;
+    await tester.tap(editable);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(tester.testTextInput.isVisible, isTrue);
+
+    await tester.enterText(editable, 'Writer keyboard test লেখা');
+    await tester.pump(const Duration(milliseconds: 1100));
+    await tester.pumpAndSettle();
+
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('offynex_writer_documents');
+    expect(raw, isNotNull);
+    expect(raw, contains('Writer keyboard test লেখা'));
+  });
+
 }
