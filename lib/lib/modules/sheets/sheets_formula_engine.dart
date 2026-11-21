@@ -204,6 +204,39 @@ class SheetsFormulaEngine {
     return values;
   }
 
+  List<(String, String, double?)> _readCriteriaRange(
+    String start,
+    String end,
+    Set<String> visiting,
+  ) {
+    final first = _splitCellReference(start.toUpperCase());
+    final last = _splitCellReference(end.toUpperCase());
+    if (first == null || last == null) throw const FormatException('Invalid criteria range');
+    final minColumn = math.min(first.$1, last.$1).toInt();
+    final maxColumn = math.max(first.$1, last.$1).toInt();
+    final minRow = math.min(first.$2, last.$2).toInt();
+    final maxRow = math.max(first.$2, last.$2).toInt();
+    final count = (maxColumn - minColumn + 1) * (maxRow - minRow + 1);
+    if (count > 10000) throw const FormatException('Criteria range is too large');
+    final result = <(String, String, double?)>[];
+    for (var row = minRow; row <= maxRow; row++) {
+      for (var column = minColumn; column <= maxColumn; column++) {
+        final key = _columnName(column) + row.toString();
+        final raw = cells[key]?.trim() ?? '';
+        double? numeric;
+        if (raw.startsWith('=')) {
+          numeric = _readCell(key, visiting);
+          if (numeric == null) throw const FormatException('Invalid or circular formula in criteria range');
+        } else {
+          final parsed = double.tryParse(raw);
+          if (parsed != null && parsed.isFinite) numeric = parsed;
+        }
+        result.add((key, raw, numeric));
+      }
+    }
+    return result;
+  }
+
   static bool _isCellReference(String value) =>
       RegExp(r'^[A-Z]+[1-9]\d*$').hasMatch(value);
 
@@ -232,7 +265,7 @@ class SheetsFormulaEngine {
 class _FormulaParser {
   _FormulaParser(this.source, this.engine, this.visiting) {
     final pattern = RegExp(
-      r'\s+|(?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][+-]?\d+)?|[A-Za-z]+[0-9]+|'
+      r'\s+|"(?:[^"]|"")*"|(?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][+-]?\d+)?|[A-Za-z]+[0-9]+|'
       r'[A-Za-z_][A-Za-z0-9_]*|>=|<=|<>|[=<>()+\-*/^%,:]',
     );
     var offset = 0;
@@ -242,7 +275,9 @@ class _FormulaParser {
       }
       offset = match.end;
       final token = match.group(0)!;
-      if (token.trim().isNotEmpty) tokens.add(token.toUpperCase());
+      if (token.trim().isNotEmpty) {
+        tokens.add(token.startsWith('"') ? token : token.toUpperCase());
+      }
     }
     if (offset != source.length) {
       throw const FormatException('Invalid formula token');
@@ -399,6 +434,9 @@ class _FormulaParser {
     _expect('(');
     if (name == 'IF') return _parseIfFunction();
     if (name == 'IFERROR') return _parseIfErrorFunction();
+    if (name == 'COUNTIF' || name == 'SUMIF' || name == 'AVERAGEIF') {
+      return _parseCriteriaFunction(name);
+    }
     final values = <double>[];
     if (!_accept(')')) {
       while (true) {
@@ -698,6 +736,243 @@ class _FormulaParser {
         return math.atan2(values[1], values[0]);
     }
     throw const FormatException('Unsupported function');
+  }
+
+  double _parseCriteriaFunction(String name) {
+    final criteriaRange = _readRangeArgument();
+    _expect(',');
+    final criterion = _readCriterionArgument();
+    (String, String)? sumRange;
+    if (name != 'COUNTIF' && _accept(',')) sumRange = _readRangeArgument();
+    _expect(')');
+    final criteriaCells = engine._readCriteriaRange(criteriaRange.$1, criteriaRange.$2, visiting);
+    final valueCells = sumRange == null
+        ? criteriaCells
+        : engine._readCriteriaRange(sumRange.$1, sumRange.$2, visiting);
+    if (criteriaCells.length != valueCells.length) {
+      throw const FormatException('Criteria and sum ranges must have the same size');
+    }
+    var count = 0;
+    var sum = 0.0;
+    for (var index = 0; index < criteriaCells.length; index++) {
+      if (!_matchesCriterion(criteriaCells[index].$2, criteriaCells[index].$3, criterion)) continue;
+      final value = valueCells[index].$3;
+      if (value == null) continue;
+      count++;
+      sum += value;
+    }
+    if (name == 'COUNTIF') return criteriaCells.where((cell) =>
+        _matchesCriterion(cell.$2, cell.$3, criterion)).length.toDouble();
+    if (name == 'SUMIF') return sum;
+    if (count == 0) throw const FormatException('AVERAGEIF has no numeric matches');
+    return sum / count;
+  }
+
+  (String, String) _readRangeArgument() {
+    final start = _take();
+    if (!SheetsFormulaEngine._isCellReference(start)) {
+      throw const FormatException('Expected a cell or range reference');
+    }
+    if (!_accept(':')) return (start, start);
+    final end = _take();
+    if (!SheetsFormulaEngine._isCellReference(end)) {
+      throw const FormatException('Invalid criteria range end');
+    }
+    return (start, end);
+  }
+
+  String _readCriterionArgument() {
+    final token = _take();
+    if (token.startsWith('"') && token.endsWith('"') && token.length >= 2) {
+      return token.substring(1, token.length - 1).replaceAll('""', '"');
+    }
+    if (SheetsFormulaEngine._isCellReference(token)) {
+      final raw = engine.cells[token]?.trim() ?? '';
+      if (raw.startsWith('=')) {
+        final value = engine._readCell(token, visiting);
+        if (value == null) throw const FormatException('Invalid criteria reference');
+        return value.toString();
+      }
+      return raw;
+    }
+    return token;
+  }
+
+  bool _matchesCriterion(String raw, double? numeric, String criterion) {
+    var operator = '=';
+    var expected = criterion;
+    for (final candidate in const ['>=', '<=', '<>', '>', '<', '=']) {
+      if (criterion.startsWith(candidate)) {
+        operator = candidate;
+        expected = criterion.substring(candidate.length);
+        break;
+      }
+    }
+    final expectedNumber = double.tryParse(expected.trim());
+    final actualNumber = numeric ?? double.tryParse(raw.trim());
+    if (expectedNumber != null && actualNumber != null) {
+      return switch (operator) {
+        '>' => actualNumber > expectedNumber,
+        '>=' => actualNumber >= expectedNumber,
+        '<' => actualNumber < expectedNumber,
+        '<=' => actualNumber <= expectedNumber,
+        '<>' => actualNumber != expectedNumber,
+        _ => actualNumber == expectedNumber,
+      };
+    }
+    if (operator != '=' && operator != '<>') {
+      final comparison = raw.toLowerCase().compareTo(expected.toLowerCase());
+      return switch (operator) {
+        '>' => comparison > 0,
+        '>=' => comparison >= 0,
+        '<' => comparison < 0,
+        '<=' => comparison <= 0,
+        _ => false,
+      };
+    }
+    final pattern = RegExp.escape(expected)
+        .replaceAll(r'\*', '.*')
+        .replaceAll(r'\?', '.');
+    final matches = RegExp('^$pattern
+    final condition = _parseComparison();
+    _expect(',');
+    if (condition != 0) {
+      final whenTrue = _parseComparison();
+      _expect(',');
+      _skipFunctionArgument();
+      _expect(')');
+      return whenTrue;
+    }
+    _skipFunctionArgument();
+    _expect(',');
+    final whenFalse = _parseComparison();
+    _expect(')');
+    return whenFalse;
+  }
+
+  double _parseIfErrorFunction() {
+    double value;
+    try {
+      value = _parseComparison();
+    } on FormatException {
+      if (current != ',') _skipFunctionArgument();
+      _expect(',');
+      final fallback = _parseComparison();
+      _expect(')');
+      return fallback;
+    } on RangeError {
+      if (current != ',') _skipFunctionArgument();
+      _expect(',');
+      final fallback = _parseComparison();
+      _expect(')');
+      return fallback;
+    }
+    _expect(',');
+    _skipFunctionArgument();
+    _expect(')');
+    return value;
+  }
+
+  /// Advances over one syntactically nested argument without evaluating it.
+  /// This gives IF spreadsheet-style lazy branch evaluation.
+  void _skipFunctionArgument() {
+    if (current == null || current == ',' || current == ')') {
+      throw const FormatException('IF argument is missing');
+    }
+    var depth = 0;
+    var consumed = false;
+    while (current != null) {
+      final token = current!;
+      if (depth == 0 && (token == ',' || token == ')')) break;
+      if (token == '(') {
+        depth++;
+      } else if (token == ')') {
+        if (depth == 0) break;
+        depth--;
+      }
+      position++;
+      consumed = true;
+    }
+    if (!consumed || depth != 0) {
+      throw const FormatException('Invalid IF argument');
+    }
+  }
+
+  bool _isAggregateFunction(String name) => const {
+    'SUM', 'AVERAGE', 'COUNT', 'MIN', 'MAX', 'PRODUCT',
+    'MEDIAN', 'LARGE', 'SMALL', 'SUMSQ', 'DEVSQ', 'AVEDEV',
+    'GEOMEAN', 'HARMEAN', 'VARP', 'VARS', 'STDEVP', 'STDEVS',
+  }.contains(name);
+
+  int _integerArgument(double value) {
+    if (!value.isFinite || value != value.truncateToDouble() ||
+        value.abs() > 9007199254740991) {
+      throw const FormatException('Expected a safe integer argument');
+    }
+    return value.toInt();
+  }
+
+  int _greatestCommonDivisor(int a, int b) {
+    var left = a;
+    var right = b;
+    while (right != 0) {
+      final remainder = left % right;
+      left = right;
+      right = remainder;
+    }
+    return left;
+  }
+
+  double _roundTowardZero(double number, int digits) {
+    if (digits > 308) return number;
+    if (digits < -308) return 0;
+    final factor = math.pow(10, digits).toDouble();
+    if (!factor.isFinite) return number;
+    if (factor == 0) return 0;
+    final scaled = number * factor;
+    if (!scaled.isFinite) return number;
+    return scaled.truncateToDouble() / factor;
+  }
+
+  double _roundWithPrecision(double number, double precision, String mode) {
+    if (!precision.isFinite || precision != precision.truncateToDouble()) {
+      throw const FormatException('Rounding precision must be an integer');
+    }
+    // Beyond IEEE-754's useful decimal range, finer precision changes nothing;
+    // coarser precision rounds every finite value to zero.
+    if (precision > 308) return number;
+    if (precision < -308) return 0;
+    final factor = math.pow(10, precision).toDouble();
+    if (factor == 0) return 0;
+    if (!factor.isFinite) return number;
+    final scaled = number * factor;
+    if (!scaled.isFinite) return number;
+    final rounded = switch (mode) {
+      'ROUNDUP' => scaled.isNegative
+          ? scaled.floorToDouble()
+          : scaled.ceilToDouble(),
+      'ROUNDDOWN' => scaled.truncateToDouble(),
+      _ => scaled.roundToDouble(),
+    };
+    final result = rounded / factor;
+    if (!result.isFinite) throw const FormatException('Rounding overflow');
+    return result;
+  }
+
+  void _expectNoExtraArguments(String name, List<double> values, int count) {
+    if (values.length != count) {
+      throw FormatException('$name expects $count argument(s)');
+    }
+  }
+
+  void _expectAtLeastArguments(String name, List<double> values, int count) {
+    if (values.length < count) {
+      throw FormatException('$name expects at least $count arguments');
+    }
+  }
+}
+, caseSensitive: false).hasMatch(raw);
+    return operator == '<>' ? !matches : matches;
   }
 
   double _parseIfFunction() {

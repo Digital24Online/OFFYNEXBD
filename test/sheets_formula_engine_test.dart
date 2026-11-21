@@ -303,6 +303,35 @@ void main() {
       }
     });
 
+    test('supports COUNTIF, SUMIF and AVERAGEIF with text and numeric criteria', () {
+      final engine = SheetsFormulaEngine({
+        'A1': 'Apples', 'A2': 'Oranges', 'A3': 'Apples', 'A4': 'Bananas',
+        'B1': '3', 'B2': '5', 'B3': '7', 'B4': '9',
+        'C1': '=COUNTIF(A1:A4,"Apples")',
+        'C2': '=SUMIF(A1:A4,"Apples",B1:B4)',
+        'C3': '=AVERAGEIF(A1:A4,"Apples",B1:B4)',
+        'C4': '=COUNTIF(B1:B4,">=5")',
+        'C5': '=SUMIF(B1:B4,">5")',
+        'C6': '=COUNTIF(A1:A4,"A*")',
+      });
+      expect(engine.evaluateCell('C1'), 2);
+      expect(engine.evaluateCell('C2'), 10);
+      expect(engine.evaluateCell('C3'), 5);
+      expect(engine.evaluateCell('C4'), 3);
+      expect(engine.evaluateCell('C5'), 16);
+      expect(engine.evaluateCell('C6'), 2);
+    });
+
+    test('rejects mismatched SUMIF ranges and AVERAGEIF with no matches', () {
+      final engine = SheetsFormulaEngine({
+        'A1': 'A', 'A2': 'B', 'B1': '1',
+        'C1': '=SUMIF(A1:A2,"A",B1:B1)',
+        'C2': '=AVERAGEIF(A1:A2,"missing",B1:B2)',
+      });
+      expect(engine.evaluateCell('C1'), isNull);
+      expect(engine.evaluateCell('C2'), isNull);
+    });
+
     test('evaluates Excel-style postfix percentages', () {
       final engine = SheetsFormulaEngine({
         'A1': '=25%', 'A2': '=50%*200', 'A3': '=10+5%',
