@@ -1,6 +1,6 @@
 # OFFYNEXBD — Repository File Audit
 
-**Audited ref:** `926778930cb9843a6b0f9f9d3b84831b0ce84547`  
+**Audited ref:** `94c18043b74ead0a1f4e38ea3e77a17a6ccdce9a`  
 **Branch:** `work/writer-sheets-pdf-scan-completion-20261120`  
 **Audit date:** 2026-11-21  
 **Purpose:** Reconcile the actual tracked repository files with the ten-module completion blueprint. This is an inventory, not a claim that listed files or modules are complete.
@@ -9,9 +9,9 @@
 
 | Area | Count |
 |---|---:|
-| All tracked files | 247 |
-| Dart source and test files | 84 |
-| Automated Dart test files | 41 |
+| All tracked files | 248 |
+| Dart source and test files | 85 |
+| Automated Dart test files | 42 |
 | Bundled assets | 13 |
 | Native platform files (Android/iOS/Windows/macOS) | 121 |
 | Documentation/specification files | 15 |
@@ -92,6 +92,7 @@ The repository uses a generated Flutter project at its root and currently stores
 - `test/sheets_xlsx_round_trip_test.dart`
 - `test/sheets_xlsx_validation_codec_test.dart`
 - `test/slides_document_codec_test.dart`
+- `test/slides_editor_screen_test.dart`
 - `test/slides_pdf_export_test.dart`
 - `test/widget_test.dart`
 - `test/workspace_backup_codec_test.dart`
@@ -291,7 +292,7 @@ Also retain root `README.md`, `OFFYNEXBD_MASTER_PROGRESS.md` and `WRITER_MASTER_
 - Root `pubspec.yaml` declares Flutter dependencies and bundled branding, Bengali fonts and OCR data. Dependency upgrades require compatibility and license review.
 - CI generates font/OCR and branding assets, runs Analyze and configured tests, then signs and verifies an Android APK. Check workflow success on the exact final source commit.
 - The application entry point exposes all ten modules. Slides, Fonts, AI Assistant, Cloud, Forms, Scan and Database still share `office_workspace_screen.dart`; a shared workspace shell or local records do not establish full module capability.
-- Slides now has a dedicated editable text-slide workflow and versioned storage with legacy newline compatibility. The object/canvas editor and PPTX/ODP remain open.
+- Slides has a dedicated editable text-slide workflow and versioned storage with legacy newline compatibility. The object/canvas editor and PPTX/ODP remain open.
 - Existing Writer, Sheets, PDF, Scan, backup/recovery, branding and App Info work must be preserved while remaining capabilities are implemented.
 - Backend and database architecture documents are planning records; they do not establish a provisioned backend, remote database, authentication or cloud service.
 - Module specifications and the completion blueprint remain the authoritative feature backlog. Refresh this inventory whenever files are added, removed or moved.

@@ -90,8 +90,8 @@ class _SlidesEditorScreenState extends State<SlidesEditorScreen> {
   }
 
   void _reorderSlides(int oldIndex, int newIndex) {
+    // ReorderableListView.onReorderItem already adjusts newIndex after removal.
     setState(() {
-      if (newIndex > oldIndex) newIndex -= 1;
       final slide = _slides.removeAt(oldIndex);
       _slides.insert(newIndex, slide);
     });

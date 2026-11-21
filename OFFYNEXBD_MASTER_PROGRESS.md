@@ -1927,3 +1927,9 @@ A module is complete only after its actual workflows exist, tests cover them, th
 - Replaced concatenation with interpolation and switched to Flutter's `onReorderItem` callback (which already supplies the adjusted insertion index).
 - Added a 200-slide bound to legacy decoding, a safe preview error state for invalid structured records, and a widget regression test for add/duplicate/edit/save ordering.
 - Await a fresh Analyze, full test suite and signed Android package verification on the next commit.
+
+
+## Slides reorder callback compatibility — 2026-11-21
+
+- Flutter 3.50 uses `ReorderableListView.onReorderItem`, which already adjusts the insertion index after removing the old item. Removed the legacy manual index decrement to prevent off-by-one reordering.
+- Refreshed the repository file audit against commit `94c18043b74ead0a1f4e38ea3e77a17a6ccdce9a`; the exact tracked-file and test counts are in `docs/OFFYNEXBD_REPOSITORY_FILE_AUDIT.md`.
