@@ -312,6 +312,7 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
           : _t('টেবিল সম্পাদনা', 'Edit Table')),
       content: SizedBox(
         width: (MediaQuery.sizeOf(context).width * 0.88).clamp(280.0, 720.0),
+        height: (screenHeight * 0.50).clamp(250.0, 340.0),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
