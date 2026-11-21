@@ -1407,8 +1407,13 @@ class _SheetsScreenState extends State<SheetsScreen> {
         allowedExtensions: ['xlsx'],
       );
       if (picked == null || !mounted) return;
+      final fileSize = picked.lengthSync() ?? await picked.length() ?? 0;
+      SheetsWorkbookLimits.validateImportBytes(fileSize);
       final bytes = await picked.readAsBytes();
       if (!mounted) return;
+      if (bytes.length != fileSize) {
+        throw const FileSystemException('The XLSX file changed while being read.');
+      }
       SheetsWorkbookLimits.validateImportBytes(bytes.length);
       final sourceWorkbook = xlsx.Excel.decodeBytes(bytes);
       final names = sourceWorkbook.tables.keys.toList(growable: false);
