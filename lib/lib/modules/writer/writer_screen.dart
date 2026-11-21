@@ -2286,14 +2286,20 @@ Future<void> showCustomFontSizeDialog() async {
       final decodedFonts = rawFonts == null ? null : jsonDecode(rawFonts);
       if (decodedFonts is List) {
         for (final entry in decodedFonts) {
-          if (entry is! Map) continue;
+          if (entry is! Map) {
+            continue;
+          }
           final family = entry['fontFamily'];
           final path = entry['fontPath'];
           if (family is! String || !usedFamilies.contains(family) ||
-              path is! String || path.isEmpty) continue;
+              path is! String || path.isEmpty) {
+            continue;
+          }
           try {
             final file = File(path);
-            if (!await file.exists()) continue;
+            if (!await file.exists()) {
+              continue;
+            }
             final bytes = await file.readAsBytes();
             if (bytes.isNotEmpty) {
               customFontData[family] = ByteData.sublistView(bytes);
