@@ -1,44 +1,22 @@
-# OFFYNEX Scan
+# OFFYNEX Scan — implementation and completion specification
 
-OFFYNEXBD's document scanning and OCR module.
+## Current implemented foundation
+- Android uses Google ML Kit Document Scanner for automatic capture, edge detection/crop, perspective correction, rotation, filters/cleanup and multi-page PDF output (up to 50 pages per session).
+- Saved PDF validation and staged/atomic storage, PDF Reader handoff, sharing and confirmed deletion exist.
+- Bengali/English OCR, scan history, Writer handoff and OCR correction synchronization foundations exist.
+- Non-Android currently uses image-picker/OCR fallback; native scanner parity is not implemented.
 
-## Android native scanner
+## Remaining implementation
+- Verify scanner availability, first-run component download, cancellation, permissions and failure behavior across supported Android devices.
+- Add/complete manual crop, rotate, reorder/delete page, brightness/contrast, shadow/glare removal and filter presets where native SDK does not provide required controls.
+- Improve OCR review with page-by-page confidence, text correction, language selection and reliable Writer synchronization.
+- Add import from gallery, PDF/image batch processing, file naming, tags/search and scan-history management.
+- Ensure source images/PDFs are preserved until user confirms deletion; handle interrupted writes and storage-full errors.
+- Evaluate native iOS/desktop capture separately; do not label Android-only ML Kit support as cross-platform.
+- Benchmark Bengali/English OCR for clean, skewed, low-light, multi-column and small-print samples on physical devices.
 
-The Android app uses Google's ML Kit Document Scanner through
-`google_mlkit_document_scanner` 0.4.1. The scanner provides:
-
-- Automatic document detection and capture
-- Automatic edge detection and crop
-- Perspective correction and rotation
-- Full scanner mode with filters and cleanup tools
-- Multi-page capture (up to 50 pages per session)
-- PDF and JPEG page output
-- Optional gallery import in the native scanner
-- Bengali + English OCR on captured page images
-- Saved PDF in app documents and a share action
-- Recognized text saved as a Writer document
-
-The scanner UI and image-processing resources are provided by Google Play
-services. The first use may require an internet connection to download scanner
-components. No app camera permission is required by this ML Kit flow.
-
-## Platform behavior
-
-- Android: native ML Kit document scanner with multi-page PDF output.
-- Other platforms: existing image-picker OCR route remains available; the
-  native ML Kit scanner is Android-only in this dependency version.
-- OCR uses the existing Tesseract Bengali and English language data.
-
-## Limits and notes
-
-- Native scanner PDF output is limited to 50 MB and is checked for a valid PDF header and a 1–50 page count before it is retained.
-- PDF writes are staged and renamed only after the full byte count is verified; OCR failures do not discard the saved scan.
-- Scan history supports opening the saved PDF in the shared PDF Reader, opening OCR text as an editable Writer document, OCR text review/correction synchronized back to the linked Writer document, sharing and confirmed deletion.
-- Each OCR page image is limited to 30 MB.
-- Scanner capabilities depend on Google Play services and device support.
-- This implementation does not yet provide a standalone scan-history manager
-  or cloud synchronization of captured PDFs.
-
-## Status
-
-Native Android scanning, multi-page OCR integration, validated atomic PDF storage and PDF Reader handoff are implemented in source. Automated Analyze, tests and release APK validation for the current branch are pending. Non-Android native scanning, advanced scan-history editing, OCR review and physical-device acceptance remain incomplete.
+## Acceptance gates
+- Camera/capture/crop/multipage/PDF lifecycle tests on physical Android devices.
+- OCR quality samples, correction persistence and linked Writer document synchronization tests.
+- Storage integrity, large-file, cancellation and low-storage tests.
+- Analyze, full tests and signed Android build pass; platform parity documented independently.

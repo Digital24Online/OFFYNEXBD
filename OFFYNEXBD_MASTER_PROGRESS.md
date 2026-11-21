@@ -1889,3 +1889,15 @@ A module is complete only after its actual workflows exist, tests cover them, th
 - PR #13 remains Draft and must not be merged until implementation gaps and physical-device acceptance are completed and the user approves.
 - Build success does not close product gaps. The previously recorded module gaps remain open: Writer true pagination/table and format fidelity/mobile toolbar; Sheets broader Excel compatibility/charts/pivots/conditional formatting/ODS; Slides full canvas editor and PPTX; PDF editing/annotation/page management/OCR review/security tools; Fonts safe TTF/OTF import and editor activation; live AI service; authenticated encrypted Cloud Sync; online Forms publishing/conditional logic; physical-camera scanner enhancement and OCR acceptance; Database relations/query tools/migrations; plus cross-platform builds, accessibility, performance and device/print validation.
 - Do not repeat completed logo/App Info implementation as new work. Continue from this commit and address the remaining functional gaps while preserving existing user data and workflows.
+
+
+## Integrated file-preparation phase — 2026-11-21
+
+- User direction: prepare the project files first; include every known incomplete requirement in the corresponding files; audit the complete file set before beginning the next implementation batch. Do not implement tiny isolated changes while the master file set remains incomplete.
+- Added the cross-module source-of-truth blueprint: `docs/OFFYNEXBD_COMPLETION_BLUEPRINT.md`.
+- Replaced all ten module README files with source-audited implementation status, complete remaining feature requirements, source-file maps and acceptance gates.
+- Updated `security/README.md` with the project-wide security/privacy requirements.
+- Important correction: the previous Sheets README incorrectly said charts, Pivot tables and conditional formatting were absent. The current source contains chart creation/gallery, pivot summary create/refresh and conditional-format rule foundations; the updated file records those foundations accurately while retaining the real gaps.
+- Existing completed branding/App Info, Writer backup and portable workspace backup are invariants to preserve, not tasks to rebuild.
+- This commit is a documentation/specification preparation batch only. It does not implement the listed product features or change runtime behavior.
+- Next phase begins only after verifying that the blueprint and all module files are present on the branch and the file inventory is reconciled with source/tests/assets/workflows. Then implement the grouped source changes in integrated batches, with tests and CI on the exact resulting commit.
