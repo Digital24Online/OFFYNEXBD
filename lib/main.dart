@@ -599,6 +599,95 @@ class AppInfoScreen extends StatelessWidget {
                 ],
               ),
             ),
+            const SizedBox(height: 18),
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFE3EAF3)),
+              ),
+              child: Column(
+                children: [
+                  ClipOval(
+                    child: Image.asset(
+                      'assets/branding/founder_profile.jpg',
+                      width: 112,
+                      height: 112,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => Container(
+                        width: 112,
+                        height: 112,
+                        alignment: Alignment.center,
+                        color: const Color(0xFFE7F0FC),
+                        child: const Text(
+                          'MD',
+                          style: TextStyle(
+                            color: blue,
+                            fontSize: 30,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'MD PIYARUL ISLAM',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: ink,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.25,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    isBangla
+                        ? 'প্রতিষ্ঠাতা ও মূল নির্মাতা'
+                        : 'Founder & Original Creator',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: blue,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Divider(height: 1, color: Color(0xFFE8EDF4)),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      const Icon(Icons.verified_user_outlined, color: blue, size: 20),
+                      const SizedBox(width: 9),
+                      Expanded(
+                        child: Text(
+                          isBangla ? 'নির্মাতার স্বীকৃতি' : 'Creator Recognition',
+                          style: const TextStyle(
+                            color: ink,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    isBangla
+                        ? 'OFFYNEXBD-এর মূল ধারণা, পরিকল্পনা ও নির্মাণ উদ্যোগের স্রষ্টা MD PIYARUL ISLAM।'
+                        : 'MD PIYARUL ISLAM is the originator of the OFFYNEXBD concept and the initiative behind its planning and development.',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: muted,
+                      fontSize: 13,
+                      height: 1.6,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
