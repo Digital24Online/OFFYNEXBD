@@ -930,11 +930,6 @@ class _SheetsScreenState extends State<SheetsScreen> {
     if (_rowCount <= 1) return;
     final rowNumber = _rowCount;
     final cellPattern = RegExp(r'^[A-Z]+' + rowNumber.toString() + r'$');
-    final formulaPattern = RegExp(
-      r'(?<![A-Z0-9_])[A-Z]+' +
-          rowNumber.toString() +
-          r'(?!\d)(?!\s*\()',
-    );
     final hasData = _cells.entries.any((entry) =>
         cellPattern.hasMatch(entry.key.toUpperCase()) && entry.value.isNotEmpty);
     final hasFormatting = _cellStyles.keys.any((key) => cellPattern.hasMatch(key.toUpperCase()));
@@ -964,7 +959,6 @@ class _SheetsScreenState extends State<SheetsScreen> {
     if (_columnCount <= 1) return;
     final lastColumn = _columnName(_columnCount - 1);
     final cellPattern = RegExp('^${RegExp.escape(lastColumn)}[1-9]\\d*\$', caseSensitive: false);
-    final formulaPattern = RegExp('(?<![A-Z0-9_])${RegExp.escape(lastColumn)}[1-9]\\d*(?!\\d)', caseSensitive: false);
     final hasData = _cells.entries.any((entry) =>
         cellPattern.hasMatch(entry.key) && entry.value.isNotEmpty);
     final hasFormatting = _cellStyles.keys.any((key) => cellPattern.hasMatch(key));
