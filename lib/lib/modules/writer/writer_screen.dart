@@ -399,9 +399,9 @@ class _WriterScreenState extends State<WriterScreen> {
                   padding: EdgeInsets.fromLTRB(horizontalPadding, 12, horizontalPadding, 100),
                   itemCount: documents.length,
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: width >= 1100 ? 4 : width >= 700 ? 3 : width >= 360 ? 2 : 1,
+                    crossAxisCount: width >= 1100 ? 4 : width >= 700 ? 3 : width >= 480 ? 2 : 1,
                     crossAxisSpacing: 16, mainAxisSpacing: 16,
-                    childAspectRatio: width >= 900 ? 1.12 : 0.78,
+                    childAspectRatio: width >= 900 ? 1.12 : width >= 480 ? 0.78 : 1.25,
                   ),
                   itemBuilder: (context, index) {
                     final document = documents[index];
