@@ -37,6 +37,31 @@ void main() {
       );
     });
 
+    test('does not count a different qualified sheet range after the target reference', () {
+      final workbook = SheetsWorkbook(
+        activeSheetId: 'sales',
+        sheets: [
+          SheetsWorksheet(id: 'sales', name: 'Sales', rows: 30, columns: 8),
+          SheetsWorksheet(
+            id: 'summary',
+            name: 'Summary',
+            rows: 40,
+            columns: 8,
+            cells: {'A1': '=Sales!A1+Summary!A30'},
+          ),
+        ],
+      );
+
+      expect(
+        SheetsReferenceGuard.referencesRow(
+          workbook: workbook,
+          targetSheetId: 'sales',
+          row: 30,
+        ),
+        isFalse,
+      );
+    });
+
     test('supports quoted worksheet names and absolute cell references', () {
       final workbook = SheetsWorkbook(
         activeSheetId: 'sales-data',
