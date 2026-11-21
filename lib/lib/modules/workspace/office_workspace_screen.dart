@@ -1587,6 +1587,9 @@ class _FormResponseDialogState extends State<_FormResponseDialog> {
       type: question['type'] as String,
       value: raw ?? '',
       required: question['required'] == true,
+      allowedValues: question['type'] == 'choice'
+          ? (question['options'] as List).cast<String>()
+          : null,
     );
     if (error == null) return null;
     switch (error) {
@@ -1668,9 +1671,21 @@ class _FormResponseDialogState extends State<_FormResponseDialog> {
                             DropdownMenuItem(value: option, child: Text(option)),
                         ],
                         onChanged: (value) => setState(() => _choices[index] = value),
-                        validator: (value) => required && value == null
-                            ? (widget.isBangla ? 'একটি বিকল্প বেছে নিন' : 'Choose an option')
-                            : null,
+                        validator: (value) {
+                          final error = FormsAnswerValidator.validate(
+                            type: 'choice',
+                            value: value ?? '',
+                            required: required,
+                            allowedValues: options,
+                          );
+                          if (error == FormsAnswerValidator.requiredError ||
+                              error == FormsAnswerValidator.choiceError) {
+                            return widget.isBangla
+                                ? 'তালিকা থেকে একটি বৈধ বিকল্প বেছে নিন'
+                                : 'Choose a valid option from the list';
+                          }
+                          return null;
+                        },
                       );
                     }
                     return TextFormField(
