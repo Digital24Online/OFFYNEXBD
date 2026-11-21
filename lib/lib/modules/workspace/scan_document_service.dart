@@ -46,10 +46,8 @@ class ScanDocumentService {
   /// The original file name and path remain untouched for file operations.
   static String displayTitleFromPdfFileName(String fileName) {
     final trimmed = fileName.trim();
-    return trimmed.replaceFirst(RegExp(r'\.pdf
-      .map((page) => page.trim())
-      .where((page) => page.isNotEmpty)
-      .join('\n\n');
+    return trimmed.replaceFirst(RegExp(r'\.pdf$', caseSensitive: false), '');
+  }
 
   static void validateImportedImages(
     List<({String name, Uint8List bytes})> images,
