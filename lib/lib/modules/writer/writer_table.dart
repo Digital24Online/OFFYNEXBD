@@ -88,9 +88,9 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
       final columnCount = values.fold<int>(
         1,
         (count, row) => row.length > count ? row.length : count,
-      ).clamp(1, 10).toInt();
+      ).toInt();
 
-      cells = values.take(20).map<List<TextEditingController>>((row) {
+      cells = values.map<List<TextEditingController>>((row) {
         return List.generate(
           columnCount,
           (index) => TextEditingController(
@@ -114,7 +114,6 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
   int get columnCount => cells.isEmpty ? 1 : cells.first.length;
 
   void addRow() {
-    if (cells.length >= 20) return;
     setState(() {
       cells.add(List.generate(columnCount, (_) => TextEditingController()));
     });
@@ -130,7 +129,6 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
   }
 
   void addColumn() {
-    if (columnCount >= 10) return;
     setState(() {
       for (final row in cells) {
         row.add(TextEditingController());
@@ -241,7 +239,7 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
               runSpacing: 8,
               children: [
                 OutlinedButton.icon(
-                  onPressed: cells.length >= 20 ? null : addRow,
+                  onPressed: addRow,
                   icon: const Icon(Icons.add),
                   label: Text(_t('সারি যোগ', 'Add Row')),
                 ),
@@ -251,7 +249,7 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
                   label: Text(_t('সারি সরান', 'Remove Row')),
                 ),
                 OutlinedButton.icon(
-                  onPressed: columnCount >= 10 ? null : addColumn,
+                  onPressed: addColumn,
                   icon: const Icon(Icons.add),
                   label: Text(_t('কলাম যোগ', 'Add Column')),
                 ),
