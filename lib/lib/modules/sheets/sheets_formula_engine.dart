@@ -388,7 +388,7 @@ class _FormulaParser {
       'CEILING', 'FLOOR', 'PI', 'EXP', 'LN', 'LOG', 'LOG10',
       'TRUNC', 'FACT', 'EVEN', 'ODD', 'RADIANS', 'DEGREES',
       'GCD', 'LCM', 'COMBIN', 'PERMUT', 'QUOTIENT',
-      'SIN', 'COS', 'TAN', 'ASIN', 'ACOS', 'ATAN',
+      'SIN', 'COS', 'TAN', 'ASIN', 'ACOS', 'ATAN', 'ATAN2', 'COT', 'SINH', 'COSH', 'TANH', 'MROUND',
       'IF', 'IFERROR', 'AND', 'OR', 'NOT',
     };
     if (!supported.contains(name)) {
@@ -598,6 +598,28 @@ class _FormulaParser {
         _expectNoExtraArguments(name, values, 1);
         if (values.first <= 0) throw const FormatException('LOG10 domain error');
         return math.log(values.first) / math.ln10;
+      case 'MROUND':
+        _expectNoExtraArguments(name, values, 2);
+        if (values[1] == 0 || values[0].sign != values[1].sign && values[0] != 0) {
+          throw const FormatException('MROUND number and multiple must have the same sign.');
+        }
+        return (values[0] / values[1]).roundToDouble() * values[1];
+      case 'SINH':
+        _expectNoExtraArguments(name, values, 1);
+        return (math.exp(values.first) - math.exp(-values.first)) / 2;
+      case 'COSH':
+        _expectNoExtraArguments(name, values, 1);
+        return (math.exp(values.first) + math.exp(-values.first)) / 2;
+      case 'TANH':
+        _expectNoExtraArguments(name, values, 1);
+        final positive = math.exp(values.first);
+        final negative = math.exp(-values.first);
+        return (positive - negative) / (positive + negative);
+      case 'COT':
+        _expectNoExtraArguments(name, values, 1);
+        final tangent = math.tan(values.first);
+        if (tangent.abs() < 1e-15) throw const FormatException('COT domain error');
+        return 1 / tangent;
       case 'SIN':
         _expectNoExtraArguments(name, values, 1);
         return math.sin(values.first);
@@ -634,6 +656,12 @@ class _FormulaParser {
       case 'ATAN':
         _expectNoExtraArguments(name, values, 1);
         return math.atan(values.first);
+      case 'ATAN2':
+        _expectNoExtraArguments(name, values, 2);
+        if (values[0] == 0 && values[1] == 0) {
+          throw const FormatException('ATAN2 is undefined for (0, 0).');
+        }
+        return math.atan2(values[1], values[0]);
     }
     throw const FormatException('Unsupported function');
   }
