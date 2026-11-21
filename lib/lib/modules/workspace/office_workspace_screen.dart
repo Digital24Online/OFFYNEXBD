@@ -546,10 +546,7 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
       final scanRecord = <String, dynamic>{
         'id': DateTime.now().microsecondsSinceEpoch.toString(),
         'writerDocumentId': writerDocumentId,
-        'title': captured.fileName.replaceFirst(
-          RegExp(r'\\.pdf$', caseSensitive: false),
-          '',
-        ),
+        'title': ScanDocumentService.displayTitleFromPdfFileName(captured.fileName),
         'content': captured.recognizedText,
         'updatedAt': DateTime.now().toIso8601String(),
         'source': Platform.isAndroid ? 'native_document_scan' : 'imported_image_scan',
