@@ -471,8 +471,10 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
         'title': updatedItem['title']?.toString() ?? 'Scanned document',
         'content': PdfToDocumentService.plainTextToDelta(edited),
         'updated': DateTime.now().toIso8601String(),
-        'source': 'native_document_scan',
+        'source': updatedItem['source']?.toString() ?? 'native_document_scan',
         'scanPdfPath': updatedItem['scanPdfPath'],
+        if (updatedItem['pageCount'] is num) 'pageCount': updatedItem['pageCount'],
+        'ocrLanguage': updatedItem['ocrLanguage']?.toString() ?? 'ben+eng',
       };
       if (index >= 0) {
         documents[index] = writerRecord;
@@ -517,8 +519,10 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
           item['content']?.toString() ?? '',
         ),
         'updated': DateTime.now().toIso8601String(),
-        'source': 'native_document_scan',
+        'source': item['source']?.toString() ?? 'native_document_scan',
         'scanPdfPath': item['scanPdfPath'],
+        if (item['pageCount'] is num) 'pageCount': item['pageCount'],
+        'ocrLanguage': item['ocrLanguage']?.toString() ?? 'ben+eng',
       };
       if (index >= 0) {
         documents[index] = record;
