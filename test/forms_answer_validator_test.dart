@@ -42,6 +42,37 @@ void main() {
       );
     });
 
+    test('validates choice answers against the declared options', () {
+      const options = ['Sales', 'Support'];
+      expect(
+        FormsAnswerValidator.validate(
+          type: 'choice', value: '', required: true, allowedValues: options,
+        ),
+        FormsAnswerValidator.requiredError,
+      );
+      expect(
+        FormsAnswerValidator.validate(
+          type: 'choice', value: 'Other', required: false, allowedValues: options,
+        ),
+        FormsAnswerValidator.choiceError,
+      );
+      expect(
+        FormsAnswerValidator.validate(
+          type: 'choice', value: 'Sales', required: true, allowedValues: options,
+        ),
+        isNull,
+      );
+    });
+
+    test('rejects unsupported field types', () {
+      expect(
+        FormsAnswerValidator.validate(
+          type: 'unknown', value: 'anything', required: false,
+        ),
+        FormsAnswerValidator.typeError,
+      );
+    });
+
     test('requires a real calendar date in ISO format', () {
       for (final value in ['2026-02-30', '2026-13-01', '26-01-01', '2026-1-01']) {
         expect(
