@@ -19,7 +19,7 @@ class SheetsReferenceGuard {
     for (final sheet in workbook.sheets) {
       for (final formula in sheet.cells.values.where((value) => value.startsWith('='))) {
         if (sheet.id == targetSheetId) {
-          if (_referencesRow(formula, row)) return true;
+          if (_referencesInSheetFormula(formula, targetSheet.name, (value) => _referencesRow(value, row))) return true;
         } else if (_qualifiedReferences(
           formula,
           targetSheet.name,
@@ -49,7 +49,7 @@ class SheetsReferenceGuard {
     for (final sheet in workbook.sheets) {
       for (final formula in sheet.cells.values.where((value) => value.startsWith('='))) {
         if (sheet.id == targetSheetId) {
-          if (_referencesColumn(formula, column)) return true;
+          if (_referencesInSheetFormula(formula, targetSheet.name, (value) => _referencesColumn(value, column))) return true;
         } else if (_qualifiedReferences(
           formula,
           targetSheet.name,
@@ -88,6 +88,26 @@ class SheetsReferenceGuard {
         if (range is String) yield range;
       }
     }
+  }
+
+  static bool _referencesInSheetFormula(
+    String formula,
+    String targetSheetName,
+    bool Function(String references) predicate,
+  ) {
+    if (_qualifiedReferences(formula, targetSheetName, predicate)) return true;
+    // Unqualified references belong to the formula's own worksheet. Remove
+    // explicitly qualified ranges first so references to other sheets do not
+    // falsely block shrinking this worksheet.
+    final qualifiedReference = RegExp(
+      r"(?:'((?:[^']|'')+)'|([A-Z_][A-Z0-9_]*))\\s*!\\s*([^,;)]*)",
+      caseSensitive: false,
+    );
+    final unqualified = formula.replaceAllMapped(
+      qualifiedReference,
+      (_) => '',
+    );
+    return predicate(unqualified);
   }
 
   static bool _qualifiedReferences(
