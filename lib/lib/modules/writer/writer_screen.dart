@@ -2585,6 +2585,18 @@ Future<void> showCustomFontSizeDialog() async {
     _setZoomLevel(zoomLevel + amount);
   }
 
+  // Android can dismiss the software keyboard while leaving the editor's
+  // FocusNode focused. requestFocus() alone then cannot reopen the keyboard.
+  void _focusEditorAndShowKeyboard() {
+    if (!mounted) return;
+    editorFocusNode.requestFocus();
+    unawaited(
+      SystemChannels.textInput
+          .invokeMethod<void>('TextInput.show')
+          .catchError((Object _) {}),
+    );
+  }
+
   void _handlePageInteractionEnd(ScaleEndDetails details) {
     final matrix = _pageTransformController.value;
     final gestureScale = matrix.getMaxScaleOnAxis();
@@ -3507,9 +3519,7 @@ Future<void> insertWriterImage() async {
                                     behavior: HitTestBehavior.translucent,
                                     onPointerDown: (_) {
                                       WidgetsBinding.instance.addPostFrameCallback((_) {
-                                        if (mounted && !editorFocusNode.hasFocus) {
-                                          editorFocusNode.requestFocus();
-                                        }
+                                        _focusEditorAndShowKeyboard();
                                       });
                                     },
                                     child: QuillEditor.basic(
