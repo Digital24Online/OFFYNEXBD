@@ -95,6 +95,31 @@ void main() {
       );
     });
 
+    test('ignores qualified references to a different sheet in same-sheet formulas', () {
+      final workbook = SheetsWorkbook(
+        activeSheetId: 'sales',
+        sheets: [
+          SheetsWorksheet(
+            id: 'sales',
+            name: 'Sales',
+            rows: 30,
+            columns: 8,
+            cells: {'A1': '=SUM(Summary!A30:A40)+B1'},
+          ),
+          SheetsWorksheet(id: 'summary', name: 'Summary', rows: 40, columns: 8),
+        ],
+      );
+
+      expect(
+        SheetsReferenceGuard.referencesRow(
+          workbook: workbook,
+          targetSheetId: 'sales',
+          row: 30,
+        ),
+        isFalse,
+      );
+    });
+
     test('protects chart, Pivot and conditional-format ranges', () {
       final workbook = SheetsWorkbook(
         activeSheetId: 'data',
