@@ -8,11 +8,14 @@ class FormsAnswerValidator {
   static const emailError = 'email';
   static const numberError = 'number';
   static const dateError = 'date';
+  static const choiceError = 'choice';
+  static const typeError = 'type';
 
   static String? validate({
     required String type,
     required String value,
     required bool required,
+    List<String>? allowedValues,
   }) {
     final normalized = value.trim();
     if (required && normalized.isEmpty) return requiredError;
@@ -30,6 +33,13 @@ class FormsAnswerValidator {
         final number = num.tryParse(normalized);
         if (number == null || !number.isFinite) return numberError;
         break;
+      case 'choice':
+        if (allowedValues == null || !allowedValues.contains(normalized)) {
+          return choiceError;
+        }
+        break;
+      case 'text':
+        break;
       case 'date':
         final match = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$').firstMatch(normalized);
         if (match == null) return dateError;
@@ -41,6 +51,8 @@ class FormsAnswerValidator {
           return dateError;
         }
         break;
+      default:
+        return typeError;
     }
     return null;
   }
