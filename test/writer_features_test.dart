@@ -346,7 +346,10 @@ void main() {
 
     final editor = find.byType(QuillEditor);
     expect(editor, findsOneWidget);
-    await tester.tapAt(tester.getCenter(editor));
+    final placeholder = find.text('এখানে আপনার লেখা শুরু করুন...');
+    expect(placeholder, findsOneWidget);
+    await tester.ensureVisible(placeholder);
+    await tester.tap(placeholder);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
