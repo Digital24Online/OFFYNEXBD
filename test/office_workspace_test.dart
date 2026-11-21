@@ -236,6 +236,52 @@ void main() {
     expect(rows.single['values']['Phone'], '01700000000');
   });
 
+  testWidgets('Database row edit preserves a saved choice removed from the current schema',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'offynex_workspace_database_v1': jsonEncode([
+        {
+          'id': 'table-legacy-choice',
+          'title': 'Customers',
+          'content': 'Name:text, Department:choice|Sales|Support',
+          'updatedAt': '2026-11-18T10:00:00Z',
+        },
+      ]),
+      'offynex_database_rows_v1': jsonEncode({
+        'table-legacy-choice': [
+          {
+            'id': 'row-legacy-choice',
+            'values': {'Name': 'Rahim', 'Department': 'Marketing'},
+          },
+        ],
+      }),
+    });
+
+    await tester.pumpWidget(const MaterialApp(
+      home: OfficeWorkspaceScreen(module: 'Database', isBangla: false),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Manage table rows'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Edit row'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Marketing (saved value)'), findsOneWidget);
+    await tester.enterText(find.byType(TextFormField).first, 'Rahim Updated');
+    await tester.tap(find.text('Save row'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save changes'));
+    await tester.pumpAndSettle();
+
+    final prefs = await SharedPreferences.getInstance();
+    final saved = jsonDecode(prefs.getString('offynex_database_rows_v1')!) as Map;
+    final rows = saved['table-legacy-choice'] as List;
+    expect(rows.single['values'], {
+      'Name': 'Rahim Updated',
+      'Department': 'Marketing',
+    });
+  });
+
   testWidgets('Database workspace supports editing an existing schema note',
       (tester) async {
     SharedPreferences.setMockInitialValues({
