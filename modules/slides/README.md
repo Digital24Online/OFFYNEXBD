@@ -2,7 +2,7 @@
 
 ## Current implemented foundation
 - Local presentation records and autosave through the shared workspace record model.
-- Versioned slide-text document format with backward-compatible newline-based legacy reading.
+- Versioned slide-text document format with backward-compatible newline-based legacy reading and a 200-slide/5 MB bound.
 - Dedicated slide editor with add, duplicate, delete, reorder and per-slide text editing; saving upgrades legacy content without changing it merely by opening/cancelling.
 - 16:9 read-only slide preview with navigation and landscape PDF export. Full canvas objects and PPTX/ODP remain unimplemented.
 - This is not yet a full presentation editor and must not be advertised as one.

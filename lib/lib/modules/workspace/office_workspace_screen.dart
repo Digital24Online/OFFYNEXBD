@@ -901,9 +901,17 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
   }
 
   Future<void> _previewSlides(Map<String, dynamic> presentation) async {
-    final slides = SlidesDocumentCodec.decode(
-      presentation['content']?.toString() ?? '',
-    );
+    final List<String> slides;
+    try {
+      slides = SlidesDocumentCodec.decode(
+        presentation['content']?.toString() ?? '',
+      );
+    } on FormatException catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text((_bn ? 'স্লাইড ডেটা পড়া যায়নি: ' : 'Could not read slide data: ') + error.message),
+      ));
+      return;
+    }
     if (slides.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(_bn ? 'প্রিভিউয়ের আগে স্লাইডের লেখা যোগ করুন।' : 'Add slide content before opening the preview.'),

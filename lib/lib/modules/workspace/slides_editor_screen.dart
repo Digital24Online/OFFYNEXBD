@@ -152,7 +152,7 @@ class _SlidesEditorScreenState extends State<SlidesEditorScreen> {
                 children: [
                   Expanded(
                     child: Text(
-                      _t('স্লাইডসমূহ', 'Slides') + ' (' + _slides.length.toString() + '/200)',
+                      '${_t('স্লাইডসমূহ', 'Slides')} (${_slides.length}/200)',
                       style: const TextStyle(fontWeight: FontWeight.w800),
                     ),
                   ),
@@ -169,7 +169,7 @@ class _SlidesEditorScreenState extends State<SlidesEditorScreen> {
               child: ReorderableListView.builder(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                 itemCount: _slides.length,
-                onReorder: _reorderSlides,
+                onReorderItem: _reorderSlides,
                 buildDefaultDragHandles: false,
                 itemBuilder: (context, index) {
                   final slide = _slides[index];

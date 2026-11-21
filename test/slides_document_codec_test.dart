@@ -29,6 +29,11 @@ void main() {
       expect(() => SlidesDocumentCodec.decode(source), throwsFormatException);
     });
 
+    test('rejects more than 200 legacy slides', () {
+      final source = List<String>.generate(201, (index) => 'Slide $index').join('\\n');
+      expect(() => SlidesDocumentCodec.decode(source), throwsFormatException);
+    });
+
     test('rejects invalid slide count and non-text entries', () {
       expect(() => SlidesDocumentCodec.encode([]), throwsFormatException);
       expect(

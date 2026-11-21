@@ -52,9 +52,15 @@ class SlidesDocumentCodec {
     return result;
   }
 
-  static List<String> _decodeLegacy(String source) => source
-      .split(RegExp(r'\r?\n'))
-      .map((value) => value.trim())
-      .where((value) => value.isNotEmpty)
-      .toList(growable: false);
+  static List<String> _decodeLegacy(String source) {
+    final slides = source
+        .split(RegExp(r'\r?\n'))
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty)
+        .toList(growable: false);
+    if (slides.length > maxSlides) {
+      throw const FormatException('A presentation can contain up to 200 slides.');
+    }
+    return slides;
+  }
 }

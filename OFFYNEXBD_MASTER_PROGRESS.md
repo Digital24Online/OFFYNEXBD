@@ -1919,3 +1919,11 @@ A module is complete only after its actual workflows exist, tests cover them, th
 - Added codec regression tests for legacy read, structured round-trip/order, blank slides, invalid versions and invalid entries.
 - Updated Slides specification. This is an editable text-slide workflow, not a full object/canvas editor; shapes, images, tables, charts, themes, notes, transitions and PPTX/ODP remain open.
 - Pending verification: Analyze, full tests and signed Android package on the resulting source commit.
+
+
+## Slides Analyze correction — 2026-11-21
+
+- First CI Analyze caught three lint findings in the new Slides editor: two string-concatenation infos and one deprecated reorder callback.
+- Replaced concatenation with interpolation and switched to Flutter's `onReorderItem` callback (which already supplies the adjusted insertion index).
+- Added a 200-slide bound to legacy decoding, a safe preview error state for invalid structured records, and a widget regression test for add/duplicate/edit/save ordering.
+- Await a fresh Analyze, full test suite and signed Android package verification on the next commit.
