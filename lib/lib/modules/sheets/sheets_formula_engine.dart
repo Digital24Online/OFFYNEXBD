@@ -441,6 +441,7 @@ class _FormulaParser {
       'SUMSQ', 'DEVSQ', 'AVEDEV', 'GEOMEAN', 'HARMEAN',
       'VARP', 'VARS', 'STDEVP', 'STDEVS',
       'IF', 'IFERROR', 'AND', 'OR', 'NOT',
+      'COUNTIF', 'SUMIF', 'AVERAGEIF',
       'COUNTIFS', 'SUMIFS', 'AVERAGEIFS',
     };
     if (!supported.contains(name)) {
