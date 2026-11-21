@@ -1992,3 +1992,26 @@ A module is complete only after its actual workflows exist, tests cover them, th
 - Logo files verified present: `assets/branding/offynexbd_icon.svg` and `assets/branding/offynexbd_logo.svg`; approved founder portrait `assets/branding/founder_profile.jpg` also exists. Run #801's asset-preparation and launcher-icon generation steps passed, but a release APK has not been produced from the corrected head.
 - Creator attribution component and portrait/name/role are present; App Info does not contain creator details. No approved in-app navigation route is currently connected, so creator proof is not yet accessible through the app UI.
 - Do not claim Writer keyboard fixed, creator proof visible, APK ready, or any module complete until the relevant tests/build/device checks pass.
+
+
+## Logo and creator-proof priority batch — 2026-11-22
+
+### Approved logo implementation audit
+- [x] Kept approved Option 2 source artwork unchanged: `assets/branding/offynexbd_logo.svg` (full wordmark) and `assets/branding/offynexbd_icon.svg` (app mark).
+- [x] Home Screen and App Info use the approved app mark.
+- [x] Android launch background references the generated OFFYNEXBD splash wordmark; the Android manifest uses the generated `@mipmap/ic_launcher`.
+- [x] iOS LaunchScreen references the generated `LaunchImage` imageset; iOS AppIcon asset catalog exists.
+- [x] Windows `app_icon.ico` and macOS AppIcon asset catalog exist.
+- [x] The GitHub Actions branding step regenerates the app icon from the approved icon SVG, creates the Android/iOS splash wordmark images, and `flutter_launcher_icons` generates Android, iOS, Windows and macOS launcher icons from the same source image.
+- [ ] Old-icon replacement and visual clarity still require acceptance on real Android/iPhone/Windows/macOS devices; source configuration and asset presence alone cannot prove OS launcher cache behavior.
+
+### App Info creator proof
+- [x] App Info displays the existing founder portrait asset, full name `MD PIYARUL ISLAM`, and role `Founder & Original Creator`.
+- [x] Added the explicit label `Created & Developed By:` (with Bangla translation) and `© 2026 OFFYNEXBD. All Rights Reserved.`.
+- [x] Updated widget tests to check English and Bangla creator attribution, copyright, portrait, and the absence of address, GitHub links, commit-history and release-record content.
+- [x] No GitHub work history, commit history or release records are added to the app.
+
+### Verification
+- Source commits: `e5f2f2094a88f1ae1cd2f753e3a00cb83bce82f3` (App Info) and `60f070ba54a5694987d57f3af1e6bbae5b49d596` (tests).
+- Build #904 (run ID `44939922086`) is queued for this exact head. Do not mark this batch CI-verified until Analyze, all tests, signed Android APK and artifact verification pass.
+- PR #13 remains Draft and unmerged.
