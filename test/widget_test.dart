@@ -422,6 +422,16 @@ void main() {
 
     expect(tester.testTextInput.isVisible, isTrue);
 
+    // Android Back can hide the IME without clearing the editor's focus.
+    // A second tap must reopen the Quill TextInputConnection.
+    tester.testTextInput.hide();
+    await tester.pump();
+    expect(tester.testTextInput.isVisible, isFalse);
+    await tester.tap(editable);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(tester.testTextInput.isVisible, isTrue);
+
     await tester.enterText(editable, 'Writer keyboard test লেখা');
     await tester.pump(const Duration(milliseconds: 1100));
     await tester.pumpAndSettle();
