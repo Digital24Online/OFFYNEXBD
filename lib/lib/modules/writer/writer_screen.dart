@@ -422,18 +422,20 @@ class _WriterScreenState extends State<WriterScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
+                                  const Spacer(),
                                   Container(
-                                    width: 32,
-                                    height: 36,
+                                    width: 28,
+                                    height: 32,
                                     decoration: BoxDecoration(color: OFFYNEXTheme.blueSoft, borderRadius: BorderRadius.circular(9)),
-                                    child: const Icon(Icons.description_rounded, color: OFFYNEXTheme.blue, size: 20),
+                                    child: const Icon(Icons.description_rounded, color: OFFYNEXTheme.blue, size: 18),
                                   ),
+                                  const SizedBox(width: 2),
                                   PopupMenuButton<String>(
                                     padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints.tightFor(width: 28, height: 28),
-                                    iconSize: 18,
+                                    constraints: const BoxConstraints.tightFor(width: 24, height: 24),
+                                    iconSize: 16,
                                     tooltip: _t('আরও অপশন', 'More options'),
                                     onSelected: (value) { if (value == 'rename') renameDocument(document); if (value == 'delete') deleteDocument(document); },
                                     itemBuilder: (_) => [
