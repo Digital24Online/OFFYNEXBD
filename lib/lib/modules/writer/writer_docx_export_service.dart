@@ -306,9 +306,15 @@ class WriterDocxExportService {
     if (size != null && size.isFinite && size >= 8 && size <= 96) {
       styles.add('font-size:${(size * 0.75).round()}px');
     }
-    final font = attributes['font']?.toString();
-    if (font == 'serif') styles.add('font-family:Noto Serif Bengali,serif');
-    if (font == 'sans-serif') styles.add('font-family:Noto Sans Bengali,sans-serif');
+    final font = attributes['font']?.toString().trim();
+    if (font == 'serif') {
+      styles.add('font-family:Noto Serif Bengali,serif');
+    } else if (font == 'sans-serif') {
+      styles.add('font-family:Noto Sans Bengali,sans-serif');
+    } else if (font != null) {
+      final safeFont = font.replaceAll(RegExp(r'[^A-Za-z0-9 _-]'), '').trim();
+      if (safeFont.isNotEmpty) styles.add('font-family:"$safeFont"');
+    }
     final link = attributes['link']?.toString();
     if (link != null) {
       final uri = Uri.tryParse(link);

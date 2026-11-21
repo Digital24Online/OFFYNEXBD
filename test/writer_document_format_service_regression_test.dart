@@ -109,6 +109,7 @@ void main() {
       {'insert': 'Bold', 'attributes': {'bold': true}},
       {'insert': 'Linked', 'attributes': {'link': 'https://example.com/docs'}},
       {'insert': 'Styled', 'attributes': {'bold': true, 'italic': true, 'underline': true, 'strike': true, 'color': '#123456', 'background': '#F0E0D0', 'size': '18', 'font': 'serif'}},
+      {'insert': 'Custom font', 'attributes': {'font': 'SolaimanLipi'}},
       {'insert': '\n'},
       {'insert': {'offynexbd-writer-table': jsonEncode({'rows': [['A', 'B'], ['1', '2']], 'headerRow': true})}},
       {'insert': '\n'},
@@ -139,6 +140,8 @@ void main() {
     expect(styleAttrs['background'], '#F0E0D0');
     expect(double.parse(styleAttrs['size'].toString()), closeTo(18, 0.01));
     expect(styleAttrs['font'], 'serif');
+    final customFont = imported.delta.firstWhere((op) => op['insert'] == 'Custom font');
+    expect(customFont['attributes']['font'], 'SolaimanLipi');
     expect(imported.delta.any((op) => op['insert'] is Map && (op['insert'] as Map).containsKey('offynexbd-writer-table')), isTrue);
     final exportedArchive = ZipDecoder().decodeBytes(bytes);
     expect(exportedArchive.files.first.name, 'mimetype');
@@ -146,6 +149,7 @@ void main() {
     final styles = utf8.decode(exportedArchive.findFile('styles.xml')!.readBytes()!);
     expect(styles, contains('Header'));
     expect(styles, contains('Footer'));
+    expect(styles, contains('fo:font-family="SolaimanLipi"'));
     final content = utf8.decode(exportedArchive.findFile('content.xml')!.readBytes()!);
     expect(content, contains('<text:a xlink:href="https://example.com/docs">Linked</text:a>'));
     expect(styles, contains('fo:page-width="21.00cm"'));
@@ -173,6 +177,7 @@ void main() {
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>
 <w:p><w:r><w:rPr><w:rFonts w:ascii="Arial"/></w:rPr><w:t>Sans</w:t></w:r></w:p>
 <w:p><w:r><w:rPr><w:rFonts w:ascii="Noto Serif Bengali"/></w:rPr><w:t>Serif</w:t></w:r></w:p>
+<w:p><w:r><w:rPr><w:rFonts w:ascii="SolaimanLipi"/></w:rPr><w:t>Custom font</w:t></w:r></w:p>
 <w:sectPr/></w:body></w:document>''';
     final data = utf8.encode(xml);
     archive.addFile(ArchiveFile('word/document.xml', data.length, data));
@@ -182,12 +187,13 @@ void main() {
     );
     expect(imported.delta.any((op) => op['insert'] == 'Sans' && (op['attributes'] as Map?)?['font'] == 'sans-serif'), isTrue);
     expect(imported.delta.any((op) => op['insert'] == 'Serif' && (op['attributes'] as Map?)?['font'] == 'serif'), isTrue);
+    expect(imported.delta.any((op) => op['insert'] == 'Custom font' && (op['attributes'] as Map?)?['font'] == 'SolaimanLipi'), isTrue);
   });
 
   test('ODT sans-serif family is not misclassified as serif', () async {
     final archive = Archive();
-    const content = '''<office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text" xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style"><office:body><office:text><text:p><text:span text:style-name="Sans">Sans text</text:span></text:p></office:text></office:body></office:document-content>''';
-    const styles = '''<office:document-styles xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style" xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0"><office:styles><style:style style:name="Sans" style:family="text"><style:text-properties fo:font-family="sans-serif"/></style:style></office:styles></office:document-styles>''';
+    const content = '''<office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text" xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style"><office:body><office:text><text:p><text:span text:style-name="Sans">Sans text</text:span><text:span text:style-name="Custom">Custom text</text:span></text:p></office:text></office:body></office:document-content>''';
+    const styles = '''<office:document-styles xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style" xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0"><office:styles><style:style style:name="Sans" style:family="text"><style:text-properties fo:font-family="sans-serif"/></style:style><style:style style:name="Custom" style:family="text"><style:text-properties fo:font-family="SolaimanLipi"/></style:style></office:styles></office:document-styles>''';
     final contentBytes = utf8.encode(content), styleBytes = utf8.encode(styles);
     archive.addFile(ArchiveFile('content.xml', contentBytes.length, contentBytes));
     archive.addFile(ArchiveFile('styles.xml', styleBytes.length, styleBytes));
@@ -196,6 +202,7 @@ void main() {
       bytes: bytes, extension: 'odt', imageDirectory: temp, title: 'fonts.odt',
     );
     expect(imported.delta.any((op) => op['insert'] == 'Sans text' && (op['attributes'] as Map?)?['font'] == 'sans-serif'), isTrue);
+    expect(imported.delta.any((op) => op['insert'] == 'Custom text' && (op['attributes'] as Map?)?['font'] == 'SolaimanLipi'), isTrue);
   });
 
   test('ODT round-trip preserves explicit page breaks', () async {

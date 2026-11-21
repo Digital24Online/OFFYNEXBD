@@ -349,10 +349,16 @@ class WriterDocumentFormatService {
   }
 
   static String _fontFamilyCategory(String family) {
-    final value = family.toLowerCase().trim();
-    if (value.contains('sans') || value.contains('arial') || value.contains('calibri') || value.contains('helvetica') || value.contains('roboto')) return 'sans-serif';
-    if (value.contains('serif') || value.contains('times') || value.contains('georgia') || value.contains('cambria')) return 'serif';
-    return 'sans-serif';
+    final value = family.trim();
+    final normalized = value.toLowerCase();
+    if (normalized.isEmpty) return 'sans-serif';
+    if (normalized == 'serif' || normalized.contains('noto serif') ||
+        normalized.contains('times') || normalized.contains('georgia') ||
+        normalized.contains('cambria')) return 'serif';
+    if (normalized == 'sans-serif' || normalized.contains('sans') ||
+        normalized.contains('arial') || normalized.contains('calibri') ||
+        normalized.contains('helvetica') || normalized.contains('roboto')) return 'sans-serif';
+    return value;
   }
 
   static Map<String, dynamic> _docxRunAttributes(XmlElement? props) {
@@ -617,8 +623,15 @@ class WriterDocumentFormatService {
       if (background != null && RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(background)) properties.add('fo:background-color="$background"');
       final rawSize = double.tryParse(attrs['size']?.toString() ?? '');
       if (rawSize != null && rawSize.isFinite && rawSize >= 5 && rawSize <= 144) properties.add('fo:font-size="${rawSize.toStringAsFixed(2)}pt"');
-      if (attrs['font'] == 'serif') properties.add('fo:font-family="Noto Serif Bengali"');
-      if (attrs['font'] == 'sans-serif') properties.add('fo:font-family="Noto Sans Bengali"');
+      final font = attrs['font']?.toString().trim();
+      if (font == 'serif') {
+        properties.add('fo:font-family="Noto Serif Bengali"');
+      } else if (font == 'sans-serif') {
+        properties.add('fo:font-family="Noto Sans Bengali"');
+      } else if (font != null) {
+        final safeFont = font.replaceAll(RegExp(r'[^A-Za-z0-9 _-]'), '').trim();
+        if (safeFont.isNotEmpty) properties.add('fo:font-family="${_xmlEscape(safeFont)}"');
+      }
       if (properties.isEmpty) return '';
       final key = properties.join(' ');
       return inlineTextStyles.putIfAbsent(key, () => 'T_Inline${inlineTextStyles.length + 1}');

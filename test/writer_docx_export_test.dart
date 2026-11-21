@@ -16,6 +16,7 @@ void main() {
         {'insert': 'শিরোনাম\n', 'attributes': {'header': 1}},
         {'insert': 'বাংলা ও English ', 'attributes': {'bold': true}},
         {'insert': 'লেখা', 'attributes': {'italic': true, 'color': '#123456'}},
+        {'insert': 'Custom font text', 'attributes': {'font': 'SolaimanLipi'}},
         {'insert': '\nশেষ অনুচ্ছেদ\n'},
       ],
     );
@@ -29,6 +30,7 @@ void main() {
     expect(documentXml, contains('w:top="720"'));
     expect(documentXml, contains('<w:header w:type="default"'));
     expect(documentXml, contains('<w:footer w:type="default"'));
+    expect(documentXml, contains('SolaimanLipi'));
     final headerXml = utf8.decode(archive.findFile('word/header1.xml')!.readBytes()!);
     final footerXml = utf8.decode(archive.findFile('word/footer1.xml')!.readBytes()!);
     expect(headerXml, contains('পরীক্ষার Header'));
