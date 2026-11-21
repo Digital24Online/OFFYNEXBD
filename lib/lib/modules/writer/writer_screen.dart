@@ -2270,6 +2270,43 @@ Future<void> showCustomFontSizeDialog() async {
     final delta = quillController.document.toDelta().toJson()
         .map((item) => Map<String, dynamic>.from(item as Map))
         .toList();
+
+    // Load only imported families actually used in this document so custom
+    // Bengali fonts are preserved in PDF/print output as well as the editor.
+    final usedFamilies = <String>{
+      for (final operation in delta)
+        if (operation['attributes'] is Map &&
+            (operation['attributes'] as Map)['font'] is String)
+          (operation['attributes'] as Map)['font'] as String,
+    };
+    final customFontData = <String, ByteData>{};
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final rawFonts = prefs.getString('offynex_workspace_fonts_v1');
+      final decodedFonts = rawFonts == null ? null : jsonDecode(rawFonts);
+      if (decodedFonts is List) {
+        for (final entry in decodedFonts) {
+          if (entry is! Map) continue;
+          final family = entry['fontFamily'];
+          final path = entry['fontPath'];
+          if (family is! String || !usedFamilies.contains(family) ||
+              path is! String || path.isEmpty) continue;
+          try {
+            final file = File(path);
+            if (!await file.exists()) continue;
+            final bytes = await file.readAsBytes();
+            if (bytes.isNotEmpty) {
+              customFontData[family] = ByteData.sublistView(bytes);
+            }
+          } catch (_) {
+            // A missing custom font must not block PDF export.
+          }
+        }
+      }
+    } catch (_) {
+      // A damaged optional font catalogue falls back to bundled fonts.
+    }
+
     return WriterPdfExportService.build(
       title: titleController.text.trim().isEmpty
           ? 'Untitled Document'
@@ -2278,6 +2315,7 @@ Future<void> showCustomFontSizeDialog() async {
       sansFontData: sansFontData,
       serifFontData: serifFontData,
       latinFontData: latinFontData,
+      customFontData: customFontData,
       pageFormat: format,
       marginTop: marginTop * 72,
       marginBottom: marginBottom * 72,

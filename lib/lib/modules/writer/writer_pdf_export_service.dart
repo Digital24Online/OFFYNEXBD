@@ -21,10 +21,19 @@ class WriterPdfExportService {
     required double marginRight,
     String headerText = '',
     String footerText = '',
+    Map<String, ByteData> customFontData = const <String, ByteData>{},
   }) async {
     final sansFont = pw.Font.ttf(sansFontData);
     final serifFont = pw.Font.ttf(serifFontData);
     final latinFont = pw.Font.ttf(latinFontData);
+    final customFonts = <String, pw.Font>{};
+    for (final entry in customFontData.entries) {
+      try {
+        customFonts[entry.key] = pw.Font.ttf(entry.value);
+      } catch (_) {
+        // Unsupported optional font files fall back to the bundled Bengali font.
+      }
+    }
     final titleAlreadyInBody = _firstParagraphText(delta).trim() == title.trim() &&
         title.trim().isNotEmpty;
     final widgets = <pw.Widget>[];
@@ -42,7 +51,10 @@ class WriterPdfExportService {
 
     pw.Font fontFor(Map<String, dynamic> attributes, String text) {
       if (!_containsBangla(text)) return latinFont;
-      return attributes['font']?.toString() == 'serif' ? serifFont : sansFont;
+      final family = attributes['font']?.toString();
+      final custom = family == null ? null : customFonts[family];
+      if (custom != null) return custom;
+      return family == 'serif' ? serifFont : sansFont;
     }
 
     pw.TextStyle styleFor(Map<String, dynamic> attributes, String text) {

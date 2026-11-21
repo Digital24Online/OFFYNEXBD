@@ -41,6 +41,27 @@ void main() {
     expect(extracted, contains('ক্ষ্ম'));
     expect(extracted, isNot(contains('ঊহমষরংয')));
   });
+  test('Writer PDF accepts imported Bengali font families from the document font library', () async {
+    final sans = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
+    final serif = await rootBundle.load('assets/fonts/NotoSerifBengali.ttf');
+    final latin = await rootBundle.load('assets/fonts/NotoSans.ttf');
+    final bytes = await WriterPdfExportService.build(
+      title: 'Custom font test',
+      delta: [
+        {'insert': 'কাস্টম বাংলা ফন্ট', 'attributes': {'font': 'OFFYNEX Test Bengali'}},
+        {'insert': '\\n'},
+      ],
+      sansFontData: sans,
+      serifFontData: serif,
+      latinFontData: latin,
+      customFontData: {'OFFYNEX Test Bengali': sans},
+      pageFormat: PdfPageFormat.a4,
+      marginTop: 54, marginBottom: 54, marginLeft: 54, marginRight: 54,
+    );
+    expect(bytes.length, greaterThan(1000));
+    expect(BanglaPdfExtractor.extract(bytes).text, contains('কাস্টম বাংলা ফন্ট'));
+  });
+
   test('Writer PDF renders repeated header and dynamic page numbers', () async {
     final sans = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
     final serif = await rootBundle.load('assets/fonts/NotoSerifBengali.ttf');
