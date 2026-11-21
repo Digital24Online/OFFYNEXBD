@@ -210,6 +210,7 @@ class _SlidesEditorScreenState extends State<SlidesEditorScreen> {
                             ],
                           ),
                           TextField(
+                            key: ValueKey<String>('slides-editor-field-${slide.id}'),
                             controller: slide.controller,
                             minLines: 3,
                             maxLines: 7,

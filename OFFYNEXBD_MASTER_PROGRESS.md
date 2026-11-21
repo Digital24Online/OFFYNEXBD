@@ -1933,3 +1933,11 @@ A module is complete only after its actual workflows exist, tests cover them, th
 
 - Flutter 3.50 uses `ReorderableListView.onReorderItem`, which already adjusts the insertion index after removing the old item. Removed the legacy manual index decrement to prevent off-by-one reordering.
 - Refreshed the repository file audit against commit `94c18043b74ead0a1f4e38ea3e77a17a6ccdce9a`; the exact tracked-file and test counts are in `docs/OFFYNEXBD_REPOSITORY_FILE_AUDIT.md`.
+
+
+## CI test failure investigation and correction — 2026-11-21
+
+- Latest workflow run `44891631426` / PR run `44891635022`: Flutter Analyze passed; full tests failed with 250 passed and 2 failed, so APK build and signing steps were correctly skipped.
+- Failure 1: Slides editor widget test assumed all lazy ReorderableListView children were mounted simultaneously. Added stable keys to slide text fields and changed the test to scroll to the third slide before editing/duplicating it.
+- Failure 2: legacy 200-slide guard test used a literal backslash-n separator instead of actual newline characters. Corrected test input to join with `\n` (newline).
+- No APK/artifact was produced from these failed runs. Re-run full Analyze/tests and APK package verification on the corrective commit.
