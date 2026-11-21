@@ -418,18 +418,25 @@ class _WriterScreenState extends State<WriterScreen> {
                             boxShadow: [BoxShadow(color: OFFYNEXTheme.ink.withValues(alpha: 0.035), blurRadius: 16, offset: const Offset(0, 6))],
                           ),
                           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Row(children: [
-                              Container(width: 44, height: 50, decoration: BoxDecoration(color: OFFYNEXTheme.blueSoft, borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.description_rounded, color: OFFYNEXTheme.blue, size: 25)),
-                              const Spacer(),
-                              PopupMenuButton<String>(
-                                tooltip: _t('আরও অপশন', 'More options'),
-                                onSelected: (value) { if (value == 'rename') renameDocument(document); if (value == 'delete') deleteDocument(document); },
-                                itemBuilder: (_) => [
-                                  PopupMenuItem(value: 'rename', child: Text(_t('নাম পরিবর্তন', 'Rename'))),
-                                  PopupMenuItem(value: 'delete', child: Text(_t('মুছুন', 'Delete'))),
-                                ],
-                              ),
-                            ]),
+                            Wrap(
+                              alignment: WrapAlignment.spaceBetween,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              spacing: 8,
+                              runSpacing: 4,
+                              children: [
+                                Container(width: 44, height: 50, decoration: BoxDecoration(color: OFFYNEXTheme.blueSoft, borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.description_rounded, color: OFFYNEXTheme.blue, size: 25)),
+                                PopupMenuButton<String>(
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                                  tooltip: _t('আরও অপশন', 'More options'),
+                                  onSelected: (value) { if (value == 'rename') renameDocument(document); if (value == 'delete') deleteDocument(document); },
+                                  itemBuilder: (_) => [
+                                    PopupMenuItem(value: 'rename', child: Text(_t('নাম পরিবর্তন', 'Rename'))),
+                                    PopupMenuItem(value: 'delete', child: Text(_t('মুছুন', 'Delete'))),
+                                  ],
+                                ),
+                              ],
+                            ),
                             const Spacer(),
                             Text(title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: OFFYNEXTheme.ink, fontSize: 15, fontWeight: FontWeight.w800, height: 1.3)),
                             const SizedBox(height: 6),
