@@ -403,6 +403,7 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
                 ],
               ),
             ),
+            ),
             const SizedBox(height: 10),
             Text(_t('${cells.length} সারি  ·  $columnCount কলাম', '${cells.length} rows  ·  $columnCount columns')),
             const SizedBox(height: 8),
