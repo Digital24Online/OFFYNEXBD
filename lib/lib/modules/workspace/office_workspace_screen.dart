@@ -397,9 +397,36 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
     if ((widget.module == 'Scan' || widget.module == 'Fonts') &&
         path is String && path.isNotEmpty) {
       try {
-        final file = File(path);
-        if (await file.exists()) {
-          await file.delete();
+        var keepScanPdf = false;
+        if (widget.module == 'Scan') {
+          // A scan can be opened in Writer. Deleting its library card must not
+          // break the Writer document's linked source PDF.
+          try {
+            final writerDocuments = await loadDocuments();
+            keepScanPdf = writerLibraryDataBlocked ||
+                ScanDocumentService.isPdfReferencedByWriterDocuments(
+                  path,
+                  writerDocuments,
+                );
+          } catch (_) {
+            // If reference status cannot be verified, prefer retaining the
+            // source file over deleting a possibly linked document.
+            keepScanPdf = true;
+          }
+        }
+        if (keepScanPdf) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(_bn
+                  ? 'Writer ডকুমেন্টে PDF ব্যবহৃত হচ্ছে—ফাইলটি সুরক্ষার জন্য রাখা হয়েছে।'
+                  : 'A Writer document still references this PDF. The source file was kept.'),
+            ));
+          }
+        } else {
+          final file = File(path);
+          if (await file.exists()) {
+            await file.delete();
+          }
         }
       } catch (error) {
         if (mounted) {
