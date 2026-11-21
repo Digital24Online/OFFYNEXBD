@@ -1827,3 +1827,13 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 
 ### Acceptance rule
 A module is complete only after its actual workflows exist, tests cover them, the relevant CI run passes, and platform/device checks are performed. A design specification, navigation tile or placeholder screen is not feature completion.
+
+
+## Follow-up verification correction — 2026-11-21
+
+- Re-checked completed CI runs #690 and #692 and read the failing test log, rather than relying on the previous summary.
+- Both runs failed the same test: `Writer table editor does not overflow on a compact phone viewport`. The actual reported error is a vertical RenderFlex overflow of 138 px at the end of the table-edit dialog test. 244 tests passed and 1 failed in each run.
+- Correction to the earlier diagnosis: the 29 px horizontal overflow in the Writer library card was the earlier failure recorded in #686. The later #690/#692 failure is a separate vertical overflow in the table editor dialog; the card-header wrapping patch does not resolve it.
+- Updated `lib/lib/modules/writer/writer_table.dart` in commit `2082f71cb5ffb5901430fecc8a2bd46a4a9e0ef6`: dialog content is scrollable, dialog content height is bounded to 54% of the available screen height, and the table preview receives its own bounded vertical viewport.
+- Build #693, run ID `44880886363`, is running on the exact table-dialog fix commit. Do not mark it fixed until Analyze and all tests pass; then verify signed APK packaging as well.
+- Latest verified branch head at this note: `2082f71cb5ffb5901430fecc8a2bd46a4a9e0ef6`.
