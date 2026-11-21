@@ -56,6 +56,34 @@ void main() {
     expect(find.text('Apply Table'), findsOneWidget);
   });
 
+  testWidgets('Writer table editor does not overflow on a compact phone viewport', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.binding.setSurfaceSize(const Size(360, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: false)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('New Document'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Insert'));
+    await tester.tap(find.text('Insert'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Table'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Apply Table'));
+    await tester.pumpAndSettle();
+
+    final editTable = find.text('Edit Table').first;
+    await tester.ensureVisible(editTable);
+    await tester.tap(editTable);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Edit Table'), findsOneWidget);
+    expect(find.text('Insert Above'), findsOneWidget);
+    expect(find.text('Insert Left'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Writer ribbon follows Bangla and English app language', (tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: true)));
