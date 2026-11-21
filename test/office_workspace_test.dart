@@ -66,7 +66,7 @@ void main() {
     );
 
     await tester.enterText(find.byType(TextField).at(1), 'Test User');
-    await tester.enterText(find.byType(TextField).at(2), '01700000000');
+    await tester.enterText(find.byType(TextFormField).at(1), '01700000000');
     await tester.enterText(find.byType(TextField).at(3), 'Rajshahi');
     await tester.tap(find.text('Save response'));
     await tester.pumpAndSettle();
@@ -203,7 +203,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Add row'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).at(1), 'Test Customer');
+    await tester.enterText(find.byType(TextFormField).at(0), 'Test Customer');
     await tester.enterText(find.byType(TextField).at(2), '01700000000');
     await tester.tap(find.text('Save row'));
     await tester.pumpAndSettle();
@@ -223,7 +223,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Edit row'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).at(1), 'Updated Customer');
+    await tester.enterText(find.byType(TextFormField).at(0), 'Updated Customer');
     await tester.tap(find.text('Save row'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Save changes'));
@@ -313,7 +313,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
-    final choiceField = find.byType(DropdownButtonFormField<String>);
+    final choiceField = find.byType(DropdownButtonFormField<String>).last;
     expect(choiceField, findsOneWidget);
     await tester.tap(choiceField);
     await tester.pumpAndSettle();
