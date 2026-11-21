@@ -1859,3 +1859,12 @@ A module is complete only after its actual workflows exist, tests cover them, th
 - Fix commit: `8ff1bdc888469d2b7b777090536cc620558ba13f`.
 - [ ] The source correction is not verified until a fresh run on this exact commit passes Analyze, all tests, signed APK build, signature/install metadata checks and artifact upload.
 - [ ] The remaining cross-module implementation and device acceptance gaps listed above remain open; this correction does not mark the whole project complete.
+
+
+## Writer compact-card overflow — corrected diagnosis and responsive fix — 2026-11-21
+
+- Build #714 full test diagnostics located the 2.7 px right overflow in the Writer document-library card header Row in `lib/lib/modules/writer/writer_screen.dart`, not in the Table Editor action buttons.
+- The previous progress note attributing the remaining overflow to Table Editor action-button labels was incorrect. The Table Editor button refactor remains in the branch but was not the root-cause fix for Build #714.
+- Commit `ce655766bcb44c4627b9f8532f952f29ad64140a` removes the expanding Spacer from the narrow header, reduces the document icon footprint, and gives the popup-menu control a fixed compact 28×28 constraint while retaining rename/delete actions.
+- [ ] Re-run Flutter Analyze, all tests, signed Android APK, signature/install metadata, package verification and artifact upload on this commit. Do not mark the overflow fixed until the compact-phone regression test passes.
+- All ten module completion gaps and physical-device acceptance gates listed above remain open; this is one verified root-cause correction, not a claim of project completion.
