@@ -99,8 +99,9 @@ class SheetsReferenceGuard {
     // Unqualified references belong to the formula's own worksheet. Remove
     // explicitly qualified ranges first so references to other sheets do not
     // falsely block shrinking this worksheet.
+    const cellReference = r'\$?[A-Z]{1,3}\$?[1-9]\d*';
     final qualifiedReference = RegExp(
-      r"(?:'((?:[^']|'')+)'|([A-Z_][A-Z0-9_]*))\s*!\s*([^,;)]*)",
+      "(?:'((?:[^']|'')+)'|([A-Z_][A-Z0-9_]*))\\s*!\\s*$cellReference(?:\\s*:\\s*$cellReference)?",
       caseSensitive: false,
     );
     final unqualified = formula.replaceAllMapped(
