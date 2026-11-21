@@ -315,10 +315,13 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
+            SizedBox(
+              height: (MediaQuery.sizeOf(context).height * 0.24).clamp(96.0, 190.0),
+              child: SingleChildScrollView(
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
                 OutlinedButton.icon(
                   onPressed: addRow,
                   icon: const Icon(Icons.add),
@@ -396,8 +399,9 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
                 OutlinedButton(
                   onPressed: () => chooseColor(chooseBorder: false),
                   child: Text(_t('ঘরের রং', 'Cell Fill')),
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 10),
             Text(_t('${cells.length} সারি  ·  $columnCount কলাম', '${cells.length} rows  ·  $columnCount columns')),
