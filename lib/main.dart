@@ -4,6 +4,7 @@ import 'lib/modules/writer/writer_screen.dart';
 import 'lib/modules/sheets/sheets_screen.dart';
 import 'lib/modules/pdf/pdf_to_document_screen.dart';
 import 'lib/modules/workspace/office_workspace_screen.dart';
+import 'lib/modules/workspace/creator_attribution_screen.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_localizations/flutter_localizations.dart'
     hide GlobalMaterialLocalizations, GlobalCupertinoLocalizations;
@@ -262,6 +263,16 @@ void openModule(OfficeModule module) {
         ),
         actions: [
           IconButton(
+            tooltip: isBangla ? 'নির্মাতা পরিচিতি' : 'Creator',
+            icon: const Icon(Icons.workspace_premium_outlined, color: OFFYNEXTheme.ink),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => CreatorAttributionScreen(isBangla: isBangla),
+              ),
+            ),
+          ),
+          IconButton(
             tooltip: isBangla ? 'অ্যাপ ইনফো' : 'App Info',
             icon: const Icon(Icons.info_outline_rounded, color: OFFYNEXTheme.ink),
             onPressed: () => Navigator.push(
@@ -512,7 +523,7 @@ class AppInfoScreen extends StatelessWidget {
           padding: const EdgeInsets.all(20),
           children: [
             Container(
-              padding: const EdgeInsets.fromLTRB(22, 26, 22, 24),
+              padding: const EdgeInsets.fromLTRB(22, 28, 22, 26),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [Color(0xFF082B68), Color(0xFF0877C9)],
@@ -536,7 +547,7 @@ class AppInfoScreen extends StatelessWidget {
                       fit: BoxFit.contain,
                     ),
                   ),
-                  const SizedBox(height: 15),
+                  const SizedBox(height: 16),
                   const Text(
                     'OFFYNEXBD',
                     style: TextStyle(
@@ -546,7 +557,7 @@ class AppInfoScreen extends StatelessWidget {
                       letterSpacing: 1.0,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
                   const Text(
                     'The Future of Office Productivity',
                     textAlign: TextAlign.center,
@@ -556,118 +567,61 @@ class AppInfoScreen extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   Text(
                     isBangla
-                        ? 'একটি সমন্বিত অফিস প্রোডাক্টিভিটি প্ল্যাটফর্ম'
-                        : 'An integrated office productivity platform',
+                        ? 'ডকুমেন্ট, স্প্রেডশিট, প্রেজেন্টেশন, PDF এবং আরও অফিস কাজের সমন্বিত প্ল্যাটফর্ম।'
+                        : 'An integrated workspace for documents, spreadsheets, presentations, PDF and more.',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      height: 1.6,
+                    ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 18),
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: const Color(0xFFE3EAF3)),
-              ),
-              child: Column(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(80),
-                    child: Image.asset(
-                      'assets/branding/founder_profile.jpg',
-                      width: 116,
-                      height: 116,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => Container(
-                        width: 116,
-                        height: 116,
-                        alignment: Alignment.center,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Color(0xFFE7F0FC),
-                        ),
-                        child: const Text(
-                          'MD',
-                          style: TextStyle(
-                            color: blue,
-                            fontSize: 30,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  const Text(
-                    'MD PIYARUL ISLAM',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: ink,
-                      fontSize: 19,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.25,
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    isBangla ? 'প্রতিষ্ঠাতা ও মূল নির্মাতা' : 'Founder & Original Creator',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: blue,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
             Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: const Color(0xFFE3EAF3)),
               ),
-              child: Column(
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.verified_user_outlined, color: blue, size: 20),
-                      const SizedBox(width: 9),
-                      Text(
-                        isBangla ? 'নির্মাতার ঘোষণা' : 'Creator Statement',
-                        style: const TextStyle(color: ink, fontSize: 15, fontWeight: FontWeight.w800),
+                  const Icon(Icons.apps_rounded, color: blue, size: 22),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      isBangla
+                          ? 'একটি অ্যাপের মধ্যেই প্রয়োজনীয় অফিস প্রোডাক্টিভিটি টুল একত্র করার লক্ষ্য নিয়ে OFFYNEXBD তৈরি করা হচ্ছে।'
+                          : 'OFFYNEXBD brings essential office productivity tools together in one application.',
+                      style: const TextStyle(
+                        color: muted,
+                        fontSize: 13,
+                        height: 1.6,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    isBangla
-                        ? 'OFFYNEXBD-এর মূল ধারণা, পরিকল্পনা ও নির্মাণ উদ্যোগের স্রষ্টা MD PIYARUL ISLAM। এই পরিচয় অ্যাপের নির্মাতা-স্বীকৃতি হিসেবে সংরক্ষিত।'
-                        : 'MD PIYARUL ISLAM is the originator of the OFFYNEXBD concept and the initiative behind its planning and development. This in-app statement records the declared creator attribution.',
-                    style: const TextStyle(color: muted, fontSize: 13, height: 1.6),
+                    ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 20),
             const Center(
               child: Text(
                 '© 2026 OFFYNEXBD. All Rights Reserved.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: muted, fontSize: 11, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  color: muted,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-            const SizedBox(height: 8),
           ],
         ),
       ),
