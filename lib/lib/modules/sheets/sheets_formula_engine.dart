@@ -127,7 +127,7 @@ class SheetsFormulaEngine {
       (match) {
         final index = quotedStrings.length;
         quotedStrings.add(match.group(0)!);
-        return '__OFFYNEXBD_STRING_${index}__';
+        return '__OFFYNEXBD_STRING_$index__';
       },
     );
     final sheetToken = r"(?:'(?:[^']|'')+'|[A-Za-z_][A-Za-z0-9_]*)";
@@ -165,7 +165,7 @@ class SheetsFormulaEngine {
       return value.toString();
     });
     for (var index = 0; index < quotedStrings.length; index++) {
-      expanded = expanded.replaceAll('__OFFYNEXBD_STRING_${index}__', quotedStrings[index]);
+      expanded = expanded.replaceAll('__OFFYNEXBD_STRING_$index__', quotedStrings[index]);
     }
     return expanded;
   }
@@ -926,6 +926,149 @@ class _FormulaParser {
         .replaceAll(r'\*', '.*')
         .replaceAll(r'\?', '.');
     final matches = RegExp('^$pattern
+    final condition = _parseComparison();
+    _expect(',');
+    if (condition != 0) {
+      final whenTrue = _parseComparison();
+      _expect(',');
+      _skipFunctionArgument();
+      _expect(')');
+      return whenTrue;
+    }
+    _skipFunctionArgument();
+    _expect(',');
+    final whenFalse = _parseComparison();
+    _expect(')');
+    return whenFalse;
+  }
+
+  double _parseIfErrorFunction() {
+    double value;
+    try {
+      value = _parseComparison();
+    } on FormatException {
+      if (current != ',') _skipFunctionArgument();
+      _expect(',');
+      final fallback = _parseComparison();
+      _expect(')');
+      return fallback;
+    } on RangeError {
+      if (current != ',') _skipFunctionArgument();
+      _expect(',');
+      final fallback = _parseComparison();
+      _expect(')');
+      return fallback;
+    }
+    _expect(',');
+    _skipFunctionArgument();
+    _expect(')');
+    return value;
+  }
+
+  /// Advances over one syntactically nested argument without evaluating it.
+  /// This gives IF spreadsheet-style lazy branch evaluation.
+  void _skipFunctionArgument() {
+    if (current == null || current == ',' || current == ')') {
+      throw const FormatException('IF argument is missing');
+    }
+    var depth = 0;
+    var consumed = false;
+    while (current != null) {
+      final token = current!;
+      if (depth == 0 && (token == ',' || token == ')')) break;
+      if (token == '(') {
+        depth++;
+      } else if (token == ')') {
+        if (depth == 0) break;
+        depth--;
+      }
+      position++;
+      consumed = true;
+    }
+    if (!consumed || depth != 0) {
+      throw const FormatException('Invalid IF argument');
+    }
+  }
+
+  bool _isAggregateFunction(String name) => const {
+    'SUM', 'AVERAGE', 'COUNT', 'MIN', 'MAX', 'PRODUCT',
+    'MEDIAN', 'LARGE', 'SMALL', 'SUMSQ', 'DEVSQ', 'AVEDEV',
+    'GEOMEAN', 'HARMEAN', 'VARP', 'VARS', 'STDEVP', 'STDEVS',
+  }.contains(name);
+
+  int _integerArgument(double value) {
+    if (!value.isFinite || value != value.truncateToDouble() ||
+        value.abs() > 9007199254740991) {
+      throw const FormatException('Expected a safe integer argument');
+    }
+    return value.toInt();
+  }
+
+  int _greatestCommonDivisor(int a, int b) {
+    var left = a;
+    var right = b;
+    while (right != 0) {
+      final remainder = left % right;
+      left = right;
+      right = remainder;
+    }
+    return left;
+  }
+
+  double _roundTowardZero(double number, int digits) {
+    if (digits > 308) return number;
+    if (digits < -308) return 0;
+    final factor = math.pow(10, digits).toDouble();
+    if (!factor.isFinite) return number;
+    if (factor == 0) return 0;
+    final scaled = number * factor;
+    if (!scaled.isFinite) return number;
+    return scaled.truncateToDouble() / factor;
+  }
+
+  double _roundWithPrecision(double number, double precision, String mode) {
+    if (!precision.isFinite || precision != precision.truncateToDouble()) {
+      throw const FormatException('Rounding precision must be an integer');
+    }
+    // Beyond IEEE-754's useful decimal range, finer precision changes nothing;
+    // coarser precision rounds every finite value to zero.
+    if (precision > 308) return number;
+    if (precision < -308) return 0;
+    final factor = math.pow(10, precision).toDouble();
+    if (factor == 0) return 0;
+    if (!factor.isFinite) return number;
+    final scaled = number * factor;
+    if (!scaled.isFinite) return number;
+    final rounded = switch (mode) {
+      'ROUNDUP' => scaled.isNegative
+          ? scaled.floorToDouble()
+          : scaled.ceilToDouble(),
+      'ROUNDDOWN' => scaled.truncateToDouble(),
+      _ => scaled.roundToDouble(),
+    };
+    final result = rounded / factor;
+    if (!result.isFinite) throw const FormatException('Rounding overflow');
+    return result;
+  }
+
+  void _expectNoExtraArguments(String name, List<double> values, int count) {
+    if (values.length != count) {
+      throw FormatException('$name expects $count argument(s)');
+    }
+  }
+
+  void _expectAtLeastArguments(String name, List<double> values, int count) {
+    if (values.length < count) {
+      throw FormatException('$name expects at least $count arguments');
+    }
+  }
+}
+, caseSensitive: false).hasMatch(raw);
+    return operator == '<>' ? !matches : matches;
+  }
+
+  double _parseIfFunction() {
+    final condition = _parseComparison();
     _expect(',');
     if (condition != 0) {
       final whenTrue = _parseComparison();
