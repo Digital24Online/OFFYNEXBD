@@ -5,7 +5,6 @@ import 'dart:math' as math;
 import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_quill/flutter_quill.dart';
-import 'package:flutter/services.dart';
 import 'writer_table.dart';
 import 'writer_page_break.dart';
 import 'writer_pdf_export_service.dart';
@@ -499,6 +498,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
 
   late final TextEditingController titleController;
   late final FocusNode editorFocusNode;
+  final GlobalKey<EditorState> _writerEditorKey = GlobalKey<EditorState>();
   late QuillController quillController;
 
   int wordCount = 0;
@@ -2585,16 +2585,18 @@ Future<void> showCustomFontSizeDialog() async {
     _setZoomLevel(zoomLevel + amount);
   }
 
-  // Android can dismiss the software keyboard while leaving the editor's
-  // FocusNode focused. requestFocus() alone then cannot reopen the keyboard.
+  // Use Quill's own keyboard connection. requestFocus() by itself does
+  // not reopen Android's IME when the editor already owns focus but its
+  // TextInputConnection was closed (for example, after pressing Back).
   void _focusEditorAndShowKeyboard() {
     if (!mounted) return;
-    editorFocusNode.requestFocus();
-    unawaited(
-      SystemChannels.textInput
-          .invokeMethod<void>('TextInput.show')
-          .catchError((Object _) {}),
-    );
+    if (!editorFocusNode.hasFocus) {
+      editorFocusNode.requestFocus();
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _writerEditorKey.currentState?.requestKeyboard();
+    });
   }
 
   void _handlePageInteractionEnd(ScaleEndDetails details) {
@@ -3526,6 +3528,7 @@ Future<void> insertWriterImage() async {
                                       controller: quillController,
                                       focusNode: editorFocusNode,
                                       config: QuillEditorConfig(
+                                        editorKey: _writerEditorKey,
                                         expands: true,
                                         padding: EdgeInsets.zero,
                                         placeholder: _t('এখানে আপনার লেখা শুরু করুন...', 'Start writing here...'),
