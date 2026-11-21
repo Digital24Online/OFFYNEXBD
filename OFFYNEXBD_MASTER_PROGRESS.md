@@ -1786,3 +1786,16 @@ Key commits: `94a7934f5b745f2517d6501d7ae4b9eecccbef99` (dependency), `3eea38324
 - Run: https://github.com/Digital24Online/OFFYNEXBD/actions/runs/44876261148
 - [ ] Physical Android, keyboard, Bangla rendering, camera, printer, Word/LibreOffice and cross-platform acceptance remain unverified.
 - [ ] This successful build verifies the current source only; it does not close the implementation gaps listed above. PR #13 remains Draft and must not be merged as a completed product.
+
+
+## International design audit and unified UI system — 2026-11-21
+
+- Reviewed official Microsoft 365, WPS Office, Adobe Acrobat, CamScanner and Notion feature/mobile documentation. The implementation takes proven interaction patterns only; it does not copy brand identity or assume every competitor feature is available on mobile.
+- Added the master specification at `docs/OFFYNEXBD_GLOBAL_DESIGN_SYSTEM.md`. It maps navigation and option groups for all ten modules: Writer, Sheets, Slides, PDF, Fonts, AI Assistant, Cloud, Forms, Scan and Database.
+- The specification defines one brand palette, semantic status colors, typography scale, 4 dp spacing rhythm, touch-target dimensions, shared dashboard/editor/library/settings/dialog templates, phone/tablet/desktop behavior, Bangla and accessibility requirements, and release acceptance gates.
+- Expanded `lib/lib/theme/offynex_theme.dart` with canonical module accents, shared spacing/radius/touch tokens, typography styles and Material 3 color/button tokens.
+- Updated the Home dashboard module colors to consume the shared theme accent constants instead of maintaining a second set of unrelated hard-coded values.
+- Added `test/offynex_theme_test.dart` for module accent coverage and shared theme/touch-target invariants.
+- Initial CI on the earlier UI-test commit found two test assertion issues (not product failures): the Writer dialog exposes two matching Edit Table labels, and Database dropdown options are only visible after opening the field. Both test assertions were corrected in subsequent commits. Re-run the full suite on the latest branch head before treating this design batch as verified.
+- This is the master design blueprint and shared-token foundation, not a claim that all ten module screens have already been rebuilt. Each screen must be migrated to these shared templates, every option must be connected to a real operation, and responsive screenshots plus device checks must pass before design completion.
+- International reference sources: Microsoft 365 mobile apps (https://support.microsoft.com/en-us/office/foundations-experiences/microsoft-365-mobile-apps); WPS feature suite (https://www.wps.com/feature/); WPS mobile suite (https://www.wps.com/office/ios/); Adobe Acrobat mobile FAQ (https://helpx.adobe.com/acrobat/mobile/get-started/faqs.html); CamScanner (https://www.camscanner.com/); Notion features (https://www.notion.com/product/features); Notion mobile behavior (https://www.notion.com/help/notion-for-mobile).
