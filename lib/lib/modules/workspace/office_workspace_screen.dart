@@ -618,7 +618,6 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
         final selectedFiles = await FilePicker.pickFiles(
           type: FileType.custom,
           allowedExtensions: const ['jpg', 'jpeg', 'png'],
-          allowMultiple: true,
         );
         if (selectedFiles.isEmpty) return;
         if (selectedFiles.length > ScanDocumentService.maxPages) {
