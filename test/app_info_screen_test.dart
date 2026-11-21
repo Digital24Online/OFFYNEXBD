@@ -31,6 +31,11 @@ void main() {
 
   testWidgets('App Info translates the creator label into Bangla',
       (tester) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     await tester.pumpWidget(
       const MaterialApp(home: AppInfoScreen(isBangla: true)),
     );
