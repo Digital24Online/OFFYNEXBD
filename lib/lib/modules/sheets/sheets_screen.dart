@@ -11,6 +11,7 @@ import 'package:printing/printing.dart';
 import 'sheets_pdf_export_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'sheets_formula_engine.dart';
+import 'sheets_reference_guard.dart';
 import 'sheets_workbook_limits.dart';
 import 'sheets_import_safety.dart';
 import 'sheets_workbook_codec.dart';
@@ -938,8 +939,11 @@ class _SheetsScreenState extends State<SheetsScreen> {
         cellPattern.hasMatch(entry.key.toUpperCase()) && entry.value.isNotEmpty);
     final hasFormatting = _cellStyles.keys.any((key) => cellPattern.hasMatch(key.toUpperCase()));
     final hasValidation = _activeWorksheet.validations.keys.any((key) => cellPattern.hasMatch(key.toUpperCase()));
-    final hasFormulaReference = _cells.values.any((value) =>
-        value.startsWith('=') && formulaPattern.hasMatch(value.toUpperCase()));
+    final hasFormulaReference = SheetsReferenceGuard.referencesRow(
+      workbook: _workbook,
+      targetSheetId: _activeWorksheet.id,
+      row: rowNumber,
+    );
     if (hasData || hasFormatting || hasValidation || hasFormulaReference) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_t('শেষ Row-তে তথ্য বা Formula reference আছে। আগে তা সরান।', 'The last row has data or formula references. Clear them first.'))),
@@ -965,8 +969,11 @@ class _SheetsScreenState extends State<SheetsScreen> {
         cellPattern.hasMatch(entry.key) && entry.value.isNotEmpty);
     final hasFormatting = _cellStyles.keys.any((key) => cellPattern.hasMatch(key));
     final hasValidation = _activeWorksheet.validations.keys.any((key) => cellPattern.hasMatch(key));
-    final hasFormulaReference = _cells.values.any((value) =>
-        value.startsWith('=') && formulaPattern.hasMatch(value));
+    final hasFormulaReference = SheetsReferenceGuard.referencesColumn(
+      workbook: _workbook,
+      targetSheetId: _activeWorksheet.id,
+      column: _columnCount,
+    );
     if (hasData || hasFormatting || hasValidation || hasFormulaReference) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_t('শেষ Column-তে তথ্য বা Formula reference আছে। আগে তা সরান।', 'The last column has data or formula references. Clear them first.'))),
