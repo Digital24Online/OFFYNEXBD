@@ -398,19 +398,28 @@ void main() {
   });
 
 
-  testWidgets('App Info shows the declared creator attribution without personal address or repository history',
+  testWidgets('Creator attribution opens separately from App Info',
       (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(const OFFYNEXBDApp());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('অ্যাপ ইনফো'));
+    await tester.tap(find.byTooltip('নির্মাতা পরিচিতি'));
     await tester.pumpAndSettle();
 
     expect(find.text('MD PIYARUL ISLAM'), findsOneWidget);
     expect(find.text('প্রতিষ্ঠাতা ও মূল নির্মাতা'), findsOneWidget);
     expect(find.textContaining('GitHub'), findsNothing);
     expect(find.textContaining('ঠিকানা'), findsNothing);
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('অ্যাপ ইনফো'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('OFFYNEXBD'), findsOneWidget);
+    expect(find.text('MD PIYARUL ISLAM'), findsNothing);
+    expect(find.text('প্রতিষ্ঠাতা ও মূল নির্মাতা'), findsNothing);
   });
 
 }
