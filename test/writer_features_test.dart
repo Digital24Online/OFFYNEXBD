@@ -334,3 +334,30 @@ void main() {
     }
   });
 }
+
+  testWidgets('Writer document body receives tap focus for Android text input', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.binding.setSurfaceSize(const Size(400, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: true)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('নতুন ডকুমেন্ট'));
+    await tester.pumpAndSettle();
+
+    final editor = find.byType(QuillEditor);
+    expect(editor, findsOneWidget);
+    await tester.tapAt(tester.getCenter(editor));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final editableFields = tester.widgetList<EditableText>(
+      find.byType(EditableText),
+    );
+    expect(
+      editableFields.any((field) => field.focusNode.hasFocus),
+      isTrue,
+      reason: 'Tapping the Writer document body must focus its editable text input so Android can show the soft keyboard.',
+    );
+  });
+
