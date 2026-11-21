@@ -282,6 +282,41 @@ void main() {
     });
   });
 
+  testWidgets('Database row editor accepts an empty optional choice field',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'offynex_workspace_database_v1': jsonEncode([
+        {
+          'id': 'table-empty-choice',
+          'title': 'Customers',
+          'content': 'Name:text, Department:choice|Sales|Support',
+          'updatedAt': '2026-11-18T10:00:00Z',
+        },
+      ]),
+      'offynex_database_rows_v1': jsonEncode({
+        'table-empty-choice': [
+          {
+            'id': 'row-empty-choice',
+            'values': {'Name': 'Rahim', 'Department': ''},
+          },
+        ],
+      }),
+    });
+
+    await tester.pumpWidget(const MaterialApp(
+      home: OfficeWorkspaceScreen(module: 'Database', isBangla: false),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Manage table rows'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Edit row'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Sales'), findsOneWidget);
+    expect(find.text('Support'), findsOneWidget);
+  });
+
   testWidgets('Database workspace supports editing an existing schema note',
       (tester) async {
     SharedPreferences.setMockInitialValues({
