@@ -223,7 +223,7 @@ class _DatabaseRowsDialogState extends State<DatabaseRowsDialog> {
               Row(children: [
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    value: _sortField,
+                    initialValue: _sortField,
                     isExpanded: true,
                     decoration: InputDecoration(
                       labelText: widget.isBangla ? 'যে ফিল্ড অনুযায়ী সাজাবেন' : 'Sort by field',
