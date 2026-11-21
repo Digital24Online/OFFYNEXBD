@@ -39,6 +39,20 @@ void main() {
       );
     });
 
+    test('rejects duplicate options ignoring letter case and oversized choices', () {
+      expect(
+        () => FormsQuestionCodec.parse('choice: Department | Sales | sales'),
+        throwsFormatException,
+      );
+      final tooMany = ['Department', ...List.generate(51, (index) => 'Option $index')].join(' | ');
+      expect(() => FormsQuestionCodec.parse('choice: $tooMany'), throwsFormatException);
+      final tooLong = List.filled(101, 'x').join();
+      expect(
+        () => FormsQuestionCodec.parse('choice: Department | $tooLong | Support'),
+        throwsFormatException,
+      );
+    });
+
     test('limits forms to 100 questions', () {
       expect(
         () => FormsQuestionCodec.parse(List.filled(101, 'Question').join('\n')),
