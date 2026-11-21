@@ -42,6 +42,20 @@ class ScanDocumentService {
     PdfToDocumentService.validatePdfBytes(bytes);
   }
 
+  /// A scan PDF may also be the source file linked from a Writer document.
+  /// Keep the file while any Writer record still references it.
+  static bool isPdfReferencedByWriterDocuments(
+    String pdfPath,
+    Iterable<Map<String, dynamic>> writerDocuments,
+  ) {
+    final normalizedPath = pdfPath.trim();
+    if (normalizedPath.isEmpty) return false;
+    return writerDocuments.any(
+      (document) => document['scanPdfPath'] is String &&
+          (document['scanPdfPath'] as String).trim() == normalizedPath,
+    );
+  }
+
   /// Removes only a final PDF extension for a clean scan-library title.
   /// The original file name and path remain untouched for file operations.
   static String displayTitleFromPdfFileName(String fileName) {
