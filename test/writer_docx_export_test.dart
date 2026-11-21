@@ -30,7 +30,9 @@ void main() {
     expect(documentXml, contains('w:top="720"'));
     expect(documentXml, contains('<w:header w:type="default"'));
     expect(documentXml, contains('<w:footer w:type="default"'));
-    expect(documentXml, contains('SolaimanLipi'));
+    expect(documentXml, contains('w:ascii="SolaimanLipi"'));
+    expect(documentXml, contains('w:eastAsia="SolaimanLipi"'));
+    expect(documentXml, contains('w:cs="SolaimanLipi"'));
     final headerXml = utf8.decode(archive.findFile('word/header1.xml')!.readBytes()!);
     final footerXml = utf8.decode(archive.findFile('word/footer1.xml')!.readBytes()!);
     expect(headerXml, contains('পরীক্ষার Header'));
