@@ -28,14 +28,22 @@ class DatabaseRowsQuery {
       int compare(String left, String right) {
         final leftNumber = num.tryParse(left.trim());
         final rightNumber = num.tryParse(right.trim());
-        if (leftNumber != null && rightNumber != null) {
+        final leftIsNumber = leftNumber != null && leftNumber.isFinite;
+        final rightIsNumber = rightNumber != null && rightNumber.isFinite;
+        if (leftIsNumber && rightIsNumber) {
           return leftNumber.compareTo(rightNumber);
         }
+
         final leftDate = DateTime.tryParse(left.trim());
         final rightDate = DateTime.tryParse(right.trim());
         if (leftDate != null && rightDate != null) {
           return leftDate.compareTo(rightDate);
         }
+
+        // Keep mixed-type columns deterministic: numeric, then date, then text.
+        final leftRank = leftIsNumber ? 0 : leftDate != null ? 1 : 2;
+        final rightRank = rightIsNumber ? 0 : rightDate != null ? 1 : 2;
+        if (leftRank != rightRank) return leftRank.compareTo(rightRank);
         return left.toLowerCase().compareTo(right.toLowerCase());
       }
 
@@ -44,6 +52,10 @@ class DatabaseRowsQuery {
         final bValues = b.row['values'];
         final av = aValues is Map ? aValues[sortField]?.toString() ?? '' : '';
         final bv = bValues is Map ? bValues[sortField]?.toString() ?? '' : '';
+        // Empty values stay at the bottom in both sort directions.
+        final aEmpty = av.trim().isEmpty;
+        final bEmpty = bv.trim().isEmpty;
+        if (aEmpty != bEmpty) return aEmpty ? 1 : -1;
         final result = compare(av, bv);
         if (result == 0) return a.index.compareTo(b.index);
         return ascending ? result : -result;
