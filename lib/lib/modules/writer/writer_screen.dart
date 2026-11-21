@@ -15,6 +15,7 @@ import 'writer_docx_export_service.dart';
 import 'writer_document_format_service.dart';
 import 'writer_viewport.dart';
 import 'writer_content_metrics.dart';
+import '../fonts/offynex_font_service.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -490,6 +491,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   int selectedRibbonTab = 1;
   String selectedFontFamily = 'sans-serif';
   String selectedFontSize = '16';
+  List<String> importedFontFamilies = const [];
   bool isSaved = true;
   Future<void> saveQueue = Future.value();
   Timer? saveTimer;
@@ -519,6 +521,38 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   String headerText = '';
   String footerText = '';
 
+  Future<void> _loadImportedFonts() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('offynex_workspace_fonts_v1');
+      if (raw == null) return;
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return;
+      final families = <String>[];
+      for (final entry in decoded) {
+        if (entry is! Map) continue;
+        final family = entry['fontFamily'];
+        final path = entry['fontPath'];
+        if (family is! String || family.trim().isEmpty || path is! String) {
+          continue;
+        }
+        try {
+          final file = File(path);
+          if (!await file.exists()) continue;
+          final bytes = await file.readAsBytes();
+          await OffynexFontService.activate(bytes, family);
+          if (!families.contains(family)) families.add(family);
+        } catch (_) {
+          // Ignore a missing or invalid custom font without blocking Writer.
+        }
+      }
+      if (!mounted) return;
+      setState(() => importedFontFamilies = families);
+    } catch (_) {
+      // A damaged optional font catalogue must not prevent document editing.
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -532,8 +566,8 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     final savedMeta = widget.document['writerMeta'];
     if (savedMeta is Map) {
       final savedFontFamily = savedMeta['fontFamily']?.toString();
-      if (['sans-serif', 'serif'].contains(savedFontFamily)) {
-        selectedFontFamily = savedFontFamily!;
+      if (savedFontFamily != null && savedFontFamily.trim().isNotEmpty) {
+        selectedFontFamily = savedFontFamily;
       }
       zoomLevel = (savedMeta['zoom'] is num)
           ? (savedMeta['zoom'] as num).toDouble().clamp(0.5, 3.0).toDouble()
@@ -642,6 +676,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
 
     updateWordCount(quillController.document.toPlainText());
     quillController.addListener(onEditorChanged);
+    _loadImportedFonts();
   }
 
   void updateWordCount(String text) {
@@ -1953,9 +1988,10 @@ Future<void> showCustomFontSizeDialog() async {
   }
 
   Widget buildHomeRibbon() {
-  const fontFamilies = <String, String>{
+  final fontFamilies = <String, String>{
     'Noto Sans Bengali': 'sans-serif',
     'Noto Serif Bengali': 'serif',
+    for (final family in importedFontFamilies) family: family,
   };
 
   const fontSizes = [
