@@ -157,10 +157,21 @@ class WriterContentMetrics {
     try {
       final decoded = raw is String ? jsonDecode(raw) : raw;
       if (decoded is! Map || decoded['rows'] is! List) return 48;
-      final rows = (decoded['rows'] as List).take(20);
+      // Keep estimates bounded for unusually large embeds without ignoring
+      // ordinary tables that contain more than 20 rows or 10 columns.
+      final rows = (decoded['rows'] as List).take(1000).toList();
+      final rawHeights = decoded['rowHeights'];
       var height = 0.0;
-      for (final rawRow in rows) {
-        final cells = rawRow is List ? rawRow.take(10) : <Object?>[rawRow];
+      for (var rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+        final rawRow = rows[rowIndex];
+        final cells = rawRow is List ? rawRow.take(100) : <Object?>[rawRow];
+        final storedHeight = rawHeights is List && rowIndex < rawHeights.length
+            ? (rawHeights[rowIndex] as num?)?.toDouble()
+            : null;
+        if (storedHeight != null && storedHeight.isFinite && storedHeight > 0) {
+          height += storedHeight;
+          continue;
+        }
         final cellCount = math.max(1, cells.length);
         final cellWidth = math.max(24.0, maxWidth / cellCount - 12).toDouble();
         var rowHeight = 36.0;

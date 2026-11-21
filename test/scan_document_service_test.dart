@@ -30,7 +30,7 @@ void main() {
         ScanDocumentService.combineRecognizedPages([
           'Page one', '', '  ', 'Page three',
         ]),
-        'Page one\\n\\nPage three',
+        'Page one\n\nPage three',
       );
     });
 

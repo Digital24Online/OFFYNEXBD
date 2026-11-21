@@ -183,8 +183,6 @@ class ScanDocumentService {
     final pdfBytes = await sourcePdf.readAsBytes();
     validateCapturedPdf(pdfBytes, pdf.pageCount);
 
-    // Preserve the captured PDF before OCR, so a recognition failure cannot
-    // discard the user's scan.
     // Save the PDF before OCR so recognition failures cannot discard the scan.
     final savedFile = await _savePdf(pdfBytes);
     final fileName = savedFile.uri.pathSegments.last;
@@ -192,20 +190,20 @@ class ScanDocumentService {
     final recognizedPages = <String>[];
     final imagePaths = result.images ?? const <String>[];
     for (var index = 0; index < imagePaths.length; index++) {
-      final imageFile = File(imagePaths[index]);
-      if (!await imageFile.exists()) continue;
-      final imageBytes = await imageFile.readAsBytes();
-      if (imageBytes.isEmpty || imageBytes.length > maxOcrImageBytes) {
-        continue;
-      }
       try {
+        final imageFile = File(imagePaths[index]);
+        if (!await imageFile.exists()) continue;
+        final imageBytes = await imageFile.readAsBytes();
+        if (imageBytes.isEmpty || imageBytes.length > maxOcrImageBytes) {
+          continue;
+        }
         final text = await PdfToDocumentService.recognizeImageBytes(
           imageBytes,
           sourceName: 'scan_page_${index + 1}.jpg',
         );
         if (text.trim().isNotEmpty) recognizedPages.add(text.trim());
       } catch (_) {
-        // Keep the captured PDF even if OCR fails on an individual page.
+        // Keep the captured PDF even if a page is missing, unreadable or OCR fails.
       }
     }
 

@@ -63,6 +63,26 @@ void main() {
       expect(withTable, greaterThan(text));
     });
 
+    test('table page estimate includes rows beyond the first twenty and saved row heights', () {
+      final rows = List.generate(
+        25,
+        (index) => ['Row ${index + 1}', 'বাংলা তথ্য'],
+      );
+      final height = WriterContentMetrics.estimateHeight(
+        delta: [
+          {'insert': {
+            'offynexbd-writer-table': {
+              'rows': rows,
+              'rowHeights': List<double>.filled(25, 56),
+            },
+          }},
+        ],
+        maxWidth: 300,
+        pageContentHeight: pageHeight,
+      );
+      expect(height, greaterThanOrEqualTo(25 * 56));
+    });
+
     test('explicit page break advances the estimate to the next page', () {
       final height = WriterContentMetrics.estimateHeight(
         delta: [
