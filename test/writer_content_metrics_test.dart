@@ -87,6 +87,25 @@ void main() {
       ), greaterThan(1));
     });
 
+    test('preserves imported font family names from Quill attributes', () {
+      expect(
+        WriterContentMetrics.fontFamilyFromAttributes({'font': 'Noto Serif Bengali'}),
+        'Noto Serif Bengali',
+      );
+      expect(
+        WriterContentMetrics.fontFamilyFromAttributes({'font': 'My Custom Bangla Font'}),
+        'My Custom Bangla Font',
+      );
+      expect(
+        WriterContentMetrics.fontFamilyFromAttributes({'font': 'serif'}),
+        'serif',
+      );
+      expect(
+        WriterContentMetrics.fontFamilyFromAttributes(const {}),
+        'sans-serif',
+      );
+    });
+
     test('rejects invalid layout dimensions', () {
       expect(
         () => WriterContentMetrics.estimateHeight(

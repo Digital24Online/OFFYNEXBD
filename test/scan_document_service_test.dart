@@ -25,6 +25,15 @@ void main() {
       );
     });
 
+    test('preserves recognized page order while ignoring blank OCR pages', () {
+      expect(
+        ScanDocumentService.combineRecognizedPages([
+          'Page one', '', '  ', 'Page three',
+        ]),
+        'Page one\\n\\nPage three',
+      );
+    });
+
     test('returns empty text when every page has no recognized text', () {
       expect(
         ScanDocumentService.combineRecognizedPages(['', '  ', '\n']),

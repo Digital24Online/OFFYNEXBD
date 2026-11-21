@@ -10,6 +10,17 @@ import 'package:material_ui/material_ui.dart';
 class WriterContentMetrics {
   const WriterContentMetrics._();
 
+  /// Returns the exact custom font family saved in a Quill Delta. Built-in
+  /// generic families remain unchanged; imported font names are not reduced
+  /// to a serif/sans-serif approximation when estimating Writer layout.
+  static String fontFamilyFromAttributes(Map<String, dynamic> attributes) {
+    final family = attributes['font']?.toString().trim();
+    if (family == null || family.isEmpty) return 'sans-serif';
+    if (family.toLowerCase() == 'serif') return 'serif';
+    if (family.toLowerCase() == 'sans-serif') return 'sans-serif';
+    return family;
+  }
+
   static double estimateHeight({
     required List<Map<String, dynamic>> delta,
     required double maxWidth,
@@ -60,8 +71,7 @@ class WriterContentMetrics {
           : defaultFontSize;
       final color = _parseColor(attributes['color']);
       final background = _parseColor(attributes['background']);
-      final font = attributes['font']?.toString().toLowerCase();
-      final isSerif = font == 'serif' || (font?.contains('noto serif') ?? false);
+      final fontFamily = fontFamilyFromAttributes(attributes);
       paragraph.add(TextSpan(
         text: value,
         style: TextStyle(
@@ -71,7 +81,7 @@ class WriterContentMetrics {
           decoration: _decoration(attributes),
           color: color,
           backgroundColor: background,
-          fontFamily: isSerif ? 'serif' : 'sans-serif',
+          fontFamily: fontFamily,
         ),
       ));
     }
