@@ -273,7 +273,8 @@ class _DatabaseRowEditDialogState extends State<_DatabaseRowEditDialog> {
         .toList(growable: false);
     _choices = {
       for (var index = 0; index < widget.schema.length; index++)
-        if (widget.schema[index].type == 'choice')
+        if (widget.schema[index].type == 'choice' &&
+            (widget.initialValues[widget.schema[index].name]?.isNotEmpty ?? false))
           index: widget.initialValues[widget.schema[index].name],
     };
   }
