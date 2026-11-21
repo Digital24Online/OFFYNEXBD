@@ -389,6 +389,8 @@ class _FormulaParser {
       'TRUNC', 'FACT', 'EVEN', 'ODD', 'RADIANS', 'DEGREES',
       'GCD', 'LCM', 'COMBIN', 'PERMUT', 'QUOTIENT',
       'SIN', 'COS', 'TAN', 'ASIN', 'ACOS', 'ATAN', 'ATAN2', 'COT', 'SINH', 'COSH', 'TANH', 'MROUND',
+      'SUMSQ', 'DEVSQ', 'AVEDEV', 'GEOMEAN', 'HARMEAN',
+      'VARP', 'VARS', 'STDEVP', 'STDEVS',
       'IF', 'IFERROR', 'AND', 'OR', 'NOT',
     };
     if (!supported.contains(name)) {
@@ -453,6 +455,38 @@ class _FormulaParser {
     switch (name) {
       case 'AVERAGE':
         return values.reduce((a, b) => a + b) / values.length;
+      case 'SUMSQ':
+        return values.fold<double>(0, (sum, value) => sum + value * value);
+      case 'DEVSQ': {
+        final mean = values.reduce((a, b) => a + b) / values.length;
+        return values.fold<double>(0, (sum, value) => sum + math.pow(value - mean, 2));
+      }
+      case 'AVEDEV': {
+        final mean = values.reduce((a, b) => a + b) / values.length;
+        return values.fold<double>(0, (sum, value) => sum + (value - mean).abs()) / values.length;
+      }
+      case 'GEOMEAN':
+        if (values.any((value) => value <= 0)) {
+          throw const FormatException('GEOMEAN requires positive values');
+        }
+        return math.exp(values.fold<double>(0, (sum, value) => sum + math.log(value)) / values.length);
+      case 'HARMEAN':
+        if (values.any((value) => value <= 0)) {
+          throw const FormatException('HARMEAN requires positive values');
+        }
+        return values.length / values.fold<double>(0, (sum, value) => sum + 1 / value);
+      case 'VARP':
+      case 'STDEVP':
+      case 'VARS':
+      case 'STDEVS': {
+        if ((name == 'VARS' || name == 'STDEVS') && values.length < 2) {
+          throw const FormatException('Sample variance requires at least two values');
+        }
+        final mean = values.reduce((a, b) => a + b) / values.length;
+        final divisor = (name == 'VARS' || name == 'STDEVS') ? values.length - 1 : values.length;
+        final variance = values.fold<double>(0, (sum, value) => sum + math.pow(value - mean, 2)) / divisor;
+        return name == 'STDEVP' || name == 'STDEVS' ? math.sqrt(variance) : variance;
+      }
       case 'MIN':
         return values.reduce((a, b) => math.min(a, b).toDouble());
       case 'MAX':
