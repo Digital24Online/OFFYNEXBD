@@ -2397,6 +2397,7 @@ Future<void> showCustomFontSizeDialog() async {
           'zoom': 1.0,
           'fontFamily': 'sans-serif',
           'viewFit': 'Page',
+          'viewFitVersion': 2,
           'showRuler': true,
           'showStatusBar': true,
           'showPageBorder': true,
