@@ -22,6 +22,7 @@ import 'workspace_backup_codec.dart';
 import 'workspace_record_codec.dart';
 import 'forms_response_csv_codec.dart';
 import 'forms_question_codec.dart';
+import 'forms_answer_validator.dart';
 import '../writer/writer_screen.dart';
 import '../../theme/offynex_theme.dart';
 
@@ -1582,31 +1583,24 @@ class _FormResponseDialogState extends State<_FormResponseDialog> {
 
   String? _validate(int index, String? raw) {
     final question = widget.questions[index];
-    final value = (raw ?? '').trim();
-    if (question['required'] == true && value.isEmpty) {
-      return widget.isBangla ? 'এই ঘরটি পূরণ করুন' : 'This field is required';
+    final error = FormsAnswerValidator.validate(
+      type: question['type'] as String,
+      value: raw ?? '',
+      required: question['required'] == true,
+    );
+    if (error == null) return null;
+    switch (error) {
+      case FormsAnswerValidator.requiredError:
+        return widget.isBangla ? 'এই ঘরটি পূরণ করুন' : 'This field is required';
+      case FormsAnswerValidator.emailError:
+        return widget.isBangla ? 'সঠিক Email দিন' : 'Enter a valid email address';
+      case FormsAnswerValidator.numberError:
+        return widget.isBangla ? 'সীমার মধ্যে সঠিক সংখ্যা দিন' : 'Enter a finite valid number';
+      case FormsAnswerValidator.dateError:
+        return widget.isBangla ? 'সঠিক তারিখ নির্বাচন করুন' : 'Enter a real date in YYYY-MM-DD format';
+      default:
+        return widget.isBangla ? 'সঠিক তথ্য দিন' : 'Enter a valid value';
     }
-    if (value.isEmpty) return null;
-    switch (question['type']) {
-      case 'email':
-        final at = value.indexOf('@');
-        final dot = value.lastIndexOf('.');
-        if (at <= 0 || dot <= at + 1 || dot == value.length - 1 || value.contains(' ')) {
-          return widget.isBangla ? 'সঠিক Email দিন' : 'Enter a valid email address';
-        }
-        break;
-      case 'number':
-        if (num.tryParse(value) == null) {
-          return widget.isBangla ? 'শুধু সংখ্যা দিন' : 'Enter a valid number';
-        }
-        break;
-      case 'date':
-        if (DateTime.tryParse(value) == null) {
-          return widget.isBangla ? 'সঠিক তারিখ নির্বাচন করুন' : 'Enter a valid date';
-        }
-        break;
-    }
-    return null;
   }
 
   Future<void> _chooseDate(int index) async {

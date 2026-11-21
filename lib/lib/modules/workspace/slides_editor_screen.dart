@@ -78,6 +78,15 @@ class _SlidesEditorScreenState extends State<SlidesEditorScreen> {
     setState(() => _slides.insert(index + 1, _SlideDraft(_nextId++, source.controller.text)));
   }
 
+  void _moveSlide(int index, int offset) {
+    final target = index + offset;
+    if (target < 0 || target >= _slides.length) return;
+    setState(() {
+      final slide = _slides.removeAt(index);
+      _slides.insert(target, slide);
+    });
+  }
+
   void _deleteSlide(int index) {
     if (_slides.length == 1) {
       _slides[index].controller.clear();
@@ -196,6 +205,18 @@ class _SlidesEditorScreenState extends State<SlidesEditorScreen> {
                                   _t('স্লাইড ', 'Slide ') + (index + 1).toString(),
                                   style: const TextStyle(fontWeight: FontWeight.w700),
                                 ),
+                              ),
+                              IconButton(
+                                tooltip: _t('উপরে নিন', 'Move slide up'),
+                                onPressed: index == 0 ? null : () => _moveSlide(index, -1),
+                                icon: const Icon(Icons.arrow_upward_rounded),
+                              ),
+                              IconButton(
+                                tooltip: _t('নিচে নিন', 'Move slide down'),
+                                onPressed: index == _slides.length - 1
+                                    ? null
+                                    : () => _moveSlide(index, 1),
+                                icon: const Icon(Icons.arrow_downward_rounded),
                               ),
                               IconButton(
                                 tooltip: _t('কপি করুন', 'Duplicate slide'),

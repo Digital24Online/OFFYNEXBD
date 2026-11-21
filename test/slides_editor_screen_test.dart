@@ -59,4 +59,47 @@ void main() {
       ['Opening', 'Summary', 'Next steps', 'Next steps'],
     );
   });
+
+  testWidgets('Slides editor can move slides with accessible controls', (tester) async {
+    Map<String, String>? saved;
+    tester.view.physicalSize = const Size(900, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(MaterialApp(
+      home: Builder(
+        builder: (context) => Scaffold(
+          body: TextButton(
+            onPressed: () async {
+              saved = await Navigator.push<Map<String, String>>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const SlidesEditorScreen(
+                    isBangla: false,
+                    title: 'Order test',
+                    content: 'First\nSecond',
+                  ),
+                ),
+              );
+            },
+            child: const Text('Open editor'),
+          ),
+        ),
+      ),
+    ));
+
+    await tester.tap(find.text('Open editor'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Move slide down').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(
+      SlidesDocumentCodec.decode(saved?['content'] ?? ''),
+      ['Second', 'First'],
+    );
+  });
+
 }
