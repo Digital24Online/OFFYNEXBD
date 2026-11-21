@@ -61,6 +61,8 @@ class _WriterTableDialog extends StatefulWidget {
 
 class _WriterTableDialogState extends State<_WriterTableDialog> {
   late List<List<TextEditingController>> cells;
+  late List<double> rowHeights;
+  late List<double> columnWidths;
   String _t(String bn, String en) => widget.isBangla ? bn : en;
   int borderColor = 0xFF333333;
   int backgroundColor = 0xFFFFFFFF;
@@ -104,6 +106,21 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
     } else {
       cells = _createEmptyCells();
     }
+
+    final rawHeights = data?['rowHeights'];
+    rowHeights = List<double>.generate(
+      cells.length,
+      (index) => rawHeights is List && index < rawHeights.length
+          ? (rawHeights[index] as num?)?.toDouble().clamp(36.0, 240.0) ?? 56.0
+          : 56.0,
+    );
+    final rawWidths = data?['columnWidths'];
+    columnWidths = List<double>.generate(
+      columnCount,
+      (index) => rawWidths is List && index < rawWidths.length
+          ? (rawWidths[index] as num?)?.toDouble().clamp(70.0, 480.0) ?? 150.0
+          : 150.0,
+    );
   }
 
   List<List<TextEditingController>> _createEmptyCells() {
@@ -118,25 +135,23 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
   void addRow() {
     setState(() {
       cells.add(List.generate(columnCount, (_) => TextEditingController()));
+      rowHeights.add(56.0);
     });
   }
 
   void insertRowBefore() {
     setState(() {
-      cells.insert(
-        selectedRow.clamp(0, cells.length),
-        List.generate(columnCount, (_) => TextEditingController()),
-      );
+      final index = selectedRow.clamp(0, cells.length);
+      cells.insert(index, List.generate(columnCount, (_) => TextEditingController()));
+      rowHeights.insert(index, 56.0);
     });
   }
 
   void insertRowAfter() {
     setState(() {
       final index = (selectedRow + 1).clamp(0, cells.length);
-      cells.insert(
-        index,
-        List.generate(columnCount, (_) => TextEditingController()),
-      );
+      cells.insert(index, List.generate(columnCount, (_) => TextEditingController()));
+      rowHeights.insert(index, 56.0);
       selectedRow = index;
     });
   }
@@ -148,6 +163,7 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
       for (final controller in cells.removeAt(index)) {
         controller.dispose();
       }
+      rowHeights.removeAt(index);
       selectedRow = index.clamp(0, cells.length - 1);
     });
   }
@@ -157,6 +173,7 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
       for (final row in cells) {
         row.add(TextEditingController());
       }
+      columnWidths.add(150.0);
     });
   }
 
@@ -166,6 +183,7 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
       for (final row in cells) {
         row.insert(index, TextEditingController());
       }
+      columnWidths.insert(index, 150.0);
     });
   }
 
@@ -175,6 +193,7 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
       for (final row in cells) {
         row.insert(index, TextEditingController());
       }
+      columnWidths.insert(index, 150.0);
       selectedColumn = index;
     });
   }
@@ -186,7 +205,22 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
       for (final row in cells) {
         row.removeAt(index).dispose();
       }
+      columnWidths.removeAt(index);
       selectedColumn = index.clamp(0, columnCount - 1);
+    });
+  }
+
+  void resizeSelectedRow(double delta) {
+    setState(() {
+      final index = selectedRow.clamp(0, rowHeights.length - 1);
+      rowHeights[index] = (rowHeights[index] + delta).clamp(36.0, 240.0);
+    });
+  }
+
+  void resizeSelectedColumn(double delta) {
+    setState(() {
+      final index = selectedColumn.clamp(0, columnWidths.length - 1);
+      columnWidths[index] = (columnWidths[index] + delta).clamp(70.0, 480.0);
     });
   }
 
@@ -253,6 +287,8 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
       'version': 1,
       'borderColor': borderColor,
       'backgroundColor': backgroundColor,
+      'rowHeights': rowHeights,
+      'columnWidths': columnWidths,
     });
   }
 
@@ -329,6 +365,30 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
                   icon: const Icon(Icons.remove),
                   label: Text(_t('নির্বাচিত কলাম মুছুন', 'Delete Selected Column')),
                 ),
+                OutlinedButton.icon(
+                  key: const ValueKey('writer-table-row-height-decrease'),
+                  onPressed: () => resizeSelectedRow(-8),
+                  icon: const Icon(Icons.height),
+                  label: Text(_t('সারি ছোট', 'Shorter Row')),
+                ),
+                OutlinedButton.icon(
+                  key: const ValueKey('writer-table-row-height-increase'),
+                  onPressed: () => resizeSelectedRow(8),
+                  icon: const Icon(Icons.height),
+                  label: Text(_t('সারি বড়', 'Taller Row')),
+                ),
+                OutlinedButton.icon(
+                  key: const ValueKey('writer-table-column-width-decrease'),
+                  onPressed: () => resizeSelectedColumn(-12),
+                  icon: const Icon(Icons.width_normal),
+                  label: Text(_t('কলাম সরু', 'Narrower Column')),
+                ),
+                OutlinedButton.icon(
+                  key: const ValueKey('writer-table-column-width-increase'),
+                  onPressed: () => resizeSelectedColumn(12),
+                  icon: const Icon(Icons.width_full),
+                  label: Text(_t('কলাম চওড়া', 'Wider Column')),
+                ),
                 OutlinedButton(
                   onPressed: () => chooseColor(chooseBorder: true),
                   child: Text(_t('বর্ডারের রং', 'Border Color')),
@@ -355,6 +415,7 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
                       return TableRow(
                         children: List.generate(columnCount, (columnIndex) {
                           return Container(
+                            constraints: BoxConstraints(minHeight: rowHeights[rowIndex]),
                             color: Color(backgroundColor),
                             padding: const EdgeInsets.all(5),
                             child: TextField(
@@ -445,6 +506,20 @@ class WriterTableEmbedBuilder extends EmbedBuilder {
     final background = data['backgroundColor'] is int
         ? data['backgroundColor'] as int
         : 0xFFFFFFFF;
+    final rawWidths = data['columnWidths'];
+    final widths = List<double>.generate(
+      columnCount,
+      (index) => rawWidths is List && index < rawWidths.length
+          ? (rawWidths[index] as num?)?.toDouble().clamp(70.0, 480.0) ?? 150.0
+          : 150.0,
+    );
+    final rawHeights = data['rowHeights'];
+    final heights = List<double>.generate(
+      rows.length,
+      (index) => rawHeights is List && index < rawHeights.length
+          ? (rawHeights[index] as num?)?.toDouble().clamp(36.0, 240.0) ?? 56.0
+          : 56.0,
+    );
 
     return Container(
       width: double.infinity,
@@ -492,6 +567,7 @@ class WriterTableEmbedBuilder extends EmbedBuilder {
                           ? row[columnIndex]
                           : '';
                       return Container(
+                        constraints: BoxConstraints(minHeight: heights[rowIndex]),
                         color: Color(background),
                         padding: const EdgeInsets.all(8),
                         child: Text(
