@@ -255,8 +255,8 @@ class PdfToDocumentService {
     final imageFile = File(
       '${temp.path}/offynex_image_ocr_${DateTime.now().microsecondsSinceEpoch}.$extension',
     );
-    await imageFile.writeAsBytes(imageBytes, flush: true);
     try {
+      await imageFile.writeAsBytes(imageBytes, flush: true);
       final recognized = await TesseractOcr.extractText(
         imageFile.path,
         config: OCRConfig(
@@ -300,8 +300,8 @@ class PdfToDocumentService {
       final file = File(
         '${temp.path}/offynex_ocr_${DateTime.now().microsecondsSinceEpoch}_$i.$extension',
       );
-      await file.writeAsBytes(bytes, flush: true);
       try {
+        await file.writeAsBytes(bytes, flush: true);
         final text = await TesseractOcr.extractText(
           file.path,
           config: OCRConfig(

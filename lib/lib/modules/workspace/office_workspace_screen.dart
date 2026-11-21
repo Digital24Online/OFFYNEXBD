@@ -628,8 +628,21 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
           );
         }
         final images = <({String name, Uint8List bytes})>[];
+        var totalImageBytes = 0;
         for (final file in selectedFiles) {
-          images.add((name: file.name, bytes: await file.readAsBytes()));
+          final fileSize = file.lengthSync() ?? await file.length() ?? 0;
+          if (fileSize <= 0 || fileSize > ScanDocumentService.maxOcrImageBytes) {
+            throw const FormatException('Each scan image must be between 1 byte and 30 MB.');
+          }
+          totalImageBytes += fileSize;
+          if (totalImageBytes > ScanDocumentService.maxPdfBytes) {
+            throw const FormatException('Combined scan images exceed 50 MB.');
+          }
+          final bytes = await file.readAsBytes();
+          if (bytes.length != fileSize) {
+            throw const FileSystemException('A selected scan image changed while being read.');
+          }
+          images.add((name: file.name, bytes: bytes));
         }
         captured = await ScanDocumentService.captureImportedImages(images);
       }

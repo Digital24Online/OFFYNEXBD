@@ -180,6 +180,10 @@ class ScanDocumentService {
     if (!await sourcePdf.exists()) {
       throw const FileSystemException('স্ক্যান করা PDF ফাইল পাওয়া যায়নি।');
     }
+    final pdfSize = await sourcePdf.length();
+    if (pdfSize <= 0 || pdfSize > maxPdfBytes) {
+      throw const FormatException('Scan PDF is empty or exceeds the 50 MB limit.');
+    }
     final pdfBytes = await sourcePdf.readAsBytes();
     validateCapturedPdf(pdfBytes, pdf.pageCount);
 
@@ -193,6 +197,8 @@ class ScanDocumentService {
       try {
         final imageFile = File(imagePaths[index]);
         if (!await imageFile.exists()) continue;
+        final imageSize = await imageFile.length();
+        if (imageSize <= 0 || imageSize > maxOcrImageBytes) continue;
         final imageBytes = await imageFile.readAsBytes();
         if (imageBytes.isEmpty || imageBytes.length > maxOcrImageBytes) {
           continue;
