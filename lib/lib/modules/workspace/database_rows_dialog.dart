@@ -223,6 +223,7 @@ class _DatabaseRowsDialogState extends State<DatabaseRowsDialog> {
               Row(children: [
                 Expanded(
                   child: DropdownButtonFormField<String>(
+                    key: const ValueKey('database-row-sort-field'),
                     initialValue: _sortField,
                     isExpanded: true,
                     decoration: InputDecoration(
