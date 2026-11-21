@@ -3405,21 +3405,32 @@ Future<void> insertWriterImage() async {
                                     marginRight * 96 * scale,
                                     marginBottom * 96 * scale,
                                   ),
-                                  child: QuillEditor.basic(
-                                    controller: quillController,
-                                    focusNode: editorFocusNode,
-                                    config: QuillEditorConfig(
-                                      expands: true,
-                                      padding: EdgeInsets.zero,
-                                      placeholder: _t('এখানে আপনার লেখা শুরু করুন...', 'Start writing here...'),
-                                      embedBuilders: [
-                                        WriterTableEmbedBuilder(
-                                          onEdit: editWriterTable,
-                                          isBangla: widget.isBangla,
-                                        ),
-                                        WriterImageEmbedBuilder(),
-                                        WriterPageBreakEmbedBuilder(),
-                                      ],
+                                  child: Listener(
+                                    // Quill handles caret placement and selection;
+                                    // this non-gesture pointer listener ensures a
+                                    // tap on the page body also gives the editor
+                                    // focus so Android can show its soft keyboard.
+                                    onPointerDown: (_) {
+                                      if (!editorFocusNode.hasFocus) {
+                                        editorFocusNode.requestFocus();
+                                      }
+                                    },
+                                    child: QuillEditor.basic(
+                                      controller: quillController,
+                                      focusNode: editorFocusNode,
+                                      config: QuillEditorConfig(
+                                        expands: true,
+                                        padding: EdgeInsets.zero,
+                                        placeholder: _t('এখানে আপনার লেখা শুরু করুন...', 'Start writing here...'),
+                                        embedBuilders: [
+                                          WriterTableEmbedBuilder(
+                                            onEdit: editWriterTable,
+                                            isBangla: widget.isBangla,
+                                          ),
+                                          WriterImageEmbedBuilder(),
+                                          WriterPageBreakEmbedBuilder(),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
