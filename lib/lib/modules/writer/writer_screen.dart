@@ -3445,12 +3445,6 @@ Future<void> insertWriterImage() async {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final page = _pageDimensions;
-                // InteractiveViewer's ScaleGestureRecognizer can compete with
-                // Quill's tap/long-press recognizers on Android touch screens.
-                // Keep pinch zoom on larger screens; phones use the dedicated
-                // Writer zoom controls so a page tap always reaches Quill.
-                final isPhoneViewport =
-                    MediaQuery.sizeOf(context).shortestSide < 600;
                 final layout = WriterViewportLayout.calculate(
                   pageWidth: page.width,
                   pageHeight: page.height,
@@ -3485,13 +3479,8 @@ Future<void> insertWriterImage() async {
                   minScale: 0.5,
                   maxScale: 4.0,
                   constrained: false,
-                  // On phones, do not install the parent's scale recognizer:
-                  // it competes with Quill's tap/long-press gesture arena and
-                  // can prevent the editor from receiving a real touch. Phone
-                  // zoom remains available through the dedicated zoom controls.
-                  // Larger screens retain trackpad/pinch zoom.
                   panEnabled: false,
-                  scaleEnabled: !isPhoneViewport,
+                  scaleEnabled: true,
                   boundaryMargin: const EdgeInsets.all(120),
                   alignment: Alignment.topCenter,
                   clipBehavior: Clip.hardEdge,
