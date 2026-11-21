@@ -850,8 +850,8 @@ class _OfficeWorkspaceScreenState extends State<OfficeWorkspaceScreen> {
           ? 'প্রতি লাইনে একটি স্লাইডের লেখা দিন। Export Slides PDF দিয়ে প্রতিটি স্লাইড আলাদা Landscape PDF পৃষ্ঠায় সংরক্ষণ করুন। PPTX ও পূর্ণ Slideshow renderer এখনো বাকি।'
           : 'Enter one slide per line. Export Slides PDF saves each slide on a separate landscape PDF page. PPTX and the full slideshow renderer are still pending.',
       'Fonts' => _bn
-          ? 'এখানে ফন্টের তালিকা ও নোট রাখা যায়। প্রকৃত TTF/OTF ইনস্টল ও সব এডিটরে প্রয়োগ এখনো যুক্ত হয়নি।'
-          : 'Keep a font catalogue and notes here. Actual TTF/OTF installation and editor-wide activation are not connected yet.',
+          ? 'TTF/OTF ফন্ট নিরাপদে যাচাই করে অ্যাপের নিজস্ব Font Library-তে Import ও সক্রিয় করা যায়। Android সিস্টেমে ফন্ট ইনস্টল হয় না; Writer-এর Font Family তালিকার সাথে সম্পূর্ণ সংযোগ এখনো বাকি।'
+          : 'Validate, import and activate TTF/OTF fonts in the app-scoped Font Library. Fonts are not installed system-wide; full integration with the Writer font-family picker remains pending.',
       'AI Assistant' => _bn
           ? 'বাংলা/ইংরেজি নির্দেশনা ও কাজের খসড়া সংরক্ষণ করুন। প্রকৃত AI উত্তর পেতে নিরাপদ AI service connection প্রয়োজন; এখনো সংযুক্ত নয়।'
           : 'Save Bangla/English prompts and drafts. A secure AI service connection is required for generated answers and is not connected yet.',
