@@ -377,7 +377,14 @@ class WriterDocumentFormatService {
       result['size'] = (halfPoints / 2 * 4 / 3).toStringAsFixed(2);
     }
     final fonts = _firstChild(props, 'rFonts');
-    final family = fonts == null ? null : _attribute(fonts, 'ascii');
+    // Bengali/complex-script runs commonly store their typeface in w:cs,
+    // while Latin text is stored in w:ascii or w:hAnsi.
+    final family = fonts == null
+        ? null
+        : _attribute(fonts, 'cs') ??
+            _attribute(fonts, 'eastAsia') ??
+            _attribute(fonts, 'ascii') ??
+            _attribute(fonts, 'hAnsi');
     if (family != null) result['font'] = _fontFamilyCategory(family);
     return result;
   }

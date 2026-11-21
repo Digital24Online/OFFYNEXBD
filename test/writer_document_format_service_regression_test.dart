@@ -178,6 +178,7 @@ void main() {
 <w:p><w:r><w:rPr><w:rFonts w:ascii="Arial"/></w:rPr><w:t>Sans</w:t></w:r></w:p>
 <w:p><w:r><w:rPr><w:rFonts w:ascii="Noto Serif Bengali"/></w:rPr><w:t>Serif</w:t></w:r></w:p>
 <w:p><w:r><w:rPr><w:rFonts w:ascii="SolaimanLipi"/></w:rPr><w:t>Custom font</w:t></w:r></w:p>
+<w:p><w:r><w:rPr><w:rFonts w:ascii="Arial" w:cs="SolaimanLipi" w:eastAsia="Noto Serif Bengali"/></w:rPr><w:t>Bangla font</w:t></w:r></w:p>
 <w:sectPr/></w:body></w:document>''';
     final data = utf8.encode(xml);
     archive.addFile(ArchiveFile('word/document.xml', data.length, data));
@@ -188,6 +189,7 @@ void main() {
     expect(imported.delta.any((op) => op['insert'] == 'Sans' && (op['attributes'] as Map?)?['font'] == 'sans-serif'), isTrue);
     expect(imported.delta.any((op) => op['insert'] == 'Serif' && (op['attributes'] as Map?)?['font'] == 'serif'), isTrue);
     expect(imported.delta.any((op) => op['insert'] == 'Custom font' && (op['attributes'] as Map?)?['font'] == 'SolaimanLipi'), isTrue);
+    expect(imported.delta.any((op) => op['insert'] == 'Bangla font' && (op['attributes'] as Map?)?['font'] == 'SolaimanLipi'), isTrue);
   });
 
   test('ODT sans-serif family is not misclassified as serif', () async {
