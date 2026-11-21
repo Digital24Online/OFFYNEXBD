@@ -1437,7 +1437,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
         builder: (dialogContext) => AlertDialog(
           title: Text(_t('সব Worksheet Import করবেন?', 'Import all worksheets?')),
           content: Text(_t(
-            '${imported.length}টি Worksheet এবং $totalCellsটি Cell বর্তমান Workbook-এর জায়গায় আসবে। আগের Workbook-এর Backup রাখা হবে।',
+            '${imported.length}টি Worksheet এবং $totalCellsটি Cell বর্তমান Workbook-এর জায়গায় আসবে। আগের Workbook-এর Backup রাখা হবে। XLSX-এর কিছু advanced feature (Chart, Pivot, Conditional Formatting, merged cells ও images) এখনো সম্পূর্ণভাবে সংরক্ষিত নাও হতে পারে।',
             '${imported.length} worksheets and $totalCells cells will replace the current workbook. A backup will be kept. Some advanced XLSX features (charts, PivotTables, conditional formatting, merged cells and images) may not be preserved yet.',
           )),
           actions: [
