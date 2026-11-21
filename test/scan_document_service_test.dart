@@ -5,6 +5,32 @@ import 'package:offynexbd/lib/modules/workspace/scan_document_service.dart';
 
 void main() {
   group('ScanDocumentService', () {
+    test('keeps a scan PDF while a Writer document references it', () {
+      const path = '/OFFYNEXBD/Scans/scan-1.pdf';
+      expect(
+        ScanDocumentService.isPdfReferencedByWriterDocuments(path, [
+          {'id': 'writer-1', 'scanPdfPath': path},
+        ]),
+        isTrue,
+      );
+      expect(
+        ScanDocumentService.isPdfReferencedByWriterDocuments(path, [
+          {'id': 'writer-1', 'scanPdfPath': ' /OFFYNEXBD/Scans/scan-1.pdf '},
+        ]),
+        isTrue,
+      );
+      expect(
+        ScanDocumentService.isPdfReferencedByWriterDocuments(path, [
+          {'id': 'writer-2', 'scanPdfPath': '/OFFYNEXBD/Scans/other.pdf'},
+        ]),
+        isFalse,
+      );
+      expect(
+        ScanDocumentService.isPdfReferencedByWriterDocuments(path, const []),
+        isFalse,
+      );
+    });
+
     test('removes only the final PDF extension from scan display titles', () {
       expect(ScanDocumentService.displayTitleFromPdfFileName('scan.pdf'), 'scan');
       expect(ScanDocumentService.displayTitleFromPdfFileName('SCAN.PDF'), 'SCAN');
