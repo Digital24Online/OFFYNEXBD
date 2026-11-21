@@ -4,7 +4,6 @@ import 'lib/modules/writer/writer_screen.dart';
 import 'lib/modules/sheets/sheets_screen.dart';
 import 'lib/modules/pdf/pdf_to_document_screen.dart';
 import 'lib/modules/workspace/office_workspace_screen.dart';
-import 'lib/modules/workspace/creator_attribution_screen.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_localizations/flutter_localizations.dart'
     hide GlobalMaterialLocalizations, GlobalCupertinoLocalizations;
@@ -262,16 +261,6 @@ void openModule(OfficeModule module) {
           ],
         ),
         actions: [
-          IconButton(
-            tooltip: isBangla ? 'নির্মাতা পরিচিতি' : 'Creator',
-            icon: const Icon(Icons.workspace_premium_outlined, color: OFFYNEXTheme.ink),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => CreatorAttributionScreen(isBangla: isBangla),
-              ),
-            ),
-          ),
           IconButton(
             tooltip: isBangla ? 'অ্যাপ ইনফো' : 'App Info',
             icon: const Icon(Icons.info_outline_rounded, color: OFFYNEXTheme.ink),
