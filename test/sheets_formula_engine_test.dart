@@ -322,6 +322,20 @@ void main() {
       expect(engine.evaluateCell('C6'), 2);
     });
 
+    test('supports COUNTIFS, SUMIFS and AVERAGEIFS with multiple conditions', () {
+      final engine = SheetsFormulaEngine({
+        'A1': 'East', 'A2': 'West', 'A3': 'East', 'A4': 'East',
+        'B1': 'Paid', 'B2': 'Paid', 'B3': 'Unpaid', 'B4': 'Paid',
+        'C1': '10', 'C2': '20', 'C3': '30', 'C4': '40',
+        'D1': '=COUNTIFS(A1:A4,"East",B1:B4,"Paid")',
+        'D2': '=SUMIFS(C1:C4,A1:A4,"East",B1:B4,"Paid")',
+        'D3': '=AVERAGEIFS(C1:C4,A1:A4,"East",B1:B4,"Paid")',
+      });
+      expect(engine.evaluateCell('D1'), 2);
+      expect(engine.evaluateCell('D2'), 50);
+      expect(engine.evaluateCell('D3'), 25);
+    });
+
     test('rejects mismatched SUMIF ranges and AVERAGEIF with no matches', () {
       final engine = SheetsFormulaEngine({
         'A1': 'A', 'A2': 'B', 'B1': '1',

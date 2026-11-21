@@ -1863,7 +1863,7 @@ class _SheetsScreenState extends State<SheetsScreen> {
           'CEILING', 'FLOOR', 'SQRT', 'POWER', 'MOD', 'INT', 'SIGN',
           'PI', 'EXP', 'LN', 'LOG', 'LOG10', 'SIN', 'COS', 'TAN',
           'ASIN', 'ACOS', 'ATAN', 'IF', 'IFERROR', 'AND', 'OR', 'NOT',
-          'COUNTIF', 'SUMIF', 'AVERAGEIF',
+          'COUNTIF', 'SUMIF', 'AVERAGEIF', 'COUNTIFS', 'SUMIFS', 'AVERAGEIFS',
         ]) {
           commands.add(_ribbonCommand(function, Icons.functions, () => _insertFunction(function)));
         }

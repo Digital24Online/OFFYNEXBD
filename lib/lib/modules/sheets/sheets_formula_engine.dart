@@ -427,6 +427,7 @@ class _FormulaParser {
       'SUMSQ', 'DEVSQ', 'AVEDEV', 'GEOMEAN', 'HARMEAN',
       'VARP', 'VARS', 'STDEVP', 'STDEVS',
       'IF', 'IFERROR', 'AND', 'OR', 'NOT',
+      'COUNTIFS', 'SUMIFS', 'AVERAGEIFS',
     };
     if (!supported.contains(name)) {
       throw FormatException('Unsupported function: $name');
@@ -436,6 +437,9 @@ class _FormulaParser {
     if (name == 'IFERROR') return _parseIfErrorFunction();
     if (name == 'COUNTIF' || name == 'SUMIF' || name == 'AVERAGEIF') {
       return _parseCriteriaFunction(name);
+    }
+    if (name == 'COUNTIFS' || name == 'SUMIFS' || name == 'AVERAGEIFS') {
+      return _parseMultiCriteriaFunction(name);
     }
     final values = <double>[];
     if (!_accept(')')) {
@@ -766,6 +770,63 @@ class _FormulaParser {
     if (name == 'SUMIF') return sum;
     if (count == 0) throw const FormatException('AVERAGEIF has no numeric matches');
     return sum / count;
+  }
+
+  double _parseMultiCriteriaFunction(String name) {
+    (String, String)? sumRange;
+    if (name != 'COUNTIFS') {
+      sumRange = _readRangeArgument();
+      _expect(',');
+    }
+    final criteria = <((String, String), String)>[];
+    while (true) {
+      final range = _readRangeArgument();
+      _expect(',');
+      final criterion = _readCriterionArgument();
+      criteria.add((range, criterion));
+      if (_accept(')')) break;
+      _expect(',');
+      if (criteria.length >= 127) throw const FormatException('Too many criteria pairs');
+    }
+    if (criteria.isEmpty) throw const FormatException('At least one criteria pair is required');
+    final ranges = criteria.map((entry) => engine._readCriteriaRange(
+      entry.$1.$1, entry.$1.$2, visiting,
+    )).toList(growable: false);
+    final expectedLength = ranges.first.length;
+    if (ranges.any((range) => range.length != expectedLength)) {
+      throw const FormatException('All criteria ranges must have the same size');
+    }
+    final values = sumRange == null
+        ? const <(String, String, double?)>[]
+        : engine._readCriteriaRange(sumRange.$1, sumRange.$2, visiting);
+    if (sumRange != null && values.length != expectedLength) {
+      throw const FormatException('Sum and criteria ranges must have the same size');
+    }
+    var matches = 0;
+    var sum = 0.0;
+    for (var index = 0; index < expectedLength; index++) {
+      var accepted = true;
+      for (var criteriaIndex = 0; criteriaIndex < criteria.length; criteriaIndex++) {
+        final cell = ranges[criteriaIndex][index];
+        if (!_matchesCriterion(cell.$2, cell.$3, criteria[criteriaIndex].$2)) {
+          accepted = false;
+          break;
+        }
+      }
+      if (!accepted) continue;
+      if (name == 'COUNTIFS') {
+        matches++;
+      } else {
+        final value = values[index].$3;
+        if (value == null) continue;
+        matches++;
+        sum += value;
+      }
+    }
+    if (name == 'COUNTIFS') return matches.toDouble();
+    if (name == 'SUMIFS') return sum;
+    if (matches == 0) throw const FormatException('AVERAGEIFS has no numeric matches');
+    return sum / matches;
   }
 
   (String, String) _readRangeArgument() {
