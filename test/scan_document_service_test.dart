@@ -5,6 +5,14 @@ import 'package:offynexbd/lib/modules/workspace/scan_document_service.dart';
 
 void main() {
   group('ScanDocumentService', () {
+    test('removes only the final PDF extension from scan display titles', () {
+      expect(ScanDocumentService.displayTitleFromPdfFileName('scan.pdf'), 'scan');
+      expect(ScanDocumentService.displayTitleFromPdfFileName('SCAN.PDF'), 'SCAN');
+      expect(ScanDocumentService.displayTitleFromPdfFileName('my.scan.pdf'), 'my.scan');
+      expect(ScanDocumentService.displayTitleFromPdfFileName('scan.jpg'), 'scan.jpg');
+      expect(ScanDocumentService.displayTitleFromPdfFileName('  scan.pdf  '), 'scan');
+    });
+
     test('combines recognized pages in order and separates page text', () {
       expect(
         ScanDocumentService.combineRecognizedPages([
