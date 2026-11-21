@@ -515,5 +515,30 @@ void main() {
       expect(engine.evaluateCell('A4'), 0);
     });
 
+    test('supports MROUND and extended trigonometric functions with domain checks', () {
+      final engine = SheetsFormulaEngine({
+        'A1': '=MROUND(10,3)',
+        'A2': '=MROUND(-10,-3)',
+        'A3': '=SINH(0)',
+        'A4': '=COSH(0)',
+        'A5': '=TANH(0)',
+        'A6': '=COT(PI()/4)',
+        'A7': '=ATAN2(1,1)',
+        'A8': '=MROUND(10,-3)',
+        'A9': '=COT(0)',
+        'A10': '=ATAN2(0,0)',
+      });
+      expect(engine.evaluateCell('A1'), 9);
+      expect(engine.evaluateCell('A2'), -9);
+      expect(engine.evaluateCell('A3'), 0);
+      expect(engine.evaluateCell('A4'), 1);
+      expect(engine.evaluateCell('A5'), 0);
+      expect(engine.evaluateCell('A6'), closeTo(1, 1e-12));
+      expect(engine.evaluateCell('A7'), closeTo(math.pi / 4, 1e-12));
+      expect(engine.evaluateCell('A8'), isNull);
+      expect(engine.evaluateCell('A9'), isNull);
+      expect(engine.evaluateCell('A10'), isNull);
+    });
+
   });
 }
