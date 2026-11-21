@@ -2,7 +2,8 @@
 
 ## Current implemented foundation
 - Writer exposes bundled Bengali Noto Sans / Noto Serif choices and Unicode fallback for PDF export.
-- Fonts workspace currently stores local font-related records/notes; it is not a font installation or management engine.
+- Fonts workspace stores local font records/notes. It now imports TTF/OTF files into app-private storage, validates SFNT table bounds and family metadata, and activates imported fonts for the current app session and on reopening the Fonts workspace. Fonts are never installed system-wide.
+- Writer's font-family picker is not yet connected to the imported family catalogue; font removal, duplicate detection, licensing metadata and specimen preview remain outstanding.
 
 ## Remaining implementation
 - Import TTF/OTF safely from device storage; validate file signature, metadata, tables, glyph count, size and malformed-font safety before activation.
