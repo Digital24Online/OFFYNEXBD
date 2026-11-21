@@ -397,4 +397,20 @@ void main() {
     expect(docs.single['writerMeta']['zoom'], closeTo(slider.value, 0.001));
   });
 
+
+  testWidgets('App Info shows the declared creator attribution without personal address or repository history',
+      (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(const OFFYNEXBDApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('অ্যাপ ইনফো'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('MD PIYARUL ISLAM'), findsOneWidget);
+    expect(find.text('প্রতিষ্ঠাতা ও মূল নির্মাতা'), findsOneWidget);
+    expect(find.textContaining('GitHub'), findsNothing);
+    expect(find.textContaining('ঠিকানা'), findsNothing);
+  });
+
 }
