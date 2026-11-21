@@ -322,6 +322,20 @@ void main() {
       expect(engine.evaluateCell('C6'), 2);
     });
 
+    test('cross-sheet expansion leaves quoted text criteria untouched', () {
+      final engine = SheetsFormulaEngine(
+        {
+          'A1': 'Sheet2!A1',
+          'A2': 'Other',
+          'B1': '=COUNTIF(A1:A2,"Sheet2!A1")',
+          'C1': '=SUM(A1:A2)',
+        },
+        worksheets: {'Sheet2': {'A1': '5'}},
+        activeSheetName: 'Sheet1',
+      );
+      expect(engine.evaluateCell('B1'), 1);
+    });
+
     test('supports COUNTIFS, SUMIFS and AVERAGEIFS with multiple conditions', () {
       final engine = SheetsFormulaEngine({
         'A1': 'East', 'A2': 'West', 'A3': 'East', 'A4': 'East',

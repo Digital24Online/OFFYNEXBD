@@ -119,13 +119,24 @@ class SheetsFormulaEngine {
     String formula,
     Set<String> visiting,
   ) {
+    // Protect quoted criteria/text literals before resolving worksheet refs;
+    // otherwise text such as "Sheet2!A1" would be rewritten as a cell value.
+    final quotedStrings = <String>[];
+    var expanded = formula.replaceAllMapped(
+      RegExp(r'"(?:[^"]|"")*"'),
+      (match) {
+        final index = quotedStrings.length;
+        quotedStrings.add(match.group(0)!);
+        return '__OFFYNEXBD_STRING_$index__';
+      },
+    );
     final sheetToken = r"(?:'(?:[^']|'')+'|[A-Za-z_][A-Za-z0-9_]*)";
     final cellToken = r'[A-Z]+[1-9]\d*';
     final rangePattern = RegExp(
       '($sheetToken)!($cellToken):($sheetToken!)?($cellToken)',
       caseSensitive: false,
     );
-    var expanded = formula.replaceAllMapped(rangePattern, (match) {
+    expanded = expanded.replaceAllMapped(rangePattern, (match) {
       final sheetName = _decodeSheetName(match.group(1)!);
       final endSheetToken = match.group(3);
       if (endSheetToken != null &&
@@ -153,6 +164,9 @@ class SheetsFormulaEngine {
       }
       return value.toString();
     });
+    for (var index = 0; index < quotedStrings.length; index++) {
+      expanded = expanded.replaceAll('__OFFYNEXBD_STRING_$index__', quotedStrings[index]);
+    }
     return expanded;
   }
 
