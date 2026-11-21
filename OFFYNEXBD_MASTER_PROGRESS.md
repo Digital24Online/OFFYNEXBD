@@ -1901,3 +1901,11 @@ A module is complete only after its actual workflows exist, tests cover them, th
 - Existing completed branding/App Info, Writer backup and portable workspace backup are invariants to preserve, not tasks to rebuild.
 - This commit is a documentation/specification preparation batch only. It does not implement the listed product features or change runtime behavior.
 - Next phase begins only after verifying that the blueprint and all module files are present on the branch and the file inventory is reconciled with source/tests/assets/workflows. Then implement the grouped source changes in integrated batches, with tests and CI on the exact resulting commit.
+
+
+## Repository file inventory audit — 2026-11-21
+
+- Audited the recursive Git tree at `a7a7cc74d2ceca5349443a11d6ba0235478222f2` on `work/writer-sheets-pdf-scan-completion-20261120`.
+- Baseline: 243 tracked files, 81 Dart files, 40 test files, 13 bundled assets and 121 native platform files.
+- Added `docs/OFFYNEXBD_REPOSITORY_FILE_AUDIT.md` with the exact source/test/assets/platform/configuration/documentation inventory and cross-check findings; linked it from the root README and completion blueprint.
+- This is file preparation and inventory reconciliation only. It does not implement runtime feature gaps or claim that the ten modules are complete.

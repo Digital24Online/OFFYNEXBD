@@ -74,3 +74,8 @@ Each feature must have: source file(s), UI entry point, persisted data/schema be
 
 ## 7. Definition of complete
 A module is complete only when its actual user workflow works end-to-end, its data survives save/reopen/backup/restore, imports/exports are verified with representative real files, tests and CI pass on the same commit, and required physical-device/platform checks are recorded. Never use “complete” to mean only “screen exists” or “build passed”.
+
+
+## 8. Repository file inventory and audit
+
+The exact tracked-file baseline, Dart source list, automated test list, branding/font/OCR assets, native platform files, workflow/dependency configuration and cross-check findings are maintained in [`docs/OFFYNEXBD_REPOSITORY_FILE_AUDIT.md`](OFFYNEXBD_REPOSITORY_FILE_AUDIT.md). Refresh that inventory whenever files are added, removed or moved. The inventory records presence only; it does not claim runtime capability or acceptance.
