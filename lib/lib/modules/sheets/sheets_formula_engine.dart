@@ -767,7 +767,8 @@ class _FormulaParser {
 
   bool _isAggregateFunction(String name) => const {
     'SUM', 'AVERAGE', 'COUNT', 'MIN', 'MAX', 'PRODUCT',
-    'MEDIAN', 'LARGE', 'SMALL',
+    'MEDIAN', 'LARGE', 'SMALL', 'SUMSQ', 'DEVSQ', 'AVEDEV',
+    'GEOMEAN', 'HARMEAN', 'VARP', 'VARS', 'STDEVP', 'STDEVS',
   }.contains(name);
 
   int _integerArgument(double value) {

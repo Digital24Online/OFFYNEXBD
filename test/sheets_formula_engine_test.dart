@@ -268,6 +268,29 @@ void main() {
       expect(engine.evaluateCell('B9'), closeTo(2.5819889, 0.000001));
     });
 
+    test('statistical aggregates ignore direct text and blank cell references', () {
+      final engine = SheetsFormulaEngine({
+        'A1': 'Bangla',
+        'A2': '',
+        'A3': '2',
+        'A4': '4',
+        'B1': '=SUMSQ(A1,A2,A3,A4)',
+        'B2': '=DEVSQ(A1,A2,A3,A4)',
+        'B3': '=AVEDEV(A1,A2,A3,A4)',
+        'B4': '=GEOMEAN(A1,A2,A3,A4)',
+        'B5': '=HARMEAN(A1,A2,A3,A4)',
+        'B6': '=VARP(A1,A2,A3,A4)',
+        'B7': '=STDEVP(A1,A2,A3,A4)',
+      });
+      expect(engine.evaluateCell('B1'), 20);
+      expect(engine.evaluateCell('B2'), 2);
+      expect(engine.evaluateCell('B3'), 1);
+      expect(engine.evaluateCell('B4'), closeTo(2.828427, 0.00001));
+      expect(engine.evaluateCell('B5'), closeTo(2.666667, 0.00001));
+      expect(engine.evaluateCell('B6'), 1);
+      expect(engine.evaluateCell('B7'), 1);
+    });
+
     test('rejects invalid domains for statistical aggregate functions', () {
       final engine = SheetsFormulaEngine({
         'A1': '=GEOMEAN(1,0)',
