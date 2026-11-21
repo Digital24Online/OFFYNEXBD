@@ -100,7 +100,7 @@ class SheetsReferenceGuard {
     // explicitly qualified ranges first so references to other sheets do not
     // falsely block shrinking this worksheet.
     final qualifiedReference = RegExp(
-      r"(?:'((?:[^']|'')+)'|([A-Z_][A-Z0-9_]*))\\s*!\\s*([^,;)]*)",
+      r"(?:'((?:[^']|'')+)'|([A-Z_][A-Z0-9_]*))\s*!\s*([^,;)]*)",
       caseSensitive: false,
     );
     final unqualified = formula.replaceAllMapped(
