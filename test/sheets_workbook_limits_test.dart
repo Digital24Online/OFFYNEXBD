@@ -3,18 +3,18 @@ import 'package:offynexbd/lib/modules/sheets/sheets_workbook_limits.dart';
 
 void main() {
   group('SheetsWorkbookLimits', () {
-    test('accepts the exact supported grid boundary', () {
-      expect(() => SheetsWorkbookLimits.validate(1000, 100), returnsNormally);
+    test('accepts the Excel-compatible worksheet grid boundary', () {
+      expect(() => SheetsWorkbookLimits.validate(1048576, 16384), returnsNormally);
       expect(() => SheetsWorkbookLimits.validate(30, 12), returnsNormally);
     });
 
-    test('rejects oversized worksheets before import can replace saved data', () {
+    test('rejects dimensions beyond the Excel worksheet grid', () {
       expect(
-        () => SheetsWorkbookLimits.validate(1001, 100),
+        () => SheetsWorkbookLimits.validate(1048577, 100),
         throwsA(isA<FormatException>()),
       );
       expect(
-        () => SheetsWorkbookLimits.validate(1000, 101),
+        () => SheetsWorkbookLimits.validate(1048576, 16385),
         throwsA(isA<FormatException>()),
       );
     });
