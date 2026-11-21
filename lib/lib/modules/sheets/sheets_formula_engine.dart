@@ -767,8 +767,9 @@ class _FormulaParser {
     final valueCells = sumRange == null
         ? criteriaCells
         : engine._readCriteriaRange(sumRange.$1, sumRange.$2, visiting);
-    if (criteriaCells.length != valueCells.length) {
-      throw const FormatException('Criteria and sum ranges must have the same size');
+    if (criteriaCells.length != valueCells.length ||
+        _rangeShape(criteriaRange) != _rangeShape(sumRange ?? criteriaRange)) {
+      throw const FormatException('Criteria and sum ranges must have the same dimensions');
     }
     var count = 0;
     var sum = 0.0;
@@ -807,14 +808,17 @@ class _FormulaParser {
       entry.$1.$1, entry.$1.$2, visiting,
     )).toList(growable: false);
     final expectedLength = ranges.first.length;
-    if (ranges.any((range) => range.length != expectedLength)) {
-      throw const FormatException('All criteria ranges must have the same size');
+    final expectedShape = _rangeShape(criteria.first.$1);
+    if (ranges.any((range) => range.length != expectedLength) ||
+        criteria.any((entry) => _rangeShape(entry.$1) != expectedShape)) {
+      throw const FormatException('All criteria ranges must have the same dimensions');
     }
     final values = sumRange == null
         ? const <(String, String, double?)>[]
         : engine._readCriteriaRange(sumRange.$1, sumRange.$2, visiting);
-    if (sumRange != null && values.length != expectedLength) {
-      throw const FormatException('Sum and criteria ranges must have the same size');
+    if (sumRange != null &&
+        (values.length != expectedLength || _rangeShape(sumRange) != expectedShape)) {
+      throw const FormatException('Sum and criteria ranges must have the same dimensions');
     }
     var matches = 0;
     var sum = 0.0;
@@ -841,6 +845,16 @@ class _FormulaParser {
     if (name == 'SUMIFS') return sum;
     if (matches == 0) throw const FormatException('AVERAGEIFS has no numeric matches');
     return sum / matches;
+  }
+
+  (int, int) _rangeShape((String, String) range) {
+    final first = SheetsFormulaEngine._splitCellReference(range.$1);
+    final last = SheetsFormulaEngine._splitCellReference(range.$2);
+    if (first == null || last == null) throw const FormatException('Invalid criteria range');
+    return (
+      (first.$2 - last.$2).abs() + 1,
+      (first.$1 - last.$1).abs() + 1,
+    );
   }
 
   (String, String) _readRangeArgument() {

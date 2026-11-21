@@ -363,6 +363,17 @@ void main() {
       expect(engine.evaluateCell('C2'), isNull);
     });
 
+    test('rejects criteria ranges with matching cell counts but different shapes', () {
+      final engine = SheetsFormulaEngine({
+        'A1': 'East', 'A2': 'West', 'A3': 'East', 'A4': 'Paid',
+        'B1': '1', 'B2': '2', 'B3': '3', 'B4': '4',
+        'C1': '=SUMIF(A1:A4,"East",B1:B2)',
+        'C2': '=COUNTIFS(A1:A4,"East",A1:B2,"East")',
+      });
+      expect(engine.evaluateCell('C1'), isNull);
+      expect(engine.evaluateCell('C2'), isNull);
+    });
+
     test('evaluates Excel-style postfix percentages', () {
       final engine = SheetsFormulaEngine({
         'A1': '=25%', 'A2': '=50%*200', 'A3': '=10+5%',
