@@ -304,20 +304,37 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.sizeOf(context).height;
-    return AlertDialog(
-      scrollable: true,
-      title: Text(widget.initialData == null
-          ? _t('টেবিল তৈরি করুন', 'Create Table')
-          : _t('টেবিল সম্পাদনা', 'Edit Table')),
-      content: SizedBox(
-        width: (MediaQuery.sizeOf(context).width * 0.88).clamp(280.0, 720.0),
-        height: (screenHeight * 0.50).clamp(250.0, 340.0),
-        child: SingleChildScrollView(
+    final screenSize = MediaQuery.sizeOf(context);
+    final screenHeight = screenSize.height;
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: screenHeight * 0.88),
+        child: SizedBox(
+          width: (screenSize.width * 0.88).clamp(280.0, 720.0),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.max,
             children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 10),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    widget.initialData == null
+                        ? _t('টেবিল তৈরি করুন', 'Create Table')
+                        : _t('টেবিল সম্পাদনা', 'Edit Table'),
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
             SizedBox(
               height: (MediaQuery.sizeOf(context).height * 0.18).clamp(88.0, 140.0),
               child: SingleChildScrollView(
@@ -451,21 +468,34 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
                 ),
               ),
             ),
+
+                    ],
+                  ),
+                ),
+              ),
+              const Divider(height: 1),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text(_t('বাতিল', 'Cancel')),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton.icon(
+                      onPressed: saveTable,
+                      icon: const Icon(Icons.check),
+                      label: Text(_t('টেবিল প্রয়োগ', 'Apply Table')),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(_t('বাতিল', 'Cancel')),
-        ),
-        FilledButton.icon(
-          onPressed: saveTable,
-          icon: const Icon(Icons.check),
-          label: Text(_t('টেবিল প্রয়োগ', 'Apply Table')),
-        ),
-      ],
     );
   }
 }
