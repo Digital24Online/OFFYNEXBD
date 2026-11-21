@@ -925,7 +925,7 @@ class _FormulaParser {
     final pattern = RegExp.escape(expected)
         .replaceAll(r'\*', '.*')
         .replaceAll(r'\?', '.');
-    final matches = RegExp('^${pattern}\\$', caseSensitive: false).hasMatch(raw);
+    final matches = RegExp('^${pattern}' r'$', caseSensitive: false).hasMatch(raw);
     return operator == '<>' ? !matches : matches;
   }
 
