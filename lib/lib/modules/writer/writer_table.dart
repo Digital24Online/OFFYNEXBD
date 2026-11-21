@@ -304,14 +304,15 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.sizeOf(context).height;
     return AlertDialog(
-      scrollable: false,
+      scrollable: true,
       title: Text(widget.initialData == null
           ? _t('টেবিল তৈরি করুন', 'Create Table')
           : _t('টেবিল সম্পাদনা', 'Edit Table')),
       content: SizedBox(
         width: (MediaQuery.sizeOf(context).width * 0.88).clamp(280.0, 720.0),
-        height: (MediaQuery.sizeOf(context).height * 0.62).clamp(260.0, 620.0),
+        height: (screenHeight * 0.54).clamp(240.0, 420.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -409,7 +410,8 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
             const SizedBox(height: 8),
             Text(_t('নির্বাচিত ঘর: ${selectedRow + 1}, ${selectedColumn + 1}', 'Selected cell: ${selectedRow + 1}, ${selectedColumn + 1}')),
             const SizedBox(height: 8),
-            Expanded(
+            SizedBox(
+              height: (screenHeight * 0.18).clamp(90.0, 150.0),
               child: SingleChildScrollView(
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
