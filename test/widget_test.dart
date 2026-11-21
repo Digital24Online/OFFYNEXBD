@@ -415,23 +415,28 @@ void main() {
     await tester.tap(find.text('নতুন ডকুমেন্ট'));
     await tester.pumpAndSettle();
 
-    final editable = find.byType(EditableText).last;
-    await tester.tap(editable);
+    final pageCanvas = find.byKey(const ValueKey('writer-page-canvas'));
+    expect(pageCanvas, findsOneWidget);
+    // Tap the visible document surface, not EditableText directly. This
+    // exercises the same InteractiveViewer/Listener/Quill hit-test path as
+    // a real phone touch.
+    await tester.tapAt(tester.getCenter(pageCanvas));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(tester.testTextInput.isVisible, isTrue);
 
     // Android Back can hide the IME without clearing the editor's focus.
-    // A second tap must reopen the Quill TextInputConnection.
+    // A second tap on the page must reopen the Quill TextInputConnection.
     tester.testTextInput.hide();
     await tester.pump();
     expect(tester.testTextInput.isVisible, isFalse);
-    await tester.tap(editable);
+    await tester.tapAt(tester.getCenter(pageCanvas));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     expect(tester.testTextInput.isVisible, isTrue);
 
+    final editable = find.byType(EditableText).last;
     await tester.enterText(editable, 'Writer keyboard test লেখা');
     await tester.pump(const Duration(milliseconds: 1100));
     await tester.pumpAndSettle();
