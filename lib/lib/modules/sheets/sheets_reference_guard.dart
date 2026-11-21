@@ -30,7 +30,7 @@ class SheetsReferenceGuard {
       }
     }
 
-    for (final range in _metadataRanges(targetSheet)) {
+    for (final range in _metadataRanges(workbook, targetSheetId)) {
       if (_referencesRow(range, row)) return true;
     }
     return false;
@@ -60,23 +60,34 @@ class SheetsReferenceGuard {
       }
     }
 
-    for (final range in _metadataRanges(targetSheet)) {
+    for (final range in _metadataRanges(workbook, targetSheetId)) {
       if (_referencesColumn(range, column)) return true;
     }
     return false;
   }
 
-  static Iterable<String> _metadataRanges(SheetsWorksheet sheet) sync* {
-    for (final rule in sheet.conditionalFormats) {
-      final range = rule['range'];
-      if (range is String) yield range;
+  static Iterable<String> _metadataRanges(
+    SheetsWorkbook workbook,
+    String targetSheetId,
+  ) sync* {
+    for (final sheet in workbook.sheets) {
+      if (sheet.id == targetSheetId) {
+        for (final rule in sheet.conditionalFormats) {
+          final range = rule['range'];
+          if (range is String) yield range;
+        }
+        for (final chart in sheet.charts) {
+          final range = chart['range'];
+          if (range is String) yield range;
+        }
+      }
+      // Pivot settings live on the output sheet, but their source range
+      // belongs to the worksheet named by sourceSheetId.
+      if (sheet.pivotConfig?['sourceSheetId'] == targetSheetId) {
+        final range = sheet.pivotConfig?['range'];
+        if (range is String) yield range;
+      }
     }
-    for (final chart in sheet.charts) {
-      final range = chart['range'];
-      if (range is String) yield range;
-    }
-    final pivotRange = sheet.pivotConfig?['range'];
-    if (pivotRange is String) yield pivotRange;
   }
 
   static bool _qualifiedReferences(
@@ -99,7 +110,7 @@ class SheetsReferenceGuard {
 
   static bool _referencesRow(String value, int targetRow) {
     final references = RegExp(
-      r'(?<![A-Z0-9_])\\$?[A-Z]{1,3}\\$?([1-9]\\d*)(?![A-Z0-9_])(?!\\s*\\()',
+      r'(?<![A-Z0-9_])\$?[A-Z]{1,3}\$?([1-9]\d*)(?![A-Z0-9_])(?!\s*\()',
       caseSensitive: false,
     );
     for (final match in references.allMatches(value)) {
@@ -111,7 +122,7 @@ class SheetsReferenceGuard {
 
   static bool _referencesColumn(String value, int targetColumn) {
     final references = RegExp(
-      r'(?<![A-Z0-9_])\\$?([A-Z]{1,3})\\$?[1-9]\\d*(?![A-Z0-9_])(?!\\s*\\()',
+      r'(?<![A-Z0-9_])\$?([A-Z]{1,3})\$?[1-9]\d*(?![A-Z0-9_])(?!\s*\()',
       caseSensitive: false,
     );
     for (final match in references.allMatches(value)) {
