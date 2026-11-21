@@ -552,7 +552,10 @@ class WriterTableEmbedBuilder extends EmbedBuilder {
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Table(
-                defaultColumnWidth: const IntrinsicColumnWidth(),
+                columnWidths: {
+                  for (var index = 0; index < columnCount; index++)
+                    index: FixedColumnWidth(widths[index]),
+                },
                 border: TableBorder.all(color: Color(border)),
                 children: List.generate(rows.length, (rowIndex) {
                   final row = rows[rowIndex];
