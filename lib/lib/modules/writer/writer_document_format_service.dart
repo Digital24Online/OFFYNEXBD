@@ -356,10 +356,14 @@ class WriterDocumentFormatService {
     if (normalized.isEmpty) return 'sans-serif';
     if (normalized == 'serif' || normalized.contains('noto serif') ||
         normalized.contains('times') || normalized.contains('georgia') ||
-        normalized.contains('cambria')) return 'serif';
+        normalized.contains('cambria')) {
+      return 'serif';
+    }
     if (normalized == 'sans-serif' || normalized.contains('sans') ||
         normalized.contains('arial') || normalized.contains('calibri') ||
-        normalized.contains('helvetica') || normalized.contains('roboto')) return 'sans-serif';
+        normalized.contains('helvetica') || normalized.contains('roboto')) {
+      return 'sans-serif';
+    }
     return value;
   }
 
