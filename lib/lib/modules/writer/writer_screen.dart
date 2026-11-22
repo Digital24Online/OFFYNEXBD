@@ -1762,6 +1762,11 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
       'Underline': 'নিচে দাগ', 'Strikethrough': 'মাঝে দাগ',
       'Red Text': 'লাল লেখা', 'Yellow Highlight': 'হলুদ হাইলাইট',
       'Font Color': 'ফন্টের রং', 'Text Highlight Color': 'লেখা হাইলাইটের রং',
+      'Paragraph Styles': 'অনুচ্ছেদের স্টাইল', 'Styles': 'স্টাইল',
+      'Normal': 'সাধারণ', 'Title / Heading 1': 'শিরোনাম / হেডিং ১',
+      'Subtitle / Heading 2': 'উপশিরোনাম / হেডিং ২',
+      'Heading 3': 'হেডিং ৩', 'Heading 4': 'হেডিং ৪',
+      'Heading 5': 'হেডিং ৫', 'Heading 6': 'হেডিং ৬',
       'Clear Formatting': 'ফরম্যাট মুছুন', 'Superscript': 'সুপারস্ক্রিপ্ট',
       'Subscript': 'সাবস্ক্রিপ্ট',
       'Save': 'সংরক্ষণ',
@@ -2039,6 +2044,14 @@ Future<void> showCustomFontSizeDialog() async {
     quillController.formatSelection(Attribute.fromKeyValue(attribute, color));
   }
 
+  void _applyParagraphStyle(String style) {
+    final headerLevel = int.tryParse(style);
+    final attribute = headerLevel == null
+        ? Attribute.clone(Attribute.fromKeyValue('header', 1), null)
+        : Attribute.fromKeyValue('header', headerLevel);
+    quillController.formatSelection(attribute);
+  }
+
   Widget buildHomeRibbon() {
   final fontFamilies = <String, String>{
     'Noto Sans Bengali': 'sans-serif',
@@ -2134,6 +2147,39 @@ Future<void> showCustomFontSizeDialog() async {
           onPressed: showCustomFontSizeDialog,
           icon: const Icon(Icons.edit, size: 16),
           label: Text(_ribbonLabel('Custom Size')),
+        ),
+
+        PopupMenuButton<String>(
+          key: const ValueKey('writer-home-paragraph-styles'),
+          tooltip: _ribbonLabel('Paragraph Styles'),
+          onSelected: _applyParagraphStyle,
+          itemBuilder: (context) => [
+            PopupMenuItem(value: 'normal', child: Text(_ribbonLabel('Normal'))),
+            PopupMenuItem(value: '1', child: Text(_ribbonLabel('Title / Heading 1'))),
+            PopupMenuItem(value: '2', child: Text(_ribbonLabel('Subtitle / Heading 2'))),
+            PopupMenuItem(value: '3', child: Text(_ribbonLabel('Heading 3'))),
+            PopupMenuItem(value: '4', child: Text(_ribbonLabel('Heading 4'))),
+            PopupMenuItem(value: '5', child: Text(_ribbonLabel('Heading 5'))),
+            PopupMenuItem(value: '6', child: Text(_ribbonLabel('Heading 6'))),
+          ],
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 32),
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: const Color(0xFFD5DDE7)),
+              borderRadius: BorderRadius.circular(5),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.text_fields, size: 17),
+                const SizedBox(width: 4),
+                Text(_ribbonLabel('Styles'), style: const TextStyle(fontSize: 11)),
+                const Icon(Icons.arrow_drop_down, size: 17),
+              ],
+            ),
+          ),
         ),
 
         // Editing history and paragraph controls (Microsoft Word-style Home tools).
