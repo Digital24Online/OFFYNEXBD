@@ -17,7 +17,7 @@ void main() {
 <?xml version="1.0" encoding="UTF-8"?>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
 <w:body>
-<w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Heading</w:t></w:r></w:p>
+<w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Heading</w:t></w:r></w:p>\n<w:p><w:pPr><w:pStyle w:val="Heading6"/></w:pPr><w:r><w:t>Heading six</w:t></w:r></w:p>
 <w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Bold text</w:t></w:r></w:p>
 <w:p><w:r><w:br w:type="page"/></w:r></w:p>
 <w:p><w:hyperlink r:id="rLink"><w:r><w:t>Open link</w:t></w:r></w:hyperlink></w:p>
@@ -44,6 +44,8 @@ void main() {
     expect(imported.title, 'sample');
     expect(imported.delta.any((op) => op['insert'] == 'Heading'), isTrue);
     expect(imported.delta.any((op) => (op['attributes'] as Map?)?['header'] == 1), isTrue);
+    expect(imported.delta.any((op) => (op['attributes'] as Map?)?['header'] == 6), isTrue);
+    expect(imported.delta.any((op) => op['insert'] == 'Heading six'), isTrue);
     expect(imported.delta.any((op) => op['insert'] == 'Bold text' && (op['attributes'] as Map?)?['bold'] == true), isTrue);
     expect(imported.delta.any((op) => op['insert'] is Map && (op['insert'] as Map).containsKey('offynexbd-writer-page-break')), isTrue);
     expect(imported.delta.any((op) => op['insert'] == 'Open link' && (op['attributes'] as Map?)?['link'] == 'https://example.com/docs'), isTrue);
