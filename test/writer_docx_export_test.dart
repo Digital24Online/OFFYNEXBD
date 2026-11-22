@@ -130,6 +130,28 @@ void main() {
   });
 
 
+  test('DOCX export preserves merged table cell spans', () async {
+    final bytes = await WriterDocxExportService.build(
+      title: 'Merged cells',
+      delta: [
+        {'insert': {
+          'offynexbd-writer-table': jsonEncode({
+            'rows': [['Wide', '', 'Top'], ['', '', 'Bottom']],
+            'merges': [
+              {'row': 0, 'column': 0, 'rowSpan': 1, 'columnSpan': 2},
+              {'row': 0, 'column': 2, 'rowSpan': 2, 'columnSpan': 1},
+            ],
+          }),
+        }},
+        {'insert': '\\n'},
+      ],
+    );
+    final archive = ZipDecoder().decodeBytes(bytes);
+    final document = utf8.decode(archive.findFile('word/document.xml')!.readBytes()!);
+    expect(document, contains('gridSpan'));
+    expect(document, contains('vMerge'));
+  });
+
   test('DOCX export does not duplicate a title already present as the first body paragraph', () async {
     final bytes = await WriterDocxExportService.build(
       title: 'Annual Report',
