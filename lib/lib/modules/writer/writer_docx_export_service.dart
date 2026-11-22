@@ -93,7 +93,7 @@ class WriterDocxExportService {
         listItemOpen[listItemOpen.length - 1] = true;
       } else {
         closeAllLists();
-        final tag = heading == 1 ? 'h1' : heading == 2 ? 'h2' : heading == 3 ? 'h3' : 'p';
+        final tag = heading is num && heading >= 1 && heading <= 6 ? 'h${heading.toInt()}' : 'p';
         html.write('<$tag>$content</$tag>');
       }
     }
@@ -317,6 +317,8 @@ class WriterDocxExportService {
     if (attributes['italic'] == true) text = '<em>$text</em>';
     if (attributes['underline'] == true) text = '<u>$text</u>';
     if (attributes['strike'] == true) text = '<s>$text</s>';
+    if (attributes['script'] == 'super') text = '<sup>$text</sup>';
+    if (attributes['script'] == 'sub') text = '<sub>$text</sub>';
     final styles = <String>[];
     final color = _safeColor(attributes['color']);
     final background = _safeColor(attributes['background']);
