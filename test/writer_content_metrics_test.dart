@@ -129,7 +129,7 @@ void main() {
       expect(
         WriterContentMetrics.estimatePageCount(
           delta: [
-            {'insert': 'First page\\n'},
+            {'insert': 'First page\n'},
             {'insert': {'offynexbd-writer-page-break': 'page'}},
           ],
           maxWidth: 300,
