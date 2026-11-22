@@ -60,6 +60,36 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Writer Home exposes Word-style paragraph heading styles', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: false)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('New Document'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Home'));
+    await tester.tap(find.text('Home'));
+    await tester.pumpAndSettle();
+
+    final styles = find.byKey(const ValueKey('writer-home-paragraph-styles'));
+    expect(styles, findsOneWidget);
+    await tester.tap(styles);
+    await tester.pumpAndSettle();
+    for (final label in [
+      'Normal',
+      'Title / Heading 1',
+      'Subtitle / Heading 2',
+      'Heading 3',
+      'Heading 4',
+      'Heading 5',
+      'Heading 6',
+    ]) {
+      expect(find.text(label), findsOneWidget);
+    }
+    await tester.tap(find.text('Heading 1'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Writer table editor follows Bangla and English language settings', (tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: true)));
