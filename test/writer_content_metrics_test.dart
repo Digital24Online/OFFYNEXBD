@@ -113,6 +113,32 @@ void main() {
       );
     });
 
+    test('counts consecutive and empty-document page breaks as structural pages', () {
+      expect(
+        WriterContentMetrics.estimatePageCount(
+          delta: [
+            {'insert': {'offynexbd-writer-page-break': 'page'}},
+            {'insert': {'offynexbd-writer-page-break': 'page'}},
+          ],
+          maxWidth: 300,
+          pageContentHeight: pageHeight,
+        ),
+        3,
+      );
+
+      expect(
+        WriterContentMetrics.estimatePageCount(
+          delta: [
+            {'insert': 'First page\\n'},
+            {'insert': {'offynexbd-writer-page-break': 'page'}},
+          ],
+          maxWidth: 300,
+          pageContentHeight: pageHeight,
+        ),
+        2,
+      );
+    });
+
     test('calculates page count from content-aware estimate', () {
       expect(WriterContentMetrics.estimatePageCount(
         delta: [{'insert': 'Short paragraph\\n'}],
