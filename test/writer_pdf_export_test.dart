@@ -2,10 +2,41 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdf/pdf.dart';
 import 'package:bangla_pdf/extract.dart';
+import 'package:bangla_pdf/widgets.dart' as pw;
 import 'package:offynexbd/lib/modules/writer/writer_pdf_export_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  test('Writer PDF maps text highlight and combined underline/strikethrough attributes', () {
+    final highlight = WriterPdfExportService.highlightColorForAttributes({
+      'background': '#FFF200',
+    });
+    expect(highlight, isNotNull);
+
+    final decoration = WriterPdfExportService.textDecorationForAttributes({
+      'underline': true,
+      'strike': true,
+    });
+    expect(decoration, isNotNull);
+    expect(decoration!.contains(pw.TextDecoration.underline), isTrue);
+    expect(decoration.contains(pw.TextDecoration.lineThrough), isTrue);
+
+    expect(
+      WriterPdfExportService.textDecorationForAttributes({'underline': true})!
+          .contains(pw.TextDecoration.underline),
+      isTrue,
+    );
+    expect(
+      WriterPdfExportService.textDecorationForAttributes({'strike': true})!
+          .contains(pw.TextDecoration.lineThrough),
+      isTrue,
+    );
+    expect(
+      WriterPdfExportService.textDecorationForAttributes(const {}),
+      isNull,
+    );
+  });
 
   test('Writer PDF shapes Bengali and preserves styled Unicode text', () async {
     final sans = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
