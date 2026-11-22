@@ -432,7 +432,9 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
 
   void mergeSelectedRange() {
     if (_mergeStartRow == null || _mergeStartColumn == null ||
-        _mergeEndRow == null || _mergeEndColumn == null) return;
+        _mergeEndRow == null || _mergeEndColumn == null) {
+      return;
+    }
     try {
       final data = WriterTableBlockEmbed.mergeCells(
         <String, dynamic>{
