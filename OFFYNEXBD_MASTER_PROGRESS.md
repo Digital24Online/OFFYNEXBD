@@ -2033,3 +2033,9 @@ A module is complete only after its actual workflows exist, tests cover them, th
 - [x] Added regression coverage for a single explicit break, consecutive breaks, and a trailing break; corrected the fixture to use an actual paragraph newline.
 - [ ] CI/Flutter Analyze/test results for commits `873a0e6`, `f19be72`, and `3fc3cb2` have not yet been confirmed.
 - [ ] This remains page-count estimation only. The editing surface is still a continuous Quill editor over painted page backgrounds; true content-aware physical page flow for text/images/tables is still a major outstanding requirement.
+
+
+## Writer content-metrics fixture correction — 2026-11-22
+- [x] Corrected two remaining page-count test fixtures that contained literal backslash-plus-n characters instead of actual paragraph newlines (Short paragraph and repeated Bangla lines). This ensures the tests exercise Quill paragraph boundaries rather than a single literal string.
+- [x] Commit: fc047c30d5fb4f93d81513a2aa75e835b037c2ce.
+- [ ] Flutter Analyze, Writer tests, full test suite and Android build on this exact commit remain unverified. No feature-completion claim is made.
