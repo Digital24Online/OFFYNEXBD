@@ -2015,3 +2015,14 @@ A module is complete only after its actual workflows exist, tests cover them, th
 - Source commits: `e5f2f2094a88f1ae1cd2f753e3a00cb83bce82f3` (App Info) and `60f070ba54a5694987d57f3af1e6bbae5b49d596` (tests).
 - Build #904 (run ID `44939922086`) is queued for this exact head. Do not mark this batch CI-verified until Analyze, all tests, signed Android APK and artifact verification pass.
 - PR #13 remains Draft and unmerged.
+
+
+## Writer-Only Execution Directive — 2026-11-22
+- **Current user instruction:** From this checkpoint onward, work ONLY on OFFYNEX Writer. Do not implement, modify, test for feature work, or advance Sheets, Slides, PDF, Fonts, AI, Cloud, Forms, Scan, Database, or any other module. Shared project files may be updated only when strictly necessary to record Writer progress or protect Writer compatibility.
+- Complete the remaining Writer work as one coordinated, deeply audited effort; do not stop after isolated small features or ask the user to repeat this scope in a new chat.
+- Target: desktop-class Microsoft Word-style Writer functionality and ribbon/options, adapted responsively for Android, iPhone, Windows and macOS. Audit the full File, Home, Insert, Layout, References, Review, View and contextual tool workflows so no required Writer capability is silently omitted.
+- Preserve all existing Writer documents, Quill Delta formats, legacy records, table embed identifier `offynexbd-writer-table`, page-break embed identifier `offynexbd-writer-page-break`, images, autosave, backups, layout metadata, comments, citations, revisions, header/footer metadata and export behavior. Never overwrite unreadable user data.
+- Required engineering sequence: inspect all affected Writer source/services/dependencies/tests first; design a backward-compatible integrated implementation; add regression and workflow tests; run Flutter Analyze, all relevant tests and Android build; inspect actual failures and fix them before reporting.
+- **Confirmed major gap from current source audit:** the editing surface is one continuous `QuillEditor.basic` with a `CustomPaint` page background and estimated page count. This is not true Word-style content-aware pagination/flow across page boundaries. It remains incomplete and must not be described as finished.
+- Other Writer areas requiring full end-to-end audit include rich text/paragraph formatting, font management and Bengali shaping, tables, images, page setup/sections, headers/footers, references/notes/TOC, review/comments/revisions, find/replace, import/export fidelity (DOCX/ODT/PDF), print preview/printing, zoom/page fit, keyboard and responsive desktop/mobile ribbon behavior.
+- No unrelated module work. Do not mark Writer complete based only on a passing build or a visually painted multi-page background.
