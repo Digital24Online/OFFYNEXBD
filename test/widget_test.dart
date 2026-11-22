@@ -473,9 +473,9 @@ void main() {
 
       tester.view.viewInsets = const FakeViewPadding(bottom: 320);
       await tester.pump();
-      // Quill's compact toolbar schedules a zero-delay Timer.run during
-      // layout; pump once more so the fake-async timer is drained.
-      await tester.pump();
+      // Quill's compact toolbar schedules Timer.run (zero duration)
+      // during layout; advance fake time so that callback is executed.
+      await tester.pump(const Duration(milliseconds: 1));
 
       final compactTitleField = tester.widget<TextField>(
         find.byType(TextField).first,
