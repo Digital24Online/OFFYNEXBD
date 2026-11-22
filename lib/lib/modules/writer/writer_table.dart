@@ -17,6 +17,140 @@ class WriterTableBlockEmbed extends CustomBlockEmbed {
     return value is bool ? value : true;
   }
 
+  /// Reads merged-cell rectangles without changing the legacy rows matrix.
+  /// Each entry is {row, column, rowSpan, columnSpan}; invalid/overlapping
+  /// entries are discarded so old or malformed documents remain editable.
+  static List<Map<String, int>> normalizedMerges(
+    Map<String, dynamic> data, {
+    required int rowCount,
+    required int columnCount,
+  }) {
+    final raw = data['merges'];
+    if (raw is! List || rowCount < 1 || columnCount < 1) {
+      return <Map<String, int>>[];
+    }
+    final result = <Map<String, int>>[];
+    final occupied = <String>{};
+    for (final item in raw) {
+      if (item is! Map) continue;
+      final row = item['row'];
+      final column = item['column'];
+      final rowSpan = item['rowSpan'];
+      final columnSpan = item['columnSpan'];
+      if (row is! int || column is! int ||
+          rowSpan is! int || columnSpan is! int ||
+          row < 0 || column < 0 || rowSpan < 1 || columnSpan < 1 ||
+          row + rowSpan > rowCount || column + columnSpan > columnCount ||
+          (rowSpan == 1 && columnSpan == 1)) {
+        continue;
+      }
+      final keys = <String>[
+        for (var r = row; r < row + rowSpan; r++)
+          for (var c = column; c < column + columnSpan; c++) '$r:$c',
+      ];
+      if (keys.any(occupied.contains)) continue;
+      occupied.addAll(keys);
+      result.add(<String, int>{
+        'row': row,
+        'column': column,
+        'rowSpan': rowSpan,
+        'columnSpan': columnSpan,
+      });
+    }
+    return result;
+  }
+
+  /// Merges a rectangular selection into its top-left cell. Text from other
+  /// cells is retained in order, separated by newlines, rather than discarded.
+  static Map<String, dynamic> mergeCells(
+    Map<String, dynamic> data, {
+    required int firstRow,
+    required int firstColumn,
+    required int lastRow,
+    required int lastColumn,
+  }) {
+    final rawRows = data['rows'];
+    if (rawRows is! List || rawRows.isEmpty) {
+      throw ArgumentError('Cannot merge an empty Writer table.');
+    }
+    final rows = rawRows.map<List<String>>((row) =>
+      row is List ? row.map((v) => v?.toString() ?? '').toList()
+                  : <String>[row?.toString() ?? '']
+    ).toList();
+    final rowCount = rows.length;
+    final columnCount = rows.fold<int>(1,
+      (max, row) => row.length > max ? row.length : max);
+    for (final row in rows) {
+      while (row.length < columnCount) { row.add(''); }
+    }
+    final top = firstRow < lastRow ? firstRow : lastRow;
+    final bottom = firstRow > lastRow ? firstRow : lastRow;
+    final left = firstColumn < lastColumn ? firstColumn : lastColumn;
+    final right = firstColumn > lastColumn ? firstColumn : lastColumn;
+    if (top < 0 || left < 0 || bottom >= rowCount || right >= columnCount ||
+        (top == bottom && left == right)) {
+      throw ArgumentError('Select at least two valid Writer table cells.');
+    }
+    final merges = normalizedMerges(data,
+      rowCount: rowCount, columnCount: columnCount);
+    for (final merge in merges) {
+      final r0 = merge['row']!;
+      final c0 = merge['column']!;
+      final r1 = r0 + merge['rowSpan']! - 1;
+      final c1 = c0 + merge['columnSpan']! - 1;
+      final intersects = top <= r1 && bottom >= r0 &&
+          left <= c1 && right >= c0;
+      final contained = top <= r0 && bottom >= r1 &&
+          left <= c0 && right >= c1;
+      if (intersects && !contained) {
+        throw ArgumentError('Selection cuts through an existing merged cell.');
+      }
+    }
+    final values = <String>[];
+    for (var r = top; r <= bottom; r++) {
+      for (var c = left; c <= right; c++) {
+        final value = rows[r][c];
+        if (value.isNotEmpty) values.add(value);
+      }
+    }
+    rows[top][left] = values.join('\\n');
+    for (var r = top; r <= bottom; r++) {
+      for (var c = left; c <= right; c++) {
+        if (r != top || c != left) rows[r][c] = '';
+      }
+    }
+    final kept = merges.where((merge) {
+      final r = merge['row']!, c = merge['column']!;
+      return !(r >= top && r + merge['rowSpan']! - 1 <= bottom &&
+          c >= left && c + merge['columnSpan']! - 1 <= right);
+    }).toList();
+    kept.add(<String, int>{
+      'row': top, 'column': left,
+      'rowSpan': bottom - top + 1,
+      'columnSpan': right - left + 1,
+    });
+    return <String, dynamic>{...data, 'rows': rows, 'merges': kept};
+  }
+
+  /// Splits a merged rectangle at its top-left anchor. Covered cells become
+  /// empty cells; the anchor's text is preserved.
+  static Map<String, dynamic> splitCell(
+    Map<String, dynamic> data, {
+    required int row,
+    required int column,
+  }) {
+    final rawRows = data['rows'];
+    final rows = rawRows is List ? rawRows : const <dynamic>[];
+    final columns = rows.fold<int>(1, (max, item) =>
+      item is List && item.length > max ? item.length : max);
+    final merges = normalizedMerges(data,
+      rowCount: rows.length, columnCount: columns);
+    final remaining = merges.where((merge) =>
+      merge['row'] != row || merge['column'] != column).toList();
+    if (remaining.length == merges.length) return Map<String, dynamic>.from(data);
+    return <String, dynamic>{...data, 'merges': remaining};
+  }
+
   factory WriterTableBlockEmbed.fromData(Map<String, dynamic> data) {
     return WriterTableBlockEmbed(jsonEncode(data));
   }
