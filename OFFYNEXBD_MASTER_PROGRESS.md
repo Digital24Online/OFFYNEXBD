@@ -2087,3 +2087,24 @@ A module is complete only after its actual workflows exist, tests cover them, th
 - [ ] Horizontal/vertical merge and split remain incomplete. Do not claim DOCX merged-cell fidelity until the model, editing UI, renderer, DOCX/ODT import-export and PDF rendering all preserve the same cell-span structure with legacy-table compatibility and regression tests.
 - [ ] True content-aware page pagination also remains incomplete; the single continuous Quill editor and painted estimated page backgrounds are not physical page flow.
 - Validation note: CI run #1021 has Analyze and the full test suite passed (304 tests), while Android keyboard integration is still running; signing, APK build, package validation and artifact upload have not yet completed.
+
+
+## Writer merged-cell implementation update — 2026-11-23
+
+Implemented on the Writer work branch (automated checks still required):
+- Added a backward-compatible `merges` rectangle model to the existing `offynexbd-writer-table` embed. Legacy tables without this field continue to decode as ordinary unmerged grids.
+- Added safe merge/split model operations, bounds checks, overlap checks, and preservation of text from all selected cells.
+- Added Merge Cells / Split Cell actions to the Writer table editor. Row/column structural edits are temporarily disabled while merged ranges exist, preventing silent span corruption until the ranges are split.
+- DOCX import now records horizontal `gridSpan` and vertical `vMerge` metadata instead of flattening merged cells into blank slots.
+- DOCX export now emits HTML `rowspan` / `colspan` for the merged-cell model.
+- ODT import/export now reads and writes row/column span metadata and explicit covered cells.
+- Writer document table rendering now lays out horizontal and vertical merged cells; PDF export currently lays out horizontal spans. Vertical merged-cell PDF rendering still needs implementation and verification.
+- Added tests for merge/split data behavior, malformed spans, DOCX horizontal/vertical import, ODT spans, ODT export, and DOCX export.
+
+Not yet complete or verified:
+- CI must pass on the latest branch head before accepting these changes.
+- PDF vertical spans still need a proper layout implementation and test.
+- Confirm DOCX exporter actually round-trips both span directions with the selected DOCX library; automated export test is included for verification.
+- Verify table editor preview/selection UX and row/column operations after split on Android.
+- True content-aware Writer pagination remains a separate confirmed blocker; the editor is still based on one continuous Quill document with estimated page backgrounds.
+- Do not mark Writer complete or move to another module until these items and the remaining Writer requirements are verified.
