@@ -21,6 +21,9 @@ class OFFYNEXBDApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      // flutter_quill still depends on Flutter Material; retain the bridge
+      // until that dependency migrates to material_ui.
+      // ignore: deprecated_member_use
       builder: (context, child) =>
           MaterialUiCompatibilityBridge(child: child!),
       title: 'OFFYNEXBD',
