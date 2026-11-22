@@ -2026,3 +2026,10 @@ A module is complete only after its actual workflows exist, tests cover them, th
 - **Confirmed major gap from current source audit:** the editing surface is one continuous `QuillEditor.basic` with a `CustomPaint` page background and estimated page count. This is not true Word-style content-aware pagination/flow across page boundaries. It remains incomplete and must not be described as finished.
 - Other Writer areas requiring full end-to-end audit include rich text/paragraph formatting, font management and Bengali shaping, tables, images, page setup/sections, headers/footers, references/notes/TOC, review/comments/revisions, find/replace, import/export fidelity (DOCX/ODT/PDF), print preview/printing, zoom/page fit, keyboard and responsive desktop/mobile ribbon behavior.
 - No unrelated module work. Do not mark Writer complete based only on a passing build or a visually painted multi-page background.
+
+
+## Writer pagination regression hardening — 2026-11-22
+- [x] Updated `WriterContentMetrics.estimatePageCount` to treat explicit `offynexbd-writer-page-break` embeds as structural page boundaries, including consecutive breaks and breaks in otherwise empty documents.
+- [x] Added regression coverage for a single explicit break, consecutive breaks, and a trailing break; corrected the fixture to use an actual paragraph newline.
+- [ ] CI/Flutter Analyze/test results for commits `873a0e6`, `f19be72`, and `3fc3cb2` have not yet been confirmed.
+- [ ] This remains page-count estimation only. The editing surface is still a continuous Quill editor over painted page backgrounds; true content-aware physical page flow for text/images/tables is still a major outstanding requirement.
