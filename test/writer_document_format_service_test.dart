@@ -113,6 +113,32 @@ void main() {
     ]);
   });
 
+  test('ODT export writes merged-cell row and column spans', () async {
+    final directory = await Directory.systemTemp.createTemp('offynex-odt-export-');
+    addTearDown(() => directory.delete(recursive: true));
+    final bytes = await WriterDocumentFormatService.exportOdt(
+      title: 'Merged table',
+      delta: [
+        {'insert': {
+          'offynexbd-writer-table': jsonEncode({
+            'rows': [['Merged', '', 'Right'], ['', '', 'Below']],
+            'merges': [
+              {'row': 0, 'column': 0, 'rowSpan': 2, 'columnSpan': 2},
+            ],
+          }),
+        }},
+        {'insert': '\\n'},
+      ],
+      imageDirectory: directory,
+      pageLayout: {'pageSize': 'A4', 'orientation': 'Portrait'},
+    );
+    final archive = ZipDecoder().decodeBytes(bytes);
+    final content = utf8.decode(archive.findFile('content.xml')!.readBytes()!);
+    expect(content, contains('table:number-columns-spanned="2"'));
+    expect(content, contains('table:number-rows-spanned="2"'));
+    expect(content, contains('<table:covered-table-cell/>'));
+  });
+
   test('ODT repeated rows and columns expand within table safety limits', () async {
     final bytes = makeZip({
       'content.xml': '''
