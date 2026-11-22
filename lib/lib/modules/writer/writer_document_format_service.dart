@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:xml/xml.dart';
 import 'writer_page_break.dart';
+import 'writer_table.dart';
 
 class WriterImportedDocument {
   const WriterImportedDocument({required this.delta, required this.title, required this.format, this.pageLayout, this.headerText = '', this.footerText = ''});
@@ -721,13 +722,49 @@ class WriterDocumentFormatService {
         content.write('<text:p text:style-name="OFFYNEXPageBreak"/>');
       } else if (insert is Map && insert['offynexbd-writer-table'] is String) {
         flushParagraph();
-        final rows = _decodeTable(insert['offynexbd-writer-table'] as String);
+        final rawTable = insert['offynexbd-writer-table'] as String;
+        final rows = _decodeTable(rawTable);
+        Map<String, dynamic> tableData;
+        try {
+          final decoded = jsonDecode(rawTable);
+          tableData = decoded is Map
+              ? Map<String, dynamic>.from(decoded)
+              : <String, dynamic>{};
+        } catch (_) {
+          tableData = <String, dynamic>{};
+        }
         if (rows.isNotEmpty) {
-          content.write('<table:table table:name="WriterTable${imageIndex++}">');
+          final columns = rows.fold<int>(1,
+            (max, row) => row.length > max ? row.length : max);
           for (final row in rows) {
+            while (row.length < columns) { row.add(''); }
+          }
+          final merges = WriterTableBlockEmbed.normalizedMerges(
+            tableData, rowCount: rows.length, columnCount: columns);
+          final anchors = <String, Map<String, int>>{
+            for (final merge in merges) '${merge['row']}:${merge['column']}': merge,
+          };
+          final covered = <String>{};
+          for (final merge in merges) {
+            for (var r = merge['row']!; r < merge['row']! + merge['rowSpan']!; r++) {
+              for (var c = merge['column']!; c < merge['column']! + merge['columnSpan']!; c++) {
+                if (r != merge['row'] || c != merge['column']) covered.add('$r:$c');
+              }
+            }
+          }
+          content.write('<table:table table:name="WriterTable${imageIndex++}">');
+          for (var rowIndex = 0; rowIndex < rows.length; rowIndex++) {
             content.write('<table:table-row>');
-            for (final cell in row) {
-              content.write('<table:table-cell office:value-type="string"><text:p>${_xmlEscape(cell)}</text:p></table:table-cell>');
+            for (var columnIndex = 0; columnIndex < columns; columnIndex++) {
+              final key = '$rowIndex:$columnIndex';
+              if (covered.contains(key)) {
+                content.write('<table:covered-table-cell/>');
+                continue;
+              }
+              final merge = anchors[key];
+              final spans = merge == null ? '' :
+                ' table:number-columns-spanned="${merge['columnSpan']}" table:number-rows-spanned="${merge['rowSpan']}"';
+              content.write('<table:table-cell$spans office:value-type="string"><text:p>${_xmlEscape(rows[rowIndex][columnIndex])}</text:p></table:table-cell>');
             }
             content.write('</table:table-row>');
           }
