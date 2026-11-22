@@ -44,6 +44,22 @@ void main() {
     expect(footerXml, contains('w:instr=" NUMPAGES "'));
   });
 
+  test('Writer DOCX export preserves heading levels four through six', () async {
+    final bytes = await WriterDocxExportService.build(
+      title: 'Heading levels',
+      delta: [
+        {'insert': 'Heading four\n', 'attributes': {'header': 4}},
+        {'insert': 'Heading five\n', 'attributes': {'header': 5}},
+        {'insert': 'Heading six\n', 'attributes': {'header': 6}},
+      ],
+    );
+    final archive = ZipDecoder().decodeBytes(bytes);
+    final document = utf8.decode(archive.findFile('word/document.xml')!.readBytes()!);
+    expect(document, contains('<w:pStyle w:val="Heading4"/>'));
+    expect(document, contains('<w:pStyle w:val="Heading5"/>'));
+    expect(document, contains('<w:pStyle w:val="Heading6"/>'));
+  });
+
   test('Writer DOCX export keeps consecutive numbered items in one numbering sequence', () async {
     final bytes = await WriterDocxExportService.build(
       title: 'List test',
