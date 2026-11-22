@@ -130,6 +130,8 @@ void main() {
     final delta = <Map<String, dynamic>>[
       {'insert': 'Hello বাংলা'},
       {'insert': '\n', 'attributes': {'header': 1}},
+      {'insert': 'Heading six'},
+      {'insert': '\n', 'attributes': {'header': 6}},
       {'insert': 'Bold', 'attributes': {'bold': true}},
       {'insert': 'Linked', 'attributes': {'link': 'https://example.com/docs'}},
       {'insert': 'Styled', 'attributes': {'bold': true, 'italic': true, 'underline': true, 'strike': true, 'color': '#123456', 'background': '#F0E0D0', 'size': '18', 'font': 'serif'}},
@@ -152,6 +154,8 @@ void main() {
     expect(imported.headerText, 'Header');
     expect(imported.footerText, 'Footer');
     expect(imported.delta.any((op) => op['insert'] == 'Hello বাংলা'), isTrue);
+    expect(imported.delta.any((op) => op['insert'] == 'Heading six'), isTrue);
+    expect(imported.delta.any((op) => (op['attributes'] as Map?)?['header'] == 6), isTrue);
     expect(imported.delta.any((op) => op['insert'] == 'Bold' && (op['attributes'] as Map?)?['bold'] == true), isTrue);
     expect(imported.delta.any((op) => op['insert'] == 'Linked' && (op['attributes'] as Map?)?['link'] == 'https://example.com/docs'), isTrue);
     final styled = imported.delta.firstWhere((op) => op['insert'] == 'Styled');
