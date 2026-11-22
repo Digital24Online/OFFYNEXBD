@@ -114,6 +114,9 @@ jobs:
 
       - name: Run Android keyboard integration test
         uses: reactivecircus/android-emulator-runner@v2
+        env:
+          # Newer Android Emulator builds reject software acceleration unless TCG is explicitly enabled.
+          ANDROID_I_WANT_MY_TCG: "yes"
         with:
           api-level: 35
           arch: x86_64
