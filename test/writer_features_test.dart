@@ -19,6 +19,47 @@ Widget _writerTestApp(Widget home) => MaterialApp(
     );
 
 void main() {
+  testWidgets('Writer Home exposes color palettes, text scripts and clear formatting', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: false)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('New Document'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Home'));
+    await tester.tap(find.text('Home'));
+    await tester.pumpAndSettle();
+
+    final fontColor = find.byKey(const ValueKey('writer-home-font-color'));
+    final highlight = find.byKey(const ValueKey('writer-home-text-highlight'));
+    final superscript = find.byKey(const ValueKey('writer-home-superscript'));
+    final subscript = find.byKey(const ValueKey('writer-home-subscript'));
+    final clear = find.byKey(const ValueKey('writer-home-clear-formatting'));
+    for (final control in [fontColor, highlight, superscript, subscript, clear]) {
+      expect(control, findsOneWidget);
+      await tester.ensureVisible(control);
+    }
+
+    await tester.tap(fontColor);
+    await tester.pumpAndSettle();
+    expect(find.text('Blue'), findsOneWidget);
+    await tester.tap(find.text('Blue'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(highlight);
+    await tester.pumpAndSettle();
+    expect(find.text('Bright Green'), findsOneWidget);
+    await tester.tap(find.text('Bright Green'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(superscript);
+    await tester.pumpAndSettle();
+    await tester.tap(subscript);
+    await tester.pumpAndSettle();
+    await tester.tap(clear);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Writer table editor follows Bangla and English language settings', (tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: true)));
