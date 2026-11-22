@@ -832,16 +832,11 @@ class WriterTableEmbedBuilder extends EmbedBuilder {
     );
     final merges = WriterTableBlockEmbed.normalizedMerges(
       data, rowCount: rows.length, columnCount: columnCount);
-    final mergeAnchors = <String, Map<String, int>>{
-      for (final merge in merges) '${merge['row']}:${merge['column']}': merge,
-    };
-    final mergedCoverage = <String>{};
     final mergeAtCell = <String, Map<String, int>>{};
     for (final merge in merges) {
       for (var r = merge['row']!; r < merge['row']! + merge['rowSpan']!; r++) {
         for (var c = merge['column']!; c < merge['column']! + merge['columnSpan']!; c++) {
           mergeAtCell['$r:$c'] = merge;
-          if (r != merge['row'] || c != merge['column']) mergedCoverage.add('$r:$c');
         }
       }
     }
@@ -904,35 +899,46 @@ class WriterTableEmbedBuilder extends EmbedBuilder {
                       );
                     }
 
+                    final rowCells = <Widget>[];
+                    var columnIndex = 0;
+                    while (columnIndex < columnCount) {
+                      final merge = mergeAtCell['$rowIndex:$columnIndex'];
+                      if (merge == null) {
+                        rowCells.add(cellWidget(
+                          rows[rowIndex][columnIndex], widths[columnIndex], rowHeight));
+                        columnIndex++;
+                        continue;
+                      }
+                      final anchorRow = merge['row']!;
+                      final anchorColumn = merge['column']!;
+                      if (anchorRow < rowIndex) {
+                        rowCells.add(SizedBox(width: widths[columnIndex]));
+                        columnIndex++;
+                        continue;
+                      }
+                      if (anchorRow == rowIndex && anchorColumn == columnIndex) {
+                        final span = merge['columnSpan']!;
+                        final mergedWidth = widths.skip(columnIndex).take(span)
+                            .fold<double>(0, (sum, width) => sum + width);
+                        if (merge['rowSpan']! > 1) {
+                          rowCells.add(SizedBox(width: mergedWidth));
+                        } else {
+                          rowCells.add(cellWidget(
+                            rows[rowIndex][columnIndex], mergedWidth, rowHeight));
+                        }
+                        columnIndex += span;
+                        continue;
+                      }
+                      // A horizontally covered slot is already included in its anchor.
+                      columnIndex++;
+                    }
                     return SizedBox(
                       width: widths.fold<double>(0, (sum, width) => sum + width),
                       height: rowHeight,
                       child: Stack(
                         clipBehavior: Clip.none,
                         children: [
-                          Row(
-                            children: [
-                              for (var columnIndex = 0; columnIndex < columnCount; columnIndex++)
-                                if (mergeAtCell['$rowIndex:$columnIndex'] case final merge?)
-                                  if (merge['row'] == rowIndex && merge['column'] == columnIndex)
-                                    if (merge['rowSpan']! > 1)
-                                      SizedBox(
-                                        width: widths.skip(columnIndex).take(merge['columnSpan']!)
-                                            .fold<double>(0, (sum, width) => sum + width),
-                                      )
-                                    else
-                                      cellWidget(
-                                        rows[rowIndex][columnIndex],
-                                        widths.skip(columnIndex).take(merge['columnSpan']!)
-                                            .fold<double>(0, (sum, width) => sum + width),
-                                        rowHeight,
-                                      )
-                                  else if (merge['row']! < rowIndex)
-                                    SizedBox(width: widths[columnIndex])
-                                else
-                                  cellWidget(rows[rowIndex][columnIndex], widths[columnIndex], rowHeight),
-                            ],
-                          ),
+                          Row(children: rowCells),
                           for (final merge in merges.where((item) =>
                               item['row'] == rowIndex && item['rowSpan']! > 1))
                             Positioned(
