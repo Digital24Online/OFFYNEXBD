@@ -38,6 +38,32 @@ void main() {
     );
   });
 
+  test('Writer PDF image width respects page size and horizontal margins', () {
+    final a5Width = WriterPdfExportService.imageContentWidth(
+      pageFormat: PdfPageFormat.a5,
+      marginLeft: 24,
+      marginRight: 24,
+    );
+    final a4LandscapeWidth = WriterPdfExportService.imageContentWidth(
+      pageFormat: PdfPageFormat.a4.landscape,
+      marginLeft: 36,
+      marginRight: 48,
+    );
+
+    expect(a5Width, closeTo(PdfPageFormat.a5.width - 48, 0.001));
+    expect(a4LandscapeWidth,
+        closeTo(PdfPageFormat.a4.landscape.width - 84, 0.001));
+    expect(a4LandscapeWidth, greaterThan(a5Width));
+    expect(
+      () => WriterPdfExportService.imageContentWidth(
+        pageFormat: PdfPageFormat.a5,
+        marginLeft: PdfPageFormat.a5.width,
+        marginRight: 1,
+      ),
+      throwsArgumentError,
+    );
+  });
+
   test('Writer PDF shapes Bengali and preserves styled Unicode text', () async {
     final sans = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
     final serif = await rootBundle.load('assets/fonts/NotoSerifBengali.ttf');
