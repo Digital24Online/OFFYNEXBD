@@ -830,6 +830,19 @@ class WriterTableEmbedBuilder extends EmbedBuilder {
           ? (rawHeights[index] as num?)?.toDouble().clamp(36.0, 240.0) ?? 56.0
           : 56.0,
     );
+    final merges = WriterTableBlockEmbed.normalizedMerges(
+      data, rowCount: rows.length, columnCount: columnCount);
+    final mergeAnchors = <String, Map<String, int>>{
+      for (final merge in merges) '${merge['row']}:${merge['column']}': merge,
+    };
+    final mergedCoverage = <String>{};
+    for (final merge in merges) {
+      for (var r = merge['row']!; r < merge['row']! + merge['rowSpan']!; r++) {
+        for (var c = merge['column']!; c < merge['column']! + merge['columnSpan']!; c++) {
+          if (r != merge['row'] || c != merge['column']) mergedCoverage.add('$r:$c');
+        }
+      }
+    }
 
     return Container(
       width: double.infinity,
@@ -861,41 +874,64 @@ class WriterTableEmbedBuilder extends EmbedBuilder {
           else
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              child: Table(
-                columnWidths: {
-                  for (var index = 0; index < columnCount; index++)
-                    index: FixedColumnWidth(widths[index]),
-                },
-                border: TableBorder.all(color: Color(border)),
-                children: List.generate(rows.length, (rowIndex) {
-                  final row = rows[rowIndex];
-                  return TableRow(
-                    decoration: rowIndex == 0 && hasHeaderRow
-                        ? BoxDecoration(
-                            color: Color(background).withValues(alpha: 0.85),
-                          )
-                        : null,
-                    children: List.generate(columnCount, (columnIndex) {
-                      final value = columnIndex < row.length
-                          ? row[columnIndex]
-                          : '';
-                      return Container(
-                        constraints: BoxConstraints(minHeight: heights[rowIndex]),
-                        color: Color(background),
-                        padding: const EdgeInsets.all(8),
-                        child: Text(
-                          value,
-                          style: TextStyle(
-                            fontWeight: rowIndex == 0 && hasHeaderRow
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                          ),
-                        ),
-                      );
-                    }),
-                  );
-                }),
-              ),
+              child: merges.any((merge) => merge['rowSpan']! > 1)
+                  ? Table(
+                      columnWidths: {
+                        for (var index = 0; index < columnCount; index++)
+                          index: FixedColumnWidth(widths[index]),
+                      },
+                      border: TableBorder.all(color: Color(border)),
+                      children: List.generate(rows.length, (rowIndex) {
+                        return TableRow(
+                          children: List.generate(columnCount, (columnIndex) {
+                            final value = rows[rowIndex][columnIndex];
+                            return Container(
+                              constraints: BoxConstraints(minHeight: heights[rowIndex]),
+                              color: Color(background),
+                              padding: const EdgeInsets.all(8),
+                              child: Text(value),
+                            );
+                          }),
+                        );
+                      }),
+                    )
+                  : Column(
+                      children: List.generate(rows.length, (rowIndex) {
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            for (var columnIndex = 0; columnIndex < columnCount; columnIndex++)
+                              if (!mergedCoverage.contains('$rowIndex:$columnIndex'))
+                                Builder(builder: (context) {
+                                  final merge = mergeAnchors['$rowIndex:$columnIndex'];
+                                  final span = merge?['columnSpan'] ?? 1;
+                                  final cellWidth = widths.skip(columnIndex)
+                                      .take(span).fold<double>(0, (sum, width) => sum + width);
+                                  final value = rows[rowIndex][columnIndex];
+                                  return SizedBox(
+                                    width: cellWidth,
+                                    child: Container(
+                                      constraints: BoxConstraints(minHeight: heights[rowIndex]),
+                                      decoration: BoxDecoration(
+                                        color: Color(background),
+                                        border: Border.all(color: Color(border)),
+                                      ),
+                                      padding: const EdgeInsets.all(8),
+                                      child: Text(
+                                        value,
+                                        style: TextStyle(
+                                          fontWeight: rowIndex == 0 && hasHeaderRow
+                                              ? FontWeight.w600
+                                              : FontWeight.normal,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }),
+                          ],
+                        );
+                      }),
+                    ),
             ),
         ],
       ),
