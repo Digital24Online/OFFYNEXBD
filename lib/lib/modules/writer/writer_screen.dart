@@ -1763,7 +1763,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
       'Red Text': 'লাল লেখা', 'Yellow Highlight': 'হলুদ হাইলাইট',
       'Font Color': 'ফন্টের রং', 'Text Highlight Color': 'লেখা হাইলাইটের রং',
       'Paragraph Styles': 'অনুচ্ছেদের স্টাইল', 'Styles': 'স্টাইল',
-      'Normal': 'সাধারণ', 'Title / Heading 1': 'শিরোনাম / হেডিং ১',
+      'Title / Heading 1': 'শিরোনাম / হেডিং ১',
       'Subtitle / Heading 2': 'উপশিরোনাম / হেডিং ২',
       'Heading 3': 'হেডিং ৩', 'Heading 4': 'হেডিং ৪',
       'Heading 5': 'হেডিং ৫', 'Heading 6': 'হেডিং ৬',
@@ -2045,10 +2045,13 @@ Future<void> showCustomFontSizeDialog() async {
   }
 
   void _applyParagraphStyle(String style) {
+    final headerAttribute = Attribute.fromKeyValue('header', 1);
+    if (headerAttribute == null) return;
     final headerLevel = int.tryParse(style);
     final attribute = headerLevel == null
-        ? Attribute.clone(Attribute.fromKeyValue('header', 1), null)
+        ? Attribute.clone(headerAttribute, null)
         : Attribute.fromKeyValue('header', headerLevel);
+    if (attribute == null) return;
     quillController.formatSelection(attribute);
   }
 
