@@ -2067,3 +2067,12 @@ A module is complete only after its actual workflows exist, tests cover them, th
 - Commits: `6f64d3aade4826ebe7631ffb163cc5efe0486fc5`, `bb4730e573d3cbf91443109505dd3db83b86a940`.
 - Validation is pending the GitHub Actions run triggered by these commits. Existing run #1014 remains independently in progress; do not treat it as validating these newer commits.
 
+## Writer table header-row preservation — 2026-11-23
+- Fixed a verified table-editing data-loss bug: opening and saving an existing Writer table previously forced `headerRow: true`, even when the saved table explicitly had no header row.
+- Added a visible “First row is a header” toggle in the table editor.
+- Existing tables with an explicit `headerRow: false` now retain that setting; older table data without the field keeps the backward-compatible default of true.
+- Table rendering now applies header-row styling only when the setting is enabled.
+- Added `test/writer_table_test.dart` for legacy default and explicit true/false metadata.
+- Commits: `8630afbdb3ff13e82b50109a4daf274d34fb5118`, `57d1e4f6cb6a70e42440856625472e5ebd1f1e1c`.
+- Automated validation is pending; do not treat the preceding CI run as validating these newer commits.
+
