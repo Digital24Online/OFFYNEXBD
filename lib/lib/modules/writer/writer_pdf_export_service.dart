@@ -190,7 +190,11 @@ class WriterPdfExportService {
                 padding: const pw.EdgeInsets.symmetric(vertical: 8),
                 child: pw.Image(
                   pw.MemoryImage(imageBytes),
-                  width: 430,
+                  width: imageContentWidth(
+                    pageFormat: pageFormat,
+                    marginLeft: marginLeft,
+                    marginRight: marginRight,
+                  ),
                   fit: pw.BoxFit.contain,
                 ),
               ),
@@ -331,6 +335,20 @@ class WriterPdfExportService {
       ((value >> 8) & 0xFF) / 255,
       (value & 0xFF) / 255,
     );
+  }
+
+  /// Returns the printable image width in PDF points after page margins.
+  /// This keeps embedded images inside A5, A4, Letter and landscape pages.
+  static double imageContentWidth({
+    required PdfPageFormat pageFormat,
+    required double marginLeft,
+    required double marginRight,
+  }) {
+    final available = pageFormat.width - marginLeft - marginRight;
+    if (!available.isFinite || available <= 0) {
+      throw ArgumentError('Writer PDF horizontal margins leave no printable width.');
+    }
+    return available;
   }
 
   static PdfColor? highlightColorForAttributes(
