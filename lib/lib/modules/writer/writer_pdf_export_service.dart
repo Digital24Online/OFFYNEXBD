@@ -69,11 +69,8 @@ class WriterPdfExportService {
       final size = rawSize != null
           ? (rawSize * 0.75).clamp(5.0, 144.0).toDouble()
           : headingSizes[heading] ?? 12.0;
-      final decoration = attributes['underline'] == true
-          ? pw.TextDecoration.underline
-          : attributes['strike'] == true
-              ? pw.TextDecoration.lineThrough
-              : null;
+      final decoration = textDecorationForAttributes(attributes);
+      final highlightColor = highlightColorForAttributes(attributes);
       return pw.TextStyle(
         font: fontFor(attributes, text),
         fontFallback: _containsBangla(text) ? [latinFont] : const [],
@@ -85,6 +82,9 @@ class WriterPdfExportService {
             ? pw.FontStyle.italic
             : pw.FontStyle.normal,
         color: _parseColor(attributes['color']?.toString()) ?? PdfColors.black,
+        background: highlightColor == null
+            ? null
+            : pw.BoxDecoration(color: highlightColor),
         decoration: decoration,
       );
     }
@@ -331,6 +331,26 @@ class WriterPdfExportService {
       ((value >> 8) & 0xFF) / 255,
       (value & 0xFF) / 255,
     );
+  }
+
+  static PdfColor? highlightColorForAttributes(
+    Map<String, dynamic> attributes,
+  ) {
+    return _parseColor(attributes['background']?.toString());
+  }
+
+  static pw.TextDecoration? textDecorationForAttributes(
+    Map<String, dynamic> attributes,
+  ) {
+    final decorations = <pw.TextDecoration>[];
+    if (attributes['underline'] == true) {
+      decorations.add(pw.TextDecoration.underline);
+    }
+    if (attributes['strike'] == true) {
+      decorations.add(pw.TextDecoration.lineThrough);
+    }
+    if (decorations.isEmpty) return null;
+    return pw.TextDecoration.combine(decorations);
   }
 
   static PdfColor? _parseColor(String? value) {
