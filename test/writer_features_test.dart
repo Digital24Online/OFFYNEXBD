@@ -83,7 +83,12 @@ void main() {
       'Heading 5',
       'Heading 6',
     ]) {
-      expect(find.text(label), findsOneWidget);
+      // "Normal" is intentionally visible both as the currently selected
+      // paragraph style and as an option in the open menu.
+      expect(
+        find.text(label),
+        label == 'Normal' ? findsNWidgets(2) : findsOneWidget,
+      );
     }
     await tester.tap(find.text('Title / Heading 1'));
     await tester.pumpAndSettle();
