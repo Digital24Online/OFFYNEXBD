@@ -45,3 +45,15 @@
 - Automated tests cover page-flow, tables, format round-trip, recovery and compact phone layout.
 - Analyze + complete test suite + signed Android APK/package checks pass on the same commit.
 - Physical Android, keyboard, Bengali visual rendering, printer and Word/LibreOffice interoperability checks are recorded separately.
+
+
+## Active scope and completion requirements
+**Writer only.** The current user instruction explicitly excludes all other OFFYNEXBD modules until Writer is complete. Do not implement or advance Sheets, Slides, PDF, Fonts, AI, Cloud, Forms, Scan or Database as separate modules.
+
+Writer must reach a professional, desktop-class Microsoft Word-style feature set, with responsive phone/tablet/desktop behavior. Audit every ribbon and contextual command, then complete the remaining Writer work in integrated batches rather than isolated one-feature patches.
+
+Preserve existing saved documents and backward compatibility: Quill Delta content, legacy document records, `offynexbd-writer-table` and `offynexbd-writer-page-break` embeds, images, autosave, recovery/backup, page layout, comments, citations, revisions, header/footer metadata and existing export workflows.
+
+**Confirmed outstanding blocker:** the current editor is a single continuous Quill editor over a `CustomPaint` page background with estimated page count. True content-aware pagination—where text, images and tables flow naturally from one physical page to the next—has not been implemented or verified. Do not call Writer complete until this and all other required Writer workflows are implemented and tested end-to-end.
+
+Before changes, audit all Writer source, services, dependencies and tests. After changes, run Analyze, regression tests and Android build; inspect and fix every failure. A successful build alone is not proof of completion.
