@@ -145,7 +145,19 @@ class WriterContentMetrics {
       textDirection: textDirection,
       defaultFontSize: defaultFontSize,
     );
-    return math.max(1, (height / pageContentHeight).ceil());
+
+    // A manual page break is a structural boundary, not merely a height
+    // contribution. Counting the boundaries separately prevents consecutive
+    // breaks (or a break in an otherwise empty document) from disappearing
+    // when the estimated content height rounds down to one page.
+    final explicitBreaks = delta.where((operation) {
+      final insert = operation['insert'];
+      return insert is Map && insert.containsKey('offynexbd-writer-page-break');
+    }).length;
+
+    final contentPages = (height / pageContentHeight).ceil();
+    final structurallyRequiredPages = explicitBreaks + 1;
+    return math.max(1, math.max(contentPages, structurallyRequiredPages));
   }
 
   static double _estimateTableHeight(
