@@ -876,7 +876,8 @@ class WriterTableEmbedBuilder extends EmbedBuilder {
                 child: Column(
                   children: List.generate(rows.length, (rowIndex) {
                     final rowHeight = heights[rowIndex];
-                    Widget cellWidget(String value, double width, double height) {
+                    Widget cellWidget(String value, double width, double height, {int? contentRowIndex}) {
+                      final styleRow = contentRowIndex ?? rowIndex;
                       return SizedBox(
                         width: width,
                         height: height,
@@ -890,7 +891,7 @@ class WriterTableEmbedBuilder extends EmbedBuilder {
                           child: Text(
                             value,
                             style: TextStyle(
-                              fontWeight: rowIndex == 0 && hasHeaderRow
+                              fontWeight: styleRow == 0 && hasHeaderRow
                                   ? FontWeight.w600
                                   : FontWeight.normal,
                             ),
@@ -940,24 +941,28 @@ class WriterTableEmbedBuilder extends EmbedBuilder {
                         children: [
                           Row(children: rowCells),
                           for (final merge in merges.where((item) =>
-                              item['row'] == rowIndex && item['rowSpan']! > 1))
+                              item['row']! + item['rowSpan']! - 1 == rowIndex &&
+                              item['rowSpan']! > 1))
                             Positioned(
                               left: widths.take(merge['column']!)
                                   .fold<double>(0, (sum, width) => sum + width),
-                              top: 0,
+                              top: -heights.skip(merge['row']!)
+                                  .take(merge['rowSpan']! - 1)
+                                  .fold<double>(0, (sum, height) => sum + height),
                               width: widths.skip(merge['column']!)
                                   .take(merge['columnSpan']!)
                                   .fold<double>(0, (sum, width) => sum + width),
-                              height: heights.skip(rowIndex)
+                              height: heights.skip(merge['row']!)
                                   .take(merge['rowSpan']!)
                                   .fold<double>(0, (sum, height) => sum + height),
                               child: cellWidget(
-                                rows[rowIndex][merge['column']!],
+                                rows[merge['row']!][merge['column']!],
                                 widths.skip(merge['column']!)
                                     .take(merge['columnSpan']!)
                                     .fold<double>(0, (sum, width) => sum + width),
-                                heights.skip(rowIndex).take(merge['rowSpan']!)
+                                heights.skip(merge['row']!).take(merge['rowSpan']!)
                                     .fold<double>(0, (sum, height) => sum + height),
+                                contentRowIndex: merge['row'],
                               ),
                             ),
                         ],
