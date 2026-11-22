@@ -93,8 +93,8 @@ class WriterPdfExportService {
       final attributes = paragraphAttributes ?? const <String, dynamic>{};
       final rawHeading = attributes['header'];
       final heading = rawHeading is num
-          ? rawHeading.toInt().clamp(1, 6)
-          : int.tryParse(rawHeading?.toString() ?? '')?.clamp(1, 6);
+          ? rawHeading.toInt().clamp(1, 6).toInt()
+          : int.tryParse(rawHeading?.toString() ?? '')?.clamp(1, 6).toInt();
       final listType = attributes['list']?.toString();
       final isBullet = listType == 'bullet';
       final isOrdered = listType == 'ordered';
