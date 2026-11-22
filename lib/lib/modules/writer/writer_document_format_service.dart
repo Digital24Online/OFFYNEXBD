@@ -96,9 +96,12 @@ class WriterDocumentFormatService {
       if (child.name.local == 'p') {
         await _appendDocxParagraph(child, _docxParagraphAttributes(child, numberingFormats), delta, saveImage, relationships);
       } else if (child.name.local == 'tbl') {
-        final rows = _docxTable(child);
+        final tableData = _docxTable(child);
+        final rows = tableData['rows'] as List<List<String>>;
         if (rows.isNotEmpty) {
-          delta.add({'insert': {'offynexbd-writer-table': jsonEncode({'rows': rows, 'headerRow': true, 'version': 1})}});
+          delta.add({'insert': {'offynexbd-writer-table': jsonEncode({
+            ...tableData, 'headerRow': true, 'version': 1,
+          })}});
           delta.add({'insert': '\n'});
         }
       }
@@ -396,16 +399,17 @@ class WriterDocumentFormatService {
     return result;
   }
 
-  static List<List<String>> _docxTable(XmlElement table) {
-    // Expand Word gridSpan cells into their logical grid positions. The
-    // current Writer table embed cannot draw merged cells yet, but retaining
-    // blank span slots prevents subsequent columns from shifting left.
+  static Map<String, dynamic> _docxTable(XmlElement table) {
     final rows = <List<String>>[];
+    final merges = <Map<String, int>>[];
+    var activeVertical = <int, int>{};
     for (final row in _elementChildren(table).where((e) => e.name.local == 'tr')) {
       if (rows.length >= maxImportedTableRows) {
         throw const FormatException('DOCX table exceeds the 100-row Writer import limit.');
       }
+      final rowIndex = rows.length;
       final cells = <String>[];
+      final nextVertical = <int, int>{};
       for (final cell in _elementChildren(row).where((e) => e.name.local == 'tc')) {
         if (cells.length >= maxImportedTableColumns) {
           throw const FormatException('DOCX table exceeds the 50-column Writer import limit.');
@@ -415,14 +419,67 @@ class WriterDocumentFormatService {
         final spanNode = properties == null ? null : _firstChild(properties, 'gridSpan');
         final span = (int.tryParse(spanNode == null ? '1' : _attribute(spanNode, 'val') ?? '1') ?? 1)
             .clamp(1, maxImportedTableColumns - cells.length).toInt();
-        cells.add(value);
-        for (var index = 1; index < span; index++) {
-          cells.add('');
+        final verticalNode = properties == null ? null : _firstChild(properties, 'vMerge');
+        final column = cells.length;
+        if (verticalNode != null) {
+          final mergeValue = _attribute(verticalNode, 'val') ?? 'continue';
+          if (mergeValue == 'restart') {
+            final mergeIndex = merges.length;
+            if (span > 1) {
+              merges.add(<String, int>{
+                'row': rowIndex, 'column': column, 'rowSpan': 1, 'columnSpan': span,
+              });
+            } else {
+              merges.add(<String, int>{
+                'row': rowIndex, 'column': column, 'rowSpan': 1, 'columnSpan': 1,
+              });
+            }
+            for (var offset = 0; offset < span; offset++) {
+              nextVertical[column + offset] = mergeIndex;
+            }
+            cells.add(value);
+            for (var offset = 1; offset < span; offset++) { cells.add(''); }
+          } else {
+            final continued = <int>{};
+            for (var offset = 0; offset < span; offset++) {
+              final mergeIndex = activeVertical[column + offset];
+              if (mergeIndex != null) {
+                continued.add(mergeIndex);
+                nextVertical[column + offset] = mergeIndex;
+              }
+              cells.add('');
+            }
+            for (final mergeIndex in continued) {
+              merges[mergeIndex]['rowSpan'] = merges[mergeIndex]['rowSpan']! + 1;
+            }
+            if (continued.isEmpty && value.isNotEmpty) cells[column] = value;
+          }
+        } else {
+          cells.add(value);
+          if (span > 1) {
+            merges.add(<String, int>{
+              'row': rowIndex, 'column': column, 'rowSpan': 1, 'columnSpan': span,
+            });
+          }
+          for (var offset = 1; offset < span; offset++) { cells.add(''); }
         }
       }
-      if (cells.isNotEmpty) rows.add(cells);
+      if (cells.isNotEmpty) {
+        rows.add(cells);
+        activeVertical = nextVertical;
+      }
     }
-    return rows;
+    final columnCount = rows.fold<int>(1,
+      (max, row) => row.length > max ? row.length : max);
+    for (final row in rows) {
+      while (row.length < columnCount) { row.add(''); }
+    }
+    final safeMerges = WriterTableBlockEmbed.normalizedMerges(
+      <String, dynamic>{'merges': merges},
+      rowCount: rows.length,
+      columnCount: columnCount,
+    );
+    return <String, dynamic>{'rows': rows, 'merges': safeMerges};
   }
 
   static Future<WriterImportedDocument> _importOdt(
