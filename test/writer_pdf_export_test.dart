@@ -41,6 +41,29 @@ void main() {
     expect(extracted, contains('ক্ষ্ম'));
     expect(extracted, isNot(contains('ঊহমষরংয')));
   });
+  test('Writer PDF preserves all six Word heading levels in exported content', () async {
+    final sans = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
+    final serif = await rootBundle.load('assets/fonts/NotoSerifBengali.ttf');
+    final latin = await rootBundle.load('assets/fonts/NotoSans.ttf');
+    final bytes = await WriterPdfExportService.build(
+      title: 'Heading export',
+      delta: [
+        {'insert': 'Heading four\n', 'attributes': {'header': 4}},
+        {'insert': 'Heading five\n', 'attributes': {'header': 5}},
+        {'insert': 'Heading six\n', 'attributes': {'header': 6}},
+      ],
+      sansFontData: sans,
+      serifFontData: serif,
+      latinFontData: latin,
+      pageFormat: PdfPageFormat.a4,
+      marginTop: 54, marginBottom: 54, marginLeft: 54, marginRight: 54,
+    );
+    final extracted = BanglaPdfExtractor.extract(bytes).text;
+    expect(extracted, contains('Heading four'));
+    expect(extracted, contains('Heading five'));
+    expect(extracted, contains('Heading six'));
+  });
+
   test('Writer PDF accepts imported Bengali font families from the document font library', () async {
     final sans = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
     final serif = await rootBundle.load('assets/fonts/NotoSerifBengali.ttf');
