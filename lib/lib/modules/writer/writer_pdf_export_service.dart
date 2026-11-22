@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:pdf/pdf.dart';
 import 'package:bangla_pdf/widgets.dart' as pw;
 import 'writer_page_break.dart';
+import 'writer_table.dart';
 
 /// Builds Writer print/PDF output with HarfBuzz-compatible OpenType Bengali shaping.
 class WriterPdfExportService {
@@ -278,35 +279,81 @@ class WriterPdfExportService {
     final borderColor = _parseIntColor(data['borderColor']) ?? PdfColors.grey;
     final backgroundColor =
         _parseIntColor(data['backgroundColor']) ?? PdfColors.white;
+    final merges = WriterTableBlockEmbed.normalizedMerges(
+      data, rowCount: rows.length, columnCount: columns);
+    final anchors = <String, Map<String, int>>{
+      for (final merge in merges) '${merge['row']}:${merge['column']}': merge,
+    };
+    final covered = <String>{};
+    for (final merge in merges) {
+      for (var r = merge['row']!; r < merge['row']! + merge['rowSpan']!; r++) {
+        for (var c = merge['column']!; c < merge['column']! + merge['columnSpan']!; c++) {
+          if (r != merge['row'] || c != merge['column']) covered.add('$r:$c');
+        }
+      }
+    }
+    final horizontalOnly = merges.every((merge) => merge['rowSpan'] == 1);
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(vertical: 8),
-      child: pw.Table(
-        border: pw.TableBorder.all(color: borderColor, width: 0.6),
-        children: List.generate(rows.length, (rowIndex) {
-          return pw.TableRow(
-            children: List.generate(columns, (columnIndex) {
-              final value = columnIndex < rows[rowIndex].length
-                  ? rows[rowIndex][columnIndex]
-                  : '';
-              return pw.Container(
-                color: backgroundColor,
-                padding: const pw.EdgeInsets.all(5),
-                child: pw.Text(
-                  value,
-                  style: pw.TextStyle(
-                    font: _containsBangla(value) ? font : latinFont,
-                    fontFallback: _containsBangla(value) ? [latinFont] : const [],
-                    fontSize: 9,
-                    fontWeight: rowIndex == 0 && data['headerRow'] == true
-                        ? pw.FontWeight.bold
-                        : pw.FontWeight.normal,
-                  ),
-                ),
-              );
-            }),
-          );
-        }),
-      ),
+      child: horizontalOnly
+          ? pw.Column(
+              children: List.generate(rows.length, (rowIndex) {
+                return pw.Row(
+                  children: [
+                    for (var columnIndex = 0; columnIndex < columns; columnIndex++)
+                      if (!covered.contains('$rowIndex:$columnIndex'))
+                        pw.Expanded(
+                          flex: anchors['$rowIndex:$columnIndex']?['columnSpan'] ?? 1,
+                          child: pw.Container(
+                            decoration: pw.BoxDecoration(
+                              color: backgroundColor,
+                              border: pw.Border.all(color: borderColor, width: 0.6),
+                            ),
+                            padding: const pw.EdgeInsets.all(5),
+                            child: pw.Text(
+                              rows[rowIndex][columnIndex],
+                              style: pw.TextStyle(
+                                font: _containsBangla(rows[rowIndex][columnIndex]) ? font : latinFont,
+                                fontFallback: _containsBangla(rows[rowIndex][columnIndex]) ? [latinFont] : const [],
+                                fontSize: 9,
+                                fontWeight: rowIndex == 0 && data['headerRow'] == true
+                                    ? pw.FontWeight.bold
+                                    : pw.FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                        ),
+                  ],
+                );
+              }),
+            )
+          : pw.Table(
+              border: pw.TableBorder.all(color: borderColor, width: 0.6),
+              children: List.generate(rows.length, (rowIndex) {
+                return pw.TableRow(
+                  children: List.generate(columns, (columnIndex) {
+                    final value = columnIndex < rows[rowIndex].length
+                        ? rows[rowIndex][columnIndex]
+                        : '';
+                    return pw.Container(
+                      color: backgroundColor,
+                      padding: const pw.EdgeInsets.all(5),
+                      child: pw.Text(
+                        value,
+                        style: pw.TextStyle(
+                          font: _containsBangla(value) ? font : latinFont,
+                          fontFallback: _containsBangla(value) ? [latinFont] : const [],
+                          fontSize: 9,
+                          fontWeight: rowIndex == 0 && data['headerRow'] == true
+                              ? pw.FontWeight.bold
+                              : pw.FontWeight.normal,
+                        ),
+                      ),
+                    );
+                  }),
+                );
+              }),
+            ),
     );
   }
 
