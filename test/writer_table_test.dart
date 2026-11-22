@@ -39,7 +39,7 @@ void main() {
     test('merges a rectangle and retains cell text in reading order', () {
       final merged = WriterTableBlockEmbed.mergeCells(table,
         firstRow: 0, firstColumn: 0, lastRow: 1, lastColumn: 1);
-      expect((merged['rows'] as List)[0][0], 'A\\nB\\nD\\nE');
+      expect((merged['rows'] as List)[0][0], 'A\nB\nD\nE');
       expect(WriterTableBlockEmbed.normalizedMerges(merged,
         rowCount: 2, columnCount: 3), <Map<String, int>>[
         <String, int>{'row': 0, 'column': 0, 'rowSpan': 2, 'columnSpan': 2},
@@ -61,7 +61,7 @@ void main() {
         firstRow: 0, firstColumn: 0, lastRow: 0, lastColumn: 1);
       final split = WriterTableBlockEmbed.splitCell(merged, row: 0, column: 0);
       expect(split['merges'], isEmpty);
-      expect((split['rows'] as List)[0][0], 'A\\nB');
+      expect((split['rows'] as List)[0][0], 'A\nB');
     });
 
     test('ignores malformed, out-of-range and overlapping spans', () {
