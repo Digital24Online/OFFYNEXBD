@@ -2039,3 +2039,11 @@ A module is complete only after its actual workflows exist, tests cover them, th
 - [x] Corrected two remaining page-count test fixtures that contained literal backslash-plus-n characters instead of actual paragraph newlines (Short paragraph and repeated Bangla lines). This ensures the tests exercise Quill paragraph boundaries rather than a single literal string.
 - [x] Commit: fc047c30d5fb4f93d81513a2aa75e835b037c2ce.
 - [ ] Flutter Analyze, Writer tests, full test suite and Android build on this exact commit remain unverified. No feature-completion claim is made.
+
+
+## Writer CI regression repair — 2026-11-22
+- [x] Latest branch CI run #1006: Flutter Analyze passed; full test suite reported 303 passed and 1 failed.
+- [x] Failure isolated to the Writer heading-style widget test: the selected current value `Normal` and the `Normal` menu option are both correctly rendered, while the test incorrectly expected only one text widget.
+- [x] Updated the test to expect both visible instances for `Normal`; all other menu options remain expected exactly once. No Writer production code or stored document format changed.
+- [x] Test repair commit: 08ae65ae2a6612c9cceb24f5c67f3dba8d08d1e7.
+- [ ] Re-run full CI on the repaired commit; keyboard integration, signed APK, install metadata, and artifact upload remain unverified.
