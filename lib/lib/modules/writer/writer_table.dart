@@ -836,9 +836,11 @@ class WriterTableEmbedBuilder extends EmbedBuilder {
       for (final merge in merges) '${merge['row']}:${merge['column']}': merge,
     };
     final mergedCoverage = <String>{};
+    final mergeAtCell = <String, Map<String, int>>{};
     for (final merge in merges) {
       for (var r = merge['row']!; r < merge['row']! + merge['rowSpan']!; r++) {
         for (var c = merge['column']!; c < merge['column']! + merge['columnSpan']!; c++) {
+          mergeAtCell['$r:$c'] = merge;
           if (r != merge['row'] || c != merge['column']) mergedCoverage.add('$r:$c');
         }
       }
@@ -874,64 +876,90 @@ class WriterTableEmbedBuilder extends EmbedBuilder {
           else
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              child: merges.any((merge) => merge['rowSpan']! > 1)
-                  ? Table(
-                      columnWidths: {
-                        for (var index = 0; index < columnCount; index++)
-                          index: FixedColumnWidth(widths[index]),
-                      },
-                      border: TableBorder.all(color: Color(border)),
-                      children: List.generate(rows.length, (rowIndex) {
-                        return TableRow(
-                          children: List.generate(columnCount, (columnIndex) {
-                            final value = rows[rowIndex][columnIndex];
-                            return Container(
-                              constraints: BoxConstraints(minHeight: heights[rowIndex]),
-                              color: Color(background),
-                              padding: const EdgeInsets.all(8),
-                              child: Text(value),
-                            );
-                          }),
-                        );
-                      }),
-                    )
-                  : Column(
-                      children: List.generate(rows.length, (rowIndex) {
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            for (var columnIndex = 0; columnIndex < columnCount; columnIndex++)
-                              if (!mergedCoverage.contains('$rowIndex:$columnIndex'))
-                                Builder(builder: (context) {
-                                  final merge = mergeAnchors['$rowIndex:$columnIndex'];
-                                  final span = merge?['columnSpan'] ?? 1;
-                                  final cellWidth = widths.skip(columnIndex)
-                                      .take(span).fold<double>(0, (sum, width) => sum + width);
-                                  final value = rows[rowIndex][columnIndex];
-                                  return SizedBox(
-                                    width: cellWidth,
-                                    child: Container(
-                                      constraints: BoxConstraints(minHeight: heights[rowIndex]),
-                                      decoration: BoxDecoration(
-                                        color: Color(background),
-                                        border: Border.all(color: Color(border)),
-                                      ),
-                                      padding: const EdgeInsets.all(8),
-                                      child: Text(
-                                        value,
-                                        style: TextStyle(
-                                          fontWeight: rowIndex == 0 && hasHeaderRow
-                                              ? FontWeight.w600
-                                              : FontWeight.normal,
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                }),
-                          ],
-                        );
-                      }),
-                    ),
+              child: SizedBox(
+                width: widths.fold<double>(0, (sum, width) => sum + width),
+                child: Column(
+                  children: List.generate(rows.length, (rowIndex) {
+                    final rowHeight = heights[rowIndex];
+                    Widget cellWidget(String value, double width, double height) {
+                      return SizedBox(
+                        width: width,
+                        height: height,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Color(background),
+                            border: Border.all(color: Color(border)),
+                          ),
+                          padding: const EdgeInsets.all(8),
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            value,
+                            style: TextStyle(
+                              fontWeight: rowIndex == 0 && hasHeaderRow
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+
+                    return SizedBox(
+                      width: widths.fold<double>(0, (sum, width) => sum + width),
+                      height: rowHeight,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Row(
+                            children: [
+                              for (var columnIndex = 0; columnIndex < columnCount; columnIndex++)
+                                if (mergeAtCell['$rowIndex:$columnIndex'] case final merge?)
+                                  if (merge['row'] == rowIndex && merge['column'] == columnIndex)
+                                    if (merge['rowSpan']! > 1)
+                                      SizedBox(
+                                        width: widths.skip(columnIndex).take(merge['columnSpan']!)
+                                            .fold<double>(0, (sum, width) => sum + width),
+                                      )
+                                    else
+                                      cellWidget(
+                                        rows[rowIndex][columnIndex],
+                                        widths.skip(columnIndex).take(merge['columnSpan']!)
+                                            .fold<double>(0, (sum, width) => sum + width),
+                                        rowHeight,
+                                      )
+                                  else if (merge['row']! < rowIndex)
+                                    SizedBox(width: widths[columnIndex])
+                                else
+                                  cellWidget(rows[rowIndex][columnIndex], widths[columnIndex], rowHeight),
+                            ],
+                          ),
+                          for (final merge in merges.where((item) =>
+                              item['row'] == rowIndex && item['rowSpan']! > 1))
+                            Positioned(
+                              left: widths.take(merge['column']!)
+                                  .fold<double>(0, (sum, width) => sum + width),
+                              top: 0,
+                              width: widths.skip(merge['column']!)
+                                  .take(merge['columnSpan']!)
+                                  .fold<double>(0, (sum, width) => sum + width),
+                              height: heights.skip(rowIndex)
+                                  .take(merge['rowSpan']!)
+                                  .fold<double>(0, (sum, height) => sum + height),
+                              child: cellWidget(
+                                rows[rowIndex][merge['column']!],
+                                widths.skip(merge['column']!)
+                                    .take(merge['columnSpan']!)
+                                    .fold<double>(0, (sum, width) => sum + width),
+                                heights.skip(rowIndex).take(merge['rowSpan']!)
+                                    .fold<double>(0, (sum, height) => sum + height),
+                              ),
+                            ),
+                        ],
+                      ),
+                    );
+                  }),
+                ),
+              )
             ),
         ],
       ),
