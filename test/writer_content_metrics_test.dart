@@ -96,6 +96,23 @@ void main() {
       expect(height, greaterThanOrEqualTo(pageHeight));
     });
 
+    test('explicit page break is counted as a separate page in the page count', () {
+      final delta = [
+        {'insert': 'First page\n'},
+        {'insert': {'offynexbd-writer-page-break': 'page'}},
+        {'insert': 'Second page\n'},
+      ];
+
+      expect(
+        WriterContentMetrics.estimatePageCount(
+          delta: delta,
+          maxWidth: 300,
+          pageContentHeight: pageHeight,
+        ),
+        2,
+      );
+    });
+
     test('calculates page count from content-aware estimate', () {
       expect(WriterContentMetrics.estimatePageCount(
         delta: [{'insert': 'Short paragraph\\n'}],
