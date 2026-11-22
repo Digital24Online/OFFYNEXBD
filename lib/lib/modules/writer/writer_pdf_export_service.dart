@@ -46,7 +46,7 @@ class WriterPdfExportService {
         )))
         ..add(pw.SizedBox(height: 14));
     }
-    final spans = <pw.TextSpan>[];
+    final spans = <_WriterPdfTextSegment>[];
     var orderedListNumber = 0;
 
     pw.Font fontFor(Map<String, dynamic> attributes, String text) {
@@ -57,9 +57,18 @@ class WriterPdfExportService {
       return family == 'serif' ? serifFont : sansFont;
     }
 
-    pw.TextStyle styleFor(Map<String, dynamic> attributes, String text) {
+    pw.TextStyle styleFor(
+      Map<String, dynamic> attributes,
+      String text, {
+      int? heading,
+    }) {
       final rawSize = double.tryParse(attributes['size']?.toString() ?? '');
-      final size = rawSize == null ? 12.0 : (rawSize * 0.75).clamp(5.0, 144.0).toDouble();
+      const headingSizes = <int, double>{
+        1: 24, 2: 20, 3: 18, 4: 16, 5: 14, 6: 12,
+      };
+      final size = rawSize != null
+          ? (rawSize * 0.75).clamp(5.0, 144.0).toDouble()
+          : headingSizes[heading] ?? 12.0;
       final decoration = attributes['underline'] == true
           ? pw.TextDecoration.underline
           : attributes['strike'] == true
@@ -69,7 +78,7 @@ class WriterPdfExportService {
         font: fontFor(attributes, text),
         fontFallback: _containsBangla(text) ? [latinFont] : const [],
         fontSize: size,
-        fontWeight: attributes['bold'] == true
+        fontWeight: attributes['bold'] == true || heading != null
             ? pw.FontWeight.bold
             : pw.FontWeight.normal,
         fontStyle: attributes['italic'] == true
@@ -82,6 +91,10 @@ class WriterPdfExportService {
 
     void flushParagraph([Map<String, dynamic>? paragraphAttributes]) {
       final attributes = paragraphAttributes ?? const <String, dynamic>{};
+      final rawHeading = attributes['header'];
+      final heading = rawHeading is num
+          ? rawHeading.toInt().clamp(1, 6)
+          : int.tryParse(rawHeading?.toString() ?? '')?.clamp(1, 6);
       final listType = attributes['list']?.toString();
       final isBullet = listType == 'bullet';
       final isOrdered = listType == 'ordered';
@@ -122,7 +135,10 @@ class WriterPdfExportService {
             ),
           );
         }
-        paragraphSpans.addAll(spans);
+        paragraphSpans.addAll(spans.map((segment) => pw.TextSpan(
+          text: segment.text,
+          style: styleFor(segment.attributes, segment.text, heading: heading),
+        )));
         widgets.add(
           pw.Padding(
             padding: pw.EdgeInsets.only(
@@ -141,7 +157,7 @@ class WriterPdfExportService {
 
     void appendText(String value, Map<String, dynamic> attributes) {
       if (value.isNotEmpty) {
-        spans.add(pw.TextSpan(text: value, style: styleFor(attributes, value)));
+        spans.add(_WriterPdfTextSegment(value, Map<String, dynamic>.from(attributes)));
       }
     }
 
@@ -326,4 +342,11 @@ class WriterPdfExportService {
     if (parsed == null) return null;
     return _parseIntColor(0xFF000000 | parsed);
   }
+
+class _WriterPdfTextSegment {
+  const _WriterPdfTextSegment(this.text, this.attributes);
+
+  final String text;
+  final Map<String, dynamic> attributes;
+}
 }
