@@ -2047,3 +2047,14 @@ A module is complete only after its actual workflows exist, tests cover them, th
 - [x] Updated the test to expect both visible instances for `Normal`; all other menu options remain expected exactly once. No Writer production code or stored document format changed.
 - [x] Test repair commit: 08ae65ae2a6612c9cceb24f5c67f3dba8d08d1e7.
 - [ ] Re-run full CI on the repaired commit; keyboard integration, signed APK, install metadata, and artifact upload remain unverified.
+
+
+## Writer PDF formatting parity fix — 2026-11-22
+
+- Audited the real PDF export path against the Writer Home ribbon and DOCX export.
+- Found a concrete fidelity defect: Writer can apply text highlighting and can combine underline with strikethrough, and DOCX export already preserves those attributes, but PDF export silently omitted highlight backgrounds and used an either/or decoration branch.
+- Updated `lib/lib/modules/writer/writer_pdf_export_service.dart` so PDF text spans preserve Quill `background` highlight colors and combine underline + strike-through instead of dropping one.
+- Added focused regression coverage in `test/writer_pdf_export_test.dart` for highlight-color mapping and combined decoration mapping.
+- Commits: `d86af66daf7962da2c99e00448323eaabc714539` (PDF exporter), `9940a65655d98363a1bf381072ff1f1caaa24294` (tests).
+- Verification pending: the next GitHub Actions run must pass Flutter Analyze, all tests, Android keyboard integration, signed APK build, and package verification before this change is treated as verified.
+- Still not complete: real content-aware, editable page-by-page pagination. Current main editor still uses one continuous Quill editor over estimated page backgrounds; do not mark Writer complete until this is replaced or proven equivalent with preservation tests.
