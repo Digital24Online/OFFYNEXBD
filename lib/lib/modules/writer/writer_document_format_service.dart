@@ -202,7 +202,7 @@ class WriterDocumentFormatService {
     final result = <String, dynamic>{};
     final style = _firstChild(props, 'pStyle');
     final styleId = style == null ? null : _attribute(style, 'val');
-    final heading = styleId == null ? null : RegExp(r'heading([1-3])', caseSensitive: false).firstMatch(styleId);
+    final heading = styleId == null ? null : RegExp(r'heading([1-6])', caseSensitive: false).firstMatch(styleId);
     if (heading != null) result['header'] = int.parse(heading.group(1)!);
     final jc = _firstChild(props, 'jc');
     final align = jc == null ? null : _attribute(jc, 'val');
