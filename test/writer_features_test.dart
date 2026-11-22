@@ -85,7 +85,7 @@ void main() {
     ]) {
       expect(find.text(label), findsOneWidget);
     }
-    await tester.tap(find.text('Heading 1'));
+    await tester.tap(find.text('Title / Heading 1'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });
