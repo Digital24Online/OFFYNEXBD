@@ -458,7 +458,7 @@ class WriterDocumentFormatService {
         final block = <String, dynamic>{};
         if (child.name.local == 'h') {
           final level = int.tryParse(_attribute(child, 'outline-level') ?? '1') ?? 1;
-          block['header'] = level.clamp(1, 3).toInt();
+          block['header'] = level.clamp(1, 6).toInt();
         }
         await _appendOdtParagraph(child, styles, delta, archive, imageDirectory, () => imageIndex++);
         delta.add({'insert': '\n', if (block.isNotEmpty) 'attributes': block});
@@ -669,7 +669,7 @@ class WriterDocumentFormatService {
       final value = paragraph.toString();
       paragraph.clear();
       final heading = block['header'];
-      final tag = heading is int && heading >= 1 && heading <= 3 ? 'text:h' : 'text:p';
+      final tag = heading is int && heading >= 1 && heading <= 6 ? 'text:h' : 'text:p';
       final level = heading is int ? ' text:outline-level="$heading"' : '';
       final element = '<$tag$level>$value</$tag>';
       final listKind = block['list'];
