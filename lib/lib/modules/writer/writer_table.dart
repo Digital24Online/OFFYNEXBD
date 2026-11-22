@@ -113,7 +113,7 @@ class WriterTableBlockEmbed extends CustomBlockEmbed {
         if (value.isNotEmpty) values.add(value);
       }
     }
-    rows[top][left] = values.join('\\n');
+    rows[top][left] = values.join('\n');
     for (var r = top; r <= bottom; r++) {
       for (var c = left; c <= right; c++) {
         if (r != top || c != left) rows[r][c] = '';
