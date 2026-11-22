@@ -529,9 +529,12 @@ class WriterDocumentFormatService {
           }
         }
       } else if (child.name.local == 'table') {
-        final rows = _odtTable(child);
+        final tableData = _odtTable(child);
+        final rows = tableData['rows'] as List<List<String>>;
         if (rows.isNotEmpty) {
-          delta.add({'insert': {'offynexbd-writer-table': jsonEncode({'rows': rows, 'headerRow': false, 'version': 1})}});
+          delta.add({'insert': {'offynexbd-writer-table': jsonEncode({
+            ...tableData, 'headerRow': false, 'version': 1,
+          })}});
           delta.add({'insert': '\n'});
         }
       }
@@ -642,32 +645,70 @@ class WriterDocumentFormatService {
     return result;
   }
 
-  static List<List<String>> _odtTable(XmlElement table) {
+  static Map<String, dynamic> _odtTable(XmlElement table) {
     final rows = <List<String>>[];
+    final merges = <Map<String, int>>[];
     for (final row in _descendants(table, 'table-row')) {
       if (rows.length >= maxImportedTableRows) {
         throw const FormatException('ODT table exceeds the 100-row Writer import limit.');
       }
       final cells = <String>[];
-      for (final cell in _elementChildren(row).where((e) => e.name.local == 'table-cell' || e.name.local == 'covered-table-cell')) {
+      final rowMerges = <Map<String, int>>[];
+      for (final cell in _elementChildren(row).where((e) =>
+          e.name.local == 'table-cell' || e.name.local == 'covered-table-cell')) {
         if (cells.length >= maxImportedTableColumns) {
           throw const FormatException('ODT table exceeds the 50-column Writer import limit.');
         }
-        final value = _descendants(cell, 'p').map(_plainText).join('\n');
+        final covered = cell.name.local == 'covered-table-cell';
+        final value = covered ? '' : _descendants(cell, 'p').map(_plainText).join('\n');
         final repeated = (int.tryParse(_attribute(cell, 'number-columns-repeated') ?? '1') ?? 1)
             .clamp(1, maxImportedTableColumns - cells.length).toInt();
-        for (var index = 0; index < repeated; index++) {
-          cells.add(cell.name.local == 'covered-table-cell' ? '' : value);
+        final columnSpan = covered ? 1 :
+          (int.tryParse(_attribute(cell, 'number-columns-spanned') ?? '1') ?? 1)
+            .clamp(1, maxImportedTableColumns - cells.length).toInt();
+        final rowSpan = covered ? 1 :
+          (int.tryParse(_attribute(cell, 'number-rows-spanned') ?? '1') ?? 1)
+            .clamp(1, maxImportedTableRows - rows.length).toInt();
+        for (var repeat = 0; repeat < repeated; repeat++) {
+          final column = cells.length;
+          cells.add(value);
+          for (var offset = 1; offset < columnSpan; offset++) { cells.add(''); }
+          if (!covered && (columnSpan > 1 || rowSpan > 1)) {
+            rowMerges.add(<String, int>{
+              'row': rows.length, 'column': column,
+              'rowSpan': rowSpan, 'columnSpan': columnSpan,
+            });
+          }
         }
       }
       if (cells.isEmpty) continue;
       final repeatedRows = (int.tryParse(_attribute(row, 'number-rows-repeated') ?? '1') ?? 1)
           .clamp(1, maxImportedTableRows - rows.length).toInt();
-      for (var index = 0; index < repeatedRows; index++) {
+      for (var repeat = 0; repeat < repeatedRows; repeat++) {
+        final rowIndex = rows.length;
         rows.add(List<String>.from(cells));
+        if (repeat == 0) {
+          merges.addAll(rowMerges);
+        } else {
+          merges.addAll(rowMerges.map((merge) => <String, int>{
+            ...merge, 'row': rowIndex + (merge['row']! - (rowIndex - repeat)),
+          }));
+        }
       }
     }
-    return rows;
+    final columnCount = rows.fold<int>(1,
+      (max, row) => row.length > max ? row.length : max);
+    for (final row in rows) {
+      while (row.length < columnCount) { row.add(''); }
+    }
+    return <String, dynamic>{
+      'rows': rows,
+      'merges': WriterTableBlockEmbed.normalizedMerges(
+        <String, dynamic>{'merges': merges},
+        rowCount: rows.length,
+        columnCount: columnCount,
+      ),
+    };
   }
 
   static Future<Uint8List> exportOdt({
