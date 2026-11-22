@@ -1761,6 +1761,9 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
       'Justify': 'দুই পাশে সমান', 'Bullets': 'বুলেট', 'Numbering': 'নম্বর', 'Bold': 'গাঢ়', 'Italic': 'তির্যক',
       'Underline': 'নিচে দাগ', 'Strikethrough': 'মাঝে দাগ',
       'Red Text': 'লাল লেখা', 'Yellow Highlight': 'হলুদ হাইলাইট',
+      'Font Color': 'ফন্টের রং', 'Text Highlight Color': 'লেখা হাইলাইটের রং',
+      'Clear Formatting': 'ফরম্যাট মুছুন', 'Superscript': 'সুপারস্ক্রিপ্ট',
+      'Subscript': 'সাবস্ক্রিপ্ট',
       'Save': 'সংরক্ষণ',
       'Print Preview': 'প্রিন্ট প্রিভিউ',
       'Print': 'প্রিন্ট',
@@ -2004,6 +2007,37 @@ Future<void> showCustomFontSizeDialog() async {
     );
   }
 
+  void clearSelectedFormatting() {
+    final selection = quillController.selection;
+    final attributes = <Attribute>[
+      Attribute.bold,
+      Attribute.italic,
+      Attribute.underline,
+      Attribute.strikeThrough,
+      Attribute.fromKeyValue('color', '#000000'),
+      Attribute.fromKeyValue('background', '#FFFFFF'),
+      Attribute.fromKeyValue('font', 'sans-serif'),
+      Attribute.fromKeyValue('size', '16'),
+      Attribute.fromKeyValue('script', 'super'),
+    ];
+    for (final attribute in attributes) {
+      final reset = Attribute.clone(attribute, null);
+      if (selection.isCollapsed) {
+        quillController.formatSelection(reset);
+      } else {
+        quillController.formatText(selection.start, selection.end - selection.start, reset);
+      }
+    }
+    setState(() {
+      selectedFontFamily = 'sans-serif';
+      selectedFontSize = '16';
+    });
+  }
+
+  void _applyWriterColor(String attribute, String color) {
+    quillController.formatSelection(Attribute.fromKeyValue(attribute, color));
+  }
+
   Widget buildHomeRibbon() {
   final fontFamilies = <String, String>{
     'Noto Sans Bengali': 'sans-serif',
@@ -2209,38 +2243,56 @@ Future<void> showCustomFontSizeDialog() async {
           icon: const Icon(Icons.format_strikethrough),
         ),
 
-        // Red Text
         IconButton(
+          key: const ValueKey('writer-home-superscript'),
           visualDensity: VisualDensity.compact,
-          constraints: const BoxConstraints.tightFor(width: 32, height: 32),
-          padding: EdgeInsets.zero,
-          tooltip: _ribbonLabel('Red Text'),
-          onPressed: () {
-            quillController.formatSelection(
-              Attribute.fromKeyValue('color', '#FF0000'),
-            );
-          },
-          icon: const Icon(
-            Icons.format_color_text,
-            color: Colors.red,
-          ),
+          tooltip: _ribbonLabel('Superscript'),
+          onPressed: () => quillController.formatSelection(Attribute.fromKeyValue('script', 'super')),
+          icon: const Icon(Icons.superscript),
         ),
-
-        // Yellow Highlight
         IconButton(
+          key: const ValueKey('writer-home-subscript'),
           visualDensity: VisualDensity.compact,
-          constraints: const BoxConstraints.tightFor(width: 32, height: 32),
-          padding: EdgeInsets.zero,
-          tooltip: _ribbonLabel('Yellow Highlight'),
-          onPressed: () {
-            quillController.formatSelection(
-              Attribute.fromKeyValue('background', '#FFFF00'),
-            );
-          },
-          icon: const Icon(
-            Icons.format_color_fill,
-            color: Colors.orange,
-          ),
+          tooltip: _ribbonLabel('Subscript'),
+          onPressed: () => quillController.formatSelection(Attribute.fromKeyValue('script', 'sub')),
+          icon: const Icon(Icons.subscript),
+        ),
+        PopupMenuButton<String>(
+          key: const ValueKey('writer-home-font-color'),
+          tooltip: _ribbonLabel('Font Color'),
+          onSelected: (color) => _applyWriterColor('color', color),
+          itemBuilder: (context) => const [
+            PopupMenuItem(value: '#000000', child: Text('Black')),
+            PopupMenuItem(value: '#C00000', child: Text('Dark Red')),
+            PopupMenuItem(value: '#FF0000', child: Text('Red')),
+            PopupMenuItem(value: '#0070C0', child: Text('Blue')),
+            PopupMenuItem(value: '#008000', child: Text('Green')),
+            PopupMenuItem(value: '#7030A0', child: Text('Purple')),
+            PopupMenuItem(value: '#ED7D31', child: Text('Orange')),
+            PopupMenuItem(value: '#808080', child: Text('Gray')),
+          ],
+          child: const Padding(padding: EdgeInsets.all(7), child: Icon(Icons.format_color_text, color: Colors.red, size: 21)),
+        ),
+        PopupMenuButton<String>(
+          key: const ValueKey('writer-home-text-highlight'),
+          tooltip: _ribbonLabel('Text Highlight Color'),
+          onSelected: (color) => _applyWriterColor('background', color),
+          itemBuilder: (context) => const [
+            PopupMenuItem(value: '#FFFF00', child: Text('Yellow')),
+            PopupMenuItem(value: '#00FF00', child: Text('Bright Green')),
+            PopupMenuItem(value: '#00B0F0', child: Text('Cyan')),
+            PopupMenuItem(value: '#FF00FF', child: Text('Pink')),
+            PopupMenuItem(value: '#FFC000', child: Text('Gold')),
+            PopupMenuItem(value: '#D9EAD3', child: Text('Light Green')),
+          ],
+          child: const Padding(padding: EdgeInsets.all(7), child: Icon(Icons.format_color_fill, color: Colors.orange, size: 21)),
+        ),
+        IconButton(
+          key: const ValueKey('writer-home-clear-formatting'),
+          visualDensity: VisualDensity.compact,
+          tooltip: _ribbonLabel('Clear Formatting'),
+          onPressed: clearSelectedFormatting,
+          icon: const Icon(Icons.format_clear),
         ),
       ],
     ),
