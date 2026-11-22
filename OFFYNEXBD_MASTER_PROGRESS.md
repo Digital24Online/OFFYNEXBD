@@ -2058,3 +2058,12 @@ A module is complete only after its actual workflows exist, tests cover them, th
 - Commits: `d86af66daf7962da2c99e00448323eaabc714539` (PDF exporter), `9940a65655d98363a1bf381072ff1f1caaa24294` (tests).
 - Verification pending: the next GitHub Actions run must pass Flutter Analyze, all tests, Android keyboard integration, signed APK build, and package verification before this change is treated as verified.
 - Still not complete: real content-aware, editable page-by-page pagination. Current main editor still uses one continuous Quill editor over estimated page backgrounds; do not mark Writer complete until this is replaced or proven equivalent with preservation tests.
+
+## Writer PDF image sizing audit — 2026-11-23
+- Fixed a verified print-layout defect: embedded images previously used a fixed 430-point width, which could exceed the printable width on A5 pages or narrow custom-margin layouts.
+- PDF image width now derives from the selected PDF page width minus the configured left and right margins (all in PDF points).
+- Added regression coverage for A5 portrait, A4 landscape, and invalid margins that leave no printable width.
+- Scope remains Writer-only. This change does not alter document Delta data or image source files.
+- Commits: `6f64d3aade4826ebe7631ffb163cc5efe0486fc5`, `bb4730e573d3cbf91443109505dd3db83b86a940`.
+- Validation is pending the GitHub Actions run triggered by these commits. Existing run #1014 remains independently in progress; do not treat it as validating these newer commits.
+
