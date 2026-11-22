@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:docx_creator/docx_creator.dart';
 import 'writer_page_break.dart';
+import 'writer_table.dart';
 
 /// Converts supported OFFYNEX Writer Quill content into a real DOCX file.
 /// Images are embedded as bytes; device-local file paths are never exported.
@@ -357,16 +358,44 @@ class WriterDocxExportService {
     try {
       final decoded = jsonDecode(raw);
       if (decoded is! Map || decoded['rows'] is! List) return '';
-      final rows = decoded['rows'] as List;
-      if (rows.isEmpty) return '';
+      final rawRows = decoded['rows'] as List;
+      if (rawRows.isEmpty) return '';
+      final rows = rawRows.map<List<String>>((row) =>
+        row is List ? row.map((cell) => cell?.toString() ?? '').toList()
+                    : <String>[row?.toString() ?? '']
+      ).toList();
+      final columns = rows.fold<int>(1,
+        (max, row) => row.length > max ? row.length : max);
+      for (final row in rows) {
+        while (row.length < columns) { row.add(''); }
+      }
+      final merges = WriterTableBlockEmbed.normalizedMerges(
+        Map<String, dynamic>.from(decoded),
+        rowCount: rows.length,
+        columnCount: columns,
+      );
+      final anchors = <String, Map<String, int>>{
+        for (final merge in merges) '${merge['row']}:${merge['column']}': merge,
+      };
+      final covered = <String>{};
+      for (final merge in merges) {
+        for (var r = merge['row']!; r < merge['row']! + merge['rowSpan']!; r++) {
+          for (var c = merge['column']!; c < merge['column']! + merge['columnSpan']!; c++) {
+            if (r != merge['row'] || c != merge['column']) covered.add('$r:$c');
+          }
+        }
+      }
       final html = StringBuffer('<table border="1">');
       for (var rowIndex = 0; rowIndex < rows.length; rowIndex++) {
-        final row = rows[rowIndex];
-        if (row is! List) continue;
         html.write('<tr>');
-        for (final cell in row) {
+        for (var columnIndex = 0; columnIndex < columns; columnIndex++) {
+          final key = '$rowIndex:$columnIndex';
+          if (covered.contains(key)) continue;
+          final merge = anchors[key];
           final tag = rowIndex == 0 && decoded['headerRow'] == true ? 'th' : 'td';
-          html.write('<$tag>${_escape(cell?.toString() ?? '')}</$tag>');
+          final spans = merge == null ? '' :
+            ' rowspan="${merge['rowSpan']}" colspan="${merge['columnSpan']}"';
+          html.write('<$tag$spans>${_escape(rows[rowIndex][columnIndex])}</$tag>');
         }
         html.write('</tr>');
       }
