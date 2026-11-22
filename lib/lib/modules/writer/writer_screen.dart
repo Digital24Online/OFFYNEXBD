@@ -2009,7 +2009,7 @@ Future<void> showCustomFontSizeDialog() async {
 
   void clearSelectedFormatting() {
     final selection = quillController.selection;
-    final attributes = <Attribute>[
+    final attributes = <Attribute?>[
       Attribute.bold,
       Attribute.italic,
       Attribute.underline,
@@ -2021,6 +2021,7 @@ Future<void> showCustomFontSizeDialog() async {
       Attribute.fromKeyValue('script', 'super'),
     ];
     for (final attribute in attributes) {
+      if (attribute == null) continue;
       final reset = Attribute.clone(attribute, null);
       if (selection.isCollapsed) {
         quillController.formatSelection(reset);
