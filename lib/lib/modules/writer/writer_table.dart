@@ -210,6 +210,12 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
   int selectedRow = 0;
   int selectedColumn = 0;
   bool headerRow = true;
+  List<Map<String, int>> merges = <Map<String, int>>[];
+  bool _captureMergeStart = true;
+  int? _mergeStartRow;
+  int? _mergeStartColumn;
+  int? _mergeEndRow;
+  int? _mergeEndColumn;
 
   @override
   void initState() {
@@ -263,6 +269,11 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
       (index) => rawWidths is List && index < rawWidths.length
           ? (rawWidths[index] as num?)?.toDouble().clamp(70.0, 480.0).toDouble() ?? 150.0
           : 150.0,
+    );
+    merges = WriterTableBlockEmbed.normalizedMerges(
+      data ?? const <String, dynamic>{},
+      rowCount: cells.length,
+      columnCount: columnCount,
     );
   }
 
@@ -419,6 +430,46 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
     });
   }
 
+  void mergeSelectedRange() {
+    if (_mergeStartRow == null || _mergeStartColumn == null ||
+        _mergeEndRow == null || _mergeEndColumn == null) return;
+    final data = WriterTableBlockEmbed.mergeCells(
+      <String, dynamic>{
+        'rows': cells.map((row) => row.map((cell) => cell.text).toList()).toList(),
+        'merges': merges,
+      },
+      firstRow: _mergeStartRow!,
+      firstColumn: _mergeStartColumn!,
+      lastRow: _mergeEndRow!,
+      lastColumn: _mergeEndColumn!,
+    );
+    final rows = data['rows'] as List;
+    setState(() {
+      for (var r = 0; r < cells.length; r++) {
+        for (var c = 0; c < columnCount; c++) {
+          cells[r][c].text = rows[r][c].toString();
+        }
+      }
+      merges = WriterTableBlockEmbed.normalizedMerges(
+        data, rowCount: cells.length, columnCount: columnCount);
+      selectedRow = _mergeStartRow!;
+      selectedColumn = _mergeStartColumn!;
+    });
+  }
+
+  void splitSelectedCell() {
+    final data = WriterTableBlockEmbed.splitCell(
+      <String, dynamic>{'rows': cells.map((row) =>
+        row.map((cell) => cell.text).toList()).toList(), 'merges': merges},
+      row: selectedRow,
+      column: selectedColumn,
+    );
+    setState(() {
+      merges = WriterTableBlockEmbed.normalizedMerges(
+        data, rowCount: cells.length, columnCount: columnCount);
+    });
+  }
+
   void saveTable() {
     final rows = cells
         .map((row) => row.map((controller) => controller.text).toList())
@@ -432,6 +483,7 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
       'backgroundColor': backgroundColor,
       'rowHeights': rowHeights,
       'columnWidths': columnWidths,
+      'merges': merges,
     });
   }
 
@@ -577,6 +629,33 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
                   icon: const Icon(Icons.width_full),
                   label: Text(_t('কলাম চওড়া', 'Wider Column')),
                 ),
+                _actionButton(
+                  key: const ValueKey('writer-table-merge-range-start'),
+                  onPressed: () => setState(() => _captureMergeStart = true),
+                  icon: const Icon(Icons.first_page),
+                  label: Text(_t('মার্জের শুরু', 'Set Merge Start')),
+                ),
+                _actionButton(
+                  key: const ValueKey('writer-table-merge-range-end'),
+                  onPressed: () => setState(() => _captureMergeStart = false),
+                  icon: const Icon(Icons.last_page),
+                  label: Text(_t('মার্জের শেষ', 'Set Merge End')),
+                ),
+                _actionButton(
+                  key: const ValueKey('writer-table-merge-selected-range'),
+                  onPressed: _mergeStartRow != null && _mergeEndRow != null
+                      ? mergeSelectedRange : null,
+                  icon: const Icon(Icons.call_merge),
+                  label: Text(_t('ঘর মার্জ', 'Merge Cells')),
+                ),
+                _actionButton(
+                  key: const ValueKey('writer-table-split-selected-cell'),
+                  onPressed: merges.any((merge) =>
+                    merge['row'] == selectedRow &&
+                    merge['column'] == selectedColumn) ? splitSelectedCell : null,
+                  icon: const Icon(Icons.call_split),
+                  label: Text(_t('ঘর আলাদা', 'Split Cell')),
+                ),
                 OutlinedButton(
                   onPressed: () => chooseColor(chooseBorder: true),
                   child: Text(_t('বর্ডারের রং', 'Border Color')),
@@ -593,6 +672,7 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
             Text(_t('${cells.length} সারি  ·  $columnCount কলাম', '${cells.length} rows  ·  $columnCount columns')),
             const SizedBox(height: 8),
             Text(_t('নির্বাচিত ঘর: ${selectedRow + 1}, ${selectedColumn + 1}', 'Selected cell: ${selectedRow + 1}, ${selectedColumn + 1}')),
+            Text(_t('মার্জ নির্বাচন: শুরু ${_mergeStartRow == null ? '-' : '${_mergeStartRow! + 1},${_mergeStartColumn! + 1}'} → ${_mergeEndRow == null ? '-' : '${_mergeEndRow! + 1},${_mergeEndColumn! + 1}'}', 'Merge selection: ${_mergeStartRow == null ? '-' : '${_mergeStartRow! + 1},${_mergeStartColumn! + 1}'} → ${_mergeEndRow == null ? '-' : '${_mergeEndRow! + 1},${_mergeEndColumn! + 1}'}')),
             CheckboxListTile(
               key: const ValueKey('writer-table-header-row-toggle'),
               dense: true,
@@ -622,6 +702,14 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
                                 setState(() {
                                   selectedRow = rowIndex;
                                   selectedColumn = columnIndex;
+                                  if (_captureMergeStart) {
+                                    _mergeStartRow = rowIndex;
+                                    _mergeStartColumn = columnIndex;
+                                  } else {
+                                    _mergeEndRow = rowIndex;
+                                    _mergeEndColumn = columnIndex;
+                                    _captureMergeStart = true;
+                                  }
                                 });
                               },
                               controller: cells[rowIndex][columnIndex],
