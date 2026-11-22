@@ -2076,3 +2076,14 @@ A module is complete only after its actual workflows exist, tests cover them, th
 - Commits: `8630afbdb3ff13e82b50109a4daf274d34fb5118`, `57d1e4f6cb6a70e42440856625472e5ebd1f1e1c`.
 - Automated validation is pending; do not treat the preceding CI run as validating these newer commits.
 
+
+
+
+## Writer table interchange and editing audit — 2026-11-23
+- [x] Re-inspected the current DOCX table importer, Writer table data model, editor dialog, renderer and DOCX export path together.
+- [x] Confirmed the importer reads horizontal Word `gridSpan` but expands the span into empty logical grid slots (for example, a two-column merged cell becomes a value cell plus an empty cell). This preserves later column alignment, but loses the actual merged-cell structure.
+- [x] Confirmed the current importer does not read Word vertical `vMerge`; vertical merge relationships are therefore not retained.
+- [x] Confirmed the current Writer table embed stores a rectangular `rows` matrix of cell strings, and the dialog/renderer/exporter all iterate every grid slot as an independent cell. There is no rowSpan/columnSpan representation or merge/split action yet.
+- [ ] Horizontal/vertical merge and split remain incomplete. Do not claim DOCX merged-cell fidelity until the model, editing UI, renderer, DOCX/ODT import-export and PDF rendering all preserve the same cell-span structure with legacy-table compatibility and regression tests.
+- [ ] True content-aware page pagination also remains incomplete; the single continuous Quill editor and painted estimated page backgrounds are not physical page flow.
+- Validation note: CI run #1021 has Analyze and the full test suite passed (304 tests), while Android keyboard integration is still running; signing, APK build, package validation and artifact upload have not yet completed.
