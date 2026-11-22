@@ -672,7 +672,8 @@ class WriterDocumentFormatService {
         for (var repeat = 0; repeat < repeated; repeat++) {
           final column = cells.length;
           cells.add(value);
-          for (var offset = 1; offset < columnSpan; offset++) { cells.add(''); }
+          // ODF emits explicit covered-table-cell nodes for every covered grid slot.
+          // Do not expand columnSpan here or those slots would be counted twice.
           if (!covered && (columnSpan > 1 || rowSpan > 1)) {
             rowMerges.add(<String, int>{
               'row': rows.length, 'column': column,
