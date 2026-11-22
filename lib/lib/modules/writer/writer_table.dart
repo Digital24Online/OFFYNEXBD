@@ -433,28 +433,34 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
   void mergeSelectedRange() {
     if (_mergeStartRow == null || _mergeStartColumn == null ||
         _mergeEndRow == null || _mergeEndColumn == null) return;
-    final data = WriterTableBlockEmbed.mergeCells(
-      <String, dynamic>{
-        'rows': cells.map((row) => row.map((cell) => cell.text).toList()).toList(),
-        'merges': merges,
-      },
-      firstRow: _mergeStartRow!,
-      firstColumn: _mergeStartColumn!,
-      lastRow: _mergeEndRow!,
-      lastColumn: _mergeEndColumn!,
-    );
-    final rows = data['rows'] as List;
-    setState(() {
-      for (var r = 0; r < cells.length; r++) {
-        for (var c = 0; c < columnCount; c++) {
-          cells[r][c].text = rows[r][c].toString();
+    try {
+      final data = WriterTableBlockEmbed.mergeCells(
+        <String, dynamic>{
+          'rows': cells.map((row) => row.map((cell) => cell.text).toList()).toList(),
+          'merges': merges,
+        },
+        firstRow: _mergeStartRow!,
+        firstColumn: _mergeStartColumn!,
+        lastRow: _mergeEndRow!,
+        lastColumn: _mergeEndColumn!,
+      );
+      final rows = data['rows'] as List;
+      setState(() {
+        for (var r = 0; r < cells.length; r++) {
+          for (var c = 0; c < columnCount; c++) {
+            cells[r][c].text = rows[r][c].toString();
+          }
         }
-      }
-      merges = WriterTableBlockEmbed.normalizedMerges(
-        data, rowCount: cells.length, columnCount: columnCount);
-      selectedRow = _mergeStartRow!;
-      selectedColumn = _mergeStartColumn!;
-    });
+        merges = WriterTableBlockEmbed.normalizedMerges(
+          data, rowCount: cells.length, columnCount: columnCount);
+        selectedRow = _mergeStartRow!;
+        selectedColumn = _mergeStartColumn!;
+      });
+    } on ArgumentError catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message?.toString() ?? 'Invalid cell selection')),
+      );
+    }
   }
 
   void splitSelectedCell() {
@@ -560,48 +566,48 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
                   runSpacing: 8,
                   children: [
                 _actionButton(
-                  onPressed: addRow,
+                  onPressed: merges.isEmpty ? addRow : null,
                   icon: const Icon(Icons.add),
                   label: Text(_t('সারি যোগ', 'Add Row')),
                 ),
                 _actionButton(
                   key: const ValueKey('writer-table-insert-row-before'),
-                  onPressed: insertRowBefore,
+                  onPressed: merges.isEmpty ? insertRowBefore : null,
                   icon: const Icon(Icons.arrow_upward),
                   label: Text(_t('উপরে সারি', 'Insert Above')),
                 ),
                 _actionButton(
                   key: const ValueKey('writer-table-insert-row-after'),
-                  onPressed: insertRowAfter,
+                  onPressed: merges.isEmpty ? insertRowAfter : null,
                   icon: const Icon(Icons.arrow_downward),
                   label: Text(_t('নিচে সারি', 'Insert Below')),
                 ),
                 _actionButton(
                   key: const ValueKey('writer-table-delete-selected-row'),
-                  onPressed: cells.length <= 1 ? null : removeRow,
+                  onPressed: cells.length <= 1 || merges.isNotEmpty ? null : removeRow,
                   icon: const Icon(Icons.remove),
                   label: Text(_t('নির্বাচিত সারি মুছুন', 'Delete Selected Row')),
                 ),
                 _actionButton(
-                  onPressed: addColumn,
+                  onPressed: merges.isEmpty ? addColumn : null,
                   icon: const Icon(Icons.add),
                   label: Text(_t('কলাম যোগ', 'Add Column')),
                 ),
                 _actionButton(
                   key: const ValueKey('writer-table-insert-column-before'),
-                  onPressed: insertColumnBefore,
+                  onPressed: merges.isEmpty ? insertColumnBefore : null,
                   icon: const Icon(Icons.arrow_back),
                   label: Text(_t('বামে কলাম', 'Insert Left')),
                 ),
                 _actionButton(
                   key: const ValueKey('writer-table-insert-column-after'),
-                  onPressed: insertColumnAfter,
+                  onPressed: merges.isEmpty ? insertColumnAfter : null,
                   icon: const Icon(Icons.arrow_forward),
                   label: Text(_t('ডানে কলাম', 'Insert Right')),
                 ),
                 _actionButton(
                   key: const ValueKey('writer-table-delete-selected-column'),
-                  onPressed: columnCount <= 1 ? null : removeColumn,
+                  onPressed: columnCount <= 1 || merges.isNotEmpty ? null : removeColumn,
                   icon: const Icon(Icons.remove),
                   label: Text(_t('নির্বাচিত কলাম মুছুন', 'Delete Selected Column')),
                 ),
