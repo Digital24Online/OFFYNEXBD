@@ -10,6 +10,13 @@ class WriterTableBlockEmbed extends CustomBlockEmbed {
 
   const WriterTableBlockEmbed(String value) : super(embedType, value);
 
+  /// Existing tables default to a header row for backward compatibility,
+  /// while an explicit false value must survive editing and round-trips.
+  static bool hasHeaderRow(Map<String, dynamic> data) {
+    final value = data['headerRow'];
+    return value is bool ? value : true;
+  }
+
   factory WriterTableBlockEmbed.fromData(Map<String, dynamic> data) {
     return WriterTableBlockEmbed(jsonEncode(data));
   }
@@ -68,11 +75,13 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
   int backgroundColor = 0xFFFFFFFF;
   int selectedRow = 0;
   int selectedColumn = 0;
+  bool headerRow = true;
 
   @override
   void initState() {
     super.initState();
     final data = widget.initialData;
+    headerRow = WriterTableBlockEmbed.hasHeaderRow(data ?? const <String, dynamic>{});
     borderColor = data?['borderColor'] is int
         ? data!['borderColor'] as int
         : 0xFF333333;
@@ -283,7 +292,7 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
 
     Navigator.of(context).pop(<String, dynamic>{
       'rows': rows,
-      'headerRow': true,
+      'headerRow': headerRow,
       'version': 1,
       'borderColor': borderColor,
       'backgroundColor': backgroundColor,
@@ -450,6 +459,14 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
             Text(_t('${cells.length} সারি  ·  $columnCount কলাম', '${cells.length} rows  ·  $columnCount columns')),
             const SizedBox(height: 8),
             Text(_t('নির্বাচিত ঘর: ${selectedRow + 1}, ${selectedColumn + 1}', 'Selected cell: ${selectedRow + 1}, ${selectedColumn + 1}')),
+            CheckboxListTile(
+              key: const ValueKey('writer-table-header-row-toggle'),
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              value: headerRow,
+              title: Text(_t('প্রথম সারি হেডার', 'First row is a header')),
+              onChanged: (value) => setState(() => headerRow = value ?? false),
+            ),
             const SizedBox(height: 8),
             SizedBox(
               height: (screenHeight * 0.14).clamp(72.0, 112.0),
@@ -570,6 +587,7 @@ class WriterTableEmbedBuilder extends EmbedBuilder {
     final background = data['backgroundColor'] is int
         ? data['backgroundColor'] as int
         : 0xFFFFFFFF;
+    final hasHeaderRow = WriterTableBlockEmbed.hasHeaderRow(data);
     final rawWidths = data['columnWidths'];
     final widths = List<double>.generate(
       columnCount,
@@ -624,7 +642,7 @@ class WriterTableEmbedBuilder extends EmbedBuilder {
                 children: List.generate(rows.length, (rowIndex) {
                   final row = rows[rowIndex];
                   return TableRow(
-                    decoration: rowIndex == 0
+                    decoration: rowIndex == 0 && hasHeaderRow
                         ? BoxDecoration(
                             color: Color(background).withValues(alpha: 0.85),
                           )
@@ -640,7 +658,7 @@ class WriterTableEmbedBuilder extends EmbedBuilder {
                         child: Text(
                           value,
                           style: TextStyle(
-                            fontWeight: rowIndex == 0
+                            fontWeight: rowIndex == 0 && hasHeaderRow
                                 ? FontWeight.w600
                                 : FontWeight.normal,
                           ),
