@@ -342,11 +342,11 @@ class WriterPdfExportService {
     if (parsed == null) return null;
     return _parseIntColor(0xFF000000 | parsed);
   }
+}
 
 class _WriterPdfTextSegment {
   const _WriterPdfTextSegment(this.text, this.attributes);
 
   final String text;
   final Map<String, dynamic> attributes;
-}
 }
