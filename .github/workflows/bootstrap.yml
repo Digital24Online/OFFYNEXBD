@@ -112,7 +112,11 @@ jobs:
       - name: Run Tests
         run: flutter test
 
+      # Keep the slow Android emulator smoke test on PR validation.
+      # Push/workflow_dispatch builds must still produce a signed APK even
+      # when hosted emulator boot/install is unstable or unusually slow.
       - name: Run Android keyboard integration test
+        if: github.event_name == 'pull_request'
         timeout-minutes: 20
         uses: reactivecircus/android-emulator-runner@v2
         env:
