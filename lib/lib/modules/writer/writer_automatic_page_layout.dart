@@ -84,17 +84,18 @@ class WriterAutomaticPageLayout {
     var paragraph = <_WriterTextRun>[];
     var paragraphTextLength = 0;
 
-    void nextPage() {
+    void nextPage({int? nextOffset}) {
       final current = mutablePages[pageIndex];
-      current.endOffset = math.max(current.endOffset, documentOffset);
+      final pageStartOffset = nextOffset ?? documentOffset;
+      current.endOffset = math.max(current.endOffset, pageStartOffset);
       pageIndex++;
       pageTop = 0;
-      mutablePages.add(_MutablePage(pageIndex, documentOffset));
+      mutablePages.add(_MutablePage(pageIndex, pageStartOffset));
     }
 
-    void ensureRoom(double height) {
+    void ensureRoom(double height, {int? nextOffset}) {
       if (pageTop > 0 && pageTop + height > pageContentHeight) {
-        nextPage();
+        nextPage(nextOffset: nextOffset);
       }
     }
 
@@ -143,9 +144,23 @@ class WriterAutomaticPageLayout {
 
       for (final line in lines) {
         final lineHeight = math.max(line.height, defaultFontSize * 1.2);
-        ensureRoom(lineHeight);
         final lineStart = line.startIndex;
         final lineEnd = math.max(line.endIndex, lineStart + 1);
+        var lineDocumentStart = documentOffset;
+        for (final run in paragraph) {
+          final intersectionStart = math.max(lineStart, run.paragraphStart);
+          final intersectionEnd = math.min(lineEnd, run.paragraphEnd);
+          if (intersectionEnd <= intersectionStart) continue;
+          final localStart = run.localStart +
+              intersectionStart - run.paragraphStart;
+          lineDocumentStart = math.min(
+            lineDocumentStart == documentOffset
+                ? run.documentOffset + localStart
+                : lineDocumentStart,
+            run.documentOffset + localStart,
+          );
+        }
+        ensureRoom(lineHeight, nextOffset: lineDocumentStart);
 
         for (final run in paragraph) {
           final intersectionStart = math.max(lineStart, run.paragraphStart);
@@ -234,7 +249,7 @@ class WriterAutomaticPageLayout {
           textDirection: textDirection,
           defaultFontSize: defaultFontSize,
         );
-        ensureRoom(embedHeight);
+        ensureRoom(embedHeight, nextOffset: documentOffset);
         addFragment(
           operationIndex: operationIndex,
           documentStart: documentOffset,
