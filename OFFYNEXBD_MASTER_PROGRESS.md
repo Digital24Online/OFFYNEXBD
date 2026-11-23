@@ -2166,3 +2166,14 @@ Not yet complete or verified:
 - Commits: `5ca0d6ddcd2e56711ed675f1f7686a9d34eabb15` (projection model), `ba1f6b817f3622cbbb831cafb888740f9f4e7c65` (tests and corrected boundary expectation).
 - Initial PR CI attempts were cancelled by the workflow's concurrency rule while these two rapid commits were landing. No Analyze/Test/Android result is claimed for this batch yet; rerun a single stable head commit and inspect the exact job results before proceeding.
 - Important: this is a tested-design foundation, not yet the finished paged editing surface. Automatic page layout, per-page margins, actual Quill render measurement, caret/selection synchronization, and real-device Bengali layout verification remain open.
+
+
+## Writer page projection immutability hardening — 2026-11-23
+
+- Re-inspected the canonical Delta page projection after adding source-operation/UTF-16 offset mapping.
+- Found a subtle compatibility risk: the projection wrapped only the outer operation map as unmodifiable. Nested attributes, list values and embed payload maps still referenced mutable objects from the original Delta, so later mutation could silently change the supposedly stable projection.
+- Added recursive immutable snapshots for nested maps and lists; source Delta remains untouched and the projected operation data can no longer be mutated through nested references.
+- Added regression coverage proving later source mutations do not change projected formatting attributes or embed payloads, and nested projected maps reject writes.
+- Commits: `6dd7d2b3267e2797eb0553270be0953afdea8c48` (implementation), `1c98d1b163dcde5d4ea81a5eb432c56a1a3a4d51` (tests).
+- CI is pending for the exact latest branch head. Do not treat earlier Build #1085 as validation for these new commits.
+- This is projection data-integrity hardening only; true content-aware physical pagination, per-page margins and live caret/selection synchronization remain unfinished.
