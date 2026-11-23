@@ -254,10 +254,10 @@ class WriterAutomaticPageLayout {
         for (var index = 0; index < segments.length; index++) {
           final hasNewline = index < segments.length - 1;
           final text = hasNewline ? '${segments[index]}\n' : segments[index];
+          final attributes = operation['attributes'] is Map
+              ? Map<String, dynamic>.from(operation['attributes'] as Map)
+              : <String, dynamic>{};
           if (text.isNotEmpty) {
-            final attributes = operation['attributes'] is Map
-                ? Map<String, dynamic>.from(operation['attributes'] as Map)
-                : <String, dynamic>{};
             paragraph.add(_WriterTextRun(
               operationIndex: operationIndex,
               documentOffset: operationStart,
