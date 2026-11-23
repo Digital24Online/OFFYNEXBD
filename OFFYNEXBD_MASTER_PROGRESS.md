@@ -2108,3 +2108,27 @@ Not yet complete or verified:
 - Verify table editor preview/selection UX and row/column operations after split on Android.
 - True content-aware Writer pagination remains a separate confirmed blocker; the editor is still based on one continuous Quill document with estimated page backgrounds.
 - Do not mark Writer complete or move to another module until these items and the remaining Writer requirements are verified.
+
+
+## Verified Writer PDF merged-cell checkpoint — 2026-11-23
+
+- [x] Implemented PDF table layout using physical cell rectangles so horizontal and vertical merged ranges are painted once at their combined width/height.
+- [x] Added regression tests for a vertical merge and a combined horizontal+vertical merge.
+- [x] Corrected the PDF widget sizing API after Analyze identified that `pw.Positioned` does not accept width/height; dimensions now belong to its child `pw.Container`.
+- [x] Final commit: `42f22fdfbf3667d9c02f701a539f60dc3d161ff7` — “Fix PDF positioned cell sizing API usage”.
+- [x] GitHub Actions Build #1075 (run ID `45134469980`) completed SUCCESS on that exact commit: Flutter Analyze, full automated tests, Android keyboard integration test, signing-key checks, Android release APK build, APK signature/install-metadata verification, signing-file cleanup, source save, package-content verification and artifact upload all passed.
+- [x] Artifact `OFFYNEXBD-Android-APK` uploaded (143,780,014 bytes; not expired at verification time).
+- Run: https://github.com/Digital24Online/OFFYNEXBD/actions/runs/45134469980
+- [ ] This CI success verifies source analysis/tests/build, not real-device print appearance, physical Android keyboard visibility, or complete Writer feature parity.
+- [ ] True content-aware page-by-page editing/pagination remains the major confirmed blocker: the editor is still one continuous Quill document with estimated page backgrounds.
+- [ ] Continue Writer-only work. Do not modify or advance other modules.
+
+## Anti-repeat execution protocol — 2026-11-23
+
+- Before changing code, inspect the complete affected implementation path and its related tests together; record confirmed findings and all dependent files in one audit.
+- Group mutually dependent fixes into one backward-compatible change set instead of repeating narrow patch cycles.
+- Add regression tests for each discovered defect in the same batch; run Analyze and the full relevant test suite once after the integrated changes.
+- If CI fails, inspect the exact failing job/log and fix the root cause plus its regression test before triggering another verification run. Do not rerun unchanged failing code or repeat a fix already included in the current head.
+- Verify the final workflow run against the exact source commit; check every stage and artifact metadata before reporting.
+- Keep this progress file updated with the final commit, run ID, results, unresolved risks and next consolidated task so a new chat can resume without re-auditing completed work.
+- Never call Writer or any module complete based only on a green build; use explicit functional acceptance criteria and real-device checks where automation cannot establish behavior.
