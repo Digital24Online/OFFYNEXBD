@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdf/pdf.dart';
@@ -250,7 +252,7 @@ void main() {
       delta: [
         {
           'insert': {
-            'offynexbd-writer-table': {
+            'offynexbd-writer-table': jsonEncode({
               'rows': [
                 ['Merged heading', '', 'Third column'],
                 ['Short legacy row'],
@@ -258,7 +260,7 @@ void main() {
               'merges': [
                 {'row': 0, 'column': 0, 'rowSpan': 1, 'columnSpan': 2},
               ],
-            },
+            }),
           },
         },
         {'insert': '\n'},
