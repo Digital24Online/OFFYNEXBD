@@ -101,6 +101,9 @@ class WriterAutomaticPageLayout {
     var paragraph = <_WriterTextRun>[];
     var paragraphTextLength = 0;
     var paragraphAttributes = <String, dynamic>{};
+    int? paragraphTerminatorOperationIndex;
+    int? paragraphTerminatorDocumentOffset;
+    int? paragraphTerminatorLocalOffset;
 
     void nextPage({int? nextOffset}) {
       final current = mutablePages[pageIndex];
@@ -143,7 +146,47 @@ class WriterAutomaticPageLayout {
     }
 
     void flushParagraph() {
-      if (paragraph.isEmpty) return;
+      if (paragraph.isEmpty) {
+        // A newline with no preceding text is still a real paragraph. Keep a
+        // one-character source mapping so blank lines consume vertical space
+        // and remain addressable in the canonical Quill document.
+        final operationIndex = paragraphTerminatorOperationIndex;
+        final documentStart = paragraphTerminatorDocumentOffset;
+        final localStart = paragraphTerminatorLocalOffset;
+        if (operationIndex != null &&
+            documentStart != null &&
+            localStart != null) {
+          final header = int.tryParse(
+            paragraphAttributes['header']?.toString() ?? '',
+          );
+          final headerScale = switch (header) {
+            1 => 2.0,
+            2 => 1.5,
+            3 => 1.17,
+            _ => 1.0,
+          };
+          final lineHeight = math.max(
+            defaultFontSize * 1.2,
+            defaultFontSize * headerScale * 1.2,
+          ).toDouble();
+          ensureRoom(lineHeight, nextOffset: documentStart);
+          addFragment(
+            operationIndex: operationIndex,
+            documentStart: documentStart,
+            localStart: localStart,
+            localEnd: localStart + 1,
+            height: lineHeight,
+            kind: 'text',
+          );
+          pageTop += lineHeight + 4;
+        }
+        paragraphTextLength = 0;
+        paragraphAttributes = <String, dynamic>{};
+        paragraphTerminatorOperationIndex = null;
+        paragraphTerminatorDocumentOffset = null;
+        paragraphTerminatorLocalOffset = null;
+        return;
+      }
       final indentValue = paragraphAttributes['indent'];
       final indentLevel = indentValue is num
           ? indentValue.toDouble()
@@ -240,6 +283,9 @@ class WriterAutomaticPageLayout {
       paragraph.clear();
       paragraphTextLength = 0;
       paragraphAttributes = <String, dynamic>{};
+      paragraphTerminatorOperationIndex = null;
+      paragraphTerminatorDocumentOffset = null;
+      paragraphTerminatorLocalOffset = null;
     }
 
     for (var operationIndex = 0;
@@ -268,8 +314,12 @@ class WriterAutomaticPageLayout {
             ));
             paragraphTextLength += text.length;
           }
-          localOffset += text.length;
           if (hasNewline) {
+            final newlineLocalOffset = localOffset + segments[index].length;
+            paragraphTerminatorOperationIndex = operationIndex;
+            paragraphTerminatorDocumentOffset =
+                operationStart + newlineLocalOffset;
+            paragraphTerminatorLocalOffset = newlineLocalOffset;
             paragraphAttributes = {
               for (final key in const [
                 'header', 'indent', 'list', 'blockquote', 'code-block',
@@ -279,6 +329,7 @@ class WriterAutomaticPageLayout {
             };
             flushParagraph();
           }
+          localOffset += text.length;
         }
         documentOffset += insert.length;
       } else if (insert is Map) {

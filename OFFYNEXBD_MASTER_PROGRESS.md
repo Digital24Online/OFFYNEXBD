@@ -2236,3 +2236,12 @@ Not yet complete or verified:
 - Workflow commit `4cf27cdea2c48ba3a07d6de6aa50f8325cb95483`: run the Android emulator keyboard smoke test on pull-request validation only. Push and manual workflow-dispatch runs skip this unstable hosted-emulator stage and continue through signing, release APK build, signature/install-metadata checks and artifact upload. The Flutter Analyze and full unit-test steps remain required on every run.
 - This isolates release APK generation from emulator boot/install instability; it does not claim the physical Android keyboard test passed. Keep real-device keyboard verification open.
 - The workflow change must itself pass on its exact commit before relying on it for an APK artifact.
+
+
+## Writer blank-paragraph pagination correction — 2026-11-24
+
+- Re-inspected the measured layout projection and found that empty paragraphs (consecutive newline operations) were discarded by an early return in paragraph flush. This under-counted vertical space and could place following content on the wrong visual page, especially in Bengali documents with intentional blank lines.
+- Updated the projection to retain a source-mapped fragment for each empty paragraph, consume the correct line height, respect Heading 1/2/3 line-height scaling, and preserve canonical UTF-16 offsets without inserting or changing saved Delta operations.
+- Added regression tests for blank paragraphs crossing a page boundary and blank heading line height.
+- This corrects measured page-count/layout projection only. It does not yet provide a separate physical Quill editing surface or per-page margins/caret transfer; those remain blocking Writer completion gates.
+- Exact-head Analyze, full Flutter tests, keyboard integration, signed APK and artifact verification are pending.

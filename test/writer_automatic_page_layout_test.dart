@@ -114,6 +114,42 @@ void main() {
       );
     });
 
+    test('blank paragraphs consume measured page height and retain source offsets', () {
+      final layout = WriterAutomaticPageLayout.fromDelta(
+        delta: [{'insert': '\\n\\n'}],
+        maxWidth: 300,
+        pageContentHeight: 25,
+      );
+
+      expect(layout.pageCount, 2);
+      expect(layout.pages[0].fragments.single.documentOffset, 0);
+      expect(layout.pages[0].fragments.single.sourceTextStart, 0);
+      expect(layout.pages[0].fragments.single.sourceTextEnd, 1);
+      expect(layout.pages[1].startOffset, 1);
+      expect(layout.pages[1].fragments.single.documentOffset, 1);
+      expect(layout.documentLength, 2);
+    });
+
+    test('blank heading paragraphs reserve the heading line height', () {
+      final normal = WriterAutomaticPageLayout.fromDelta(
+        delta: [{'insert': '\\n'}],
+        maxWidth: 300,
+        pageContentHeight: 500,
+      );
+      final heading = WriterAutomaticPageLayout.fromDelta(
+        delta: [
+          {'insert': '\\n', 'attributes': {'header': 1}},
+        ],
+        maxWidth: 300,
+        pageContentHeight: 500,
+      );
+
+      expect(
+        heading.pages.single.fragments.single.height,
+        greaterThan(normal.pages.single.fragments.single.height),
+      );
+    });
+
     test('explicit page breaks create structural pages including trailing empties', () {
       final layout = WriterAutomaticPageLayout.fromDelta(
         delta: [
