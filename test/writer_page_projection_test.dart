@@ -77,6 +77,34 @@ void main() {
       expect(projection.pages.single.operations, isEmpty);
     });
 
+
+    test('deeply snapshots nested attributes and embed data', () {
+      final attributes = <String, dynamic>{'bold': true, 'custom': <String>['one']};
+      final embed = <String, dynamic>{'payload': <String, dynamic>{'alt': 'original'}};
+      final operation = <String, dynamic>{
+        'insert': embed,
+        'attributes': attributes,
+      };
+      final projection = WriterPageProjection.fromDelta([operation]);
+      final projected = projection.pages.single.operations.single.operation;
+
+      attributes['bold'] = false;
+      (attributes['custom'] as List<String>).add('two');
+      (embed['payload'] as Map<String, dynamic>)['alt'] = 'changed';
+
+      expect(projected['attributes']['bold'], isTrue);
+      expect(projected['attributes']['custom'], ['one']);
+      expect(projected['insert']['payload']['alt'], 'original');
+      expect(
+        () => (projected['attributes'] as Map<String, dynamic>)['bold'] = false,
+        throwsUnsupportedError,
+      );
+      expect(
+        () => (projected['insert']['payload'] as Map<String, dynamic>)['alt'] = 'changed',
+        throwsUnsupportedError,
+      );
+    });
+
     test('does not mutate source Delta operations', () {
       final operation = <String, dynamic>{'insert': 'keep me'};
       final delta = [operation];
