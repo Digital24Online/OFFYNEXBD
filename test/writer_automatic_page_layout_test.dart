@@ -31,6 +31,24 @@ void main() {
       );
     });
 
+    test('maps caret offsets to the following page at automatic boundaries', () {
+      const text =
+          'একটি দীর্ঘ বাংলা অনুচ্ছেদ যা ছোট পৃষ্ঠায় একাধিক লাইনে বিভক্ত হয়ে '
+          'পরবর্তী পৃষ্ঠায় প্রবাহিত হবে।\\n';
+      final layout = WriterAutomaticPageLayout.fromDelta(
+        delta: [{'insert': text}],
+        maxWidth: 68,
+        pageContentHeight: 38,
+      );
+
+      expect(layout.pageCount, greaterThan(1));
+      final boundary = layout.pages[1].startOffset;
+      expect(layout.pages.first.endOffset, boundary);
+      expect(layout.pageIndexForOffset(boundary), 1);
+      expect(layout.pageIndexForOffset(0), 0);
+      expect(layout.pageIndexForOffset(layout.documentLength), layout.pageCount - 1);
+    });
+
     test('maps formatted text runs back to their source Delta offsets', () {
       final layout = WriterAutomaticPageLayout.fromDelta(
         delta: [
