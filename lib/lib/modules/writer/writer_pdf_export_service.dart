@@ -208,6 +208,11 @@ class WriterPdfExportService {
             insert['offynexbd-writer-table']?.toString() ?? '{}',
             sansFont,
             latinFont,
+            imageContentWidth(
+              pageFormat: pageFormat,
+              marginLeft: marginLeft,
+              marginRight: marginRight,
+            ),
           ));
         }
       }
@@ -255,7 +260,125 @@ class WriterPdfExportService {
     return Uint8List.fromList(await document.save());
   }
 
-  static pw.Widget _tableWidget(String raw, pw.Font font, pw.Font latinFont) {
+  /// Computes physical PDF cell rectangles from the persisted table grid.
+  /// Saved editor widths/heights are scaled to the printable page width; merged
+  /// cells occupy the full rectangle and covered grid slots are not painted.
+  static List<Map<String, double>> tableCellRectangles({
+    required Map<String, dynamic> data,
+    required double availableWidth,
+  }) {
+    final rawRows = data['rows'];
+    if (rawRows is! List || rawRows.isEmpty ||
+        !availableWidth.isFinite || availableWidth <= 0) {
+      return <Map<String, double>>[];
+    }
+    final rows = rawRows.map<List<String>>((row) =>
+      row is List ? row.map((cell) => cell?.toString() ?? '').toList()
+                  : <String>[row?.toString() ?? '']
+    ).toList();
+    final columns = rows.fold<int>(1,
+      (maximum, row) => row.length > maximum ? row.length : maximum);
+    for (final row in rows) {
+      while (row.length < columns) { row.add(''); }
+    }
+
+    final rawWidths = data['columnWidths'];
+    final sourceWidths = List<double>.generate(columns, (index) {
+      final value = rawWidths is List && index < rawWidths.length
+          ? rawWidths[index]
+          : null;
+      return value is num && value.isFinite && value > 0
+          ? value.toDouble()
+          : 150.0;
+    });
+    final widthTotal = sourceWidths.fold<double>(0, (sum, value) => sum + value);
+    final scale = availableWidth / widthTotal;
+    final widths = sourceWidths.map((value) => value * scale).toList();
+    final rawHeights = data['rowHeights'];
+    final heights = List<double>.generate(rows.length, (index) {
+      final value = rawHeights is List && index < rawHeights.length
+          ? rawHeights[index]
+          : null;
+      // The editor stores logical pixels; PDF uses points.
+      return value is num && value.isFinite && value > 0
+          ? (value.toDouble() * 0.75).clamp(24.0, 180.0).toDouble()
+          : 42.0;
+    });
+
+    final merges = WriterTableBlockEmbed.normalizedMerges(
+      data, rowCount: rows.length, columnCount: columns);
+    final anchors = <String, Map<String, int>>{
+      for (final merge in merges) '${merge['row']}:${merge['column']}': merge,
+    };
+    final covered = <String>{};
+    for (final merge in merges) {
+      for (var row = merge['row']!; row < merge['row']! + merge['rowSpan']!; row++) {
+        for (var column = merge['column']!; column < merge['column']! + merge['columnSpan']!; column++) {
+          if (row != merge['row'] || column != merge['column']) {
+            covered.add('$row:$column');
+          }
+        }
+      }
+    }
+
+    // Avoid clipping long cell contents. Estimate wrapped lines from the
+    // printable cell width, then enlarge the row (or merged row group) before
+    // calculating the final cell positions.
+    for (var row = 0; row < rows.length; row++) {
+      for (var column = 0; column < columns; column++) {
+        if (covered.contains('$row:$column')) continue;
+        final merge = anchors['$row:$column'];
+        final rowSpan = merge?['rowSpan'] ?? 1;
+        final columnSpan = merge?['columnSpan'] ?? 1;
+        final cellWidth = widths.skip(column).take(columnSpan)
+            .fold<double>(0, (sum, value) => sum + value);
+        final usableWidth = (cellWidth - 10).clamp(8.0, availableWidth);
+        final charsPerLine = (usableWidth / 5.2).floor().clamp(1, 10000);
+        final lines = rows[row][column].split('\n').fold<int>(0, (sum, line) =>
+          sum + (line.isEmpty ? 1 : (line.length / charsPerLine).ceil()));
+        final requiredHeight = lines * 11.0 + 10.0;
+        final currentHeight = heights.skip(row).take(rowSpan)
+            .fold<double>(0, (sum, value) => sum + value);
+        if (requiredHeight > currentHeight) {
+          heights[row + rowSpan - 1] += requiredHeight - currentHeight;
+        }
+      }
+    }
+
+    final x = List<double>.filled(columns + 1, 0);
+    final y = List<double>.filled(rows.length + 1, 0);
+    for (var column = 0; column < columns; column++) {
+      x[column + 1] = x[column] + widths[column];
+    }
+    for (var row = 0; row < rows.length; row++) {
+      y[row + 1] = y[row] + heights[row];
+    }
+    final rectangles = <Map<String, double>>[];
+    for (var row = 0; row < rows.length; row++) {
+      for (var column = 0; column < columns; column++) {
+        if (covered.contains('$row:$column')) continue;
+        final merge = anchors['$row:$column'];
+        final rowSpan = merge?['rowSpan'] ?? 1;
+        final columnSpan = merge?['columnSpan'] ?? 1;
+        rectangles.add(<String, double>{
+          'row': row.toDouble(),
+          'column': column.toDouble(),
+          'left': x[column],
+          'top': y[row],
+          'width': x[column + columnSpan] - x[column],
+          'height': y[row + rowSpan] - y[row],
+        });
+      }
+    }
+    return rectangles;
+  }
+
+  static pw.Widget _tableWidget(
+    String raw,
+    pw.Font font,
+    pw.Font latinFont,
+    double availableWidth,
+  ) {
     Map<String, dynamic> data;
     try {
       final decoded = jsonDecode(raw);
@@ -269,99 +392,66 @@ class WriterPdfExportService {
     if (rawRows is! List || rawRows.isEmpty) {
       return pw.Text('Table data unavailable', style: pw.TextStyle(font: latinFont));
     }
-    final rows = rawRows.map<List<String>>((row) {
-      if (row is List) return row.map((cell) => cell?.toString() ?? '').toList();
-      return <String>[row?.toString() ?? ''];
-    }).toList();
-    final columns = rows.fold<int>(
-      1, (maximum, row) => row.length > maximum ? row.length : maximum,
-    );
-    // Legacy/imported tables may contain ragged rows. Normalize them before
-    // merged-cell layout so a horizontal merge on one row cannot make PDF
-    // export index beyond a shorter row on another.
+    final rows = rawRows.map<List<String>>((row) =>
+      row is List ? row.map((cell) => cell?.toString() ?? '').toList()
+                  : <String>[row?.toString() ?? '']
+    ).toList();
+    final columns = rows.fold<int>(1,
+      (maximum, row) => row.length > maximum ? row.length : maximum);
     for (final row in rows) {
-      while (row.length < columns) {
-        row.add('');
-      }
+      while (row.length < columns) { row.add(''); }
     }
+    final rectangles = tableCellRectangles(
+      data: data,
+      availableWidth: availableWidth,
+    );
+    if (rectangles.isEmpty) {
+      return pw.Text('Table data unavailable', style: pw.TextStyle(font: latinFont));
+    }
+    final totalHeight = rectangles.fold<double>(0, (maximum, cell) =>
+      (cell['top']! + cell['height']!) > maximum
+          ? cell['top']! + cell['height']!
+          : maximum);
     final borderColor = _parseIntColor(data['borderColor']) ?? PdfColors.grey;
     final backgroundColor =
         _parseIntColor(data['backgroundColor']) ?? PdfColors.white;
-    final merges = WriterTableBlockEmbed.normalizedMerges(
-      data, rowCount: rows.length, columnCount: columns);
-    final anchors = <String, Map<String, int>>{
-      for (final merge in merges) '${merge['row']}:${merge['column']}': merge,
-    };
-    final covered = <String>{};
-    for (final merge in merges) {
-      for (var r = merge['row']!; r < merge['row']! + merge['rowSpan']!; r++) {
-        for (var c = merge['column']!; c < merge['column']! + merge['columnSpan']!; c++) {
-          if (r != merge['row'] || c != merge['column']) covered.add('$r:$c');
-        }
-      }
-    }
-    final horizontalOnly = merges.every((merge) => merge['rowSpan'] == 1);
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(vertical: 8),
-      child: horizontalOnly
-          ? pw.Column(
-              children: List.generate(rows.length, (rowIndex) {
-                return pw.Row(
-                  children: [
-                    for (var columnIndex = 0; columnIndex < columns; columnIndex++)
-                      if (!covered.contains('$rowIndex:$columnIndex'))
-                        pw.Expanded(
-                          flex: anchors['$rowIndex:$columnIndex']?['columnSpan'] ?? 1,
-                          child: pw.Container(
-                            decoration: pw.BoxDecoration(
-                              color: backgroundColor,
-                              border: pw.Border.all(color: borderColor, width: 0.6),
-                            ),
-                            padding: const pw.EdgeInsets.all(5),
-                            child: pw.Text(
-                              rows[rowIndex][columnIndex],
-                              style: pw.TextStyle(
-                                font: _containsBangla(rows[rowIndex][columnIndex]) ? font : latinFont,
-                                fontFallback: _containsBangla(rows[rowIndex][columnIndex]) ? [latinFont] : const [],
-                                fontSize: 9,
-                                fontWeight: rowIndex == 0 && data['headerRow'] == true
-                                    ? pw.FontWeight.bold
-                                    : pw.FontWeight.normal,
-                              ),
-                            ),
-                          ),
-                        ),
-                  ],
-                );
-              }),
-            )
-          : pw.Table(
-              border: pw.TableBorder.all(color: borderColor, width: 0.6),
-              children: List.generate(rows.length, (rowIndex) {
-                return pw.TableRow(
-                  children: List.generate(columns, (columnIndex) {
-                    final value = columnIndex < rows[rowIndex].length
-                        ? rows[rowIndex][columnIndex]
-                        : '';
-                    return pw.Container(
-                      color: backgroundColor,
-                      padding: const pw.EdgeInsets.all(5),
-                      child: pw.Text(
-                        value,
-                        style: pw.TextStyle(
-                          font: _containsBangla(value) ? font : latinFont,
-                          fontFallback: _containsBangla(value) ? [latinFont] : const [],
-                          fontSize: 9,
-                          fontWeight: rowIndex == 0 && data['headerRow'] == true
-                              ? pw.FontWeight.bold
-                              : pw.FontWeight.normal,
-                        ),
-                      ),
-                    );
-                  }),
-                );
-              }),
-            ),
+      child: pw.Container(
+        width: availableWidth,
+        height: totalHeight,
+        child: pw.Stack(
+          children: rectangles.map((cell) {
+            final row = cell['row']!.toInt();
+            final column = cell['column']!.toInt();
+            final value = rows[row][column];
+            return pw.Positioned(
+              left: cell['left'],
+              top: cell['top'],
+              width: cell['width'],
+              height: cell['height'],
+              child: pw.Container(
+                decoration: pw.BoxDecoration(
+                  color: backgroundColor,
+                  border: pw.Border.all(color: borderColor, width: 0.6),
+                ),
+                padding: const pw.EdgeInsets.all(5),
+                child: pw.Text(
+                  value,
+                  style: pw.TextStyle(
+                    font: _containsBangla(value) ? font : latinFont,
+                    fontFallback: _containsBangla(value) ? [latinFont] : const [],
+                    fontSize: 9,
+                    fontWeight: row == 0 && data['headerRow'] == true
+                        ? pw.FontWeight.bold
+                        : pw.FontWeight.normal,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
     );
   }
 
