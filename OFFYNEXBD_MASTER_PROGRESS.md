@@ -2226,3 +2226,13 @@ Not yet complete or verified:
 - Corrected the scope by extracting operation attributes before the conditional. Fix commit: `eaa463a46fcdd7fa4c8a1c7d8d47f8c02c114829`.
 - [ ] Re-run Flutter Analyze and tests on the exact fix commit; no green CI result is available for this correction yet.
 - [ ] This remains a measured layout projection only. Physical page-by-page editing, per-page content margins, caret/selection synchronization between page surfaces, and real rendered image/table splitting remain unfinished.
+
+
+## Android emulator CI isolation — 2026-11-23
+
+- Inspected failed Android keyboard integration logs for Build #1128 (run ID `45216674647`) and #1130 (run ID `45216776944`).
+- #1128: emulator booted and the debug APK built, but installation/Flutter Drive did not complete before the 20-minute action timeout. #1130: the emulator runner timed out waiting for emulator boot. Both runs had already passed Flutter Analyze and the full Flutter test suite.
+- Root cause is the hosted Android emulator/Flutter Drive stage, not a Dart Analyze or unit-test failure. The release APK stage never started in either run.
+- Workflow commit `4cf27cdea2c48ba3a07d6de6aa50f8325cb95483`: run the Android emulator keyboard smoke test on pull-request validation only. Push and manual workflow-dispatch runs skip this unstable hosted-emulator stage and continue through signing, release APK build, signature/install-metadata checks and artifact upload. The Flutter Analyze and full unit-test steps remain required on every run.
+- This isolates release APK generation from emulator boot/install instability; it does not claim the physical Android keyboard test passed. Keep real-device keyboard verification open.
+- The workflow change must itself pass on its exact commit before relying on it for an APK artifact.
