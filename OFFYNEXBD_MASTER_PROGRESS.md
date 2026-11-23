@@ -2217,3 +2217,12 @@ Not yet complete or verified:
 - Replaced unavailable line indices with Flutter `TextPainter.getPositionForOffset` + `getLineBoundary`, retaining UTF-16 source-run mapping. Corrected integer/double conversions and removed unused imports.
 - Fix commits: `548fcc5bc3a60552e1610c889dddd9825d8732e6`, `cb9ffbee0695a838091ff4ffd8b6f02e5a946d1c`, `3852affeb377d58a65d6420cca37de3a3a8181cd`.
 - [ ] Re-run Analyze and the complete test/build workflow on the latest exact head; the earlier failed run is not verification.
+
+### Paragraph-style pagination follow-up and Analyze correction — 2026-11-23
+
+- Extended measured paragraph layout to account for Heading 1/2/3 font scaling, paragraph indent, list indent, text alignment, explicit RTL/LTR direction, monospace code blocks and combined underline/strike decoration.
+- Added regression tests for heading line height and indentation wrapping.
+- First exact-head CI attempt (#1126/#1127, SHA `c1826d66859961ccf86e63eb1947ae137529d913`) failed at Analyze. Inspected the actual logs: the paragraph `attributes` variable was declared inside a conditional but referenced by the newline/block-attribute path outside that scope.
+- Corrected the scope by extracting operation attributes before the conditional. Fix commit: `eaa463a46fcdd7fa4c8a1c7d8d47f8c02c114829`.
+- [ ] Re-run Flutter Analyze and tests on the exact fix commit; no green CI result is available for this correction yet.
+- [ ] This remains a measured layout projection only. Physical page-by-page editing, per-page content margins, caret/selection synchronization between page surfaces, and real rendered image/table splitting remain unfinished.
