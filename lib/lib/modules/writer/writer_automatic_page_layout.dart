@@ -100,6 +100,7 @@ class WriterAutomaticPageLayout {
     var documentOffset = 0;
     var paragraph = <_WriterTextRun>[];
     var paragraphTextLength = 0;
+    var paragraphAttributes = <String, dynamic>{};
 
     void nextPage({int? nextOffset}) {
       final current = mutablePages[pageIndex];
@@ -143,14 +144,35 @@ class WriterAutomaticPageLayout {
 
     void flushParagraph() {
       if (paragraph.isEmpty) return;
+      final indentValue = paragraphAttributes['indent'];
+      final indentLevel = indentValue is num
+          ? indentValue.toDouble()
+          : double.tryParse(indentValue?.toString() ?? '') ?? 0;
+      final listIndent = paragraphAttributes['list'] == null ? 0.0 : 1.0;
+      final contentWidth = math.max(
+        24.0,
+        maxWidth - (indentLevel.clamp(0, 8) + listIndent) * 24,
+      ).toDouble();
+      final paragraphDirection = paragraphAttributes['direction'] == 'rtl'
+          ? TextDirection.rtl
+          : paragraphAttributes['direction'] == 'ltr'
+              ? TextDirection.ltr
+              : textDirection;
+      final alignment = switch (paragraphAttributes['align']?.toString()) {
+        'center' => TextAlign.center,
+        'right' => TextAlign.right,
+        'justify' => TextAlign.justify,
+        _ => TextAlign.start,
+      };
       final spans = paragraph.map((run) => TextSpan(
         text: run.text,
-        style: _styleFor(run.attributes, defaultFontSize),
+        style: _styleFor(run.attributes, defaultFontSize, paragraphAttributes),
       )).toList(growable: false);
       final painter = TextPainter(
         text: TextSpan(children: spans),
-        textDirection: textDirection,
-      )..layout(maxWidth: maxWidth);
+        textDirection: paragraphDirection,
+        textAlign: alignment,
+      )..layout(maxWidth: contentWidth);
       final lines = painter.computeLineMetrics();
 
       if (lines.isEmpty) {
@@ -163,7 +185,7 @@ class WriterAutomaticPageLayout {
         final lineHeight = math.max(line.height, defaultFontSize * 1.2).toDouble();
         final lineY = line.baseline - line.ascent + line.height / 2;
         final linePosition = painter.getPositionForOffset(Offset(
-          textDirection == TextDirection.rtl ? maxWidth : 0,
+          paragraphDirection == TextDirection.rtl ? contentWidth : 0,
           lineY,
         ));
         final lineBoundary = painter.getLineBoundary(linePosition);
@@ -217,6 +239,7 @@ class WriterAutomaticPageLayout {
       );
       paragraph.clear();
       paragraphTextLength = 0;
+      paragraphAttributes = <String, dynamic>{};
     }
 
     for (var operationIndex = 0;
@@ -246,7 +269,16 @@ class WriterAutomaticPageLayout {
             paragraphTextLength += text.length;
           }
           localOffset += text.length;
-          if (hasNewline) flushParagraph();
+          if (hasNewline) {
+            paragraphAttributes = {
+              for (final key in const [
+                'header', 'indent', 'list', 'blockquote', 'code-block',
+                'align', 'direction',
+              ])
+                if (attributes.containsKey(key)) key: attributes[key],
+            };
+            flushParagraph();
+          }
         }
         documentOffset += insert.length;
       } else if (insert is Map) {
@@ -321,26 +353,40 @@ class WriterAutomaticPageLayout {
   static TextStyle _styleFor(
     Map<String, dynamic> attributes,
     double defaultFontSize,
+    Map<String, dynamic> paragraphAttributes,
   ) {
     final rawSize = attributes['size'];
     final parsedSize = rawSize is num
         ? rawSize.toDouble()
         : double.tryParse(rawSize?.toString() ?? '');
+    final header = int.tryParse(paragraphAttributes['header']?.toString() ?? '');
+    final headerScale = switch (header) {
+      1 => 2.0,
+      2 => 1.5,
+      3 => 1.17,
+      _ => 1.0,
+    };
     final fontSize = parsedSize != null && parsedSize.isFinite
         ? (parsedSize * 0.75).clamp(6.0, 96.0).toDouble()
-        : defaultFontSize;
+        : (defaultFontSize * headerScale).clamp(6.0, 96.0).toDouble();
     return TextStyle(
       fontSize: fontSize,
-      fontFamily: WriterContentMetrics.fontFamilyFromAttributes(attributes),
+      fontFamily: paragraphAttributes.containsKey('code-block')
+          ? 'monospace'
+          : WriterContentMetrics.fontFamilyFromAttributes(attributes),
       fontWeight: attributes['bold'] == true
           ? FontWeight.bold
           : FontWeight.normal,
       fontStyle: attributes['italic'] == true
           ? FontStyle.italic
           : FontStyle.normal,
-      decoration: attributes['underline'] == true
-          ? TextDecoration.underline
-          : null,
+      decoration: attributes['underline'] == true && attributes['strike'] == true
+          ? TextDecoration.combine([TextDecoration.underline, TextDecoration.lineThrough])
+          : attributes['underline'] == true
+              ? TextDecoration.underline
+              : attributes['strike'] == true
+                  ? TextDecoration.lineThrough
+                  : null,
     );
   }
 }
