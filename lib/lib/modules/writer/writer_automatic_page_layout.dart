@@ -177,9 +177,10 @@ class WriterAutomaticPageLayout {
           final localStart = run.localStart +
               intersectionStart - run.paragraphStart;
           final runDocumentStart = run.documentOffset + localStart;
-          lineDocumentStart = lineDocumentStart == null
-              ? runDocumentStart
-              : math.min(lineDocumentStart, runDocumentStart).toInt();
+          if (lineDocumentStart == null ||
+              runDocumentStart < lineDocumentStart) {
+            lineDocumentStart = runDocumentStart;
+          }
         }
         ensureRoom(
           lineHeight,
