@@ -2199,3 +2199,12 @@ Not yet complete or verified:
 - Source commits: `ca66f8ba587613c421d9f2fb3c8a47a9c6006362`; tests: `8b85f5721f8b9c46778525c1285bd6704977e997`; Writer canvas integration: `2f97c5820fabcb22d7e19f3763086578e51d3324`.
 - [ ] Flutter Analyze, focused tests, full Flutter test suite, Android keyboard integration and signed APK workflow must pass on the final exact branch head before this batch is accepted.
 - [ ] This is a measured pagination foundation and improves visual page-count calculation; it does **not** yet implement physical per-page Quill editing, per-page margins, automatic caret/selection transfer between page surfaces, or actual rendered image/table splitting. Those remain blocking Writer completion gates.
+
+
+### Measured pagination projection follow-up — 2026-11-23
+
+- Hardened page-start offsets for long paragraphs that wrap across multiple pages inside one Delta text operation; page boundaries now begin at the actual UTF-16 offset of the first line on the next page.
+- Added `pageIndexForOffset` to map a canonical caret offset to the visual page, with boundary offsets assigned to the following page and document-end offsets retained on the last page.
+- Added regression assertions for page-boundary offsets and source-operation offsets.
+- Follow-up commits: `811ea71095cac585d1a25429ff87291a364fb161`, `f1302d9d390a04939781285a2a9c2993e241ce0b`, `41b58bed695b8eb0f46414589bf39cb1d0fff803`, `bb3b610f15aa748eae34f6553c2cb307b76152aa`, `5a6a7e30084d8dfbb13bfa9a24cc1656e058a7b1`, `d027c7368c386665fe6503304829ff2674410a4c`.
+- Multiple interim Actions runs were cancelled by branch concurrency while the integrated batch was being committed. Only a completed run on the final exact head can verify this batch.
