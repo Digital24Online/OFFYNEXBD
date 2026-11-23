@@ -161,8 +161,14 @@ class WriterAutomaticPageLayout {
 
       for (final line in lines) {
         final lineHeight = math.max(line.height, defaultFontSize * 1.2).toDouble();
-        final lineStart = line.startIndex;
-        final lineEnd = math.max(line.endIndex, lineStart + 1).toInt();
+        final lineY = line.baseline - line.ascent + line.height / 2;
+        final linePosition = painter.getPositionForOffset(Offset(
+          textDirection == TextDirection.rtl ? maxWidth : 0,
+          lineY,
+        ));
+        final lineBoundary = painter.getLineBoundary(linePosition);
+        final lineStart = lineBoundary.start;
+        final lineEnd = math.max(lineBoundary.end, lineStart + 1).toInt();
         int? lineDocumentStart;
         for (final run in paragraph) {
           final intersectionStart = math.max(lineStart, run.paragraphStart).toInt();
@@ -181,8 +187,8 @@ class WriterAutomaticPageLayout {
         );
 
         for (final run in paragraph) {
-          final intersectionStart = math.max(lineStart, run.paragraphStart);
-          final intersectionEnd = math.min(lineEnd, run.paragraphEnd);
+          final intersectionStart = math.max(lineStart, run.paragraphStart).toInt();
+          final intersectionEnd = math.min(lineEnd, run.paragraphEnd).toInt();
           if (intersectionEnd <= intersectionStart) continue;
           final localStart = run.localStart +
               intersectionStart - run.paragraphStart;
