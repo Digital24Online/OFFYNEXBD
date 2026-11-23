@@ -15,6 +15,7 @@ import 'writer_docx_export_service.dart';
 import 'writer_document_format_service.dart';
 import 'writer_viewport.dart';
 import 'writer_content_metrics.dart';
+import 'writer_automatic_page_layout.dart';
 import '../fonts/offynex_font_service.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
@@ -3567,12 +3568,17 @@ Future<void> insertWriterImage() async {
                   1,
                   page.height - (marginTop + marginBottom) * 96,
                 ).toDouble();
-                final estimatedPageCount = WriterContentMetrics.estimatePageCount(
+                // Use measured Flutter line metrics for the visual page count.
+                // The canonical Quill Delta remains untouched; this projection
+                // does not yet replace Quill's continuous editing surface.
+                final measuredPageLayout =
+                    WriterAutomaticPageLayout.fromDelta(
                   delta: quillController.document.toDelta().toJson(),
                   maxWidth: pageContentWidth,
                   pageContentHeight: pageContentHeight,
                   textDirection: Directionality.of(context),
                 );
+                final estimatedPageCount = measuredPageLayout.pageCount;
                 final documentCanvasHeight =
                     displayHeight * estimatedPageCount;
 
