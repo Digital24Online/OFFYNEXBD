@@ -2132,3 +2132,26 @@ Not yet complete or verified:
 - Verify the final workflow run against the exact source commit; check every stage and artifact metadata before reporting.
 - Keep this progress file updated with the final commit, run ID, results, unresolved risks and next consolidated task so a new chat can resume without re-auditing completed work.
 - Never call Writer or any module complete based only on a green build; use explicit functional acceptance criteria and real-device checks where automation cannot establish behavior.
+
+
+## Writer pagination architecture audit — 2026-11-23
+
+### Confirmed source-level facts
+- [x] Re-read the live Writer editor initialization, Quill controller lifecycle, autosave/dispose path, viewport layout, editor widget tree, content metrics and page painter together.
+- [x] The editor owns exactly one canonical `QuillController` for the full document. Autosave, backup, revisions, comments/selection offsets, DOCX/ODT import-export and PDF export all depend on its single Delta and offsets.
+- [x] The editing viewport places one `QuillEditor.basic(expands: true)` inside one continuous content region. The page canvas height is `displayHeight * estimatedPageCount`; `_WriterPagesPainter` only paints repeated page rectangles behind that editor.
+- [x] Page margins are applied once as padding around the entire continuous editor, not independently at each physical page. Therefore text on later visual pages does not receive true per-page top/bottom margin behavior.
+- [x] `WriterContentMetrics` uses `TextPainter` estimates and fixed image/table height assumptions; it is not the actual Quill render layout and cannot determine exact visual line/paragraph/table/image page boundaries.
+- [x] Explicit page-break embeds are persisted in the canonical Delta and must remain supported as user-authored hard breaks.
+
+### Architectural decision — prevent data loss and repeat work
+- Do not split the saved document into multiple independent Quill documents/controllers as a quick UI patch. That would require lossless bidirectional Delta/selection mapping and coordinated autosave, undo/redo, revision, comment, table-edit and embed handling; naïve splitting risks corrupting existing documents.
+- Do not insert automatically generated page-break embeds into the saved Delta. Generated layout boundaries must not become user content or accumulate after repeated edits/reflow.
+- The next pagination implementation must keep the existing canonical Delta and legacy embed identifiers intact, derive a separate page-layout projection, preserve selection/offset mapping across page boundaries, and treat text, images, tables and explicit page breaks consistently.
+- It must apply page margins per physical page and reflow after edits, font/size/style changes, page-size/orientation/margin changes, zoom changes and embed/table edits.
+- Add integration tests proving that edit/save/reopen, undo/redo, selection, comments/revisions, manual page breaks, images, merged tables and DOCX/ODT/PDF export remain lossless before replacing the existing editor surface.
+
+### Current acceptance status
+- [x] Build #1075 verifies the preceding PDF merged-cell source on commit `42f22fdfbf3667d9c02f701a539f60dc3d161ff7`.
+- [ ] True physical page flow is not implemented; this audit confirms the gap and defines compatibility constraints, not completion.
+- [ ] Next Writer-only engineering batch: implement and test the canonical-Delta-to-page-layout projection and editing/selection synchronization as one integrated change. Do not change unrelated modules.
