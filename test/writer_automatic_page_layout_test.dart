@@ -116,7 +116,7 @@ void main() {
 
     test('blank paragraphs consume measured page height and retain source offsets', () {
       final layout = WriterAutomaticPageLayout.fromDelta(
-        delta: [{'insert': '\\n\\n'}],
+        delta: [{'insert': '\n\n'}],
         maxWidth: 300,
         pageContentHeight: 25,
       );
@@ -132,13 +132,13 @@ void main() {
 
     test('blank heading paragraphs reserve the heading line height', () {
       final normal = WriterAutomaticPageLayout.fromDelta(
-        delta: [{'insert': '\\n'}],
+        delta: [{'insert': '\n'}],
         maxWidth: 300,
         pageContentHeight: 500,
       );
       final heading = WriterAutomaticPageLayout.fromDelta(
         delta: [
-          {'insert': '\\n', 'attributes': {'header': 1}},
+          {'insert': '\n', 'attributes': {'header': 1}},
         ],
         maxWidth: 300,
         pageContentHeight: 500,

@@ -2245,3 +2245,8 @@ Not yet complete or verified:
 - Added regression tests for blank paragraphs crossing a page boundary and blank heading line height.
 - This corrects measured page-count/layout projection only. It does not yet provide a separate physical Quill editing surface or per-page margins/caret transfer; those remain blocking Writer completion gates.
 - Exact-head Analyze, full Flutter tests, keyboard integration, signed APK and artifact verification are pending.
+
+
+### Blank-paragraph test fixture correction — 2026-11-24
+- Corrected the new regression test literals to contain actual Dart newline escapes rather than literal backslash-plus-n characters. The test now exercises real empty paragraphs and the intended page-boundary behavior.
+- Exact-head CI is running; no result is claimed until it completes.
