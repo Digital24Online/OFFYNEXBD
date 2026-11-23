@@ -113,6 +113,7 @@ jobs:
         run: flutter test
 
       - name: Run Android keyboard integration test
+        timeout-minutes: 20
         uses: reactivecircus/android-emulator-runner@v2
         env:
           # Newer Android Emulator builds reject software acceleration unless TCG is explicitly enabled.
