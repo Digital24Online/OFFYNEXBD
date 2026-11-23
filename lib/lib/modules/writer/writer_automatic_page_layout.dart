@@ -87,7 +87,7 @@ class WriterAutomaticPageLayout {
     void nextPage({int? nextOffset}) {
       final current = mutablePages[pageIndex];
       final pageStartOffset = nextOffset ?? documentOffset;
-      current.endOffset = math.max(current.endOffset, pageStartOffset);
+      current.endOffset = math.max(current.endOffset, pageStartOffset).toInt();
       pageIndex++;
       pageTop = 0;
       mutablePages.add(_MutablePage(pageIndex, pageStartOffset));
@@ -121,7 +121,7 @@ class WriterAutomaticPageLayout {
       current.endOffset = math.max(
         current.endOffset,
         documentStart + (localEnd - localStart),
-      );
+      ).toInt();
     }
 
     void flushParagraph() {
@@ -143,20 +143,20 @@ class WriterAutomaticPageLayout {
       }
 
       for (final line in lines) {
-        final lineHeight = math.max(line.height, defaultFontSize * 1.2);
+        final lineHeight = math.max(line.height, defaultFontSize * 1.2).toDouble();
         final lineStart = line.startIndex;
-        final lineEnd = math.max(line.endIndex, lineStart + 1);
+        final lineEnd = math.max(line.endIndex, lineStart + 1).toInt();
         int? lineDocumentStart;
         for (final run in paragraph) {
-          final intersectionStart = math.max(lineStart, run.paragraphStart);
-          final intersectionEnd = math.min(lineEnd, run.paragraphEnd);
+          final intersectionStart = math.max(lineStart, run.paragraphStart).toInt();
+          final intersectionEnd = math.min(lineEnd, run.paragraphEnd).toInt();
           if (intersectionEnd <= intersectionStart) continue;
           final localStart = run.localStart +
               intersectionStart - run.paragraphStart;
           final runDocumentStart = run.documentOffset + localStart;
           lineDocumentStart = lineDocumentStart == null
               ? runDocumentStart
-              : math.min(lineDocumentStart, runDocumentStart);
+              : math.min(lineDocumentStart, runDocumentStart).toInt();
         }
         ensureRoom(
           lineHeight,
@@ -188,7 +188,7 @@ class WriterAutomaticPageLayout {
         mutablePages[pageIndex].endOffset,
         paragraph.fold<int>(
           0,
-          (end, run) => math.max(end, run.documentOffset + run.text.length),
+          (end, run) => math.max(end, run.documentOffset + run.text.length).toInt(),
         ),
       );
       paragraph.clear();
@@ -272,7 +272,7 @@ class WriterAutomaticPageLayout {
     mutablePages[pageIndex].endOffset = math.max(
       mutablePages[pageIndex].endOffset,
       documentOffset,
-    );
+    ).toInt();
 
     final pages = mutablePages.map((page) => WriterPageLayoutPage(
       pageIndex: page.pageIndex,
@@ -284,7 +284,7 @@ class WriterAutomaticPageLayout {
         (height, fragment) => math.max(
           height,
           fragment.top + fragment.height,
-        ),
+        ).toDouble(),
       ),
     )).toList(growable: false);
 
