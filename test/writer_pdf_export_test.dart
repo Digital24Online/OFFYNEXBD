@@ -241,6 +241,44 @@ void main() {
   });
 
 
+  test('Writer PDF safely exports legacy tables with uneven row lengths and horizontal merges', () async {
+    final sans = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
+    final serif = await rootBundle.load('assets/fonts/NotoSerifBengali.ttf');
+    final latin = await rootBundle.load('assets/fonts/NotoSans.ttf');
+    final bytes = await WriterPdfExportService.build(
+      title: 'Legacy table export',
+      delta: [
+        {
+          'insert': {
+            'offynexbd-writer-table': {
+              'rows': [
+                ['Merged heading', '', 'Third column'],
+                ['Short legacy row'],
+              ],
+              'merges': [
+                {'row': 0, 'column': 0, 'rowSpan': 1, 'columnSpan': 2},
+              ],
+            },
+          },
+        },
+        {'insert': '\n'},
+      ],
+      sansFontData: sans,
+      serifFontData: serif,
+      latinFontData: latin,
+      pageFormat: PdfPageFormat.a4,
+      marginTop: 54,
+      marginBottom: 54,
+      marginLeft: 54,
+      marginRight: 54,
+    );
+    final extracted = BanglaPdfExtractor.extract(bytes).text;
+    expect(extracted, contains('Merged heading'));
+    expect(extracted, contains('Third column'));
+    expect(extracted, contains('Short legacy row'));
+    expect(bytes.length, greaterThan(1000));
+  });
+
   test('Writer PDF keeps content on both sides of an explicit page break', () async {
     final sans = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
     final serif = await rootBundle.load('assets/fonts/NotoSerifBengali.ttf');
