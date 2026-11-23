@@ -2155,3 +2155,14 @@ Not yet complete or verified:
 - [x] Build #1075 verifies the preceding PDF merged-cell source on commit `42f22fdfbf3667d9c02f701a539f60dc3d161ff7`.
 - [ ] True physical page flow is not implemented; this audit confirms the gap and defines compatibility constraints, not completion.
 - [ ] Next Writer-only engineering batch: implement and test the canonical-Delta-to-page-layout projection and editing/selection synchronization as one integrated change. Do not change unrelated modules.
+
+
+## Writer Canonical Delta Page Projection — 2026-11-23
+
+- Added `writer_page_projection.dart`: a non-destructive projection of the existing canonical Quill Delta into explicit page segments. Each projected operation retains its original Delta operation index, UTF-16 document offset, length and original attributes/embed data.
+- Explicit page-break embeds are preserved as source operations; trailing and consecutive breaks retain their empty following pages. Offset-to-page lookup defines boundary behavior for selection synchronization.
+- The projection is deliberately limited to explicit page breaks. It does not pretend estimated text metrics are exact automatic pagination, and it does not split or rewrite saved Delta content.
+- Added unit tests for Bengali text offsets, image/page-break embeds, operation ordering, empty/trailing/consecutive pages, offset lookup and source immutability.
+- Commits: `5ca0d6ddcd2e56711ed675f1f7686a9d34eabb15` (projection model), `ba1f6b817f3622cbbb831cafb888740f9f4e7c65` (tests and corrected boundary expectation).
+- Initial PR CI attempts were cancelled by the workflow's concurrency rule while these two rapid commits were landing. No Analyze/Test/Android result is claimed for this batch yet; rerun a single stable head commit and inspect the exact job results before proceeding.
+- Important: this is a tested-design foundation, not yet the finished paged editing surface. Automatic page layout, per-page margins, actual Quill render measurement, caret/selection synchronization, and real-device Bengali layout verification remain open.
