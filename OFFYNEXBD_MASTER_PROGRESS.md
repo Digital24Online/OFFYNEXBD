@@ -2187,3 +2187,15 @@ Not yet complete or verified:
 - Fix commit: `dde7710bf7b7d4f4faa9ca9975532948e1daa008`.
 - Runs #1086/#1087/#1089 were cancelled by branch concurrency while commits were landing; #1088 and #1090 failed at Analyze with the same lint. No test/build/artifact result exists for the latest immutable-snapshot changes yet.
 - A new exact-head CI run is required to validate Analyze, all tests, keyboard integration, APK signing/build and artifact upload.
+
+
+## Writer measured automatic page-layout batch — 2026-11-23
+
+- Added `writer_automatic_page_layout.dart`, a non-destructive measured layout projection that uses Flutter `TextPainter` line metrics instead of estimating the entire document as one aggregate height.
+- The projection packs visual text lines onto page-height budgets, keeps each line fragment mapped to its source Quill operation and UTF-16 document offset, preserves inline style-run boundaries, and treats image/table embeds as indivisible mapped blocks.
+- Explicit page-break embeds remain hard structural boundaries; trailing explicit breaks preserve the following empty page. Invalid dimensions are rejected and empty documents still produce one page.
+- Wired the measured page count into the Writer canvas page-background painter. The canonical Quill Delta, single editor/controller, autosave format and saved document data remain unchanged.
+- Added focused tests for Bengali wrapping, formatted source-operation mapping, explicit/trailing page breaks, image/table embeds, invalid dimensions and empty documents.
+- Source commits: `ca66f8ba587613c421d9f2fb3c8a47a9c6006362`; tests: `8b85f5721f8b9c46778525c1285bd6704977e997`; Writer canvas integration: `2f97c5820fabcb22d7e19f3763086578e51d3324`.
+- [ ] Flutter Analyze, focused tests, full Flutter test suite, Android keyboard integration and signed APK workflow must pass on the final exact branch head before this batch is accepted.
+- [ ] This is a measured pagination foundation and improves visual page-count calculation; it does **not** yet implement physical per-page Quill editing, per-page margins, automatic caret/selection transfer between page surfaces, or actual rendered image/table splitting. Those remain blocking Writer completion gates.
