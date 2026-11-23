@@ -19,6 +19,12 @@ void main() {
       expect(layout.pageCount, greaterThan(1));
       expect(layout.documentLength, text.length);
       expect(
+        layout.pages.skip(1).every(
+          (page) => page.startOffset > 0 && page.startOffset < text.length,
+        ),
+        isTrue,
+      );
+      expect(
         layout.pages.expand((page) => page.fragments)
             .where((fragment) => fragment.kind == 'text'),
         isNotEmpty,
