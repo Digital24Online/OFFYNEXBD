@@ -69,6 +69,51 @@ void main() {
       expect(layout.documentLength, 'বাংলা English paragraph\n'.length);
     });
 
+    test('heading block formatting increases measured line height', () {
+      final normal = WriterAutomaticPageLayout.fromDelta(
+        delta: [{'insert': 'শিরোনাম\n'}],
+        maxWidth: 300,
+        pageContentHeight: 500,
+      );
+      final heading = WriterAutomaticPageLayout.fromDelta(
+        delta: [
+          {'insert': 'শিরোনাম'},
+          {'insert': '\n', 'attributes': {'header': 1}},
+        ],
+        maxWidth: 300,
+        pageContentHeight: 500,
+      );
+
+      expect(
+        heading.pages.single.fragments.first.height,
+        greaterThan(normal.pages.single.fragments.first.height),
+      );
+    });
+
+    test('paragraph indentation reduces available line width', () {
+      const text = 'বাংলা অনুচ্ছেদের দীর্ঘ লেখা যা নির্দিষ্ট প্রস্থে একাধিক লাইনে '
+          'ভাঙবে এবং ইন্ডেন্ট থাকলে আরও বেশি জায়গা নেবে।';
+      final normal = WriterAutomaticPageLayout.fromDelta(
+        delta: [{'insert': '$text\n'}],
+        maxWidth: 100,
+        pageContentHeight: 52,
+      );
+      final indented = WriterAutomaticPageLayout.fromDelta(
+        delta: [
+          {'insert': text},
+          {'insert': '\n', 'attributes': {'indent': 2}},
+        ],
+        maxWidth: 100,
+        pageContentHeight: 52,
+      );
+
+      expect(indented.pageCount, greaterThanOrEqualTo(normal.pageCount));
+      expect(
+        indented.pages.expand((page) => page.fragments).length,
+        greaterThan(normal.pages.expand((page) => page.fragments).length),
+      );
+    });
+
     test('explicit page breaks create structural pages including trailing empties', () {
       final layout = WriterAutomaticPageLayout.fromDelta(
         delta: [
