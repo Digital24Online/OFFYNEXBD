@@ -1,4 +1,4 @@
-/// A non-destructive page projection of Writer's canonical Quill Delta.
+// Deep-copy helpers keep the page projection isolated from mutable source Delta data.
 
 Object? _freezeProjectionValue(Object? value) {
   if (value is Map) {
