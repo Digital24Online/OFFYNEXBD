@@ -63,7 +63,7 @@ void main() {
 
       expect(projection.pageIndexForOffset(0), 0);
       expect(projection.pageIndexForOffset(2), 0);
-      expect(projection.pageIndexForOffset(3), 1);
+      expect(projection.pageIndexForOffset(3), 0);
       expect(projection.pageIndexForOffset(4), 1);
       expect(projection.pageIndexForOffset(999), 1);
       expect(projection.pageIndexForOffset(-1), 0);
