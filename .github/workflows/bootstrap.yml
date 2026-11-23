@@ -122,6 +122,9 @@ jobs:
           arch: x86_64
           profile: pixel_2
           disable-animations: true
+          # Give the software-rendered emulator enough CPU/RAM for the full
+          # Writer screen; otherwise Android drops the ADB/VM service mid-test.
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -memory 4096 -cores 4
           script: flutter drive --driver=test_driver/integration_test.dart --target=integration_test/writer_keyboard_test.dart -d emulator-5554
 
       - name: Decode Android Signing Key
