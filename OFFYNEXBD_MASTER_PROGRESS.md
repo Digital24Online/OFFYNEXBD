@@ -2177,3 +2177,13 @@ Not yet complete or verified:
 - Commits: `6dd7d2b3267e2797eb0553270be0953afdea8c48` (implementation), `1c98d1b163dcde5d4ea81a5eb432c56a1a3a4d51` (tests).
 - CI is pending for the exact latest branch head. Do not treat earlier Build #1085 as validation for these new commits.
 - This is projection data-integrity hardening only; true content-aware physical pagination, per-page margins and live caret/selection synchronization remain unfinished.
+
+
+## CI failure root-cause fix — 2026-11-23
+
+- Checked latest workflow runs #1086–#1090 and inspected the exact failed Analyze log for #1090.
+- Root cause: the new recursive snapshot helper was inserted between a library-level `///` comment and the first class, so Dart reported `dangling_library_doc_comments` at `writer_page_projection.dart:1:1`; Analyze correctly failed.
+- Fixed by converting the helper's leading comment to an ordinary implementation comment, leaving the class documentation attached to the class.
+- Fix commit: `dde7710bf7b7d4f4faa9ca9975532948e1daa008`.
+- Runs #1086/#1087/#1089 were cancelled by branch concurrency while commits were landing; #1088 and #1090 failed at Analyze with the same lint. No test/build/artifact result exists for the latest immutable-snapshot changes yet.
+- A new exact-head CI run is required to validate Analyze, all tests, keyboard integration, APK signing/build and artifact upload.
