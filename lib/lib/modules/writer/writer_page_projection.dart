@@ -1,4 +1,21 @@
 /// A non-destructive page projection of Writer's canonical Quill Delta.
+
+Object? _freezeProjectionValue(Object? value) {
+  if (value is Map) {
+    return Map<String, dynamic>.unmodifiable({
+      for (final entry in value.entries)
+        entry.key.toString(): _freezeProjectionValue(entry.value),
+    });
+  }
+  if (value is List) {
+    return List<Object?>.unmodifiable(value.map(_freezeProjectionValue));
+  }
+  return value;
+}
+
+Map<String, dynamic> _freezeProjectionOperation(Map<String, dynamic> source) {
+  return _freezeProjectionValue(source) as Map<String, dynamic>;
+}
 ///
 /// This deliberately does not rewrite, split, or mutate the saved Delta. Each
 /// projected operation retains its original source-operation index and UTF-16
@@ -81,7 +98,7 @@ class WriterPageProjection {
         sourceOperationIndex: index,
         documentOffset: offset,
         length: length,
-        operation: Map<String, dynamic>.unmodifiable(source),
+        operation: _freezeProjectionOperation(source),
         isPageBreak: isBreak,
       ));
       offset += length;
