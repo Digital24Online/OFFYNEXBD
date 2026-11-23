@@ -61,6 +61,23 @@ class WriterAutomaticPageLayout {
 
   int get pageCount => pages.length;
 
+  /// Maps a canonical Quill UTF-16 offset to its visual page. At an automatic
+  /// page boundary the caret belongs to the following page; document-end
+  /// offsets remain on the final page.
+  int pageIndexForOffset(int documentOffset) {
+    final safeOffset = documentOffset.clamp(0, documentLength).toInt();
+    for (var index = 0; index < pages.length; index++) {
+      final page = pages[index];
+      if (safeOffset < page.endOffset) return index;
+      if (safeOffset == page.endOffset) {
+        if (index == pages.length - 1) return index;
+        if (pages[index + 1].startOffset == safeOffset) return index + 1;
+        return index;
+      }
+    }
+    return pages.length - 1;
+  }
+
   factory WriterAutomaticPageLayout.fromDelta({
     required List<Map<String, dynamic>> delta,
     required double maxWidth,
