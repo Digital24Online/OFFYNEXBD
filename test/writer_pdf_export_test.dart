@@ -281,6 +281,62 @@ void main() {
     expect(bytes.length, greaterThan(1000));
   });
 
+  test('Writer PDF table layout gives vertical merges one full-height cell', () {
+    final rectangles = WriterPdfExportService.tableCellRectangles(
+      data: {
+        'rows': [
+          ['Merged vertically', 'Top right'],
+          ['', 'Bottom right'],
+        ],
+        'columnWidths': [100, 100],
+        'rowHeights': [40, 40],
+        'merges': [
+          {'row': 0, 'column': 0, 'rowSpan': 2, 'columnSpan': 1},
+        ],
+      },
+      availableWidth: 200,
+    );
+
+    expect(rectangles, hasLength(3));
+    final merged = rectangles.singleWhere(
+      (cell) => cell['row'] == 0 && cell['column'] == 0,
+    );
+    expect(merged['left'], 0);
+    expect(merged['top'], 0);
+    expect(merged['width'], 100);
+    expect(merged['height'], 60);
+
+    final bottomRight = rectangles.singleWhere(
+      (cell) => cell['row'] == 1 && cell['column'] == 1,
+    );
+    expect(bottomRight['top'], 30);
+    expect(bottomRight['height'], 30);
+  });
+
+  test('Writer PDF table layout preserves both horizontal and vertical spans', () {
+    final rectangles = WriterPdfExportService.tableCellRectangles(
+      data: {
+        'rows': [
+          ['Merged block', '', 'Top right'],
+          ['', '', 'Bottom right'],
+        ],
+        'columnWidths': [100, 100, 100],
+        'rowHeights': [40, 40],
+        'merges': [
+          {'row': 0, 'column': 0, 'rowSpan': 2, 'columnSpan': 2},
+        ],
+      },
+      availableWidth: 300,
+    );
+
+    expect(rectangles, hasLength(3));
+    final merged = rectangles.singleWhere(
+      (cell) => cell['row'] == 0 && cell['column'] == 0,
+    );
+    expect(merged['width'], 200);
+    expect(merged['height'], 60);
+  });
+
   test('Writer PDF keeps content on both sides of an explicit page break', () async {
     final sans = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
     final serif = await rootBundle.load('assets/fonts/NotoSerifBengali.ttf');
