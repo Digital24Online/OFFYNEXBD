@@ -276,6 +276,14 @@ class WriterPdfExportService {
     final columns = rows.fold<int>(
       1, (maximum, row) => row.length > maximum ? row.length : maximum,
     );
+    // Legacy/imported tables may contain ragged rows. Normalize them before
+    // merged-cell layout so a horizontal merge on one row cannot make PDF
+    // export index beyond a shorter row on another.
+    for (final row in rows) {
+      while (row.length < columns) {
+        row.add('');
+      }
+    }
     final borderColor = _parseIntColor(data['borderColor']) ?? PdfColors.grey;
     final backgroundColor =
         _parseIntColor(data['backgroundColor']) ?? PdfColors.white;
