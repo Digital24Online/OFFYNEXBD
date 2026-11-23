@@ -146,21 +146,22 @@ class WriterAutomaticPageLayout {
         final lineHeight = math.max(line.height, defaultFontSize * 1.2);
         final lineStart = line.startIndex;
         final lineEnd = math.max(line.endIndex, lineStart + 1);
-        var lineDocumentStart = documentOffset;
+        int? lineDocumentStart;
         for (final run in paragraph) {
           final intersectionStart = math.max(lineStart, run.paragraphStart);
           final intersectionEnd = math.min(lineEnd, run.paragraphEnd);
           if (intersectionEnd <= intersectionStart) continue;
           final localStart = run.localStart +
               intersectionStart - run.paragraphStart;
-          lineDocumentStart = math.min(
-            lineDocumentStart == documentOffset
-                ? run.documentOffset + localStart
-                : lineDocumentStart,
-            run.documentOffset + localStart,
-          );
+          final runDocumentStart = run.documentOffset + localStart;
+          lineDocumentStart = lineDocumentStart == null
+              ? runDocumentStart
+              : math.min(lineDocumentStart, runDocumentStart);
         }
-        ensureRoom(lineHeight, nextOffset: lineDocumentStart);
+        ensureRoom(
+          lineHeight,
+          nextOffset: lineDocumentStart ?? documentOffset,
+        );
 
         for (final run in paragraph) {
           final intersectionStart = math.max(lineStart, run.paragraphStart);
