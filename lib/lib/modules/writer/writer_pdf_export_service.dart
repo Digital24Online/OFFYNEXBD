@@ -428,9 +428,9 @@ class WriterPdfExportService {
             return pw.Positioned(
               left: cell['left'],
               top: cell['top'],
-              width: cell['width'],
-              height: cell['height'],
               child: pw.Container(
+                width: cell['width'],
+                height: cell['height'],
                 decoration: pw.BoxDecoration(
                   color: backgroundColor,
                   border: pw.Border.all(color: borderColor, width: 0.6),
