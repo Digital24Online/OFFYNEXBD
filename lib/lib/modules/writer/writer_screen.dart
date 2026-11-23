@@ -14,7 +14,6 @@ import 'writer_document_backup_service.dart';
 import 'writer_docx_export_service.dart';
 import 'writer_document_format_service.dart';
 import 'writer_viewport.dart';
-import 'writer_content_metrics.dart';
 import 'writer_automatic_page_layout.dart';
 import '../fonts/offynex_font_service.dart';
 import 'dart:io';
