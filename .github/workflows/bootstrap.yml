@@ -127,9 +127,14 @@ jobs:
           arch: x86_64
           profile: pixel_2
           disable-animations: true
-          # Give the software-rendered emulator enough CPU/RAM for the full
-          # Writer screen; otherwise Android drops the ADB/VM service mid-test.
-          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -memory 4096 -cores 4
+          # The hosted runner uses TCG software emulation. Keep CPU/RAM bounded
+          # so the host ADB service remains responsive during cold boot.
+          cores: 2
+          ram-size: 3072M
+          heap-size: 512M
+          emulator-boot-timeout: 900
+          disable-spellchecker: true
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect
           script: |
             set -uo pipefail
             log_file="$(mktemp)"

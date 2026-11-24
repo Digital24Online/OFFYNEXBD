@@ -2266,3 +2266,13 @@ Not yet complete or verified:
 - Corrected the consecutive-page-break regression fixture to use an actual newline character rather than a literal backslash-plus-n sequence. Strengthened the test to verify canonical UTF-16 document length, adjacent page range boundaries, and final-page caret lookup.
 - This batch improves CI resilience and test validity; it does not implement true physical per-page Quill editing, independent page margins, or live cross-page caret/selection transfer. Those remain open Writer completion requirements.
 - Exact-head Analyze, all Flutter tests, PR keyboard integration and release APK validation must be checked after this commit.
+
+
+## Writer integrated regression and Android emulator stability batch — 2026-11-24
+
+- Inspected PR Build #1147 job logs after the earlier Gradle HTTP 429 retry was added. Flutter Analyze and the complete Flutter unit-test suite passed; the PR-only Android keyboard integration step failed before its test script ran.
+- The Android 35 TCG emulator took about 493 seconds to boot, then the runner's own initial `adb shell input keyevent 82` failed with `Broken pipe (32)` / ADB exit code 224. This is an emulator/ADB startup failure, not a Writer test assertion.
+- Updated the emulator configuration to use the action's supported `cores`, `ram-size`, `heap-size`, `emulator-boot-timeout`, and `disable-spellchecker` inputs. It now uses 2 cores, 3 GB RAM, a 512 MB heap, and a 900-second boot allowance rather than overriding the emulator with 4 cores and 4 GB RAM on a software-emulated hosted runner.
+- Added a Writer page-projection regression for supplementary Unicode (emoji) so UTF-16 offsets used by Quill selections remain consistent across explicit page-break boundaries.
+- This is one coordinated reliability/correctness batch. It does not close the major Writer completion gate: the current screen still has one continuous Quill editing surface over painted page backgrounds. True per-page editing, independent page margins, cross-page caret/selection transfer and real image/table flow remain unfinished and must not be marked complete.
+- Re-run Analyze, all tests, PR keyboard integration, signed APK verification and artifact upload on this exact commit before accepting the batch.

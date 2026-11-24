@@ -105,6 +105,21 @@ void main() {
       );
     });
 
+    test('uses UTF-16 code-unit offsets for supplementary Unicode characters', () {
+      const firstLine = 'বাংলা 😀 লেখা';
+      final projection = WriterPageProjection.fromDelta([
+        {'insert': firstLine},
+        {'insert': {'offynexbd-writer-page-break': 'page'}},
+        {'insert': 'পরের পৃষ্ঠা'},
+      ]);
+
+      // Quill selections and Dart String.length both use UTF-16 code units.
+      expect(projection.documentLength, firstLine.length + 1 + 'পরের পৃষ্ঠা'.length);
+      expect(projection.pages.first.operations.first.length, firstLine.length);
+      expect(projection.pages[1].startOffset, firstLine.length + 1);
+      expect(projection.pageIndexForOffset(firstLine.length + 1), 1);
+    });
+
     test('does not mutate source Delta operations', () {
       final operation = <String, dynamic>{'insert': 'keep me'};
       final delta = [operation];
