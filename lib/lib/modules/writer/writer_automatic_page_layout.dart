@@ -109,7 +109,10 @@ class WriterAutomaticPageLayout {
     void nextPage({int? nextOffset}) {
       final current = mutablePages[pageIndex];
       final pageStartOffset = nextOffset ?? documentOffset;
-      current.endOffset = math.max(current.endOffset, pageStartOffset).toInt();
+      // Page ranges are half-open: the previous page ends exactly where
+      // the next page starts, even when the final line fragment includes its
+      // terminating newline in the measured source range.
+      current.endOffset = pageStartOffset;
       pageIndex++;
       pageTop = 0;
       mutablePages.add(_MutablePage(pageIndex, pageStartOffset));
