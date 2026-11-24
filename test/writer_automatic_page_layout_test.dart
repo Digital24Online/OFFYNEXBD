@@ -48,6 +48,24 @@ void main() {
       expect(layout.pageIndexForOffset(layout.documentLength), layout.pageCount - 1);
     });
 
+    test('maps document-end caret to the final page after consecutive page breaks', () {
+      final layout = WriterAutomaticPageLayout.fromDelta(
+        delta: [
+          {'insert': 'প্রথম পৃষ্ঠা\\n'},
+          {'insert': {'offynexbd-writer-page-break': 'page'}},
+          {'insert': {'offynexbd-writer-page-break': 'page'}},
+        ],
+        maxWidth: 300,
+        pageContentHeight: 500,
+      );
+
+      expect(layout.pageCount, 3);
+      expect(
+        layout.pageIndexForOffset(layout.documentLength),
+        layout.pageCount - 1,
+      );
+    });
+
     test('maps formatted text runs back to their source Delta offsets', () {
       final layout = WriterAutomaticPageLayout.fromDelta(
         delta: [

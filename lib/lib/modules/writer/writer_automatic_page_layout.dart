@@ -66,6 +66,10 @@ class WriterAutomaticPageLayout {
   /// offsets remain on the final page.
   int pageIndexForOffset(int documentOffset) {
     final safeOffset = documentOffset.clamp(0, documentLength).toInt();
+    // Several consecutive page breaks or a trailing empty page can give
+    // multiple pages the same boundary offset. The document-end caret belongs
+    // to the final page, never the first page sharing that offset.
+    if (safeOffset == documentLength) return pages.length - 1;
     for (var index = 0; index < pages.length; index++) {
       final page = pages[index];
       if (safeOffset < page.endOffset) return index;

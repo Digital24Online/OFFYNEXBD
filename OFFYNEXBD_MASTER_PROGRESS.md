@@ -2250,3 +2250,10 @@ Not yet complete or verified:
 ### Blank-paragraph test fixture correction — 2026-11-24
 - Corrected the new regression test literals to contain actual Dart newline escapes rather than literal backslash-plus-n characters. The test now exercises real empty paragraphs and the intended page-boundary behavior.
 - Exact-head CI is running; no result is claimed until it completes.
+
+
+### Automatic page-end caret mapping correction — 2026-11-24
+- Exact-head CI for commit `df4c45d` exposed one failing Writer regression: when multiple page boundaries shared the document-end offset, caret lookup returned the earlier matching page instead of the final page.
+- Updated `pageIndexForOffset` so a clamped document-end offset always resolves to the final visual page; ordinary automatic boundaries still resolve to the following page.
+- Added a regression test for consecutive explicit page breaks and the final-page caret position. This is a targeted pagination correctness batch; the broader physical per-page editor, independent page margins, and caret/selection transfer remain open and are not represented as complete.
+- New exact-head CI result is required before this correction is considered verified.
