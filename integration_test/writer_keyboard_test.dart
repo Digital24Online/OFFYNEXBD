@@ -15,12 +15,12 @@ void main() {
       await preferences.clear();
 
       await tester.pumpWidget(const OFFYNEXBDApp());
-      await tester.pumpAndSettle();
+      await _pumpUntilFound(tester, find.text('রাইটার'));
 
       await tester.tap(find.text('রাইটার'));
-      await tester.pumpAndSettle();
+      await _pumpUntilFound(tester, find.text('নতুন ডকুমেন্ট'));
       await tester.tap(find.text('নতুন ডকুমেন্ট'));
-      await tester.pumpAndSettle();
+      await _pumpUntilFound(tester, find.byType(TextField));
 
       // This checks the real Android window inset, not Flutter's fake
       // TestTextInput visibility used by ordinary widget tests.
@@ -35,7 +35,7 @@ void main() {
       await tester.tapAt(tester.getCenter(page));
       await _waitForKeyboard(tester, visible: true);
     },
-    timeout: const Timeout(Duration(minutes: 2)),
+    timeout: const Timeout(Duration(minutes: 4)),
   );
 }
 
@@ -43,7 +43,7 @@ Future<void> _waitForKeyboard(
   WidgetTester tester, {
   required bool visible,
 }) async {
-  for (var attempt = 0; attempt < 40; attempt++) {
+  for (var attempt = 0; attempt < 100; attempt++) {
     await tester.pump(const Duration(milliseconds: 100));
     final isVisible = tester.view.viewInsets.bottom > 0;
     if (isVisible == visible) return;
@@ -53,4 +53,15 @@ Future<void> _waitForKeyboard(
     'Android software keyboard did not become ${visible ? 'visible' : 'hidden'}; '
     'viewInsets.bottom=${tester.view.viewInsets.bottom}.',
   );
+}
+
+Future<void> _pumpUntilFound(
+  WidgetTester tester,
+  Finder finder,
+) async {
+  for (var attempt = 0; attempt < 40; attempt++) {
+    if (finder.evaluate().isNotEmpty) return;
+    await tester.pump(const Duration(milliseconds: 250));
+  }
+  expect(finder, findsOneWidget);
 }

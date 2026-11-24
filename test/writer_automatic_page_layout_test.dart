@@ -33,7 +33,7 @@ void main() {
     test('maps caret offsets to the following page at automatic boundaries', () {
       const text =
           'একটি দীর্ঘ বাংলা অনুচ্ছেদ যা ছোট পৃষ্ঠায় একাধিক লাইনে বিভক্ত হয়ে '
-          'পরবর্তী পৃষ্ঠায় প্রবাহিত হবে।\\n';
+          'পরবর্তী পৃষ্ঠায় প্রবাহিত হবে।\n';
       final layout = WriterAutomaticPageLayout.fromDelta(
         delta: [{'insert': text}],
         maxWidth: 68,

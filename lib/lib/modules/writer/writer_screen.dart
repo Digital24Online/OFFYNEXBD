@@ -526,6 +526,11 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   double zoomLevel = 1.0;
   String viewFit = 'Width';
   final TransformationController _pageTransformController = TransformationController();
+  // Cache the expensive TextPainter pagination projection between UI rebuilds.
+  // The key includes the canonical Delta and every layout input, so edits,
+  // formatting, page-size/margin and direction changes invalidate it safely.
+  String? _measuredPageLayoutCacheKey;
+  WriterAutomaticPageLayout? _measuredPageLayoutCache;
   bool showRuler = true;
   bool showStatusBar = true;
   bool showPageBorder = true;
@@ -2704,6 +2709,30 @@ Future<void> showCustomFontSizeDialog() async {
     });
   }
 
+  WriterAutomaticPageLayout _measuredPageLayoutFor({
+    required List<Map<String, dynamic>> delta,
+    required double maxWidth,
+    required double pageContentHeight,
+    required TextDirection textDirection,
+  }) {
+    final key = '${maxWidth.toStringAsPrecision(10)}|'
+        '${pageContentHeight.toStringAsPrecision(10)}|'
+        '${textDirection.name}|${jsonEncode(delta)}';
+    if (_measuredPageLayoutCacheKey == key &&
+        _measuredPageLayoutCache != null) {
+      return _measuredPageLayoutCache!;
+    }
+    final layout = WriterAutomaticPageLayout.fromDelta(
+      delta: delta,
+      maxWidth: maxWidth,
+      pageContentHeight: pageContentHeight,
+      textDirection: textDirection,
+    );
+    _measuredPageLayoutCacheKey = key;
+    _measuredPageLayoutCache = layout;
+    return layout;
+  }
+
   void _handlePageInteractionEnd(ScaleEndDetails details) {
     final matrix = _pageTransformController.value;
     final gestureScale = matrix.getMaxScaleOnAxis();
@@ -3570,8 +3599,7 @@ Future<void> insertWriterImage() async {
                 // Use measured Flutter line metrics for the visual page count.
                 // The canonical Quill Delta remains untouched; this projection
                 // does not yet replace Quill's continuous editing surface.
-                final measuredPageLayout =
-                    WriterAutomaticPageLayout.fromDelta(
+                final measuredPageLayout = _measuredPageLayoutFor(
                   delta: quillController.document.toDelta().toJson(),
                   maxWidth: pageContentWidth,
                   pageContentHeight: pageContentHeight,
