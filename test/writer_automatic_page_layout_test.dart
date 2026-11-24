@@ -235,5 +235,77 @@ void main() {
       expect(layout.documentLength, 0);
       expect(layout.pages.single.fragments, isEmpty);
     });
+
+    test('keeps UTF-16 source offsets stable across formatted runs and pages', () {
+      const first = 'বাংলা 😀 লেখার একটি দীর্ঘ অংশ ';
+      const second = 'যা পরের লাইনে এবং পৃষ্ঠায় প্রবাহিত হবে।\n';
+      final layout = WriterAutomaticPageLayout.fromDelta(
+        delta: [
+          {'insert': first, 'attributes': {'bold': true}},
+          {'insert': second, 'attributes': {'italic': true}},
+        ],
+        maxWidth: 74,
+        pageContentHeight: 44,
+      );
+
+      expect(layout.pageCount, greaterThan(1));
+      expect(layout.documentLength, first.length + second.length);
+
+      final fragments = layout.pages
+          .expand((page) => page.fragments)
+          .where((fragment) => fragment.kind == 'text')
+          .toList()
+        ..sort((a, b) => a.documentOffset.compareTo(b.documentOffset));
+
+      expect(fragments, isNotEmpty);
+      expect(fragments.every((fragment) =>
+          fragment.documentOffset >= 0 &&
+          fragment.documentOffset + fragment.documentLength <=
+              layout.documentLength), isTrue);
+      expect(fragments.any((fragment) => fragment.sourceOperationIndex == 0), isTrue);
+      expect(fragments.any((fragment) => fragment.sourceOperationIndex == 1), isTrue);
+      expect(fragments.any((fragment) =>
+          fragment.pageIndex > 0 && fragment.sourceOperationIndex == 1), isTrue);
+    });
+
+    test('moves an indivisible image to the next page when remaining space is insufficient', () {
+      final layout = WriterAutomaticPageLayout.fromDelta(
+        delta: [
+          {'insert': 'শুরু\n'},
+          {'insert': {'image': '/private/image.png'}},
+          {'insert': 'শেষ\n'},
+        ],
+        maxWidth: 300,
+        pageContentHeight: 120,
+      );
+
+      final image = layout.pages
+          .expand((page) => page.fragments)
+          .singleWhere((fragment) => fragment.kind == 'image');
+      expect(image.pageIndex, greaterThan(0));
+      expect(image.documentLength, 1);
+      expect(layout.pages[image.pageIndex].fragments.first, image);
+    });
+
+    test('preserves explicit page-break offsets between measured paragraphs', () {
+      final layout = WriterAutomaticPageLayout.fromDelta(
+        delta: [
+          {'insert': 'প্রথম অংশ\n'},
+          {'insert': {'offynexbd-writer-page-break': 'page'}},
+          {'insert': 'দ্বিতীয় অংশ\n'},
+        ],
+        maxWidth: 300,
+        pageContentHeight: 500,
+      );
+
+      expect(layout.pageCount, 2);
+      final pageBreak = layout.pages.first.fragments
+          .singleWhere((fragment) => fragment.kind == 'pageBreak');
+      expect(pageBreak.documentLength, 1);
+      expect(layout.pages.last.startOffset, pageBreak.documentOffset + 1);
+      expect(layout.pages.last.fragments.first.documentOffset,
+          'প্রথম অংশ\n'.length + 1);
+    });
+
   });
 }
