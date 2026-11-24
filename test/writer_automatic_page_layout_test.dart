@@ -51,7 +51,7 @@ void main() {
     test('maps document-end caret to the final page after consecutive page breaks', () {
       final layout = WriterAutomaticPageLayout.fromDelta(
         delta: [
-          {'insert': 'প্রথম পৃষ্ঠা\\n'},
+          {'insert': 'প্রথম পৃষ্ঠা\n'},
           {'insert': {'offynexbd-writer-page-break': 'page'}},
           {'insert': {'offynexbd-writer-page-break': 'page'}},
         ],
@@ -60,6 +60,10 @@ void main() {
       );
 
       expect(layout.pageCount, 3);
+      expect(layout.documentLength, 'প্রথম পৃষ্ঠা\n'.length + 2);
+      expect(layout.pages[0].endOffset, layout.pages[1].startOffset);
+      expect(layout.pages[1].endOffset, layout.pages[2].startOffset);
+      expect(layout.pageIndexForOffset(layout.documentLength), 2);
       expect(
         layout.pageIndexForOffset(layout.documentLength),
         layout.pageCount - 1,

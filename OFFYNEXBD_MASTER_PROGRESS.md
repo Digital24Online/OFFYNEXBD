@@ -2257,3 +2257,12 @@ Not yet complete or verified:
 - Updated `pageIndexForOffset` so a clamped document-end offset always resolves to the final visual page; ordinary automatic boundaries still resolve to the following page.
 - Added a regression test for consecutive explicit page breaks and the final-page caret position. This is a targeted pagination correctness batch; the broader physical per-page editor, independent page margins, and caret/selection transfer remain open and are not represented as complete.
 - New exact-head CI result is required before this correction is considered verified.
+
+
+## Writer CI retry and explicit-break regression hardening — 2026-11-24
+
+- Inspected the exact failed PR Build #1145 log. Flutter Analyze and the full Flutter unit-test suite passed; the Android keyboard integration step failed before the test APK could build because Maven Central returned HTTP 429 while Gradle resolved Kotlin plugin artifacts.
+- Updated the PR-only keyboard integration command to retry up to three times only for transient Gradle dependency/network resolution errors, with 30-second then 60-second waits. Non-network test failures still fail immediately; this does not mask assertion failures.
+- Corrected the consecutive-page-break regression fixture to use an actual newline character rather than a literal backslash-plus-n sequence. Strengthened the test to verify canonical UTF-16 document length, adjacent page range boundaries, and final-page caret lookup.
+- This batch improves CI resilience and test validity; it does not implement true physical per-page Quill editing, independent page margins, or live cross-page caret/selection transfer. Those remain open Writer completion requirements.
+- Exact-head Analyze, all Flutter tests, PR keyboard integration and release APK validation must be checked after this commit.
