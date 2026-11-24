@@ -2276,3 +2276,13 @@ Not yet complete or verified:
 - Added a Writer page-projection regression for supplementary Unicode (emoji) so UTF-16 offsets used by Quill selections remain consistent across explicit page-break boundaries.
 - This is one coordinated reliability/correctness batch. It does not close the major Writer completion gate: the current screen still has one continuous Quill editing surface over painted page backgrounds. True per-page editing, independent page margins, cross-page caret/selection transfer and real image/table flow remain unfinished and must not be marked complete.
 - Re-run Analyze, all tests, PR keyboard integration, signed APK verification and artifact upload on this exact commit before accepting the batch.
+
+
+## Writer CI shell-script correction — 2026-11-24
+
+- Audited the exact latest PR #13 head before continuing: `2423567bab43a9b58ee81726dc5a2c956f9c7b51`.
+- Build #1149 / run `45341791585`: Flutter Analyze and the full configured Flutter test suite passed. The Android keyboard integration stage failed after the emulator booted because the emulator action executed the multi-line `script: |` block as separate `sh -c` commands; the retry loop stopped at `Syntax error: end of file unexpected (expecting "done")`. Signing, release APK, package verification and artifact upload were skipped as designed after the integration failure.
+- Moved the retry logic into `.github/scripts/run_writer_keyboard_test.sh` and changed the emulator action to invoke the script as one Bash command: `bash .github/scripts/run_writer_keyboard_test.sh`.
+- Fix commits: `02e1e69b930b75d86b1fee91c52b348cb29d7db2` (script), `578b13c8d8ab3b6c461b955ddf0cf4027d14a716` (workflow invocation).
+- [ ] A new run on the exact latest head must pass Analyze, full tests, Android keyboard integration, signed APK, signature/install metadata, package verification and artifact upload. No success is claimed yet.
+- [ ] This fixes the CI shell invocation only. True physical per-page Quill editing, per-page margins, cross-page caret/selection synchronization, image/table flow, ribbon end-to-end coverage and real Android/Bangla/printer acceptance remain open.
