@@ -2286,3 +2286,12 @@ Not yet complete or verified:
 - Fix commits: `02e1e69b930b75d86b1fee91c52b348cb29d7db2` (script), `578b13c8d8ab3b6c461b955ddf0cf4027d14a716` (workflow invocation).
 - [ ] A new run on the exact latest head must pass Analyze, full tests, Android keyboard integration, signed APK, signature/install metadata, package verification and artifact upload. No success is claimed yet.
 - [ ] This fixes the CI shell invocation only. True physical per-page Quill editing, per-page margins, cross-page caret/selection synchronization, image/table flow, ribbon end-to-end coverage and real Android/Bangla/printer acceptance remain open.
+
+
+## Writer pagination regression coverage expansion — 2026-11-24
+
+- Added regression tests in `test/writer_automatic_page_layout_test.dart` for UTF-16 source-offset mapping across formatted runs and multiple pages (including a supplementary-plane emoji), indivisible image placement when remaining page space is insufficient, and explicit page-break offset continuity.
+- Test commit: `fccd0b0f1a0051af4c4d6dfc13dfde87494c0c66`.
+- CI run #1155: `45386800138` was queued for this test commit; test outcome is pending and must be checked before treating the additions as validated.
+- Run #1153 (`45385865749`) on the preceding commit had Flutter Analyze and Flutter Tests passing, while Android keyboard integration was still in progress at the last check; it has not yet produced an APK result.
+- Important scope remains unchanged: measured page layout currently draws page boundaries while a single continuous Quill editor owns editing. This is not yet true per-page editing. Per-page controller/selection/caret synchronization and physical page-flow rendering still require implementation and Android acceptance testing. Do not mark Writer complete from the layout tests or CI build alone.
