@@ -100,6 +100,7 @@ class WriterAutomaticPageLayout {
     var documentOffset = 0;
     var paragraph = <_WriterTextRun>[];
     var paragraphTextLength = 0;
+    var paragraphVisibleTextLength = 0;
     var paragraphAttributes = <String, dynamic>{};
     int? paragraphTerminatorOperationIndex;
     int? paragraphTerminatorDocumentOffset;
@@ -146,7 +147,7 @@ class WriterAutomaticPageLayout {
     }
 
     void flushParagraph() {
-      if (paragraph.isEmpty) {
+      if (paragraphVisibleTextLength == 0) {
         // A newline with no preceding text is still a real paragraph. Keep a
         // one-character source mapping so blank lines consume vertical space
         // and remain addressable in the canonical Quill document.
@@ -181,6 +182,8 @@ class WriterAutomaticPageLayout {
           pageTop += lineHeight + 4;
         }
         paragraphTextLength = 0;
+        paragraphVisibleTextLength = 0;
+        paragraph.clear();
         paragraphAttributes = <String, dynamic>{};
         paragraphTerminatorOperationIndex = null;
         paragraphTerminatorDocumentOffset = null;
@@ -282,6 +285,7 @@ class WriterAutomaticPageLayout {
       );
       paragraph.clear();
       paragraphTextLength = 0;
+      paragraphVisibleTextLength = 0;
       paragraphAttributes = <String, dynamic>{};
       paragraphTerminatorOperationIndex = null;
       paragraphTerminatorDocumentOffset = null;
@@ -313,6 +317,7 @@ class WriterAutomaticPageLayout {
               paragraphStart: paragraphTextLength,
             ));
             paragraphTextLength += text.length;
+            paragraphVisibleTextLength += segments[index].length;
           }
           if (hasNewline) {
             final newlineLocalOffset = localOffset + segments[index].length;
