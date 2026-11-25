@@ -112,31 +112,6 @@ jobs:
       - name: Run Tests
         run: flutter test
 
-      # Keep the slow Android emulator smoke test on PR validation.
-      # Push/workflow_dispatch builds must still produce a signed APK even
-      # when hosted emulator boot/install is unstable or unusually slow.
-      - name: Run Android keyboard integration test
-        if: github.event_name == 'pull_request'
-        timeout-minutes: 20
-        uses: reactivecircus/android-emulator-runner@v2
-        env:
-          # Newer Android Emulator builds reject software acceleration unless TCG is explicitly enabled.
-          ANDROID_I_WANT_MY_TCG: "yes"
-        with:
-          api-level: 35
-          arch: x86_64
-          profile: pixel_2
-          disable-animations: true
-          # The hosted runner uses TCG software emulation. Keep CPU/RAM bounded
-          # so the host ADB service remains responsive during cold boot.
-          cores: 2
-          ram-size: 3072M
-          heap-size: 512M
-          emulator-boot-timeout: 900
-          disable-spellchecker: true
-          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect
-          script: bash .github/scripts/run_writer_keyboard_test.sh
-
       - name: Decode Android Signing Key
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -289,4 +264,28 @@ jobs:
           name: OFFYNEXBD-Android-APK
           path: build/app/outputs/flutter-apk/
           retention-days: 14
+
+      # Run the emulator smoke test only after the signed APK is safely uploaded.
+      # A slow hosted emulator must never prevent delivery of the release artifact.
+      - name: Run Android keyboard integration test
+        if: github.event_name == 'pull_request'
+        timeout-minutes: 40
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          # Newer Android Emulator builds reject software acceleration unless TCG is explicitly enabled.
+          ANDROID_I_WANT_MY_TCG: "yes"
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          # The hosted runner uses TCG software emulation. Keep CPU/RAM bounded
+          # so the host ADB service remains responsive during cold boot.
+          cores: 2
+          ram-size: 3072M
+          heap-size: 512M
+          emulator-boot-timeout: 900
+          disable-spellchecker: true
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect
+          script: bash .github/scripts/run_writer_keyboard_test.sh
           
