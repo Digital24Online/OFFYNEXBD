@@ -57,6 +57,22 @@ class WriterProjectedPage {
   final bool endsWithExplicitBreak;
 }
 
+class WriterPageProjectionLocation {
+  const WriterPageProjectionLocation({
+    required this.pageIndex,
+    required this.pageOffset,
+    required this.operationIndex,
+    required this.sourceOperationIndex,
+    required this.operationOffset,
+  });
+
+  final int pageIndex;
+  final int pageOffset;
+  final int? operationIndex;
+  final int? sourceOperationIndex;
+  final int? operationOffset;
+}
+
 class WriterPageProjection {
   const WriterPageProjection._(this.pages, this.documentLength);
 
@@ -200,6 +216,49 @@ class WriterPageProjection {
     return WriterPageProjection._(
       List.unmodifiable(projectedPages),
       layout.documentLength,
+    );
+  }
+
+  /// Resolves a canonical Quill offset to its visual page and source Delta
+  /// operation. At a split-operation boundary, the following fragment wins;
+  /// the final document-end offset stays attached to the final fragment.
+  WriterPageProjectionLocation locationForOffset(int documentOffset) {
+    final safeOffset = documentOffset.clamp(0, documentLength);
+    final pageIndex = pageIndexForOffset(safeOffset);
+    final page = pages[pageIndex];
+    final pageOffset = (safeOffset - page.startOffset).clamp(0, page.endOffset - page.startOffset);
+    for (var index = 0; index < page.operations.length; index++) {
+      final operation = page.operations[index];
+      if (safeOffset < operation.endOffset ||
+          safeOffset == operation.documentOffset) {
+        return WriterPageProjectionLocation(
+          pageIndex: pageIndex,
+          pageOffset: pageOffset,
+          operationIndex: index,
+          sourceOperationIndex: operation.sourceOperationIndex,
+          operationOffset: (safeOffset - operation.documentOffset)
+              .clamp(0, operation.length),
+        );
+      }
+      if (safeOffset == operation.endOffset) {
+        final hasFollowingFragment = index + 1 < page.operations.length &&
+            page.operations[index + 1].documentOffset == safeOffset;
+        if (hasFollowingFragment) continue;
+        return WriterPageProjectionLocation(
+          pageIndex: pageIndex,
+          pageOffset: pageOffset,
+          operationIndex: index,
+          sourceOperationIndex: operation.sourceOperationIndex,
+          operationOffset: operation.length,
+        );
+      }
+    }
+    return WriterPageProjectionLocation(
+      pageIndex: pageIndex,
+      pageOffset: pageOffset,
+      operationIndex: null,
+      sourceOperationIndex: null,
+      operationOffset: null,
     );
   }
 

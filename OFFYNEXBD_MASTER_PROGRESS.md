@@ -2302,3 +2302,9 @@ Not yet complete or verified:
 - Corrected the fixtures to Dart newline escapes (`\n`) in the source text and mismatched-length guard test. Existing production code and saved Delta formats were not changed.
 - This correction makes the automatic-page projection tests exercise real paragraph boundaries. It does not claim physical page-by-page editing is complete; the canonical editor remains continuous and independent per-page margins/caret synchronization remain blockers.
 - Exact-head Analyze, all tests, and Android keyboard integration must be checked on the resulting commit.
+## Writer canonical-offset location mapping — 2026-11-25
+
+- Extended the measured page projection with `locationForOffset`, returning the visual page, page-local offset, projected operation index, original Delta operation index and operation-local UTF-16 offset.
+- Boundary behavior selects the following fragment when an operation is split across visual lines/pages, while the document-end caret remains mapped to the final fragment. Empty pages safely return a page location without a source operation.
+- Added regression coverage across automatic page boundaries and final document end. This provides the source mapping needed by a future synchronized paged editor; the live screen is still using one continuous Quill editor, so this is not yet the page editor itself.
+- Exact-head CI and physical Android editing/selection checks remain required.

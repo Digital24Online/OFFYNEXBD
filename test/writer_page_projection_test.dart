@@ -64,6 +64,36 @@ void main() {
       expect(projection.pageIndexForOffset(projection.pages[1].startOffset), 1);
     });
 
+    test('maps automatic page offsets to their source fragments and local offsets', () {
+      const text = 'A short first line.\\nA second line that wraps over several visual pages.';
+      final delta = <Map<String, dynamic>>[
+        {'insert': text, 'attributes': {'italic': true}},
+      ];
+      final layout = WriterAutomaticPageLayout.fromDelta(
+        delta: delta,
+        maxWidth: 64,
+        pageContentHeight: 24,
+      );
+      final projection = WriterPageProjection.fromMeasuredLayout(
+        delta: delta,
+        layout: layout,
+      );
+      expect(projection.pageCount, greaterThan(1));
+      for (var pageIndex = 0; pageIndex < projection.pages.length; pageIndex++) {
+        final page = projection.pages[pageIndex];
+        if (page.operations.isEmpty) continue;
+        final location = projection.locationForOffset(page.startOffset);
+        expect(location.pageIndex, pageIndex);
+        expect(location.pageOffset, 0);
+        expect(location.sourceOperationIndex, page.operations.first.sourceOperationIndex);
+        expect(location.operationOffset,
+            page.startOffset - page.operations.first.documentOffset);
+      }
+      final end = projection.locationForOffset(projection.documentLength);
+      expect(end.pageIndex, projection.pageCount - 1);
+      expect(end.operationIndex, projection.pages.last.operations.length - 1);
+    });
+
     test('rejects a measured layout created from a different Delta length', () {
       final layout = WriterAutomaticPageLayout.fromDelta(
         delta: [{'insert': 'original\n'}],
