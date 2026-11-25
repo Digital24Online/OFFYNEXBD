@@ -223,10 +223,12 @@ class WriterPageProjection {
   /// operation. At a split-operation boundary, the following fragment wins;
   /// the final document-end offset stays attached to the final fragment.
   WriterPageProjectionLocation locationForOffset(int documentOffset) {
-    final safeOffset = documentOffset.clamp(0, documentLength);
+    final safeOffset = documentOffset.clamp(0, documentLength).toInt();
     final pageIndex = pageIndexForOffset(safeOffset);
     final page = pages[pageIndex];
-    final pageOffset = (safeOffset - page.startOffset).clamp(0, page.endOffset - page.startOffset);
+    final pageOffset = (safeOffset - page.startOffset)
+        .clamp(0, page.endOffset - page.startOffset)
+        .toInt();
     for (var index = 0; index < page.operations.length; index++) {
       final operation = page.operations[index];
       if (safeOffset < operation.endOffset ||
@@ -237,7 +239,8 @@ class WriterPageProjection {
           operationIndex: index,
           sourceOperationIndex: operation.sourceOperationIndex,
           operationOffset: (safeOffset - operation.documentOffset)
-              .clamp(0, operation.length),
+              .clamp(0, operation.length)
+              .toInt(),
         );
       }
       if (safeOffset == operation.endOffset) {
