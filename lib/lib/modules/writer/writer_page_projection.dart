@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'writer_automatic_page_layout.dart';
 
 // Deep-copy helpers keep the page projection isolated from mutable source Delta data.
@@ -227,7 +228,7 @@ class WriterPageProjection {
     final pageIndex = pageIndexForOffset(safeOffset);
     final page = pages[pageIndex];
     final pageOffset = (safeOffset - page.startOffset)
-        .clamp(0, page.endOffset - page.startOffset)
+        .clamp(0, math.max(0, page.endOffset - page.startOffset))
         .toInt();
     for (var index = 0; index < page.operations.length; index++) {
       final operation = page.operations[index];

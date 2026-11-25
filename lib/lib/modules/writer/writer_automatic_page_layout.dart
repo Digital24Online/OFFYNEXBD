@@ -241,17 +241,23 @@ class WriterAutomaticPageLayout {
         // line boundary from a single edge position can return a neighbouring
         // line at wrapped-line boundaries on some Flutter text engines, which
         // duplicates or drops source characters in the page projection.
+        final lineLeft = line.left;
+        final lineRight = line.left + line.width;
         final leftPosition = painter.getPositionForOffset(
-          Offset(0, lineY),
+          Offset(lineLeft + 0.1, lineY),
         ).offset;
         final rightPosition = painter.getPositionForOffset(
-          Offset(contentWidth, lineY),
+          Offset(math.max(lineLeft + 0.1, lineRight - 0.1), lineY),
         ).offset;
         final lineStart = math.min(leftPosition, rightPosition).toInt();
-        final lineEnd = math.max(
+        var lineEnd = math.max(
           math.max(leftPosition, rightPosition),
           lineStart + 1,
-        ).toInt().clamp(0, paragraphTextLength);
+        ).toInt();
+        // TextPainter positions stop before a hard line-break character.
+        // Keep that UTF-16 code unit in the source-mapped fragment.
+        if (line.hardBreak) lineEnd++;
+        lineEnd = lineEnd.clamp(0, paragraphTextLength);
         int? lineDocumentStart;
         for (final run in paragraph) {
           final intersectionStart = math.max(lineStart, run.paragraphStart).toInt();
