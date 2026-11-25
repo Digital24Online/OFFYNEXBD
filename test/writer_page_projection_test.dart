@@ -31,6 +31,53 @@ void main() {
       expect(projection.pages.last.operations.last.operation['insert'], 'Next page');
     });
 
+    test('projects measured automatic pages into source-mapped editable Delta fragments', () {
+      const sourceText = 'First line wraps onto the next visual page with stable offsets.\\n';
+      final delta = <Map<String, dynamic>>[
+        {'insert': sourceText, 'attributes': {'bold': true}},
+      ];
+      final layout = WriterAutomaticPageLayout.fromDelta(
+        delta: delta,
+        maxWidth: 72,
+        pageContentHeight: 30,
+      );
+
+      expect(layout.pageCount, greaterThan(1));
+      final projection = WriterPageProjection.fromMeasuredLayout(
+        delta: delta,
+        layout: layout,
+      );
+
+      expect(projection.pageCount, layout.pageCount);
+      expect(projection.documentLength, sourceText.length);
+      final projected = projection.pages
+          .expand((page) => page.operations)
+          .toList()
+        ..sort((a, b) => a.documentOffset.compareTo(b.documentOffset));
+      expect(projected.map((operation) => operation.documentOffset),
+          orderedEquals(projected.map((operation) => operation.documentOffset).toList()..sort()));
+      expect(projected.map((operation) => operation.operation['insert']).join(),
+          sourceText);
+      expect(projected.every((operation) =>
+          operation.operation['attributes']['bold'] == true), isTrue);
+      expect(projection.pageIndexForOffset(projection.pages[1].startOffset), 1);
+    });
+
+    test('rejects a measured layout created from a different Delta length', () {
+      final layout = WriterAutomaticPageLayout.fromDelta(
+        delta: [{'insert': 'original\\n'}],
+        maxWidth: 200,
+        pageContentHeight: 200,
+      );
+      expect(
+        () => WriterPageProjection.fromMeasuredLayout(
+          delta: [{'insert': 'different\\n'}],
+          layout: layout,
+        ),
+        throwsArgumentError,
+      );
+    });
+
     test('creates an empty trailing page after an explicit final break', () {
       final projection = WriterPageProjection.fromDelta([
         {'insert': 'Page one'},
