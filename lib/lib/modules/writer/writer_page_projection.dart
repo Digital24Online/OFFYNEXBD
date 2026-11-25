@@ -1,3 +1,5 @@
+import 'writer_automatic_page_layout.dart';
+
 // Deep-copy helpers keep the page projection isolated from mutable source Delta data.
 
 Object? _freezeProjectionValue(Object? value) {
