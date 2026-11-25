@@ -237,27 +237,16 @@ class WriterAutomaticPageLayout {
       for (final line in lines) {
         final lineHeight = math.max(line.height, defaultFontSize * 1.2).toDouble();
         final lineY = line.baseline - line.ascent + line.height / 2;
-        // Resolve both visual edges of this measured line. Asking for a
-        // line boundary from a single edge position can return a neighbouring
-        // line at wrapped-line boundaries on some Flutter text engines, which
-        // duplicates or drops source characters in the page projection.
-        final lineLeft = line.left;
-        final lineRight = line.left + line.width;
-        final leftPosition = painter.getPositionForOffset(
-          Offset(lineLeft + 0.1, lineY),
-        ).offset;
-        final rightPosition = painter.getPositionForOffset(
-          Offset(math.max(lineLeft + 0.1, lineRight - 0.1), lineY),
-        ).offset;
-        final lineStart = math.min(leftPosition, rightPosition).toInt();
-        var lineEnd = math.max(
-          math.max(leftPosition, rightPosition),
-          lineStart + 1,
-        ).toInt();
-        // TextPainter positions stop before a hard line-break character.
-        // Keep that UTF-16 code unit in the source-mapped fragment.
-        if (line.hardBreak) lineEnd++;
-        lineEnd = lineEnd.clamp(0, paragraphTextLength);
+        // Sample the middle of the measured visual line, then ask Flutter
+        // for that line's complete UTF-16 range. Sampling at either edge can
+        // land on the adjacent wrapped line (especially with Bengali shaping),
+        // producing a one-code-unit gap or duplicate fragment.
+        final linePosition = painter.getPositionForOffset(
+          Offset(line.left + line.width / 2, lineY),
+        );
+        final lineBoundary = painter.getLineBoundary(linePosition);
+        final lineStart = lineBoundary.start.clamp(0, paragraphTextLength);
+        final lineEnd = lineBoundary.end.clamp(lineStart, paragraphTextLength);
         int? lineDocumentStart;
         for (final run in paragraph) {
           final intersectionStart = math.max(lineStart, run.paragraphStart).toInt();
