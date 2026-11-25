@@ -237,13 +237,21 @@ class WriterAutomaticPageLayout {
       for (final line in lines) {
         final lineHeight = math.max(line.height, defaultFontSize * 1.2).toDouble();
         final lineY = line.baseline - line.ascent + line.height / 2;
-        final linePosition = painter.getPositionForOffset(Offset(
-          paragraphDirection == TextDirection.rtl ? contentWidth : 0,
-          lineY,
-        ));
-        final lineBoundary = painter.getLineBoundary(linePosition);
-        final lineStart = lineBoundary.start;
-        final lineEnd = math.max(lineBoundary.end, lineStart + 1).toInt();
+        // Resolve both visual edges of this measured line. Asking for a
+        // line boundary from a single edge position can return a neighbouring
+        // line at wrapped-line boundaries on some Flutter text engines, which
+        // duplicates or drops source characters in the page projection.
+        final leftPosition = painter.getPositionForOffset(
+          Offset(0, lineY),
+        ).offset;
+        final rightPosition = painter.getPositionForOffset(
+          Offset(contentWidth, lineY),
+        ).offset;
+        final lineStart = math.min(leftPosition, rightPosition).toInt();
+        final lineEnd = math.max(
+          math.max(leftPosition, rightPosition),
+          lineStart + 1,
+        ).toInt().clamp(0, paragraphTextLength);
         int? lineDocumentStart;
         for (final run in paragraph) {
           final intersectionStart = math.max(lineStart, run.paragraphStart).toInt();

@@ -57,6 +57,13 @@ void main() {
         ..sort((a, b) => a.documentOffset.compareTo(b.documentOffset));
       expect(projected.map((operation) => operation.documentOffset),
           orderedEquals(projected.map((operation) => operation.documentOffset).toList()..sort()));
+      for (var index = 1; index < projected.length; index++) {
+        expect(
+          projected[index].documentOffset,
+          projected[index - 1].documentOffset + projected[index - 1].length,
+          reason: 'Measured page fragments must not overlap or leave gaps.',
+        );
+      }
       expect(projected.map((operation) => operation.operation['insert']).join(),
           sourceText);
       expect(projected.every((operation) =>
