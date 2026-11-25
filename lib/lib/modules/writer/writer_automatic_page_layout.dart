@@ -236,14 +236,13 @@ class WriterAutomaticPageLayout {
 
       for (final line in lines) {
         final lineHeight = math.max(line.height, defaultFontSize * 1.2).toDouble();
-        final lineY = line.baseline - line.ascent + line.height / 2;
-        final linePosition = painter.getPositionForOffset(Offset(
-          paragraphDirection == TextDirection.rtl ? contentWidth : 0,
-          lineY,
-        ));
-        final lineBoundary = painter.getLineBoundary(linePosition);
-        final lineStart = lineBoundary.start;
-        final lineEnd = math.max(lineBoundary.end, lineStart + 1).toInt();
+        // LineMetrics already exposes the exact UTF-16 range produced by
+        // the paragraph layout engine. Re-querying a caret position at a
+        // guessed vertical midpoint can select an adjacent line (notably for
+        // Bengali glyphs with tall combining marks), duplicating or skipping
+        // trailing characters in the page projection.
+        final lineStart = line.startIndex;
+        final lineEnd = math.max(line.endIndex, lineStart + 1).toInt();
         int? lineDocumentStart;
         for (final run in paragraph) {
           final intersectionStart = math.max(lineStart, run.paragraphStart).toInt();
