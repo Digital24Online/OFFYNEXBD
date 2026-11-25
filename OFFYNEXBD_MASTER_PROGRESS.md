@@ -2308,3 +2308,5 @@ Not yet complete or verified:
 - Boundary behavior selects the following fragment when an operation is split across visual lines/pages, while the document-end caret remains mapped to the final fragment. Empty pages safely return a page location without a source operation.
 - Added regression coverage across automatic page boundaries and final document end. This provides the source mapping needed by a future synchronized paged editor; the live screen is still using one continuous Quill editor, so this is not yet the page editor itself.
 - Exact-head CI and physical Android editing/selection checks remain required.
+
+- Follow-up source review: corrected the new `locationForOffset` regression fixture to use a real Dart newline escape, ensuring its paragraph/page-boundary assertion exercises the intended two-paragraph document.

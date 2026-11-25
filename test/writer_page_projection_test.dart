@@ -65,7 +65,7 @@ void main() {
     });
 
     test('maps automatic page offsets to their source fragments and local offsets', () {
-      const text = 'A short first line.\\nA second line that wraps over several visual pages.';
+      const text = 'A short first line.\nA second line that wraps over several visual pages.';
       final delta = <Map<String, dynamic>>[
         {'insert': text, 'attributes': {'italic': true}},
       ];
