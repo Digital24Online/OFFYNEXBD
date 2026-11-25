@@ -210,8 +210,12 @@ class WriterPageProjection {
     for (var index = 0; index < pages.length; index++) {
       final page = pages[index];
       if (safeOffset < page.endOffset) return index;
-      if (safeOffset == page.endOffset &&
-          (index == pages.length - 1 || !page.endsWithExplicitBreak)) {
+      if (safeOffset == page.endOffset) {
+        if (index == pages.length - 1) return index;
+        // Automatic measured boundaries share the same canonical offset
+        // with the next page. Explicit breaks consume one embed code unit,
+        // so their preceding page ends after that embed instead.
+        if (pages[index + 1].startOffset == safeOffset) return index + 1;
         return index;
       }
     }
