@@ -2295,3 +2295,10 @@ Not yet complete or verified:
 - CI run #1155: `45386800138` was queued for this test commit; test outcome is pending and must be checked before treating the additions as validated.
 - Run #1153 (`45385865749`) on the preceding commit had Flutter Analyze and Flutter Tests passing, while Android keyboard integration was still in progress at the last check; it has not yet produced an APK result.
 - Important scope remains unchanged: measured page layout currently draws page boundaries while a single continuous Quill editor owns editing. This is not yet true per-page editing. Per-page controller/selection/caret synchronization and physical page-flow rendering still require implementation and Android acceptance testing. Do not mark Writer complete from the layout tests or CI build alone.
+
+## Writer measured-projection regression correction — 2026-11-25
+
+- Re-checked the exact latest projection test source and found the new measured-layout tests used double-escaped newline literals (`\\n`) in three fixture strings. Those values represented a literal backslash plus “n”, not an actual newline, so they did not exercise paragraph termination as intended.
+- Corrected the fixtures to Dart newline escapes (`\n`) in the source text and mismatched-length guard test. Existing production code and saved Delta formats were not changed.
+- This correction makes the automatic-page projection tests exercise real paragraph boundaries. It does not claim physical page-by-page editing is complete; the canonical editor remains continuous and independent per-page margins/caret synchronization remain blockers.
+- Exact-head Analyze, all tests, and Android keyboard integration must be checked on the resulting commit.

@@ -33,7 +33,7 @@ void main() {
     });
 
     test('projects measured automatic pages into source-mapped editable Delta fragments', () {
-      const sourceText = 'First line wraps onto the next visual page with stable offsets.\\n';
+      const sourceText = 'First line wraps onto the next visual page with stable offsets.\n';
       final delta = <Map<String, dynamic>>[
         {'insert': sourceText, 'attributes': {'bold': true}},
       ];
@@ -66,13 +66,13 @@ void main() {
 
     test('rejects a measured layout created from a different Delta length', () {
       final layout = WriterAutomaticPageLayout.fromDelta(
-        delta: [{'insert': 'original\\n'}],
+        delta: [{'insert': 'original\n'}],
         maxWidth: 200,
         pageContentHeight: 200,
       );
       expect(
         () => WriterPageProjection.fromMeasuredLayout(
-          delta: [{'insert': 'different\\n'}],
+          delta: [{'insert': 'different\n'}],
           layout: layout,
         ),
         throwsArgumentError,
