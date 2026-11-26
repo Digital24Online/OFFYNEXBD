@@ -244,11 +244,22 @@ class WriterAutomaticPageLayout {
         // selects the next visual line instead of the line just completed.
         // Flutter's line boundary excludes newline code units, so attach a
         // hard break to its measured line below.
+        // Select the visual line by its vertical metrics rather than by
+        // feeding the previous line's end offset back into getLineBoundary.
+        // At soft-wrap boundaries Flutter may resolve that offset to either
+        // adjacent line depending on affinity and shaping.
+        final lineProbe = painter.getPositionForOffset(Offset(
+          line.left + (line.width > 0 ? math.min(0.5, line.width / 2) : 0),
+          line.baseline - line.ascent / 2,
+        ));
         final boundary = painter.getLineBoundary(TextPosition(
-          offset: measuredSourceOffset,
+          offset: lineProbe.offset.clamp(0, paragraphTextLength).toInt(),
           affinity: TextAffinity.downstream,
         ));
-        final lineStart = measuredSourceOffset;
+        final lineStart = math.max(
+          measuredSourceOffset,
+          boundary.start,
+        ).clamp(0, paragraphTextLength).toInt();
         var lineEnd = boundary.end
             .clamp(lineStart, paragraphTextLength)
             .toInt();
