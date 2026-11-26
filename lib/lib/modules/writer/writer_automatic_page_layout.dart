@@ -239,30 +239,25 @@ class WriterAutomaticPageLayout {
       for (final line in lines) {
         final lineHeight = math.max(line.height, defaultFontSize * 1.2).toDouble();
 
-        // Resolve the next logical line from the previous line's end. The
-        // downstream affinity is essential at a soft-wrap boundary: it
-        // selects the next visual line instead of the line just completed.
-        // Flutter's line boundary excludes newline code units, so attach a
-        // hard break to its measured line below.
-        // Select the visual line by its vertical metrics rather than by
-        // feeding the previous line's end offset back into getLineBoundary.
-        // At soft-wrap boundaries Flutter may resolve that offset to either
-        // adjacent line depending on affinity and shaping.
-        final lineProbe = painter.getPositionForOffset(Offset(
-          line.left + (line.width > 0 ? math.min(0.5, line.width / 2) : 0),
-          line.baseline - line.ascent / 2,
-        ));
-        final boundary = painter.getLineBoundary(TextPosition(
-          offset: lineProbe.offset.clamp(0, paragraphTextLength).toInt(),
-          affinity: TextAffinity.downstream,
-        ));
+        // Resolve each visual line from its own measured horizontal and
+        // vertical bounds. getLineBoundary at a wrapped offset is ambiguous
+        // in Flutter (the same UTF-16 offset can belong to either line), so
+        // sample both visual edges and normalize the resulting source offsets.
+        final lineY = line.baseline - line.ascent + line.height / 2;
+        final leftPosition = painter.getPositionForOffset(
+          Offset(line.left - 0.5, lineY),
+        );
+        final rightPosition = painter.getPositionForOffset(
+          Offset(line.left + line.width + 0.5, lineY),
+        );
         final lineStart = math.max(
           measuredSourceOffset,
-          boundary.start,
+          math.min(leftPosition.offset, rightPosition.offset),
         ).clamp(0, paragraphTextLength).toInt();
-        var lineEnd = boundary.end
-            .clamp(lineStart, paragraphTextLength)
-            .toInt();
+        var lineEnd = math.max(
+          leftPosition.offset,
+          rightPosition.offset,
+        ).clamp(lineStart, paragraphTextLength).toInt();
 
         // A visual line must always advance the source cursor. This fallback
         // is only for unusual shaping/control-character cases where the

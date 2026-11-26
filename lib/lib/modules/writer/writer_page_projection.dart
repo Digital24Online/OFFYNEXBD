@@ -270,6 +270,15 @@ class WriterPageProjection {
   /// A boundary offset belongs to the following page, except at document end.
   int pageIndexForOffset(int documentOffset) {
     final safeOffset = documentOffset.clamp(0, documentLength);
+    // Prefer the page whose first projected fragment starts at this exact
+    // canonical offset. This handles repeated/empty page ranges and ensures
+    // a page-start caret is resolved against that page's own source fragment.
+    for (var index = pages.length - 1; index > 0; index--) {
+      final page = pages[index];
+      if (page.startOffset == safeOffset && page.operations.isNotEmpty) {
+        return index;
+      }
+    }
     // The document-end caret belongs to the final page, including an empty
     // trailing page after the last visual fragment.
     if (safeOffset == documentLength) return pages.length - 1;
@@ -278,9 +287,6 @@ class WriterPageProjection {
       if (safeOffset < page.endOffset) return index;
       if (safeOffset == page.endOffset) {
         if (index == pages.length - 1) return index;
-        // Automatic measured boundaries share the same canonical offset
-        // with the next page. Explicit breaks consume one embed code unit,
-        // so their preceding page ends after that embed instead.
         if (pages[index + 1].startOffset == safeOffset) return index + 1;
         return index;
       }
