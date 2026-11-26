@@ -263,6 +263,14 @@ class WriterAutomaticPageLayout {
         var lineEnd = boundary.end
             .clamp(lineStart, paragraphTextLength)
             .toInt();
+        // At a wrapped-line boundary Flutter may resolve the sampled caret
+        // to the preceding line. If that produces an empty range, fall back
+        // to the measured horizontal extent for this visual line.
+        if (lineEnd <= lineStart) {
+          lineEnd = math.max(leftOffset, rightOffset)
+              .clamp(lineStart, paragraphTextLength)
+              .toInt();
+        }
 
         // TextPainter line ranges can exclude the hard-break code unit.
         // Attach it to the line that owns the break, exactly once.

@@ -270,6 +270,9 @@ class WriterPageProjection {
   /// A boundary offset belongs to the following page, except at document end.
   int pageIndexForOffset(int documentOffset) {
     final safeOffset = documentOffset.clamp(0, documentLength);
+    // The document-end caret belongs to the final page, including an empty
+    // trailing page after the last visual fragment.
+    if (safeOffset == documentLength) return pages.length - 1;
     for (var index = 0; index < pages.length; index++) {
       final page = pages[index];
       if (safeOffset < page.endOffset) return index;
