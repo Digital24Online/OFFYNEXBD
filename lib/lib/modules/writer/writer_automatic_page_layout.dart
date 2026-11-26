@@ -234,29 +234,32 @@ class WriterAutomaticPageLayout {
         return;
       }
 
+      var measuredSourceOffset = 0;
+      final paragraphText = paragraph.map((run) => run.text).join();
       for (final line in lines) {
         final lineHeight = math.max(line.height, defaultFontSize * 1.2).toDouble();
-        final lineY = line.baseline - line.ascent + line.height / 2;
-        // Resolve the visual line from its measured horizontal extent.
-        // The line boundary API can return a neighbouring wrapped line when
-        // the sampled position falls on a shaped Bengali cluster, so use both
-        // measured edges and normalize their UTF-16 offsets.
-        final leftPosition = painter.getPositionForOffset(
-          Offset(line.left + 0.1, lineY),
-        ).offset;
-        final rightPosition = painter.getPositionForOffset(
-          Offset(math.max(line.left + 0.1, line.left + line.width - 0.1), lineY),
-        ).offset;
-        final lineStart = math.min(leftPosition, rightPosition)
-            .clamp(0, paragraphTextLength);
-        var lineEnd = math.max(leftPosition, rightPosition)
-            .clamp(lineStart, paragraphTextLength);
-        // Flutter's edge positions normally stop immediately before a hard
-        // newline. Include that UTF-16 code unit exactly once in its line.
-        if (line.hardBreak && lineEnd < paragraphTextLength) {
-          final paragraphText = paragraph.map((run) => run.text).join();
-          if (paragraphText.codeUnitAt(lineEnd) == 10) lineEnd++;
+
+        // Ask the paragraph engine for the complete logical range of the
+        // visual line. Walking from the previous line's end is important:
+        // sampling the left/right pixel edges can land inside a shaped
+        // Bengali cluster and produce overlapping or missing UTF-16 ranges.
+        final boundary = painter.getLineBoundary(
+          TextPosition(offset: measuredSourceOffset),
+        );
+        final lineStart = math.max(
+          measuredSourceOffset,
+          boundary.start.clamp(0, paragraphTextLength).toInt(),
+        );
+        var lineEnd = boundary.end.clamp(lineStart, paragraphTextLength).toInt();
+
+        // TextPainter line ranges can exclude the hard-break code unit.
+        // Attach it to the line that owns the break, exactly once.
+        if (line.hardBreak &&
+            lineEnd < paragraphTextLength &&
+            paragraphText.codeUnitAt(lineEnd) == 10) {
+          lineEnd++;
         }
+
         int? lineDocumentStart;
         for (final run in paragraph) {
           final intersectionStart = math.max(lineStart, run.paragraphStart).toInt();
@@ -292,9 +295,9 @@ class WriterAutomaticPageLayout {
             kind: 'text',
           );
         }
+        measuredSourceOffset = lineEnd;
         pageTop += lineHeight;
       }
-
       pageTop += 4;
       mutablePages[pageIndex].endOffset = math.max(
         mutablePages[pageIndex].endOffset,
