@@ -288,11 +288,11 @@ class WriterAutomaticPageLayout {
         ensureRoom(
           lineHeight,
           nextOffset: lineDocumentStart ??
-              paragraph.isNotEmpty
+              (paragraph.isNotEmpty
                   ? paragraph.first.documentOffset +
                       paragraph.first.localStart + lineStart -
                       paragraph.first.paragraphStart
-                  : documentOffset,
+                  : documentOffset),
         );
 
         for (final run in paragraph) {
