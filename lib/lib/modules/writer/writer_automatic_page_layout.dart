@@ -238,42 +238,38 @@ class WriterAutomaticPageLayout {
       final paragraphText = paragraph.map((run) => run.text).join();
       for (final line in lines) {
         final lineHeight = math.max(line.height, defaultFontSize * 1.2).toDouble();
-        final lineY = line.baseline - line.ascent + line.height / 2;
 
-        // Sample inside this visual line first, then ask TextPainter for the
-        // complete logical line range. Sampling at an exact UTF-16 boundary
-        // can resolve to the preceding line, so the interior sample avoids
-        // returning an empty range at wrapped-line boundaries.
-        final leftOffset = painter.getPositionForOffset(
-          Offset(line.left + 0.1, lineY),
-        ).offset;
-        final rightOffset = painter.getPositionForOffset(
-          Offset(
-            math.max(line.left + 0.1, line.left + line.width - 0.1),
-            lineY,
-          ),
-        ).offset;
-        final sampleOffset = math.min(leftOffset, rightOffset)
-            .clamp(0, paragraphTextLength)
-            .toInt();
-        final boundary = painter.getLineBoundary(
-          TextPosition(offset: sampleOffset),
-        );
+        // Resolve the next logical line from the previous line's end. The
+        // downstream affinity is essential at a soft-wrap boundary: it
+        // selects the next visual line instead of the line just completed.
+        // Flutter's line boundary excludes newline code units, so attach a
+        // hard break to its measured line below.
+        final boundary = painter.getLineBoundary(TextPosition(
+          offset: measuredSourceOffset,
+          affinity: TextAffinity.downstream,
+        ));
         final lineStart = measuredSourceOffset;
         var lineEnd = boundary.end
             .clamp(lineStart, paragraphTextLength)
             .toInt();
-        // At a wrapped-line boundary Flutter may resolve the sampled caret
-        // to the preceding line. If that produces an empty range, fall back
-        // to the measured horizontal extent for this visual line.
+
+        // A visual line must always advance the source cursor. This fallback
+        // is only for unusual shaping/control-character cases where the
+        // paragraph engine reports a zero-length boundary.
         if (lineEnd <= lineStart) {
-          lineEnd = math.max(leftOffset, rightOffset)
-              .clamp(lineStart, paragraphTextLength)
-              .toInt();
+          final lineY = line.baseline - line.ascent + line.height / 2;
+          final position = painter.getPositionForOffset(
+            Offset(line.left + line.width / 2, lineY),
+          );
+          lineEnd = math.max(
+            lineStart,
+            position.offset,
+          ).clamp(lineStart, paragraphTextLength).toInt();
+          if (lineEnd <= lineStart && lineStart < paragraphTextLength) {
+            lineEnd = lineStart + 1;
+          }
         }
 
-        // TextPainter line ranges can exclude the hard-break code unit.
-        // Attach it to the line that owns the break, exactly once.
         if (line.hardBreak &&
             lineEnd < paragraphTextLength &&
             paragraphText.codeUnitAt(lineEnd) == 10) {
