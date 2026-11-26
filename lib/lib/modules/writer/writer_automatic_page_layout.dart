@@ -238,19 +238,31 @@ class WriterAutomaticPageLayout {
       final paragraphText = paragraph.map((run) => run.text).join();
       for (final line in lines) {
         final lineHeight = math.max(line.height, defaultFontSize * 1.2).toDouble();
+        final lineY = line.baseline - line.ascent + line.height / 2;
 
-        // Ask the paragraph engine for the complete logical range of the
-        // visual line. Walking from the previous line's end is important:
-        // sampling the left/right pixel edges can land inside a shaped
-        // Bengali cluster and produce overlapping or missing UTF-16 ranges.
+        // Sample inside this visual line first, then ask TextPainter for the
+        // complete logical line range. Sampling at an exact UTF-16 boundary
+        // can resolve to the preceding line, so the interior sample avoids
+        // returning an empty range at wrapped-line boundaries.
+        final leftOffset = painter.getPositionForOffset(
+          Offset(line.left + 0.1, lineY),
+        ).offset;
+        final rightOffset = painter.getPositionForOffset(
+          Offset(
+            math.max(line.left + 0.1, line.left + line.width - 0.1),
+            lineY,
+          ),
+        ).offset;
+        final sampleOffset = math.min(leftOffset, rightOffset)
+            .clamp(0, paragraphTextLength)
+            .toInt();
         final boundary = painter.getLineBoundary(
-          TextPosition(offset: measuredSourceOffset),
+          TextPosition(offset: sampleOffset),
         );
-        final lineStart = math.max(
-          measuredSourceOffset,
-          boundary.start.clamp(0, paragraphTextLength).toInt(),
-        );
-        var lineEnd = boundary.end.clamp(lineStart, paragraphTextLength).toInt();
+        final lineStart = measuredSourceOffset;
+        var lineEnd = boundary.end
+            .clamp(lineStart, paragraphTextLength)
+            .toInt();
 
         // TextPainter line ranges can exclude the hard-break code unit.
         // Attach it to the line that owns the break, exactly once.
@@ -275,7 +287,12 @@ class WriterAutomaticPageLayout {
         }
         ensureRoom(
           lineHeight,
-          nextOffset: lineDocumentStart ?? documentOffset,
+          nextOffset: lineDocumentStart ??
+              paragraph.isNotEmpty
+                  ? paragraph.first.documentOffset +
+                      paragraph.first.localStart + lineStart -
+                      paragraph.first.paragraphStart
+                  : documentOffset,
         );
 
         for (final run in paragraph) {
