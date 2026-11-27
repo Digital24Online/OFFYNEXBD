@@ -1,4 +1,3 @@
-import 'dart:developer' as developer;
 import 'dart:math' as math;
 
 import 'package:material_ui/material_ui.dart';
@@ -228,12 +227,6 @@ class WriterAutomaticPageLayout {
         textAlign: alignment,
       )..layout(maxWidth: contentWidth);
       final lines = painter.computeLineMetrics();
-      // Temporary CI diagnostics for the Bengali pagination regression.
-      developer.log('WRITER_PAGINATION_DIAG width=$contentWidth textLength=$paragraphTextLength lines=${lines.length} text=${paragraph.map((run) => run.text).join()}');
-      for (final metric in lines) {
-        developer.log('WRITER_LINE_DIAG n=${metric.lineNumber} left=${metric.left} width=${metric.width} baseline=${metric.baseline} ascent=${metric.ascent} descent=${metric.descent} hardBreak=${metric.hardBreak}');
-      }
-
       if (lines.isEmpty) {
         paragraph.clear();
         paragraphTextLength = 0;
@@ -285,6 +278,11 @@ class WriterAutomaticPageLayout {
         if (lineEnd <= lineStart && lineStart < paragraphTextLength) {
           lineEnd = lineStart + 1;
         }
+        // TextPainter may report a final zero-length visual line after a
+        // paragraph-ending newline. The newline is already mapped to the
+        // preceding line; an empty line at the document end must not create
+        // an extra automatic page.
+        if (lineStart >= paragraphTextLength) continue;
 
         if (line.hardBreak &&
             lineEnd < paragraphTextLength &&
