@@ -239,38 +239,45 @@ class WriterAutomaticPageLayout {
       for (final line in lines) {
         final lineHeight = math.max(line.height, defaultFontSize * 1.2).toDouble();
 
-        // Resolve visual lines sequentially from the previous line's end.
-        // At a soft-wrap boundary, downstream affinity selects the next
-        // visual line. Probing horizontal glyph edges is unreliable for
-        // complex-script shaping (notably Bengali), where hit testing can
-        // snap to a neighboring cluster and leave source offsets uncovered.
-        final boundary = painter.getLineBoundary(TextPosition(
-          offset: measuredSourceOffset.clamp(0, paragraphTextLength).toInt(),
-          affinity: TextAffinity.downstream,
-        ));
-        final lineStart = math.max(
-          measuredSourceOffset,
-          boundary.start,
-        ).clamp(0, paragraphTextLength).toInt();
-        var lineEnd = boundary.end
-            .clamp(lineStart, paragraphTextLength)
+        // Map each measured visual line using its own baseline. TextPainter's
+        // line-boundary lookup can return a paragraph-wide range for some
+        // complex-script runs; using the measured line geometry avoids treating
+        // the whole Bengali paragraph as one source line. Keep ranges
+        // sequential so cluster hit-testing cannot create gaps or overlaps.
+        final isRtl = paragraphDirection == TextDirection.rtl;
+        final startX = isRtl ? line.left + line.width - 0.5 : line.left + 0.5;
+        final endX = isRtl ? line.left + 0.5 : line.left + line.width - 0.5;
+        final lineY = line.baseline - math.max(1.0, line.descent * 0.25);
+        final startPosition = painter.getPositionForOffset(
+          Offset(startX, lineY),
+        );
+        final endPosition = painter.getPositionForOffset(
+          Offset(endX, lineY),
+        );
+        final lineStart = measuredSourceOffset
+            .clamp(0, paragraphTextLength)
             .toInt();
+        var lineEnd = math.max(
+          lineStart,
+          endPosition.offset,
+        ).clamp(lineStart, paragraphTextLength).toInt();
 
-        // A visual line must always advance the source cursor. This fallback
-        // is only for unusual shaping/control-character cases where the
-        // paragraph engine reports a zero-length boundary.
+        // Glyph-edge hit testing may snap to the adjacent Bengali conjunct.
+        // The next visual line still starts exactly where this one ended;
+        // never move the canonical source cursor backwards.
         if (lineEnd <= lineStart) {
-          final lineY = line.baseline - line.ascent + line.height / 2;
-          final position = painter.getPositionForOffset(
-            Offset(line.left + line.width / 2, lineY),
-          );
-          lineEnd = math.max(
-            lineStart,
-            position.offset,
-          ).clamp(lineStart, paragraphTextLength).toInt();
-          if (lineEnd <= lineStart && lineStart < paragraphTextLength) {
-            lineEnd = lineStart + 1;
-          }
+          final boundary = painter.getLineBoundary(TextPosition(
+            offset: math.max(lineStart, startPosition.offset)
+                .clamp(0, paragraphTextLength)
+                .toInt(),
+            affinity: TextAffinity.downstream,
+          ));
+          lineEnd = boundary.end
+              .clamp(lineStart, paragraphTextLength)
+              .toInt();
+        }
+        if (lineEnd <= lineStart && lineStart < paragraphTextLength) {
+          lineEnd = lineStart + 1;
         }
 
         if (line.hardBreak &&
