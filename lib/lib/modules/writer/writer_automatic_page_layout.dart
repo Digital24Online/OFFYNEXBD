@@ -1,3 +1,4 @@
+import 'dart:developer' as developer;
 import 'dart:math' as math;
 
 import 'package:material_ui/material_ui.dart';
@@ -228,9 +229,9 @@ class WriterAutomaticPageLayout {
       )..layout(maxWidth: contentWidth);
       final lines = painter.computeLineMetrics();
       // Temporary CI diagnostics for the Bengali pagination regression.
-      print('WRITER_PAGINATION_DIAG width=$contentWidth textLength=$paragraphTextLength lines=${lines.length} text=${paragraph.map((run) => run.text).join()}');
+      developer.log('WRITER_PAGINATION_DIAG width=$contentWidth textLength=$paragraphTextLength lines=${lines.length} text=${paragraph.map((run) => run.text).join()}');
       for (final metric in lines) {
-        print('WRITER_LINE_DIAG n=${metric.lineNumber} left=${metric.left} width=${metric.width} baseline=${metric.baseline} ascent=${metric.ascent} descent=${metric.descent} hardBreak=${metric.hardBreak}');
+        developer.log('WRITER_LINE_DIAG n=${metric.lineNumber} left=${metric.left} width=${metric.width} baseline=${metric.baseline} ascent=${metric.ascent} descent=${metric.descent} hardBreak=${metric.hardBreak}');
       }
 
       if (lines.isEmpty) {
