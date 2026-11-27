@@ -438,6 +438,24 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
     if (cells.length <= 1) return;
     setState(() {
       final index = selectedRow.clamp(0, cells.length - 1).toInt();
+      // If the removed row owns a vertical merge, move its anchor text
+      // into the next covered row before the anchor controller is disposed.
+      // The merge rectangle is then shrunk by one row, making that cell the
+      // new visible anchor without losing the document text.
+      for (final merge in merges) {
+        if (merge['row'] == index && (merge['rowSpan'] ?? 1) > 1) {
+          final column = merge['column']!;
+          final source = cells[index][column];
+          final destination = cells[index + 1][column];
+          final movedText = source.text;
+          if (movedText.isNotEmpty) {
+            final remainingText = destination.text;
+            destination.text = remainingText.isEmpty
+                ? movedText
+                : '$movedText\\n$remainingText';
+          }
+        }
+      }
       merges = WriterTableBlockEmbed.removeRowFromMerges(
         merges,
         rowCount: cells.length,
@@ -498,6 +516,23 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
     if (columnCount <= 1) return;
     setState(() {
       final index = selectedColumn.clamp(0, columnCount - 1).toInt();
+      // Preserve text when deleting the leftmost column of a horizontal
+      // merge: the next covered cell becomes the new merge anchor.
+      for (var rowIndex = 0; rowIndex < merges.length; rowIndex++) {
+        final merge = merges[rowIndex];
+        if (merge['column'] == index && (merge['columnSpan'] ?? 1) > 1) {
+          final row = merge['row']!;
+          final source = cells[row][index];
+          final destination = cells[row][index + 1];
+          final movedText = source.text;
+          if (movedText.isNotEmpty) {
+            final remainingText = destination.text;
+            destination.text = remainingText.isEmpty
+                ? movedText
+                : '$movedText\\n$remainingText';
+          }
+        }
+      }
       merges = WriterTableBlockEmbed.removeColumnFromMerges(
         merges,
         rowCount: cells.length,
