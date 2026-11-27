@@ -22,6 +22,9 @@ void main() {
           (page) => page.startOffset > 0 && page.startOffset < text.length,
         ),
         isTrue,
+        reason: 'page starts: ${layout.pages.map((page) => page.startOffset).toList()}, '
+            'page ends: ${layout.pages.map((page) => page.endOffset).toList()}, '
+            'text length: ${text.length}',
       );
       expect(
         layout.pages.expand((page) => page.fragments)
