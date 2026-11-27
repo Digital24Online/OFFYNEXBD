@@ -239,25 +239,22 @@ class WriterAutomaticPageLayout {
       for (final line in lines) {
         final lineHeight = math.max(line.height, defaultFontSize * 1.2).toDouble();
 
-        // Resolve each visual line from its own measured horizontal and
-        // vertical bounds. getLineBoundary at a wrapped offset is ambiguous
-        // in Flutter (the same UTF-16 offset can belong to either line), so
-        // sample both visual edges and normalize the resulting source offsets.
-        final lineY = line.baseline - line.ascent + line.height / 2;
-        final leftPosition = painter.getPositionForOffset(
-          Offset(line.left - 0.5, lineY),
-        );
-        final rightPosition = painter.getPositionForOffset(
-          Offset(line.left + line.width + 0.5, lineY),
-        );
+        // Resolve visual lines sequentially from the previous line's end.
+        // At a soft-wrap boundary, downstream affinity selects the next
+        // visual line. Probing horizontal glyph edges is unreliable for
+        // complex-script shaping (notably Bengali), where hit testing can
+        // snap to a neighboring cluster and leave source offsets uncovered.
+        final boundary = painter.getLineBoundary(TextPosition(
+          offset: measuredSourceOffset.clamp(0, paragraphTextLength).toInt(),
+          affinity: TextAffinity.downstream,
+        ));
         final lineStart = math.max(
           measuredSourceOffset,
-          math.min(leftPosition.offset, rightPosition.offset),
+          boundary.start,
         ).clamp(0, paragraphTextLength).toInt();
-        var lineEnd = math.max(
-          leftPosition.offset,
-          rightPosition.offset,
-        ).clamp(lineStart, paragraphTextLength).toInt();
+        var lineEnd = boundary.end
+            .clamp(lineStart, paragraphTextLength)
+            .toInt();
 
         // A visual line must always advance the source cursor. This fallback
         // is only for unusual shaping/control-character cases where the
