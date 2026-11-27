@@ -151,6 +151,118 @@ class WriterTableBlockEmbed extends CustomBlockEmbed {
     return <String, dynamic>{...data, 'merges': remaining};
   }
 
+  /// Keeps merged-cell rectangles attached to the same logical cells when
+  /// rows or columns are inserted or removed in the table editor.
+  static List<Map<String, int>> insertRowInMerges(
+    List<Map<String, int>> merges, {
+    required int rowCount,
+    required int columnCount,
+    required int index,
+  }) {
+    if (index < 0 || index > rowCount) {
+      throw RangeError.range(index, 0, rowCount, 'index');
+    }
+    return normalizedMerges(
+      <String, dynamic>{'merges': merges},
+      rowCount: rowCount,
+      columnCount: columnCount,
+    ).map((merge) {
+      final row = merge['row']!;
+      final span = merge['rowSpan']!;
+      if (index <= row) return <String, int>{...merge, 'row': row + 1};
+      if (index < row + span) {
+        return <String, int>{...merge, 'rowSpan': span + 1};
+      }
+      return Map<String, int>.from(merge);
+    }).toList(growable: false);
+  }
+
+  static List<Map<String, int>> removeRowFromMerges(
+    List<Map<String, int>> merges, {
+    required int rowCount,
+    required int columnCount,
+    required int index,
+  }) {
+    if (index < 0 || index >= rowCount) {
+      throw RangeError.range(index, 0, rowCount - 1, 'index');
+    }
+    final result = <Map<String, int>>[];
+    for (final merge in normalizedMerges(
+      <String, dynamic>{'merges': merges},
+      rowCount: rowCount,
+      columnCount: columnCount,
+    )) {
+      final row = merge['row']!;
+      final span = merge['rowSpan']!;
+      if (index < row) {
+        result.add(<String, int>{...merge, 'row': row - 1});
+      } else if (index >= row && index < row + span) {
+        if (span > 1) {
+          result.add(<String, int>{...merge, 'rowSpan': span - 1});
+        }
+      } else {
+        result.add(Map<String, int>.from(merge));
+      }
+    }
+    return result;
+  }
+
+  static List<Map<String, int>> insertColumnInMerges(
+    List<Map<String, int>> merges, {
+    required int rowCount,
+    required int columnCount,
+    required int index,
+  }) {
+    if (index < 0 || index > columnCount) {
+      throw RangeError.range(index, 0, columnCount, 'index');
+    }
+    return normalizedMerges(
+      <String, dynamic>{'merges': merges},
+      rowCount: rowCount,
+      columnCount: columnCount,
+    ).map((merge) {
+      final column = merge['column']!;
+      final span = merge['columnSpan']!;
+      if (index <= column) {
+        return <String, int>{...merge, 'column': column + 1};
+      }
+      if (index < column + span) {
+        return <String, int>{...merge, 'columnSpan': span + 1};
+      }
+      return Map<String, int>.from(merge);
+    }).toList(growable: false);
+  }
+
+  static List<Map<String, int>> removeColumnFromMerges(
+    List<Map<String, int>> merges, {
+    required int rowCount,
+    required int columnCount,
+    required int index,
+  }) {
+    if (index < 0 || index >= columnCount) {
+      throw RangeError.range(index, 0, columnCount - 1, 'index');
+    }
+    final result = <Map<String, int>>[];
+    for (final merge in normalizedMerges(
+      <String, dynamic>{'merges': merges},
+      rowCount: rowCount,
+      columnCount: columnCount,
+    )) {
+      final column = merge['column']!;
+      final span = merge['columnSpan']!;
+      if (index < column) {
+        result.add(<String, int>{...merge, 'column': column - 1});
+      } else if (index >= column && index < column + span) {
+        if (span > 1) {
+          result.add(<String, int>{...merge, 'columnSpan': span - 1});
+        }
+      } else {
+        result.add(Map<String, int>.from(merge));
+      }
+    }
+    return result;
+  }
+
   factory WriterTableBlockEmbed.fromData(Map<String, dynamic> data) {
     return WriterTableBlockEmbed(jsonEncode(data));
   }
@@ -296,6 +408,12 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
   void insertRowBefore() {
     setState(() {
       final index = selectedRow.clamp(0, cells.length).toInt();
+      merges = WriterTableBlockEmbed.insertRowInMerges(
+        merges,
+        rowCount: cells.length,
+        columnCount: columnCount,
+        index: index,
+      );
       cells.insert(index, List.generate(columnCount, (_) => TextEditingController()));
       rowHeights.insert(index, 56.0);
     });
@@ -304,6 +422,12 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
   void insertRowAfter() {
     setState(() {
       final index = (selectedRow + 1).clamp(0, cells.length).toInt();
+      merges = WriterTableBlockEmbed.insertRowInMerges(
+        merges,
+        rowCount: cells.length,
+        columnCount: columnCount,
+        index: index,
+      );
       cells.insert(index, List.generate(columnCount, (_) => TextEditingController()));
       rowHeights.insert(index, 56.0);
       selectedRow = index;
@@ -314,6 +438,12 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
     if (cells.length <= 1) return;
     setState(() {
       final index = selectedRow.clamp(0, cells.length - 1).toInt();
+      merges = WriterTableBlockEmbed.removeRowFromMerges(
+        merges,
+        rowCount: cells.length,
+        columnCount: columnCount,
+        index: index,
+      );
       for (final controller in cells.removeAt(index)) {
         controller.dispose();
       }
@@ -334,6 +464,12 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
   void insertColumnBefore() {
     setState(() {
       final index = selectedColumn.clamp(0, columnCount).toInt();
+      merges = WriterTableBlockEmbed.insertColumnInMerges(
+        merges,
+        rowCount: cells.length,
+        columnCount: columnCount,
+        index: index,
+      );
       for (final row in cells) {
         row.insert(index, TextEditingController());
       }
@@ -344,6 +480,12 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
   void insertColumnAfter() {
     setState(() {
       final index = (selectedColumn + 1).clamp(0, columnCount).toInt();
+      merges = WriterTableBlockEmbed.insertColumnInMerges(
+        merges,
+        rowCount: cells.length,
+        columnCount: columnCount,
+        index: index,
+      );
       for (final row in cells) {
         row.insert(index, TextEditingController());
       }
@@ -356,6 +498,12 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
     if (columnCount <= 1) return;
     setState(() {
       final index = selectedColumn.clamp(0, columnCount - 1).toInt();
+      merges = WriterTableBlockEmbed.removeColumnFromMerges(
+        merges,
+        rowCount: cells.length,
+        columnCount: columnCount,
+        index: index,
+      );
       for (final row in cells) {
         row.removeAt(index).dispose();
       }

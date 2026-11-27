@@ -28,6 +28,144 @@ void main() {
     });
   });
 
+  group('Writer merged-cell structure after row/column edits', () {
+    const merged = <Map<String, int>>[
+      <String, int>{
+        'row': 1,
+        'column': 1,
+        'rowSpan': 2,
+        'columnSpan': 2,
+      },
+    ];
+
+    test('inserting before a merged range moves its anchor', () {
+      expect(
+        WriterTableBlockEmbed.insertRowInMerges(
+          merged,
+          rowCount: 4,
+          columnCount: 4,
+          index: 1,
+        ).single,
+        <String, int>{
+          'row': 2,
+          'column': 1,
+          'rowSpan': 2,
+          'columnSpan': 2,
+        },
+      );
+    });
+
+    test('inserting inside a merged range expands its span', () {
+      expect(
+        WriterTableBlockEmbed.insertRowInMerges(
+          merged,
+          rowCount: 4,
+          columnCount: 4,
+          index: 2,
+        ).single['rowSpan'],
+        3,
+      );
+      expect(
+        WriterTableBlockEmbed.insertColumnInMerges(
+          merged,
+          rowCount: 4,
+          columnCount: 4,
+          index: 2,
+        ).single['columnSpan'],
+        3,
+      );
+    });
+
+    test('removing the anchor row or column preserves the remaining merged cells', () {
+      expect(
+        WriterTableBlockEmbed.removeRowFromMerges(
+          merged,
+          rowCount: 4,
+          columnCount: 4,
+          index: 1,
+        ).single,
+        <String, int>{
+          'row': 1,
+          'column': 1,
+          'rowSpan': 1,
+          'columnSpan': 2,
+        },
+      );
+      expect(
+        WriterTableBlockEmbed.removeColumnFromMerges(
+          merged,
+          rowCount: 4,
+          columnCount: 4,
+          index: 1,
+        ).single,
+        <String, int>{
+          'row': 1,
+          'column': 1,
+          'rowSpan': 2,
+          'columnSpan': 1,
+        },
+      );
+    });
+
+    test('removing before a merged range shifts its anchor', () {
+      expect(
+        WriterTableBlockEmbed.removeRowFromMerges(
+          merged,
+          rowCount: 4,
+          columnCount: 4,
+          index: 0,
+        ).single['row'],
+        0,
+      );
+      expect(
+        WriterTableBlockEmbed.removeColumnFromMerges(
+          merged,
+          rowCount: 4,
+          columnCount: 4,
+          index: 0,
+        ).single['column'],
+        0,
+      );
+    });
+
+    test('removing the only row or column in a merged range drops the merge', () {
+      const singleCellMerge = <Map<String, int>>[
+        <String, int>{
+          'row': 1,
+          'column': 1,
+          'rowSpan': 1,
+          'columnSpan': 2,
+        },
+      ];
+      expect(
+        WriterTableBlockEmbed.removeRowFromMerges(
+          singleCellMerge,
+          rowCount: 3,
+          columnCount: 3,
+          index: 1,
+        ),
+        isEmpty,
+      );
+      const singleColumnMerge = <Map<String, int>>[
+        <String, int>{
+          'row': 1,
+          'column': 1,
+          'rowSpan': 2,
+          'columnSpan': 1,
+        },
+      ];
+      expect(
+        WriterTableBlockEmbed.removeColumnFromMerges(
+          singleColumnMerge,
+          rowCount: 3,
+          columnCount: 3,
+          index: 1,
+        ),
+        isEmpty,
+      );
+    });
+  });
+
   group('Writer merged-cell model', () {
     const table = <String, dynamic>{
       'rows': <List<String>>[
