@@ -452,7 +452,7 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
             final remainingText = destination.text;
             destination.text = remainingText.isEmpty
                 ? movedText
-                : '$movedText\\n$remainingText';
+                : '$movedText\n$remainingText';
           }
         }
       }
@@ -529,7 +529,7 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
             final remainingText = destination.text;
             destination.text = remainingText.isEmpty
                 ? movedText
-                : '$movedText\\n$remainingText';
+                : '$movedText\n$remainingText';
           }
         }
       }
