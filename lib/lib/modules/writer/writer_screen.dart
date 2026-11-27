@@ -526,6 +526,8 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   double zoomLevel = 1.0;
   String viewFit = 'Width';
   final TransformationController _pageTransformController = TransformationController();
+  Offset? _pagePointerDownPosition;
+  bool _pagePointerMoved = false;
   // Cache the expensive TextPainter pagination projection between UI rebuilds.
   // The key includes the canonical Delta and every layout input, so edits,
   // formatting, page-size/margin and direction changes invalidate it safely.
@@ -3614,7 +3616,7 @@ Future<void> insertWriterImage() async {
                   minScale: 0.5,
                   maxScale: 4.0,
                   constrained: false,
-                  panEnabled: false,
+                  panEnabled: true,
                   scaleEnabled: true,
                   boundaryMargin: const EdgeInsets.all(120),
                   alignment: Alignment.topCenter,
@@ -3655,10 +3657,30 @@ Future<void> insertWriterImage() async {
                                     // this non-gesture listener catches taps on
                                     // blank page space as well as the placeholder.
                                     behavior: HitTestBehavior.translucent,
-                                    onPointerDown: (_) {
-                                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                                        _focusEditorAndShowKeyboard();
-                                      });
+                                    onPointerDown: (event) {
+                                      _pagePointerDownPosition = event.position;
+                                      _pagePointerMoved = false;
+                                    },
+                                    onPointerMove: (event) {
+                                      final start = _pagePointerDownPosition;
+                                      if (start != null &&
+                                          (event.position - start).distance > 8) {
+                                        _pagePointerMoved = true;
+                                      }
+                                    },
+                                    onPointerUp: (_) {
+                                      final shouldFocusEditor = !_pagePointerMoved;
+                                      _pagePointerDownPosition = null;
+                                      _pagePointerMoved = false;
+                                      if (shouldFocusEditor) {
+                                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                                          _focusEditorAndShowKeyboard();
+                                        });
+                                      }
+                                    },
+                                    onPointerCancel: (_) {
+                                      _pagePointerDownPosition = null;
+                                      _pagePointerMoved = false;
                                     },
                                     child: QuillEditor.basic(
                                       controller: quillController,

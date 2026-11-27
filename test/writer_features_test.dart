@@ -256,6 +256,11 @@ void main() {
     // The editor also has a compact bottom zoom slider; both controls are valid.
     expect(find.byType(Slider), findsAtLeastNWidgets(1));
     expect(find.byType(InteractiveViewer), findsOneWidget);
+    expect(
+      tester.widget<InteractiveViewer>(find.byType(InteractiveViewer)).panEnabled,
+      isTrue,
+      reason: 'The page canvas must support drag panning as well as pinch zoom.',
+    );
 
     await tester.tap(pageWidthLabel);
     await tester.pumpAndSettle();
