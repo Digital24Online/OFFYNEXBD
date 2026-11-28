@@ -166,6 +166,38 @@ void main() {
     });
   });
 
+  group('Writer merged-cell anchor text preservation', () {
+    test('deleting a vertical merge anchor transfers and joins its text', () {
+      final transfers = WriterTableBlockEmbed.rowAnchorTextTransfers(
+        cellTexts: <List<String>>[['top anchor'], ['existing lower text'], ['']],
+        merges: const <Map<String, int>>[{'row': 0, 'column': 0, 'rowSpan': 3, 'columnSpan': 1}],
+        removedRow: 0,
+      );
+      expect(transfers, hasLength(1));
+      expect(transfers.single.row, 1);
+      expect(transfers.single.column, 0);
+      expect(transfers.single.text, 'top anchor\nexisting lower text');
+    });
+    test('deleting a horizontal merge anchor transfers and joins its text', () {
+      final transfers = WriterTableBlockEmbed.columnAnchorTextTransfers(
+        cellTexts: <List<String>>[['left anchor', 'existing right text', ''], ['', '', '']],
+        merges: const <Map<String, int>>[{'row': 0, 'column': 0, 'rowSpan': 1, 'columnSpan': 2}],
+        removedColumn: 0,
+      );
+      expect(transfers, hasLength(1));
+      expect(transfers.single.row, 0);
+      expect(transfers.single.column, 1);
+      expect(transfers.single.text, 'left anchor\nexisting right text');
+    });
+    test('does not create empty transfers', () {
+      final transfers = WriterTableBlockEmbed.rowAnchorTextTransfers(
+        cellTexts: <List<String>>[[''], ['keep']],
+        merges: const <Map<String, int>>[{'row': 0, 'column': 0, 'rowSpan': 2, 'columnSpan': 1}],
+        removedRow: 0,
+      );
+      expect(transfers, isEmpty);
+    });
+  });
   group('Writer merged-cell model', () {
     const table = <String, dynamic>{
       'rows': <List<String>>[

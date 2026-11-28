@@ -3,6 +3,13 @@ import 'dart:convert';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 
+/// A text move required before deleting the anchor row or column of a merge.
+class WriterTableCellTextTransfer {
+  const WriterTableCellTextTransfer({required this.row, required this.column, required this.text});
+  final int row;
+  final int column;
+  final String text;
+}
 /// Custom Quill block for Writer tables.
 /// Keep this type unchanged so previously saved table blocks remain readable.
 class WriterTableBlockEmbed extends CustomBlockEmbed {
@@ -153,6 +160,45 @@ class WriterTableBlockEmbed extends CustomBlockEmbed {
 
   /// Keeps merged-cell rectangles attached to the same logical cells when
   /// rows or columns are inserted or removed in the table editor.
+  /// Calculates text moves needed before deleting a merged anchor row.
+  static List<WriterTableCellTextTransfer> rowAnchorTextTransfers({
+    required List<List<String>> cellTexts, required List<Map<String, int>> merges, required int removedRow,
+  }) {
+    if (removedRow < 0 || removedRow >= cellTexts.length) throw RangeError.range(removedRow, 0, cellTexts.length - 1, 'removedRow');
+    final columnCount = cellTexts.fold<int>(0, (max, row) => row.length > max ? row.length : max);
+    final valid = normalizedMerges({'merges': merges}, rowCount: cellTexts.length, columnCount: columnCount);
+    final transfers = <WriterTableCellTextTransfer>[];
+    for (final merge in valid) {
+      if (merge['row'] != removedRow || merge['rowSpan']! <= 1) continue;
+      final column = merge['column']!;
+      if (column >= cellTexts[removedRow].length || removedRow + 1 >= cellTexts.length || column >= cellTexts[removedRow + 1].length) continue;
+      final moved = cellTexts[removedRow][column];
+      if (moved.isEmpty) continue;
+      final remaining = cellTexts[removedRow + 1][column];
+      transfers.add(WriterTableCellTextTransfer(row: removedRow + 1, column: column, text: remaining.isEmpty ? moved : '$moved\n$remaining'));
+    }
+    return transfers;
+  }
+
+  /// Calculates text moves needed before deleting a merged anchor column.
+  static List<WriterTableCellTextTransfer> columnAnchorTextTransfers({
+    required List<List<String>> cellTexts, required List<Map<String, int>> merges, required int removedColumn,
+  }) {
+    final columnCount = cellTexts.fold<int>(0, (max, row) => row.length > max ? row.length : max);
+    if (removedColumn < 0 || removedColumn >= columnCount) throw RangeError.range(removedColumn, 0, columnCount - 1, 'removedColumn');
+    final valid = normalizedMerges({'merges': merges}, rowCount: cellTexts.length, columnCount: columnCount);
+    final transfers = <WriterTableCellTextTransfer>[];
+    for (final merge in valid) {
+      if (merge['column'] != removedColumn || merge['columnSpan']! <= 1) continue;
+      final row = merge['row']!;
+      if (row >= cellTexts.length || removedColumn >= cellTexts[row].length || removedColumn + 1 >= cellTexts[row].length) continue;
+      final moved = cellTexts[row][removedColumn];
+      if (moved.isEmpty) continue;
+      final remaining = cellTexts[row][removedColumn + 1];
+      transfers.add(WriterTableCellTextTransfer(row: row, column: removedColumn + 1, text: remaining.isEmpty ? moved : '$moved\n$remaining'));
+    }
+    return transfers;
+  }
   static List<Map<String, int>> insertRowInMerges(
     List<Map<String, int>> merges, {
     required int rowCount,
@@ -438,23 +484,9 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
     if (cells.length <= 1) return;
     setState(() {
       final index = selectedRow.clamp(0, cells.length - 1).toInt();
-      // If the removed row owns a vertical merge, move its anchor text
-      // into the next covered row before the anchor controller is disposed.
-      // The merge rectangle is then shrunk by one row, making that cell the
-      // new visible anchor without losing the document text.
-      for (final merge in merges) {
-        if (merge['row'] == index && (merge['rowSpan'] ?? 1) > 1) {
-          final column = merge['column']!;
-          final source = cells[index][column];
-          final destination = cells[index + 1][column];
-          final movedText = source.text;
-          if (movedText.isNotEmpty) {
-            final remainingText = destination.text;
-            destination.text = remainingText.isEmpty
-                ? movedText
-                : '$movedText\n$remainingText';
-          }
-        }
+      final cellTexts = cells.map((row) => row.map((cell) => cell.text).toList()).toList();
+      for (final transfer in WriterTableBlockEmbed.rowAnchorTextTransfers(cellTexts: cellTexts, merges: merges, removedRow: index)) {
+        cells[transfer.row][transfer.column].text = transfer.text;
       }
       merges = WriterTableBlockEmbed.removeRowFromMerges(
         merges,
@@ -516,22 +548,9 @@ class _WriterTableDialogState extends State<_WriterTableDialog> {
     if (columnCount <= 1) return;
     setState(() {
       final index = selectedColumn.clamp(0, columnCount - 1).toInt();
-      // Preserve text when deleting the leftmost column of a horizontal
-      // merge: the next covered cell becomes the new merge anchor.
-      for (var rowIndex = 0; rowIndex < merges.length; rowIndex++) {
-        final merge = merges[rowIndex];
-        if (merge['column'] == index && (merge['columnSpan'] ?? 1) > 1) {
-          final row = merge['row']!;
-          final source = cells[row][index];
-          final destination = cells[row][index + 1];
-          final movedText = source.text;
-          if (movedText.isNotEmpty) {
-            final remainingText = destination.text;
-            destination.text = remainingText.isEmpty
-                ? movedText
-                : '$movedText\n$remainingText';
-          }
-        }
+      final cellTexts = cells.map((row) => row.map((cell) => cell.text).toList()).toList();
+      for (final transfer in WriterTableBlockEmbed.columnAnchorTextTransfers(cellTexts: cellTexts, merges: merges, removedColumn: index)) {
+        cells[transfer.row][transfer.column].text = transfer.text;
       }
       merges = WriterTableBlockEmbed.removeColumnFromMerges(
         merges,
