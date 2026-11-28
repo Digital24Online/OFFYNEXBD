@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:pdf/pdf.dart';
 import 'package:bangla_pdf/widgets.dart' as pw;
 import 'writer_page_break.dart';
+import 'writer_table.dart';
 
 /// Builds Writer print/PDF output with HarfBuzz-compatible OpenType Bengali shaping.
 class WriterPdfExportService {
@@ -21,10 +22,19 @@ class WriterPdfExportService {
     required double marginRight,
     String headerText = '',
     String footerText = '',
+    Map<String, ByteData> customFontData = const <String, ByteData>{},
   }) async {
     final sansFont = pw.Font.ttf(sansFontData);
     final serifFont = pw.Font.ttf(serifFontData);
     final latinFont = pw.Font.ttf(latinFontData);
+    final customFonts = <String, pw.Font>{};
+    for (final entry in customFontData.entries) {
+      try {
+        customFonts[entry.key] = pw.Font.ttf(entry.value);
+      } catch (_) {
+        // Unsupported optional font files fall back to the bundled Bengali font.
+      }
+    }
     final titleAlreadyInBody = _firstParagraphText(delta).trim() == title.trim() &&
         title.trim().isNotEmpty;
     final widgets = <pw.Widget>[];
@@ -37,39 +47,55 @@ class WriterPdfExportService {
         )))
         ..add(pw.SizedBox(height: 14));
     }
-    final spans = <pw.TextSpan>[];
+    final spans = <_WriterPdfTextSegment>[];
     var orderedListNumber = 0;
 
     pw.Font fontFor(Map<String, dynamic> attributes, String text) {
       if (!_containsBangla(text)) return latinFont;
-      return attributes['font']?.toString() == 'serif' ? serifFont : sansFont;
+      final family = attributes['font']?.toString();
+      final custom = family == null ? null : customFonts[family];
+      if (custom != null) return custom;
+      return family == 'serif' ? serifFont : sansFont;
     }
 
-    pw.TextStyle styleFor(Map<String, dynamic> attributes, String text) {
+    pw.TextStyle styleFor(
+      Map<String, dynamic> attributes,
+      String text, {
+      int? heading,
+    }) {
       final rawSize = double.tryParse(attributes['size']?.toString() ?? '');
-      final size = rawSize == null ? 12.0 : (rawSize * 0.75).clamp(5.0, 144.0).toDouble();
-      final decoration = attributes['underline'] == true
-          ? pw.TextDecoration.underline
-          : attributes['strike'] == true
-              ? pw.TextDecoration.lineThrough
-              : null;
+      const headingSizes = <int, double>{
+        1: 24, 2: 20, 3: 18, 4: 16, 5: 14, 6: 12,
+      };
+      final size = rawSize != null
+          ? (rawSize * 0.75).clamp(5.0, 144.0).toDouble()
+          : headingSizes[heading] ?? 12.0;
+      final decoration = textDecorationForAttributes(attributes);
+      final highlightColor = highlightColorForAttributes(attributes);
       return pw.TextStyle(
         font: fontFor(attributes, text),
         fontFallback: _containsBangla(text) ? [latinFont] : const [],
         fontSize: size,
-        fontWeight: attributes['bold'] == true
+        fontWeight: attributes['bold'] == true || heading != null
             ? pw.FontWeight.bold
             : pw.FontWeight.normal,
         fontStyle: attributes['italic'] == true
             ? pw.FontStyle.italic
             : pw.FontStyle.normal,
         color: _parseColor(attributes['color']?.toString()) ?? PdfColors.black,
+        background: highlightColor == null
+            ? null
+            : pw.BoxDecoration(color: highlightColor),
         decoration: decoration,
       );
     }
 
     void flushParagraph([Map<String, dynamic>? paragraphAttributes]) {
       final attributes = paragraphAttributes ?? const <String, dynamic>{};
+      final rawHeading = attributes['header'];
+      final heading = rawHeading is num
+          ? rawHeading.toInt().clamp(1, 6).toInt()
+          : int.tryParse(rawHeading?.toString() ?? '')?.clamp(1, 6).toInt();
       final listType = attributes['list']?.toString();
       final isBullet = listType == 'bullet';
       final isOrdered = listType == 'ordered';
@@ -110,7 +136,10 @@ class WriterPdfExportService {
             ),
           );
         }
-        paragraphSpans.addAll(spans);
+        paragraphSpans.addAll(spans.map((segment) => pw.TextSpan(
+          text: segment.text,
+          style: styleFor(segment.attributes, segment.text, heading: heading),
+        )));
         widgets.add(
           pw.Padding(
             padding: pw.EdgeInsets.only(
@@ -129,7 +158,7 @@ class WriterPdfExportService {
 
     void appendText(String value, Map<String, dynamic> attributes) {
       if (value.isNotEmpty) {
-        spans.add(pw.TextSpan(text: value, style: styleFor(attributes, value)));
+        spans.add(_WriterPdfTextSegment(value, Map<String, dynamic>.from(attributes)));
       }
     }
 
@@ -162,7 +191,11 @@ class WriterPdfExportService {
                 padding: const pw.EdgeInsets.symmetric(vertical: 8),
                 child: pw.Image(
                   pw.MemoryImage(imageBytes),
-                  width: 430,
+                  width: imageContentWidth(
+                    pageFormat: pageFormat,
+                    marginLeft: marginLeft,
+                    marginRight: marginRight,
+                  ),
                   fit: pw.BoxFit.contain,
                 ),
               ),
@@ -175,6 +208,11 @@ class WriterPdfExportService {
             insert['offynexbd-writer-table']?.toString() ?? '{}',
             sansFont,
             latinFont,
+            imageContentWidth(
+              pageFormat: pageFormat,
+              marginLeft: marginLeft,
+              marginRight: marginRight,
+            ),
           ));
         }
       }
@@ -222,7 +260,125 @@ class WriterPdfExportService {
     return Uint8List.fromList(await document.save());
   }
 
-  static pw.Widget _tableWidget(String raw, pw.Font font, pw.Font latinFont) {
+  /// Computes physical PDF cell rectangles from the persisted table grid.
+  /// Saved editor widths/heights are scaled to the printable page width; merged
+  /// cells occupy the full rectangle and covered grid slots are not painted.
+  static List<Map<String, double>> tableCellRectangles({
+    required Map<String, dynamic> data,
+    required double availableWidth,
+  }) {
+    final rawRows = data['rows'];
+    if (rawRows is! List || rawRows.isEmpty ||
+        !availableWidth.isFinite || availableWidth <= 0) {
+      return <Map<String, double>>[];
+    }
+    final rows = rawRows.map<List<String>>((row) =>
+      row is List ? row.map((cell) => cell?.toString() ?? '').toList()
+                  : <String>[row?.toString() ?? '']
+    ).toList();
+    final columns = rows.fold<int>(1,
+      (maximum, row) => row.length > maximum ? row.length : maximum);
+    for (final row in rows) {
+      while (row.length < columns) { row.add(''); }
+    }
+
+    final rawWidths = data['columnWidths'];
+    final sourceWidths = List<double>.generate(columns, (index) {
+      final value = rawWidths is List && index < rawWidths.length
+          ? rawWidths[index]
+          : null;
+      return value is num && value.isFinite && value > 0
+          ? value.toDouble()
+          : 150.0;
+    });
+    final widthTotal = sourceWidths.fold<double>(0, (sum, value) => sum + value);
+    final scale = availableWidth / widthTotal;
+    final widths = sourceWidths.map((value) => value * scale).toList();
+    final rawHeights = data['rowHeights'];
+    final heights = List<double>.generate(rows.length, (index) {
+      final value = rawHeights is List && index < rawHeights.length
+          ? rawHeights[index]
+          : null;
+      // The editor stores logical pixels; PDF uses points.
+      return value is num && value.isFinite && value > 0
+          ? (value.toDouble() * 0.75).clamp(24.0, 180.0).toDouble()
+          : 42.0;
+    });
+
+    final merges = WriterTableBlockEmbed.normalizedMerges(
+      data, rowCount: rows.length, columnCount: columns);
+    final anchors = <String, Map<String, int>>{
+      for (final merge in merges) '${merge['row']}:${merge['column']}': merge,
+    };
+    final covered = <String>{};
+    for (final merge in merges) {
+      for (var row = merge['row']!; row < merge['row']! + merge['rowSpan']!; row++) {
+        for (var column = merge['column']!; column < merge['column']! + merge['columnSpan']!; column++) {
+          if (row != merge['row'] || column != merge['column']) {
+            covered.add('$row:$column');
+          }
+        }
+      }
+    }
+
+    // Avoid clipping long cell contents. Estimate wrapped lines from the
+    // printable cell width, then enlarge the row (or merged row group) before
+    // calculating the final cell positions.
+    for (var row = 0; row < rows.length; row++) {
+      for (var column = 0; column < columns; column++) {
+        if (covered.contains('$row:$column')) continue;
+        final merge = anchors['$row:$column'];
+        final rowSpan = merge?['rowSpan'] ?? 1;
+        final columnSpan = merge?['columnSpan'] ?? 1;
+        final cellWidth = widths.skip(column).take(columnSpan)
+            .fold<double>(0, (sum, value) => sum + value);
+        final usableWidth = (cellWidth - 10).clamp(8.0, availableWidth);
+        final charsPerLine = (usableWidth / 5.2).floor().clamp(1, 10000);
+        final lines = rows[row][column].split('\n').fold<int>(0, (sum, line) =>
+          sum + (line.isEmpty ? 1 : (line.length / charsPerLine).ceil()));
+        final requiredHeight = lines * 11.0 + 10.0;
+        final currentHeight = heights.skip(row).take(rowSpan)
+            .fold<double>(0, (sum, value) => sum + value);
+        if (requiredHeight > currentHeight) {
+          heights[row + rowSpan - 1] += requiredHeight - currentHeight;
+        }
+      }
+    }
+
+    final x = List<double>.filled(columns + 1, 0);
+    final y = List<double>.filled(rows.length + 1, 0);
+    for (var column = 0; column < columns; column++) {
+      x[column + 1] = x[column] + widths[column];
+    }
+    for (var row = 0; row < rows.length; row++) {
+      y[row + 1] = y[row] + heights[row];
+    }
+    final rectangles = <Map<String, double>>[];
+    for (var row = 0; row < rows.length; row++) {
+      for (var column = 0; column < columns; column++) {
+        if (covered.contains('$row:$column')) continue;
+        final merge = anchors['$row:$column'];
+        final rowSpan = merge?['rowSpan'] ?? 1;
+        final columnSpan = merge?['columnSpan'] ?? 1;
+        rectangles.add(<String, double>{
+          'row': row.toDouble(),
+          'column': column.toDouble(),
+          'left': x[column],
+          'top': y[row],
+          'width': x[column + columnSpan] - x[column],
+          'height': y[row + rowSpan] - y[row],
+        });
+      }
+    }
+    return rectangles;
+  }
+
+  static pw.Widget _tableWidget(
+    String raw,
+    pw.Font font,
+    pw.Font latinFont,
+    double availableWidth,
+  ) {
     Map<String, dynamic> data;
     try {
       final decoded = jsonDecode(raw);
@@ -236,28 +392,49 @@ class WriterPdfExportService {
     if (rawRows is! List || rawRows.isEmpty) {
       return pw.Text('Table data unavailable', style: pw.TextStyle(font: latinFont));
     }
-    final rows = rawRows.map<List<String>>((row) {
-      if (row is List) return row.map((cell) => cell?.toString() ?? '').toList();
-      return <String>[row?.toString() ?? ''];
-    }).toList();
-    final columns = rows.fold<int>(
-      1, (maximum, row) => row.length > maximum ? row.length : maximum,
+    final rows = rawRows.map<List<String>>((row) =>
+      row is List ? row.map((cell) => cell?.toString() ?? '').toList()
+                  : <String>[row?.toString() ?? '']
+    ).toList();
+    final columns = rows.fold<int>(1,
+      (maximum, row) => row.length > maximum ? row.length : maximum);
+    for (final row in rows) {
+      while (row.length < columns) { row.add(''); }
+    }
+    final rectangles = tableCellRectangles(
+      data: data,
+      availableWidth: availableWidth,
     );
+    if (rectangles.isEmpty) {
+      return pw.Text('Table data unavailable', style: pw.TextStyle(font: latinFont));
+    }
+    final totalHeight = rectangles.fold<double>(0, (maximum, cell) =>
+      (cell['top']! + cell['height']!) > maximum
+          ? cell['top']! + cell['height']!
+          : maximum);
     final borderColor = _parseIntColor(data['borderColor']) ?? PdfColors.grey;
     final backgroundColor =
         _parseIntColor(data['backgroundColor']) ?? PdfColors.white;
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(vertical: 8),
-      child: pw.Table(
-        border: pw.TableBorder.all(color: borderColor, width: 0.6),
-        children: List.generate(rows.length, (rowIndex) {
-          return pw.TableRow(
-            children: List.generate(columns, (columnIndex) {
-              final value = columnIndex < rows[rowIndex].length
-                  ? rows[rowIndex][columnIndex]
-                  : '';
-              return pw.Container(
-                color: backgroundColor,
+      child: pw.Container(
+        width: availableWidth,
+        height: totalHeight,
+        child: pw.Stack(
+          children: rectangles.map((cell) {
+            final row = cell['row']!.toInt();
+            final column = cell['column']!.toInt();
+            final value = rows[row][column];
+            return pw.Positioned(
+              left: cell['left'],
+              top: cell['top'],
+              child: pw.Container(
+                width: cell['width'],
+                height: cell['height'],
+                decoration: pw.BoxDecoration(
+                  color: backgroundColor,
+                  border: pw.Border.all(color: borderColor, width: 0.6),
+                ),
                 padding: const pw.EdgeInsets.all(5),
                 child: pw.Text(
                   value,
@@ -265,15 +442,15 @@ class WriterPdfExportService {
                     font: _containsBangla(value) ? font : latinFont,
                     fontFallback: _containsBangla(value) ? [latinFont] : const [],
                     fontSize: 9,
-                    fontWeight: rowIndex == 0 && data['headerRow'] == true
+                    fontWeight: row == 0 && data['headerRow'] == true
                         ? pw.FontWeight.bold
                         : pw.FontWeight.normal,
                   ),
                 ),
-              );
-            }),
-          );
-        }),
+              ),
+            );
+          }).toList(),
+        ),
       ),
     );
   }
@@ -305,6 +482,40 @@ class WriterPdfExportService {
     );
   }
 
+  /// Returns the printable image width in PDF points after page margins.
+  /// This keeps embedded images inside A5, A4, Letter and landscape pages.
+  static double imageContentWidth({
+    required PdfPageFormat pageFormat,
+    required double marginLeft,
+    required double marginRight,
+  }) {
+    final available = pageFormat.width - marginLeft - marginRight;
+    if (!available.isFinite || available <= 0) {
+      throw ArgumentError('Writer PDF horizontal margins leave no printable width.');
+    }
+    return available;
+  }
+
+  static PdfColor? highlightColorForAttributes(
+    Map<String, dynamic> attributes,
+  ) {
+    return _parseColor(attributes['background']?.toString());
+  }
+
+  static pw.TextDecoration? textDecorationForAttributes(
+    Map<String, dynamic> attributes,
+  ) {
+    final decorations = <pw.TextDecoration>[];
+    if (attributes['underline'] == true) {
+      decorations.add(pw.TextDecoration.underline);
+    }
+    if (attributes['strike'] == true) {
+      decorations.add(pw.TextDecoration.lineThrough);
+    }
+    if (decorations.isEmpty) return null;
+    return pw.TextDecoration.combine(decorations);
+  }
+
   static PdfColor? _parseColor(String? value) {
     if (value == null || value.isEmpty) return null;
     var hex = value.replaceAll('#', '');
@@ -314,4 +525,11 @@ class WriterPdfExportService {
     if (parsed == null) return null;
     return _parseIntColor(0xFF000000 | parsed);
   }
+}
+
+class _WriterPdfTextSegment {
+  const _WriterPdfTextSegment(this.text, this.attributes);
+
+  final String text;
+  final Map<String, dynamic> attributes;
 }

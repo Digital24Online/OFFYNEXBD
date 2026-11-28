@@ -1,37 +1,59 @@
-# OFFYNEX Writer
+# OFFYNEX Writer — implementation and completion specification
 
-OFFYNEX Writer is the document-editing module of OFFYNEXBD. It uses Flutter Quill and stores editable Quill Delta documents locally.
+## Current implemented foundation (source exists; CI coverage is not the same as device acceptance)
+- Quill Delta document editing, local autosave/recovery, document library and native JSON archive.
+- Rich text, numeric font sizes, font family choices, colors/highlight, alignment, lists, undo/redo, tables and local images.
+- Page setup (A4/A5/Letter/Legal, portrait/landscape, margin presets/custom), page view/width/actual zoom, pinch/pan, ruler, focus mode and status controls.
+- References, bibliography, footnotes/endnotes, captions, TOC, review comments, Find/Replace and revision snapshots.
+- DOCX/ODT import/export foundations; PDF export, print preview/print with bundled Bengali fonts and shaping support.
+- PDF/image-to-Writer conversion foundations and Bangla/English OCR where supported.
 
-## Implemented foundations
+## Remaining implementation — all must be addressed, not silently dropped
+### Editing and pagination
+- Replace estimated continuous-canvas page backgrounds with content-aware pagination and independent page layout/flow.
+- Support explicit page/section breaks, keep-with-next, widow/orphan handling, paragraph spacing, page-number fields and section-specific page settings.
+- Keep text selection, cursor movement, IME/keyboard, undo/redo and autosave stable across page boundaries.
+- Preserve page-fit/zoom behavior on narrow phones, tablets and desktop.
 
-- Create, rename, edit, clear and delete documents.
-- Automatic local save with queued writes and document-library recovery copies.
-- Versioned native Writer archive JSON import/export. Existing document IDs are preserved; duplicate IDs are not overwritten.
-- Rich text: bold, italic, underline, strike-through, numeric font size, text color, highlight, paragraph alignment, lists, indentation, undo and redo.
-- Bundled Bengali Noto Sans / Noto Serif font selection and Unicode fallback for PDF export.
-- Insert and edit Writer tables; insert local images with file validation and app-private storage.
-- Hyperlinks, date, symbols, citations, bibliography, footnotes, endnotes, captions and table of contents.
-- Review comments, Find/Replace and revision snapshots with restore, delete and clear actions.
-- Page setup: A4, A5, Letter and Legal; portrait/landscape; normal/narrow/moderate/wide/custom margins; page color and border.
-- View controls: Page, Page Width and Actual/100% fit; zoom slider and direct zoom actions; pinch/pan, ruler, status bar and focus mode.
-- DOCX and ODT import/export foundations for supported paragraphs, common inline formatting, headings, lists, basic tables, images and page setup.
-- DOCX default header/footer text and supported PAGE/NUMPAGES placeholders; PDF repeating header/footer and dynamic page placeholders.
-- PDF export, editable Print Preview and system printing, with bundled Bengali font embedding and OpenType shaping support.
-- PDF-to-Writer and image-to-document conversion foundations with Bengali/English OCR where the platform OCR engine is available.
-- Writer ribbon labels and the main library/editor shell follow the app's Bangla/English language selection.
+### Tables and objects
+- Upgrade plain-text table cells to editable rich cells with row/column resize, add/remove, merge/split, borders, cell shading, alignment, wrapping and table positioning.
+- Preserve existing `offynexbd-writer-table` embeds and migrate old records without data loss.
+- Improve image resize/crop/wrap/position/alt text and object anchoring; keep images portable in native backups and DOCX/ODT/PDF.
+- Add shapes and robust hyperlink editing if supported by the document model.
 
-## Important format and fidelity boundaries
+### Format fidelity and review
+- Improve DOCX/ODT import/export for sections, headers/footers (default/first/even), fields, tables, lists, images, page breaks and styles.
+- Keep native Writer archive as loss-minimizing format; never claim DOCX/ODT is lossless without round-trip evidence.
+- Add Bangla/English spellcheck dictionary integration, proofing UI, language selection and safe Bijoy ANSI-to-Unicode conversion if licensed/technically appropriate.
+- Complete localization of ribbon, dialogs, validation and error messages.
 
-- The native Writer archive is JSON, not DOCX or ODT; it remains the loss-minimizing editable backup.
-- DOCX/ODT interchange is a supported subset, not lossless Microsoft Word / LibreOffice compatibility. Unsupported advanced constructs may be simplified and must not be assumed to round-trip exactly.
-- The on-screen canvas still hosts one continuous QuillEditor over painted page backgrounds. Page count/height is estimated from content metrics; this is **not** true content-aware page-flow pagination. Text, images and tables do not yet have independently laid-out per-page editing regions.
-- Writer table embeds currently store plain-text cell values in a row/column grid. Visual merged cells, rich per-cell formatting, nested tables and full table-width/layout fidelity are not implemented.
-- Multiple section page settings and section-specific, first-page or even-page headers/footers are not fully represented. ODT export currently uses a single default master-page layout.
-- PDF generation has its own pagination; visual Bangla shaping, line wrapping, mixed-script output and physical printer fidelity still require representative rendered-PDF and device checks. Font embedding alone is not proof of identical rendering on every platform.
-- PDF-to-Writer conversion and OCR are text-first foundations; complex multi-column positioning, scanned-page rendering fallbacks, encrypted PDFs and exact source-layout reconstruction remain incomplete.
-- A complete font catalogue/import manager, arbitrary user-installed fonts, Bijoy ANSI conversion, genuine Bangla spellcheck dictionary integration and cloud synchronization are not implemented.
-- Long-document stress/recovery, remaining dialog/error localization, bottom-toolbar overlap, physical Android interaction, printer output and Word/LibreOffice interoperability still require acceptance testing.
+### Device and release acceptance
+- Fix the known bottom toolbar overlap / unwanted “Apps” item intrusion without removing existing actions.
+- Test long documents, large images/tables, crash recovery, memory/performance and autosave race conditions.
+- Compare rendered Bengali যুক্তাক্ষর, কার/ফলা/রেফ, mixed English/Bangla, line wrapping and page breaks against representative references on Android, desktop PDF viewers and physical printers.
+- Validate keyboard, touch selection, full-page view, zoom, print preview editability and all ribbon actions on physical Android devices.
 
-## Validation
+## Required source/test areas
+- Main editor/library: `lib/lib/modules/writer/writer_screen.dart`
+- Table model/editor: `lib/lib/modules/writer/writer_table.dart`
+- Page break and viewport: `writer_page_break.dart`, `writer_viewport.dart`
+- Document codecs/export: `writer_document_codec.dart`, `writer_document_format_service.dart`, `writer_docx_export_service.dart`, `writer_pdf_export_service.dart`
+- Tests: all `test/writer_*.dart`
 
-Automated checks are maintained under `test/writer_*.dart`. A source change is verified only after Flutter Analyze, the complete test suite, Android release APK build, existing signing-certificate validation, package verification and Actions artifact upload pass on the same code commit. Manual/device and interoperability gates must be recorded separately.
+## Acceptance gates
+- Legacy Delta, tables, images, comments, citations, revisions and page layout survive upgrade/import/export.
+- Automated tests cover page-flow, tables, format round-trip, recovery and compact phone layout.
+- Analyze + complete test suite + signed Android APK/package checks pass on the same commit.
+- Physical Android, keyboard, Bengali visual rendering, printer and Word/LibreOffice interoperability checks are recorded separately.
+
+
+## Active scope and completion requirements
+**Writer only.** The current user instruction explicitly excludes all other OFFYNEXBD modules until Writer is complete. Do not implement or advance Sheets, Slides, PDF, Fonts, AI, Cloud, Forms, Scan or Database as separate modules.
+
+Writer must reach a professional, desktop-class Microsoft Word-style feature set, with responsive phone/tablet/desktop behavior. Audit every ribbon and contextual command, then complete the remaining Writer work in integrated batches rather than isolated one-feature patches.
+
+Preserve existing saved documents and backward compatibility: Quill Delta content, legacy document records, `offynexbd-writer-table` and `offynexbd-writer-page-break` embeds, images, autosave, recovery/backup, page layout, comments, citations, revisions, header/footer metadata and existing export workflows.
+
+**Confirmed outstanding blocker:** the current editor is a single continuous Quill editor over a `CustomPaint` page background with estimated page count. True content-aware pagination—where text, images and tables flow naturally from one physical page to the next—has not been implemented or verified. Do not call Writer complete until this and all other required Writer workflows are implemented and tested end-to-end.
+
+Before changes, audit all Writer source, services, dependencies and tests. After changes, run Analyze, regression tests and Android build; inspect and fix every failure. A successful build alone is not proof of completion.

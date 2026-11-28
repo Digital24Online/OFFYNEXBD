@@ -29,7 +29,8 @@ void main() {
     await tester.tap(find.text('পিডিএফ'));
     await tester.pumpAndSettle();
     expect(find.text('PDF থেকে Document'), findsOneWidget);
-    expect(find.text('PDF নির্বাচন করুন'), findsOneWidget);
+    expect(find.text('রূপান্তর করুন'), findsOneWidget);
+    expect(find.text('PDF খুলুন'), findsOneWidget);
     expect(find.text('ছবি থেকে Document'), findsOneWidget);
   });
 
@@ -396,4 +397,91 @@ void main() {
     expect(docs.single['writerMeta']['zoom'], closeTo(slider.value, 0.001));
   });
 
+
+
+
+  testWidgets('Writer opens the keyboard on editor tap and saves typed text',
+      (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const OFFYNEXBDApp());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('রাইটার'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('নতুন ডকুমেন্ট'));
+    await tester.pumpAndSettle();
+
+    final pageCanvas = find.byKey(const ValueKey('writer-page-canvas'));
+    expect(pageCanvas, findsOneWidget);
+    // Tap the visible document surface, not EditableText directly. This
+    // exercises the same InteractiveViewer/Listener/Quill hit-test path as
+    // a real phone touch.
+    await tester.tapAt(tester.getCenter(pageCanvas));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(tester.testTextInput.isVisible, isTrue);
+
+    // Android Back can hide the IME without clearing the editor's focus.
+    // A second tap on the page must reopen the Quill TextInputConnection.
+    tester.testTextInput.hide();
+    await tester.pump();
+    expect(tester.testTextInput.isVisible, isFalse);
+    await tester.tapAt(tester.getCenter(pageCanvas));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(tester.testTextInput.isVisible, isTrue);
+
+    final editable = find.byType(EditableText).last;
+    await tester.enterText(editable, 'Writer keyboard test লেখা');
+    await tester.pump(const Duration(milliseconds: 1100));
+    await tester.pumpAndSettle();
+
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('offynex_writer_documents');
+    expect(raw, isNotNull);
+    expect(raw, contains('Writer keyboard test লেখা'));
+  });
+
+
+  testWidgets(
+    'Writer title keeps the same focused input when compact keyboard layout appears',
+    (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({});
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(const OFFYNEXBDApp());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('রাইটার'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('নতুন ডকুমেন্ট'));
+      await tester.pumpAndSettle();
+
+      final titleField = find.byType(TextField).first;
+      await tester.tap(titleField);
+      await tester.pump();
+      final originalFocusNode = tester.widget<TextField>(titleField).focusNode;
+      expect(originalFocusNode, isNotNull);
+      expect(originalFocusNode!.hasFocus, isTrue);
+
+      tester.view.viewInsets = const FakeViewPadding(bottom: 320);
+      await tester.pump();
+      // Quill's compact toolbar schedules Timer.run (zero duration)
+      // during layout; advance fake time so that callback is executed.
+      await tester.pump(const Duration(milliseconds: 1));
+
+      final compactTitleField = tester.widget<TextField>(
+        find.byType(TextField).first,
+      );
+      expect(identical(compactTitleField.focusNode, originalFocusNode), isTrue);
+      expect(originalFocusNode.hasFocus, isTrue);
+    },
+  );
 }

@@ -10,6 +10,17 @@ import 'package:material_ui/material_ui.dart';
 class WriterContentMetrics {
   const WriterContentMetrics._();
 
+  /// Returns the exact custom font family saved in a Quill Delta. Built-in
+  /// generic families remain unchanged; imported font names are not reduced
+  /// to a serif/sans-serif approximation when estimating Writer layout.
+  static String fontFamilyFromAttributes(Map<String, dynamic> attributes) {
+    final family = attributes['font']?.toString().trim();
+    if (family == null || family.isEmpty) return 'sans-serif';
+    if (family.toLowerCase() == 'serif') return 'serif';
+    if (family.toLowerCase() == 'sans-serif') return 'sans-serif';
+    return family;
+  }
+
   static double estimateHeight({
     required List<Map<String, dynamic>> delta,
     required double maxWidth,
@@ -60,7 +71,7 @@ class WriterContentMetrics {
           : defaultFontSize;
       final color = _parseColor(attributes['color']);
       final background = _parseColor(attributes['background']);
-      final font = attributes['font']?.toString();
+      final fontFamily = fontFamilyFromAttributes(attributes);
       paragraph.add(TextSpan(
         text: value,
         style: TextStyle(
@@ -70,7 +81,7 @@ class WriterContentMetrics {
           decoration: _decoration(attributes),
           color: color,
           backgroundColor: background,
-          fontFamily: font == 'serif' ? 'serif' : 'sans-serif',
+          fontFamily: fontFamily,
         ),
       ));
     }
@@ -118,6 +129,37 @@ class WriterContentMetrics {
     return math.max(totalHeight, defaultFontSize * 1.35).toDouble();
   }
 
+  /// Content-aware page estimate for the editing canvas. PDF export performs
+  /// its own final pagination.
+  static int estimatePageCount({
+    required List<Map<String, dynamic>> delta,
+    required double maxWidth,
+    required double pageContentHeight,
+    TextDirection textDirection = TextDirection.ltr,
+    double defaultFontSize = 16,
+  }) {
+    final height = estimateHeight(
+      delta: delta,
+      maxWidth: maxWidth,
+      pageContentHeight: pageContentHeight,
+      textDirection: textDirection,
+      defaultFontSize: defaultFontSize,
+    );
+
+    // A manual page break is a structural boundary, not merely a height
+    // contribution. Counting the boundaries separately prevents consecutive
+    // breaks (or a break in an otherwise empty document) from disappearing
+    // when the estimated content height rounds down to one page.
+    final explicitBreaks = delta.where((operation) {
+      final insert = operation['insert'];
+      return insert is Map && insert.containsKey('offynexbd-writer-page-break');
+    }).length;
+
+    final contentPages = (height / pageContentHeight).ceil();
+    final structurallyRequiredPages = explicitBreaks + 1;
+    return math.max(1, math.max(contentPages, structurallyRequiredPages));
+  }
+
   static double _estimateTableHeight(
     Object? raw,
     double maxWidth,
@@ -127,10 +169,21 @@ class WriterContentMetrics {
     try {
       final decoded = raw is String ? jsonDecode(raw) : raw;
       if (decoded is! Map || decoded['rows'] is! List) return 48;
-      final rows = (decoded['rows'] as List).take(20);
+      // Keep estimates bounded for unusually large embeds without ignoring
+      // ordinary tables that contain more than 20 rows or 10 columns.
+      final rows = (decoded['rows'] as List).take(1000).toList();
+      final rawHeights = decoded['rowHeights'];
       var height = 0.0;
-      for (final rawRow in rows) {
-        final cells = rawRow is List ? rawRow.take(10) : <Object?>[rawRow];
+      for (var rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+        final rawRow = rows[rowIndex];
+        final cells = rawRow is List ? rawRow.take(100) : <Object?>[rawRow];
+        final storedHeight = rawHeights is List && rowIndex < rawHeights.length
+            ? (rawHeights[rowIndex] as num?)?.toDouble()
+            : null;
+        if (storedHeight != null && storedHeight.isFinite && storedHeight > 0) {
+          height += storedHeight;
+          continue;
+        }
         final cellCount = math.max(1, cells.length);
         final cellWidth = math.max(24.0, maxWidth / cellCount - 12).toDouble();
         var rowHeight = 36.0;

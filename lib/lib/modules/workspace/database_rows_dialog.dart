@@ -6,6 +6,7 @@ import 'package:material_ui/material_ui.dart';
 
 import 'database_field_codec.dart';
 import 'database_rows_csv_codec.dart';
+import 'database_rows_query.dart';
 
 class DatabaseRowsDialog extends StatefulWidget {
   const DatabaseRowsDialog({
@@ -30,11 +31,30 @@ class DatabaseRowsDialog extends StatefulWidget {
 class _DatabaseRowsDialogState extends State<DatabaseRowsDialog> {
   late final List<Map<String, dynamic>> _rows;
   bool _fileBusy = false;
+  late final TextEditingController _searchController;
+  String? _sortField;
+  bool _ascending = true;
+
+  List<Map<String, dynamic>> get _visibleRows => DatabaseRowsQuery.apply(
+        rows: _rows,
+        fields: widget.fields,
+        query: _searchController.text,
+        sortField: _sortField,
+        ascending: _ascending,
+      );
 
   @override
   void initState() {
     super.initState();
     _rows = widget.initialRows.map((row) => Map<String, dynamic>.from(row)).toList();
+    _searchController = TextEditingController();
+    _sortField = widget.fields.isEmpty ? null : widget.fields.first;
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _editRow({Map<String, dynamic>? row}) async {
@@ -188,13 +208,63 @@ class _DatabaseRowsDialogState extends State<DatabaseRowsDialog> {
             ),
             if (_fileBusy) const LinearProgressIndicator(),
             const SizedBox(height: 8),
+            TextField(
+              controller: _searchController,
+              onChanged: (_) => setState(() {}),
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.search),
+                hintText: widget.isBangla ? 'Row-এর তথ্য খুঁজুন' : 'Search row values',
+                isDense: true,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 6),
+            if (widget.fields.isNotEmpty)
+              Row(children: [
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    key: const ValueKey('database-row-sort-field'),
+                    initialValue: _sortField,
+                    isExpanded: true,
+                    decoration: InputDecoration(
+                      labelText: widget.isBangla ? 'যে ফিল্ড অনুযায়ী সাজাবেন' : 'Sort by field',
+                      isDense: true,
+                      border: const OutlineInputBorder(),
+                    ),
+                    items: [
+                      for (final field in widget.fields)
+                        DropdownMenuItem(value: field, child: Text(field, overflow: TextOverflow.ellipsis)),
+                    ],
+                    onChanged: (value) => setState(() => _sortField = value),
+                  ),
+                ),
+                IconButton(
+                  tooltip: _ascending
+                      ? (widget.isBangla ? 'ছোট থেকে বড়' : 'Ascending')
+                      : (widget.isBangla ? 'বড় থেকে ছোট' : 'Descending'),
+                  onPressed: () => setState(() => _ascending = !_ascending),
+                  icon: Icon(_ascending ? Icons.arrow_upward : Icons.arrow_downward),
+                ),
+              ]),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                widget.isBangla
+                    ? '${_visibleRows.length}টি দেখানো হচ্ছে'
+                    : 'Showing ${_visibleRows.length} of ${_rows.length}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+            const SizedBox(height: 8),
             Expanded(
               child: _rows.isEmpty
                   ? Center(child: Text(widget.isBangla ? 'এখনো কোনো Row নেই।' : 'No rows yet.'))
-                  : ListView.builder(
-                      itemCount: _rows.length,
+                  : _visibleRows.isEmpty
+                      ? Center(child: Text(widget.isBangla ? 'কোনো মিল পাওয়া যায়নি।' : 'No matching rows.'))
+                      : ListView.builder(
+                      itemCount: _visibleRows.length,
                       itemBuilder: (context, index) {
-                        final row = _rows[index];
+                        final row = _visibleRows[index];
                         final stored = row['values'];
                         final values = stored is Map ? stored : const {};
                         final summary = widget.fields
@@ -214,7 +284,7 @@ class _DatabaseRowsDialogState extends State<DatabaseRowsDialog> {
                               IconButton(
                                 tooltip: widget.isBangla ? 'মুছুন' : 'Delete row',
                                 icon: const Icon(Icons.delete_outline),
-                                onPressed: () => setState(() => _rows.removeAt(index)),
+                                onPressed: () => setState(() => _rows.removeWhere((item) => item['id'] == row['id'])),
                               ),
                             ],
                           ),
@@ -274,7 +344,7 @@ class _DatabaseRowEditDialogState extends State<_DatabaseRowEditDialog> {
     _choices = {
       for (var index = 0; index < widget.schema.length; index++)
         if (widget.schema[index].type == 'choice' &&
-            widget.schema[index].options.contains(widget.initialValues[widget.schema[index].name]))
+            (widget.initialValues[widget.schema[index].name]?.isNotEmpty ?? false))
           index: widget.initialValues[widget.schema[index].name],
     };
   }
@@ -357,20 +427,47 @@ class _DatabaseRowEditDialogState extends State<_DatabaseRowEditDialog> {
                     final field = widget.schema[index];
                     final label = field.required ? '${field.name} *' : field.name;
                     if (field.type == 'choice') {
+                      final selected = _choices[index];
+                      final savedLegacyValue = selected != null &&
+                          !field.options.contains(selected);
                       return DropdownButtonFormField<String>(
-                        initialValue: _choices[index],
+                        initialValue: selected,
                         decoration: InputDecoration(
                           labelText: label,
+                          helperText: savedLegacyValue
+                              ? (widget.isBangla
+                                  ? 'আগের সংরক্ষিত মানটি রাখা হয়েছে; চাইলে নতুন বিকল্প বাছুন।'
+                                  : 'The previously saved value is preserved; choose a new option if needed.')
+                              : null,
                           border: const OutlineInputBorder(),
                         ),
                         items: [
+                          if (savedLegacyValue)
+                            DropdownMenuItem(
+                              value: selected,
+                              child: Text(widget.isBangla
+                                  ? '$selected (আগের মান)'
+                                  : '$selected (saved value)'),
+                            ),
                           for (final option in field.options)
                             DropdownMenuItem(value: option, child: Text(option)),
                         ],
                         onChanged: (value) => setState(() => _choices[index] = value),
-                        validator: (value) => field.required && value == null
-                            ? (widget.isBangla ? 'একটি বিকল্প বেছে নিন' : 'Choose an option')
-                            : null,
+                        validator: (value) {
+                          if (field.required && value == null) {
+                            return widget.isBangla
+                                ? 'একটি বিকল্প বেছে নিন'
+                                : 'Choose an option';
+                          }
+                          if (value != null &&
+                              !field.options.contains(value) &&
+                              value != widget.initialValues[field.name]) {
+                            return widget.isBangla
+                                ? 'তালিকার একটি বিকল্প বাছুন'
+                                : 'Choose an available option';
+                          }
+                          return null;
+                        },
                       );
                     }
                     final type = field.type;

@@ -2,10 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_quill/flutter_quill.dart';
-import 'package:flutter/services.dart';
 import 'writer_table.dart';
 import 'writer_page_break.dart';
 import 'writer_pdf_export_service.dart';
@@ -14,7 +14,8 @@ import 'writer_document_backup_service.dart';
 import 'writer_docx_export_service.dart';
 import 'writer_document_format_service.dart';
 import 'writer_viewport.dart';
-import 'writer_content_metrics.dart';
+import 'writer_automatic_page_layout.dart';
+import '../fonts/offynex_font_service.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -231,6 +232,20 @@ class _WriterScreenState extends State<WriterScreen> {
       'title': 'Untitled Document',
       'content': '',
       'updated': DateTime.now().toIso8601String(),
+      'writerMeta': {
+        'zoom': 1.0,
+        'fontFamily': 'sans-serif',
+        'viewFit': 'Page',
+        'viewFitVersion': 2,
+        'showRuler': true,
+        'showStatusBar': true,
+        'showPageBorder': true,
+        'captureRevisions': false,
+        'focusMode': false,
+        'comments': <Map<String, dynamic>>[],
+        'citations': <Map<String, dynamic>>[],
+        'revisions': <Map<String, dynamic>>[],
+      },
     };
 
     final updated = [...documents, document];
@@ -399,9 +414,9 @@ class _WriterScreenState extends State<WriterScreen> {
                   padding: EdgeInsets.fromLTRB(horizontalPadding, 12, horizontalPadding, 100),
                   itemCount: documents.length,
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: width >= 1100 ? 4 : width >= 700 ? 3 : width >= 360 ? 2 : 1,
+                    crossAxisCount: width >= 1100 ? 4 : width >= 700 ? 3 : width >= 480 ? 2 : 1,
                     crossAxisSpacing: 16, mainAxisSpacing: 16,
-                    childAspectRatio: width >= 900 ? 1.12 : 0.78,
+                    childAspectRatio: width >= 900 ? 1.12 : width >= 480 ? 0.78 : 1.25,
                   ),
                   itemBuilder: (context, index) {
                     final document = documents[index];
@@ -412,33 +427,49 @@ class _WriterScreenState extends State<WriterScreen> {
                       child: InkWell(
                         borderRadius: BorderRadius.circular(20), onTap: () => openDocument(document),
                         child: Container(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(20), border: Border.all(color: OFFYNEXTheme.border),
                             boxShadow: [BoxShadow(color: OFFYNEXTheme.ink.withValues(alpha: 0.035), blurRadius: 16, offset: const Offset(0, 6))],
                           ),
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Row(children: [
-                              Container(width: 44, height: 50, decoration: BoxDecoration(color: OFFYNEXTheme.blueSoft, borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.description_rounded, color: OFFYNEXTheme.blue, size: 25)),
-                              const Spacer(),
-                              PopupMenuButton<String>(
-                                tooltip: _t('আরও অপশন', 'More options'),
-                                onSelected: (value) { if (value == 'rename') renameDocument(document); if (value == 'delete') deleteDocument(document); },
-                                itemBuilder: (_) => [
-                                  PopupMenuItem(value: 'rename', child: Text(_t('নাম পরিবর্তন', 'Rename'))),
-                                  PopupMenuItem(value: 'delete', child: Text(_t('মুছুন', 'Delete'))),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  const Spacer(),
+                                  Container(
+                                    width: 28,
+                                    height: 32,
+                                    decoration: BoxDecoration(color: OFFYNEXTheme.blueSoft, borderRadius: BorderRadius.circular(9)),
+                                    child: const Icon(Icons.description_rounded, color: OFFYNEXTheme.blue, size: 18),
+                                  ),
+                                  const SizedBox(width: 2),
+                                  PopupMenuButton<String>(
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints.tightFor(width: 24, height: 24),
+                                    iconSize: 16,
+                                    tooltip: _t('আরও অপশন', 'More options'),
+                                    onSelected: (value) { if (value == 'rename') renameDocument(document); if (value == 'delete') deleteDocument(document); },
+                                    itemBuilder: (_) => [
+                                      PopupMenuItem(value: 'rename', child: Text(_t('নাম পরিবর্তন', 'Rename'))),
+                                      PopupMenuItem(value: 'delete', child: Text(_t('মুছুন', 'Delete'))),
+                                    ],
+                                  ),
                                 ],
                               ),
-                            ]),
-                            const Spacer(),
-                            Text(title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: OFFYNEXTheme.ink, fontSize: 15, fontWeight: FontWeight.w800, height: 1.3)),
-                            const SizedBox(height: 6),
-                            Text(_t('ডিভাইসে সংরক্ষিত', 'Saved on device'), style: const TextStyle(color: OFFYNEXTheme.muted, fontSize: 11)),
-                            if (updated != null) ...[
-                              const SizedBox(height: 4),
-                              Text(updated.replaceFirst('T', '  '), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: OFFYNEXTheme.muted, fontSize: 9)),
+                              const SizedBox(height: 6),
+                              Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: OFFYNEXTheme.ink, fontSize: 13, fontWeight: FontWeight.w800, height: 1.2)),
+                              const SizedBox(height: 3),
+                              Text(_t('ডিভাইসে সংরক্ষিত', 'Saved on device'), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: OFFYNEXTheme.muted, fontSize: 10)),
+                              if (updated != null) ...[
+                                const SizedBox(height: 2),
+                                Text(updated.replaceFirst('T', '  '), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: OFFYNEXTheme.muted, fontSize: 8)),
+                              ],
                             ],
-                          ]),
+                          ),
                         ),
                       ),
                     );
@@ -467,13 +498,16 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   String _t(String bn, String en) => widget.isBangla ? bn : en;
 
   late final TextEditingController titleController;
+  late final FocusNode titleFocusNode;
   late final FocusNode editorFocusNode;
+  final GlobalKey<EditorState> _writerEditorKey = GlobalKey<EditorState>();
   late QuillController quillController;
 
   int wordCount = 0;
   int selectedRibbonTab = 1;
   String selectedFontFamily = 'sans-serif';
   String selectedFontSize = '16';
+  List<String> importedFontFamilies = const [];
   bool isSaved = true;
   Future<void> saveQueue = Future.value();
   Timer? saveTimer;
@@ -492,6 +526,13 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   double zoomLevel = 1.0;
   String viewFit = 'Width';
   final TransformationController _pageTransformController = TransformationController();
+  Offset? _pagePointerDownPosition;
+  bool _pagePointerMoved = false;
+  // Cache the expensive TextPainter pagination projection between UI rebuilds.
+  // The key includes the canonical Delta and every layout input, so edits,
+  // formatting, page-size/margin and direction changes invalidate it safely.
+  String? _measuredPageLayoutCacheKey;
+  WriterAutomaticPageLayout? _measuredPageLayoutCache;
   bool showRuler = true;
   bool showStatusBar = true;
   bool showPageBorder = true;
@@ -503,10 +544,43 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
   String headerText = '';
   String footerText = '';
 
+  Future<void> _loadImportedFonts() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('offynex_workspace_fonts_v1');
+      if (raw == null) return;
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return;
+      final families = <String>[];
+      for (final entry in decoded) {
+        if (entry is! Map) continue;
+        final family = entry['fontFamily'];
+        final path = entry['fontPath'];
+        if (family is! String || family.trim().isEmpty || path is! String) {
+          continue;
+        }
+        try {
+          final file = File(path);
+          if (!await file.exists()) continue;
+          final bytes = await file.readAsBytes();
+          await OffynexFontService.activate(bytes, family);
+          if (!families.contains(family)) families.add(family);
+        } catch (_) {
+          // Ignore a missing or invalid custom font without blocking Writer.
+        }
+      }
+      if (!mounted) return;
+      setState(() => importedFontFamilies = families);
+    } catch (_) {
+      // A damaged optional font catalogue must not prevent document editing.
+    }
+  }
+
   @override
   void initState() {
     super.initState();
 
+    titleFocusNode = FocusNode();
     editorFocusNode = FocusNode();
     titleController = TextEditingController(
       text: widget.document['title']?.toString() ??
@@ -516,8 +590,8 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
     final savedMeta = widget.document['writerMeta'];
     if (savedMeta is Map) {
       final savedFontFamily = savedMeta['fontFamily']?.toString();
-      if (['sans-serif', 'serif'].contains(savedFontFamily)) {
-        selectedFontFamily = savedFontFamily!;
+      if (savedFontFamily != null && savedFontFamily.trim().isNotEmpty) {
+        selectedFontFamily = savedFontFamily;
       }
       zoomLevel = (savedMeta['zoom'] is num)
           ? (savedMeta['zoom'] as num).toDouble().clamp(0.5, 3.0).toDouble()
@@ -626,6 +700,7 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
 
     updateWordCount(quillController.document.toPlainText());
     quillController.addListener(onEditorChanged);
+    _loadImportedFonts();
   }
 
   void updateWordCount(String text) {
@@ -1693,6 +1768,14 @@ class _WriterEditorScreenState extends State<WriterEditorScreen> {
       'Justify': 'দুই পাশে সমান', 'Bullets': 'বুলেট', 'Numbering': 'নম্বর', 'Bold': 'গাঢ়', 'Italic': 'তির্যক',
       'Underline': 'নিচে দাগ', 'Strikethrough': 'মাঝে দাগ',
       'Red Text': 'লাল লেখা', 'Yellow Highlight': 'হলুদ হাইলাইট',
+      'Font Color': 'ফন্টের রং', 'Text Highlight Color': 'লেখা হাইলাইটের রং',
+      'Paragraph Styles': 'অনুচ্ছেদের স্টাইল', 'Styles': 'স্টাইল',
+      'Title / Heading 1': 'শিরোনাম / হেডিং ১',
+      'Subtitle / Heading 2': 'উপশিরোনাম / হেডিং ২',
+      'Heading 3': 'হেডিং ৩', 'Heading 4': 'হেডিং ৪',
+      'Heading 5': 'হেডিং ৫', 'Heading 6': 'হেডিং ৬',
+      'Clear Formatting': 'ফরম্যাট মুছুন', 'Superscript': 'সুপারস্ক্রিপ্ট',
+      'Subscript': 'সাবস্ক্রিপ্ট',
       'Save': 'সংরক্ষণ',
       'Print Preview': 'প্রিন্ট প্রিভিউ',
       'Print': 'প্রিন্ট',
@@ -1936,10 +2019,54 @@ Future<void> showCustomFontSizeDialog() async {
     );
   }
 
+  void clearSelectedFormatting() {
+    final selection = quillController.selection;
+    final attributes = <Attribute?>[
+      Attribute.bold,
+      Attribute.italic,
+      Attribute.underline,
+      Attribute.strikeThrough,
+      Attribute.fromKeyValue('color', '#000000'),
+      Attribute.fromKeyValue('background', '#FFFFFF'),
+      Attribute.fromKeyValue('font', 'sans-serif'),
+      Attribute.fromKeyValue('size', '16'),
+      Attribute.fromKeyValue('script', 'super'),
+    ];
+    for (final attribute in attributes) {
+      if (attribute == null) continue;
+      final reset = Attribute.clone(attribute, null);
+      if (selection.isCollapsed) {
+        quillController.formatSelection(reset);
+      } else {
+        quillController.formatText(selection.start, selection.end - selection.start, reset);
+      }
+    }
+    setState(() {
+      selectedFontFamily = 'sans-serif';
+      selectedFontSize = '16';
+    });
+  }
+
+  void _applyWriterColor(String attribute, String color) {
+    quillController.formatSelection(Attribute.fromKeyValue(attribute, color));
+  }
+
+  void _applyParagraphStyle(String style) {
+    final headerAttribute = Attribute.fromKeyValue('header', 1);
+    if (headerAttribute == null) return;
+    final headerLevel = int.tryParse(style);
+    final attribute = headerLevel == null
+        ? Attribute.clone(headerAttribute, null)
+        : Attribute.fromKeyValue('header', headerLevel);
+    if (attribute == null) return;
+    quillController.formatSelection(attribute);
+  }
+
   Widget buildHomeRibbon() {
-  const fontFamilies = <String, String>{
+  final fontFamilies = <String, String>{
     'Noto Sans Bengali': 'sans-serif',
     'Noto Serif Bengali': 'serif',
+    for (final family in importedFontFamilies) family: family,
   };
 
   const fontSizes = [
@@ -2030,6 +2157,39 @@ Future<void> showCustomFontSizeDialog() async {
           onPressed: showCustomFontSizeDialog,
           icon: const Icon(Icons.edit, size: 16),
           label: Text(_ribbonLabel('Custom Size')),
+        ),
+
+        PopupMenuButton<String>(
+          key: const ValueKey('writer-home-paragraph-styles'),
+          tooltip: _ribbonLabel('Paragraph Styles'),
+          onSelected: _applyParagraphStyle,
+          itemBuilder: (context) => [
+            PopupMenuItem(value: 'normal', child: Text(_ribbonLabel('Normal'))),
+            PopupMenuItem(value: '1', child: Text(_ribbonLabel('Title / Heading 1'))),
+            PopupMenuItem(value: '2', child: Text(_ribbonLabel('Subtitle / Heading 2'))),
+            PopupMenuItem(value: '3', child: Text(_ribbonLabel('Heading 3'))),
+            PopupMenuItem(value: '4', child: Text(_ribbonLabel('Heading 4'))),
+            PopupMenuItem(value: '5', child: Text(_ribbonLabel('Heading 5'))),
+            PopupMenuItem(value: '6', child: Text(_ribbonLabel('Heading 6'))),
+          ],
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 32),
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: const Color(0xFFD5DDE7)),
+              borderRadius: BorderRadius.circular(5),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.text_fields, size: 17),
+                const SizedBox(width: 4),
+                Text(_ribbonLabel('Styles'), style: const TextStyle(fontSize: 11)),
+                const Icon(Icons.arrow_drop_down, size: 17),
+              ],
+            ),
+          ),
         ),
 
         // Editing history and paragraph controls (Microsoft Word-style Home tools).
@@ -2140,38 +2300,56 @@ Future<void> showCustomFontSizeDialog() async {
           icon: const Icon(Icons.format_strikethrough),
         ),
 
-        // Red Text
         IconButton(
+          key: const ValueKey('writer-home-superscript'),
           visualDensity: VisualDensity.compact,
-          constraints: const BoxConstraints.tightFor(width: 32, height: 32),
-          padding: EdgeInsets.zero,
-          tooltip: _ribbonLabel('Red Text'),
-          onPressed: () {
-            quillController.formatSelection(
-              Attribute.fromKeyValue('color', '#FF0000'),
-            );
-          },
-          icon: const Icon(
-            Icons.format_color_text,
-            color: Colors.red,
-          ),
+          tooltip: _ribbonLabel('Superscript'),
+          onPressed: () => quillController.formatSelection(Attribute.fromKeyValue('script', 'super')),
+          icon: const Icon(Icons.superscript),
         ),
-
-        // Yellow Highlight
         IconButton(
+          key: const ValueKey('writer-home-subscript'),
           visualDensity: VisualDensity.compact,
-          constraints: const BoxConstraints.tightFor(width: 32, height: 32),
-          padding: EdgeInsets.zero,
-          tooltip: _ribbonLabel('Yellow Highlight'),
-          onPressed: () {
-            quillController.formatSelection(
-              Attribute.fromKeyValue('background', '#FFFF00'),
-            );
-          },
-          icon: const Icon(
-            Icons.format_color_fill,
-            color: Colors.orange,
-          ),
+          tooltip: _ribbonLabel('Subscript'),
+          onPressed: () => quillController.formatSelection(Attribute.fromKeyValue('script', 'sub')),
+          icon: const Icon(Icons.subscript),
+        ),
+        PopupMenuButton<String>(
+          key: const ValueKey('writer-home-font-color'),
+          tooltip: _ribbonLabel('Font Color'),
+          onSelected: (color) => _applyWriterColor('color', color),
+          itemBuilder: (context) => const [
+            PopupMenuItem(value: '#000000', child: Text('Black')),
+            PopupMenuItem(value: '#C00000', child: Text('Dark Red')),
+            PopupMenuItem(value: '#FF0000', child: Text('Red')),
+            PopupMenuItem(value: '#0070C0', child: Text('Blue')),
+            PopupMenuItem(value: '#008000', child: Text('Green')),
+            PopupMenuItem(value: '#7030A0', child: Text('Purple')),
+            PopupMenuItem(value: '#ED7D31', child: Text('Orange')),
+            PopupMenuItem(value: '#808080', child: Text('Gray')),
+          ],
+          child: const Padding(padding: EdgeInsets.all(7), child: Icon(Icons.format_color_text, color: Colors.red, size: 21)),
+        ),
+        PopupMenuButton<String>(
+          key: const ValueKey('writer-home-text-highlight'),
+          tooltip: _ribbonLabel('Text Highlight Color'),
+          onSelected: (color) => _applyWriterColor('background', color),
+          itemBuilder: (context) => const [
+            PopupMenuItem(value: '#FFFF00', child: Text('Yellow')),
+            PopupMenuItem(value: '#00FF00', child: Text('Bright Green')),
+            PopupMenuItem(value: '#00B0F0', child: Text('Cyan')),
+            PopupMenuItem(value: '#FF00FF', child: Text('Pink')),
+            PopupMenuItem(value: '#FFC000', child: Text('Gold')),
+            PopupMenuItem(value: '#D9EAD3', child: Text('Light Green')),
+          ],
+          child: const Padding(padding: EdgeInsets.all(7), child: Icon(Icons.format_color_fill, color: Colors.orange, size: 21)),
+        ),
+        IconButton(
+          key: const ValueKey('writer-home-clear-formatting'),
+          visualDensity: VisualDensity.compact,
+          tooltip: _ribbonLabel('Clear Formatting'),
+          onPressed: clearSelectedFormatting,
+          icon: const Icon(Icons.format_clear),
         ),
       ],
     ),
@@ -2218,6 +2396,49 @@ Future<void> showCustomFontSizeDialog() async {
     final delta = quillController.document.toDelta().toJson()
         .map((item) => Map<String, dynamic>.from(item as Map))
         .toList();
+
+    // Load only imported families actually used in this document so custom
+    // Bengali fonts are preserved in PDF/print output as well as the editor.
+    final usedFamilies = <String>{
+      for (final operation in delta)
+        if (operation['attributes'] is Map &&
+            (operation['attributes'] as Map)['font'] is String)
+          (operation['attributes'] as Map)['font'] as String,
+    };
+    final customFontData = <String, ByteData>{};
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final rawFonts = prefs.getString('offynex_workspace_fonts_v1');
+      final decodedFonts = rawFonts == null ? null : jsonDecode(rawFonts);
+      if (decodedFonts is List) {
+        for (final entry in decodedFonts) {
+          if (entry is! Map) {
+            continue;
+          }
+          final family = entry['fontFamily'];
+          final path = entry['fontPath'];
+          if (family is! String || !usedFamilies.contains(family) ||
+              path is! String || path.isEmpty) {
+            continue;
+          }
+          try {
+            final file = File(path);
+            if (!await file.exists()) {
+              continue;
+            }
+            final bytes = await file.readAsBytes();
+            if (bytes.isNotEmpty) {
+              customFontData[family] = ByteData.sublistView(bytes);
+            }
+          } catch (_) {
+            // A missing custom font must not block PDF export.
+          }
+        }
+      }
+    } catch (_) {
+      // A damaged optional font catalogue falls back to bundled fonts.
+    }
+
     return WriterPdfExportService.build(
       title: titleController.text.trim().isEmpty
           ? 'Untitled Document'
@@ -2226,6 +2447,7 @@ Future<void> showCustomFontSizeDialog() async {
       sansFontData: sansFontData,
       serifFontData: serifFontData,
       latinFontData: latinFontData,
+      customFontData: customFontData,
       pageFormat: format,
       marginTop: marginTop * 72,
       marginBottom: marginBottom * 72,
@@ -2301,6 +2523,7 @@ Future<void> showCustomFontSizeDialog() async {
           'zoom': 1.0,
           'fontFamily': 'sans-serif',
           'viewFit': 'Page',
+          'viewFitVersion': 2,
           'showRuler': true,
           'showStatusBar': true,
           'showPageBorder': true,
@@ -2472,6 +2695,44 @@ Future<void> showCustomFontSizeDialog() async {
 
   void _adjustZoom(double amount) {
     _setZoomLevel(zoomLevel + amount);
+  }
+
+  // Use Quill's own keyboard connection. requestFocus() by itself does
+  // not reopen Android's IME when the editor already owns focus but its
+  // TextInputConnection was closed (for example, after pressing Back).
+  void _focusEditorAndShowKeyboard() {
+    if (!mounted) return;
+    if (!editorFocusNode.hasFocus) {
+      editorFocusNode.requestFocus();
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _writerEditorKey.currentState?.requestKeyboard();
+    });
+  }
+
+  WriterAutomaticPageLayout _measuredPageLayoutFor({
+    required List<Map<String, dynamic>> delta,
+    required double maxWidth,
+    required double pageContentHeight,
+    required TextDirection textDirection,
+  }) {
+    final key = '${maxWidth.toStringAsPrecision(10)}|'
+        '${pageContentHeight.toStringAsPrecision(10)}|'
+        '${textDirection.name}|${jsonEncode(delta)}';
+    if (_measuredPageLayoutCacheKey == key &&
+        _measuredPageLayoutCache != null) {
+      return _measuredPageLayoutCache!;
+    }
+    final layout = WriterAutomaticPageLayout.fromDelta(
+      delta: delta,
+      maxWidth: maxWidth,
+      pageContentHeight: pageContentHeight,
+      textDirection: textDirection,
+    );
+    _measuredPageLayoutCacheKey = key;
+    _measuredPageLayoutCache = layout;
+    return layout;
   }
 
   void _handlePageInteractionEnd(ScaleEndDetails details) {
@@ -3147,6 +3408,7 @@ Future<void> insertWriterImage() async {
 
     _pageTransformController.dispose();
     editorFocusNode.dispose();
+    titleFocusNode.dispose();
     titleController.dispose();
     quillController.dispose();
 
@@ -3168,6 +3430,7 @@ Future<void> insertWriterImage() async {
         elevation: 0,
         title: TextField(
           controller: titleController,
+          focusNode: titleFocusNode,
           onChanged: (_) => scheduleSave(),
           maxLines: 1,
           textInputAction: TextInputAction.done,
@@ -3212,6 +3475,7 @@ Future<void> insertWriterImage() async {
                   alignment: Alignment.centerLeft,
                   child: TextField(
                     controller: titleController,
+                    focusNode: titleFocusNode,
                     onChanged: (_) => scheduleSave(),
                     maxLines: 1,
                     textInputAction: TextInputAction.done,
@@ -3334,16 +3598,16 @@ Future<void> insertWriterImage() async {
                   1,
                   page.height - (marginTop + marginBottom) * 96,
                 ).toDouble();
-                final contentHeight = WriterContentMetrics.estimateHeight(
+                // Use measured Flutter line metrics for the visual page count.
+                // The canonical Quill Delta remains untouched; this projection
+                // does not yet replace Quill's continuous editing surface.
+                final measuredPageLayout = _measuredPageLayoutFor(
                   delta: quillController.document.toDelta().toJson(),
                   maxWidth: pageContentWidth,
                   pageContentHeight: pageContentHeight,
                   textDirection: Directionality.of(context),
                 );
-                final estimatedPageCount = math.max(
-                  1,
-                  (contentHeight / pageContentHeight).ceil(),
-                );
+                final estimatedPageCount = measuredPageLayout.pageCount;
                 final documentCanvasHeight =
                     displayHeight * estimatedPageCount;
 
@@ -3388,21 +3652,53 @@ Future<void> insertWriterImage() async {
                                     marginRight * 96 * scale,
                                     marginBottom * 96 * scale,
                                   ),
-                                  child: QuillEditor.basic(
-                                    controller: quillController,
-                                    focusNode: editorFocusNode,
-                                    config: QuillEditorConfig(
-                                      expands: true,
-                                      padding: EdgeInsets.zero,
-                                      placeholder: _t('এখানে আপনার লেখা শুরু করুন...', 'Start writing here...'),
-                                      embedBuilders: [
-                                        WriterTableEmbedBuilder(
-                                          onEdit: editWriterTable,
-                                          isBangla: widget.isBangla,
-                                        ),
-                                        WriterImageEmbedBuilder(),
-                                        WriterPageBreakEmbedBuilder(),
-                                      ],
+                                  child: Listener(
+                                    // Quill handles caret placement and selection;
+                                    // this non-gesture listener catches taps on
+                                    // blank page space as well as the placeholder.
+                                    behavior: HitTestBehavior.translucent,
+                                    onPointerDown: (event) {
+                                      _pagePointerDownPosition = event.position;
+                                      _pagePointerMoved = false;
+                                    },
+                                    onPointerMove: (event) {
+                                      final start = _pagePointerDownPosition;
+                                      if (start != null &&
+                                          (event.position - start).distance > 8) {
+                                        _pagePointerMoved = true;
+                                      }
+                                    },
+                                    onPointerUp: (_) {
+                                      final shouldFocusEditor = !_pagePointerMoved;
+                                      _pagePointerDownPosition = null;
+                                      _pagePointerMoved = false;
+                                      if (shouldFocusEditor) {
+                                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                                          _focusEditorAndShowKeyboard();
+                                        });
+                                      }
+                                    },
+                                    onPointerCancel: (_) {
+                                      _pagePointerDownPosition = null;
+                                      _pagePointerMoved = false;
+                                    },
+                                    child: QuillEditor.basic(
+                                      controller: quillController,
+                                      focusNode: editorFocusNode,
+                                      config: QuillEditorConfig(
+                                        editorKey: _writerEditorKey,
+                                        expands: true,
+                                        padding: EdgeInsets.zero,
+                                        placeholder: _t('এখানে আপনার লেখা শুরু করুন...', 'Start writing here...'),
+                                        embedBuilders: [
+                                          WriterTableEmbedBuilder(
+                                            onEdit: editWriterTable,
+                                            isBangla: widget.isBangla,
+                                          ),
+                                          WriterImageEmbedBuilder(),
+                                          WriterPageBreakEmbedBuilder(),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),

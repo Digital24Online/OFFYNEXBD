@@ -16,6 +16,7 @@ void main() {
         {'insert': 'শিরোনাম\n', 'attributes': {'header': 1}},
         {'insert': 'বাংলা ও English ', 'attributes': {'bold': true}},
         {'insert': 'লেখা', 'attributes': {'italic': true, 'color': '#123456'}},
+        {'insert': 'Custom font text', 'attributes': {'font': 'SolaimanLipi'}},
         {'insert': '\nশেষ অনুচ্ছেদ\n'},
       ],
     );
@@ -29,6 +30,10 @@ void main() {
     expect(documentXml, contains('w:top="720"'));
     expect(documentXml, contains('<w:header w:type="default"'));
     expect(documentXml, contains('<w:footer w:type="default"'));
+    expect(documentXml, contains('Custom font text'));
+    expect(documentXml, contains('w:ascii="SolaimanLipi"'));
+    expect(documentXml, contains('w:eastAsia="SolaimanLipi"'));
+    expect(documentXml, contains('w:cs="SolaimanLipi"'));
     final headerXml = utf8.decode(archive.findFile('word/header1.xml')!.readBytes()!);
     final footerXml = utf8.decode(archive.findFile('word/footer1.xml')!.readBytes()!);
     expect(headerXml, contains('পরীক্ষার Header'));
@@ -37,6 +42,22 @@ void main() {
     expect(footerXml, contains('Footer text'));
     expect(footerXml, contains('w:instr=" PAGE "'));
     expect(footerXml, contains('w:instr=" NUMPAGES "'));
+  });
+
+  test('Writer DOCX export preserves heading levels four through six', () async {
+    final bytes = await WriterDocxExportService.build(
+      title: 'Heading levels',
+      delta: [
+        {'insert': 'Heading four\n', 'attributes': {'header': 4}},
+        {'insert': 'Heading five\n', 'attributes': {'header': 5}},
+        {'insert': 'Heading six\n', 'attributes': {'header': 6}},
+      ],
+    );
+    final archive = ZipDecoder().decodeBytes(bytes);
+    final document = utf8.decode(archive.findFile('word/document.xml')!.readBytes()!);
+    expect(document, contains('<w:pStyle w:val="Heading4"/>'));
+    expect(document, contains('<w:pStyle w:val="Heading5"/>'));
+    expect(document, contains('<w:pStyle w:val="Heading6"/>'));
   });
 
   test('Writer DOCX export keeps consecutive numbered items in one numbering sequence', () async {
@@ -108,6 +129,28 @@ void main() {
     }
   });
 
+
+  test('DOCX export preserves merged table cell spans', () async {
+    final bytes = await WriterDocxExportService.build(
+      title: 'Merged cells',
+      delta: [
+        {'insert': {
+          'offynexbd-writer-table': jsonEncode({
+            'rows': [['Wide', '', 'Top'], ['', '', 'Bottom']],
+            'merges': [
+              {'row': 0, 'column': 0, 'rowSpan': 1, 'columnSpan': 2},
+              {'row': 0, 'column': 2, 'rowSpan': 2, 'columnSpan': 1},
+            ],
+          }),
+        }},
+        {'insert': '\\n'},
+      ],
+    );
+    final archive = ZipDecoder().decodeBytes(bytes);
+    final document = utf8.decode(archive.findFile('word/document.xml')!.readBytes()!);
+    expect(document, contains('gridSpan'));
+    expect(document, contains('vMerge'));
+  });
 
   test('DOCX export does not duplicate a title already present as the first body paragraph', () async {
     final bytes = await WriterDocxExportService.build(

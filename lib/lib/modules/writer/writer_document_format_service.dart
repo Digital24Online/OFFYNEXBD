@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:xml/xml.dart';
 import 'writer_page_break.dart';
+import 'writer_table.dart';
 
 class WriterImportedDocument {
   const WriterImportedDocument({required this.delta, required this.title, required this.format, this.pageLayout, this.headerText = '', this.footerText = ''});
@@ -23,6 +24,8 @@ class WriterDocumentFormatService {
   static const int maxExpandedBytes = 60 * 1024 * 1024;
   static const int maxEntries = 2000;
   static const int maxImageBytes = 15 * 1024 * 1024;
+  static const int maxImportedTableRows = 100;
+  static const int maxImportedTableColumns = 50;
 
   static Future<WriterImportedDocument> importFile({
     required Uint8List bytes,
@@ -93,9 +96,12 @@ class WriterDocumentFormatService {
       if (child.name.local == 'p') {
         await _appendDocxParagraph(child, _docxParagraphAttributes(child, numberingFormats), delta, saveImage, relationships);
       } else if (child.name.local == 'tbl') {
-        final rows = _docxTable(child);
+        final tableData = _docxTable(child);
+        final rows = tableData['rows'] as List<List<String>>;
         if (rows.isNotEmpty) {
-          delta.add({'insert': {'offynexbd-writer-table': jsonEncode({'rows': rows, 'headerRow': true, 'version': 1})}});
+          delta.add({'insert': {'offynexbd-writer-table': jsonEncode({
+            ...tableData, 'headerRow': true, 'version': 1,
+          })}});
           delta.add({'insert': '\n'});
         }
       }
@@ -200,7 +206,7 @@ class WriterDocumentFormatService {
     final result = <String, dynamic>{};
     final style = _firstChild(props, 'pStyle');
     final styleId = style == null ? null : _attribute(style, 'val');
-    final heading = styleId == null ? null : RegExp(r'heading([1-3])', caseSensitive: false).firstMatch(styleId);
+    final heading = styleId == null ? null : RegExp(r'heading([1-6])', caseSensitive: false).firstMatch(styleId);
     if (heading != null) result['header'] = int.parse(heading.group(1)!);
     final jc = _firstChild(props, 'jc');
     final align = jc == null ? null : _attribute(jc, 'val');
@@ -349,10 +355,20 @@ class WriterDocumentFormatService {
   }
 
   static String _fontFamilyCategory(String family) {
-    final value = family.toLowerCase().trim();
-    if (value.contains('sans') || value.contains('arial') || value.contains('calibri') || value.contains('helvetica') || value.contains('roboto')) return 'sans-serif';
-    if (value.contains('serif') || value.contains('times') || value.contains('georgia') || value.contains('cambria')) return 'serif';
-    return 'sans-serif';
+    final value = family.trim();
+    final normalized = value.toLowerCase();
+    if (normalized.isEmpty) return 'sans-serif';
+    if (normalized == 'serif' || normalized.contains('noto serif') ||
+        normalized.contains('times') || normalized.contains('georgia') ||
+        normalized.contains('cambria')) {
+      return 'serif';
+    }
+    if (normalized == 'sans-serif' || normalized.contains('sans') ||
+        normalized.contains('arial') || normalized.contains('calibri') ||
+        normalized.contains('helvetica') || normalized.contains('roboto')) {
+      return 'sans-serif';
+    }
+    return value;
   }
 
   static Map<String, dynamic> _docxRunAttributes(XmlElement? props) {
@@ -371,34 +387,99 @@ class WriterDocumentFormatService {
       result['size'] = (halfPoints / 2 * 4 / 3).toStringAsFixed(2);
     }
     final fonts = _firstChild(props, 'rFonts');
-    final family = fonts == null ? null : _attribute(fonts, 'ascii');
+    // Bengali/complex-script runs commonly store their typeface in w:cs,
+    // while Latin text is stored in w:ascii or w:hAnsi.
+    final family = fonts == null
+        ? null
+        : _attribute(fonts, 'cs') ??
+            _attribute(fonts, 'eastAsia') ??
+            _attribute(fonts, 'ascii') ??
+            _attribute(fonts, 'hAnsi');
     if (family != null) result['font'] = _fontFamilyCategory(family);
     return result;
   }
 
-  static List<List<String>> _docxTable(XmlElement table) {
-    // Expand Word gridSpan cells into their logical grid positions. The
-    // current Writer table embed cannot draw merged cells yet, but retaining
-    // blank span slots prevents subsequent columns from shifting left.
+  static Map<String, dynamic> _docxTable(XmlElement table) {
     final rows = <List<String>>[];
+    final merges = <Map<String, int>>[];
+    var activeVertical = <int, int>{};
     for (final row in _elementChildren(table).where((e) => e.name.local == 'tr')) {
-      if (rows.length >= 20) break;
+      if (rows.length >= maxImportedTableRows) {
+        throw const FormatException('DOCX table exceeds the 100-row Writer import limit.');
+      }
+      final rowIndex = rows.length;
       final cells = <String>[];
+      final nextVertical = <int, int>{};
       for (final cell in _elementChildren(row).where((e) => e.name.local == 'tc')) {
-        if (cells.length >= 10) break;
+        if (cells.length >= maxImportedTableColumns) {
+          throw const FormatException('DOCX table exceeds the 50-column Writer import limit.');
+        }
         final value = _descendants(cell, 'p').map(_plainText).join('\n');
         final properties = _firstChild(cell, 'tcPr');
         final spanNode = properties == null ? null : _firstChild(properties, 'gridSpan');
         final span = (int.tryParse(spanNode == null ? '1' : _attribute(spanNode, 'val') ?? '1') ?? 1)
-            .clamp(1, 10 - cells.length).toInt();
-        cells.add(value);
-        for (var index = 1; index < span; index++) {
-          cells.add('');
+            .clamp(1, maxImportedTableColumns - cells.length).toInt();
+        final verticalNode = properties == null ? null : _firstChild(properties, 'vMerge');
+        final column = cells.length;
+        if (verticalNode != null) {
+          final mergeValue = _attribute(verticalNode, 'val') ?? 'continue';
+          if (mergeValue == 'restart') {
+            final mergeIndex = merges.length;
+            if (span > 1) {
+              merges.add(<String, int>{
+                'row': rowIndex, 'column': column, 'rowSpan': 1, 'columnSpan': span,
+              });
+            } else {
+              merges.add(<String, int>{
+                'row': rowIndex, 'column': column, 'rowSpan': 1, 'columnSpan': 1,
+              });
+            }
+            for (var offset = 0; offset < span; offset++) {
+              nextVertical[column + offset] = mergeIndex;
+            }
+            cells.add(value);
+            for (var offset = 1; offset < span; offset++) { cells.add(''); }
+          } else {
+            final continued = <int>{};
+            for (var offset = 0; offset < span; offset++) {
+              final mergeIndex = activeVertical[column + offset];
+              if (mergeIndex != null) {
+                continued.add(mergeIndex);
+                nextVertical[column + offset] = mergeIndex;
+              }
+              cells.add('');
+            }
+            for (final mergeIndex in continued) {
+              merges[mergeIndex]['rowSpan'] = merges[mergeIndex]['rowSpan']! + 1;
+            }
+            if (continued.isEmpty && value.isNotEmpty) cells[column] = value;
+          }
+        } else {
+          cells.add(value);
+          if (span > 1) {
+            merges.add(<String, int>{
+              'row': rowIndex, 'column': column, 'rowSpan': 1, 'columnSpan': span,
+            });
+          }
+          for (var offset = 1; offset < span; offset++) { cells.add(''); }
         }
       }
-      if (cells.isNotEmpty) rows.add(cells);
+      if (cells.isNotEmpty) {
+        rows.add(cells);
+        activeVertical = nextVertical;
+      }
     }
-    return rows;
+    final columnCount = rows.fold<int>(1,
+      (max, row) => row.length > max ? row.length : max);
+    for (final row in rows) {
+      while (row.length < columnCount) { row.add(''); }
+    }
+    final safeMerges = WriterTableBlockEmbed.normalizedMerges(
+      <String, dynamic>{'merges': merges},
+      rowCount: rows.length,
+      columnCount: columnCount,
+    );
+    return <String, dynamic>{'rows': rows, 'merges': safeMerges};
   }
 
   static Future<WriterImportedDocument> _importOdt(
@@ -435,7 +516,7 @@ class WriterDocumentFormatService {
         final block = <String, dynamic>{};
         if (child.name.local == 'h') {
           final level = int.tryParse(_attribute(child, 'outline-level') ?? '1') ?? 1;
-          block['header'] = level.clamp(1, 3).toInt();
+          block['header'] = level.clamp(1, 6).toInt();
         }
         await _appendOdtParagraph(child, styles, delta, archive, imageDirectory, () => imageIndex++);
         delta.add({'insert': '\n', if (block.isNotEmpty) 'attributes': block});
@@ -448,9 +529,12 @@ class WriterDocumentFormatService {
           }
         }
       } else if (child.name.local == 'table') {
-        final rows = _odtTable(child);
+        final tableData = _odtTable(child);
+        final rows = tableData['rows'] as List<List<String>>;
         if (rows.isNotEmpty) {
-          delta.add({'insert': {'offynexbd-writer-table': jsonEncode({'rows': rows, 'headerRow': false, 'version': 1})}});
+          delta.add({'insert': {'offynexbd-writer-table': jsonEncode({
+            ...tableData, 'headerRow': false, 'version': 1,
+          })}});
           delta.add({'insert': '\n'});
         }
       }
@@ -561,28 +645,71 @@ class WriterDocumentFormatService {
     return result;
   }
 
-  static List<List<String>> _odtTable(XmlElement table) {
+  static Map<String, dynamic> _odtTable(XmlElement table) {
     final rows = <List<String>>[];
+    final merges = <Map<String, int>>[];
     for (final row in _descendants(table, 'table-row')) {
-      if (rows.length >= 20) break;
+      if (rows.length >= maxImportedTableRows) {
+        throw const FormatException('ODT table exceeds the 100-row Writer import limit.');
+      }
       final cells = <String>[];
-      for (final cell in _elementChildren(row).where((e) => e.name.local == 'table-cell' || e.name.local == 'covered-table-cell')) {
-        if (cells.length >= 10) break;
-        final value = _descendants(cell, 'p').map(_plainText).join('\n');
+      final rowMerges = <Map<String, int>>[];
+      for (final cell in _elementChildren(row).where((e) =>
+          e.name.local == 'table-cell' || e.name.local == 'covered-table-cell')) {
+        if (cells.length >= maxImportedTableColumns) {
+          throw const FormatException('ODT table exceeds the 50-column Writer import limit.');
+        }
+        final covered = cell.name.local == 'covered-table-cell';
+        final value = covered ? '' : _descendants(cell, 'p').map(_plainText).join('\n');
         final repeated = (int.tryParse(_attribute(cell, 'number-columns-repeated') ?? '1') ?? 1)
-            .clamp(1, 10 - cells.length).toInt();
-        for (var index = 0; index < repeated; index++) {
-          cells.add(cell.name.local == 'covered-table-cell' ? '' : value);
+            .clamp(1, maxImportedTableColumns - cells.length).toInt();
+        final columnSpan = covered ? 1 :
+          (int.tryParse(_attribute(cell, 'number-columns-spanned') ?? '1') ?? 1)
+            .clamp(1, maxImportedTableColumns - cells.length).toInt();
+        final rowSpan = covered ? 1 :
+          (int.tryParse(_attribute(cell, 'number-rows-spanned') ?? '1') ?? 1)
+            .clamp(1, maxImportedTableRows - rows.length).toInt();
+        for (var repeat = 0; repeat < repeated; repeat++) {
+          final column = cells.length;
+          cells.add(value);
+          // ODF emits explicit covered-table-cell nodes for every covered grid slot.
+          // Do not expand columnSpan here or those slots would be counted twice.
+          if (!covered && (columnSpan > 1 || rowSpan > 1)) {
+            rowMerges.add(<String, int>{
+              'row': rows.length, 'column': column,
+              'rowSpan': rowSpan, 'columnSpan': columnSpan,
+            });
+          }
         }
       }
       if (cells.isEmpty) continue;
       final repeatedRows = (int.tryParse(_attribute(row, 'number-rows-repeated') ?? '1') ?? 1)
-          .clamp(1, 20 - rows.length).toInt();
-      for (var index = 0; index < repeatedRows; index++) {
+          .clamp(1, maxImportedTableRows - rows.length).toInt();
+      for (var repeat = 0; repeat < repeatedRows; repeat++) {
+        final rowIndex = rows.length;
         rows.add(List<String>.from(cells));
+        if (repeat == 0) {
+          merges.addAll(rowMerges);
+        } else {
+          merges.addAll(rowMerges.map((merge) => <String, int>{
+            ...merge, 'row': rowIndex + (merge['row']! - (rowIndex - repeat)),
+          }));
+        }
       }
     }
-    return rows;
+    final columnCount = rows.fold<int>(1,
+      (max, row) => row.length > max ? row.length : max);
+    for (final row in rows) {
+      while (row.length < columnCount) { row.add(''); }
+    }
+    return <String, dynamic>{
+      'rows': rows,
+      'merges': WriterTableBlockEmbed.normalizedMerges(
+        <String, dynamic>{'merges': merges},
+        rowCount: rows.length,
+        columnCount: columnCount,
+      ),
+    };
   }
 
   static Future<Uint8List> exportOdt({
@@ -617,8 +744,15 @@ class WriterDocumentFormatService {
       if (background != null && RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(background)) properties.add('fo:background-color="$background"');
       final rawSize = double.tryParse(attrs['size']?.toString() ?? '');
       if (rawSize != null && rawSize.isFinite && rawSize >= 5 && rawSize <= 144) properties.add('fo:font-size="${rawSize.toStringAsFixed(2)}pt"');
-      if (attrs['font'] == 'serif') properties.add('fo:font-family="Noto Serif Bengali"');
-      if (attrs['font'] == 'sans-serif') properties.add('fo:font-family="Noto Sans Bengali"');
+      final font = attrs['font']?.toString().trim();
+      if (font == 'serif') {
+        properties.add('fo:font-family="Noto Serif Bengali"');
+      } else if (font == 'sans-serif') {
+        properties.add('fo:font-family="Noto Sans Bengali"');
+      } else if (font != null) {
+        final safeFont = font.replaceAll(RegExp(r'[^A-Za-z0-9 _-]'), '').trim();
+        if (safeFont.isNotEmpty) properties.add('fo:font-family="${_xmlEscape(safeFont)}"');
+      }
       if (properties.isEmpty) return '';
       final key = properties.join(' ');
       return inlineTextStyles.putIfAbsent(key, () => 'T_Inline${inlineTextStyles.length + 1}');
@@ -635,7 +769,7 @@ class WriterDocumentFormatService {
       final value = paragraph.toString();
       paragraph.clear();
       final heading = block['header'];
-      final tag = heading is int && heading >= 1 && heading <= 3 ? 'text:h' : 'text:p';
+      final tag = heading is int && heading >= 1 && heading <= 6 ? 'text:h' : 'text:p';
       final level = heading is int ? ' text:outline-level="$heading"' : '';
       final element = '<$tag$level>$value</$tag>';
       final listKind = block['list'];
@@ -687,13 +821,49 @@ class WriterDocumentFormatService {
         content.write('<text:p text:style-name="OFFYNEXPageBreak"/>');
       } else if (insert is Map && insert['offynexbd-writer-table'] is String) {
         flushParagraph();
-        final rows = _decodeTable(insert['offynexbd-writer-table'] as String);
+        final rawTable = insert['offynexbd-writer-table'] as String;
+        final rows = _decodeTable(rawTable);
+        Map<String, dynamic> tableData;
+        try {
+          final decoded = jsonDecode(rawTable);
+          tableData = decoded is Map
+              ? Map<String, dynamic>.from(decoded)
+              : <String, dynamic>{};
+        } catch (_) {
+          tableData = <String, dynamic>{};
+        }
         if (rows.isNotEmpty) {
-          content.write('<table:table table:name="WriterTable${imageIndex++}">');
+          final columns = rows.fold<int>(1,
+            (max, row) => row.length > max ? row.length : max);
           for (final row in rows) {
+            while (row.length < columns) { row.add(''); }
+          }
+          final merges = WriterTableBlockEmbed.normalizedMerges(
+            tableData, rowCount: rows.length, columnCount: columns);
+          final anchors = <String, Map<String, int>>{
+            for (final merge in merges) '${merge['row']}:${merge['column']}': merge,
+          };
+          final covered = <String>{};
+          for (final merge in merges) {
+            for (var r = merge['row']!; r < merge['row']! + merge['rowSpan']!; r++) {
+              for (var c = merge['column']!; c < merge['column']! + merge['columnSpan']!; c++) {
+                if (r != merge['row'] || c != merge['column']) covered.add('$r:$c');
+              }
+            }
+          }
+          content.write('<table:table table:name="WriterTable${imageIndex++}">');
+          for (var rowIndex = 0; rowIndex < rows.length; rowIndex++) {
             content.write('<table:table-row>');
-            for (final cell in row) {
-              content.write('<table:table-cell office:value-type="string"><text:p>${_xmlEscape(cell)}</text:p></table:table-cell>');
+            for (var columnIndex = 0; columnIndex < columns; columnIndex++) {
+              final key = '$rowIndex:$columnIndex';
+              if (covered.contains(key)) {
+                content.write('<table:covered-table-cell/>');
+                continue;
+              }
+              final merge = anchors[key];
+              final spans = merge == null ? '' :
+                ' table:number-columns-spanned="${merge['columnSpan']}" table:number-rows-spanned="${merge['rowSpan']}"';
+              content.write('<table:table-cell$spans office:value-type="string"><text:p>${_xmlEscape(rows[rowIndex][columnIndex])}</text:p></table:table-cell>');
             }
             content.write('</table:table-row>');
           }

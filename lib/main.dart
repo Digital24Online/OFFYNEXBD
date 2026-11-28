@@ -21,6 +21,12 @@ class OFFYNEXBDApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      // flutter_quill still depends on Flutter Material; retain the bridge
+      // until that dependency migrates to material_ui.
+      builder: (context, child) {
+        // ignore: deprecated_member_use
+        return MaterialUiCompatibilityBridge(child: child!);
+      },
       title: 'OFFYNEXBD',
       debugShowCheckedModeBanner: false,
       localizationsDelegates: [
@@ -91,7 +97,7 @@ class _HomeScreenState extends State<HomeScreen> {
       description: 'Create and edit documents',
       banglaDescription: 'ডকুমেন্ট তৈরি ও সম্পাদনা',
       icon: Icons.description_rounded,
-      color: Color(0xFF2878DB),
+      color: OFFYNEXTheme.writerAccent,
     ),
     OfficeModule(
       name: 'Sheets',
@@ -99,7 +105,7 @@ class _HomeScreenState extends State<HomeScreen> {
       description: 'Spreadsheets and calculations',
       banglaDescription: 'হিসাব ও স্প্রেডশিট',
       icon: Icons.table_chart_rounded,
-      color: Color(0xFF159B68),
+      color: OFFYNEXTheme.sheetsAccent,
     ),
     OfficeModule(
       name: 'Slides',
@@ -107,7 +113,7 @@ class _HomeScreenState extends State<HomeScreen> {
       description: 'Create presentations',
       banglaDescription: 'প্রেজেন্টেশন তৈরি',
       icon: Icons.slideshow_rounded,
-      color: Color(0xFFE58A28),
+      color: OFFYNEXTheme.slidesAccent,
     ),
     OfficeModule(
       name: 'PDF',
@@ -115,7 +121,7 @@ class _HomeScreenState extends State<HomeScreen> {
       description: 'Read, edit and manage PDFs',
       banglaDescription: 'পিডিএফ পড়া ও সম্পাদনা',
       icon: Icons.picture_as_pdf_rounded,
-      color: Color(0xFFE34B50),
+      color: OFFYNEXTheme.pdfAccent,
     ),
     OfficeModule(
       name: 'Fonts',
@@ -123,7 +129,7 @@ class _HomeScreenState extends State<HomeScreen> {
       description: 'Fonts and typography',
       banglaDescription: 'ফন্ট ব্যবস্থাপনা',
       icon: Icons.font_download_rounded,
-      color: Color(0xFF8055D9),
+      color: OFFYNEXTheme.fontsAccent,
     ),
     OfficeModule(
       name: 'AI Assistant',
@@ -131,7 +137,7 @@ class _HomeScreenState extends State<HomeScreen> {
       description: 'Smart productivity assistant',
       banglaDescription: 'স্মার্ট কাজের সহকারী',
       icon: Icons.auto_awesome_rounded,
-      color: Color(0xFF0C9CA6),
+      color: OFFYNEXTheme.aiAccent,
     ),
     OfficeModule(
       name: 'Cloud',
@@ -139,7 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
       description: 'Store and sync your files',
       banglaDescription: 'ফাইল সংরক্ষণ ও সিঙ্ক',
       icon: Icons.cloud_rounded,
-      color: Color(0xFF4386D9),
+      color: OFFYNEXTheme.cloudAccent,
     ),
     OfficeModule(
       name: 'Forms',
@@ -147,7 +153,7 @@ class _HomeScreenState extends State<HomeScreen> {
       description: 'Create digital forms',
       banglaDescription: 'ডিজিটাল ফর্ম তৈরি',
       icon: Icons.dynamic_form_rounded,
-      color: Color(0xFFCB7B35),
+      color: OFFYNEXTheme.formsAccent,
     ),
     OfficeModule(
       name: 'Scan',
@@ -155,7 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
       description: 'Scan documents and OCR',
       banglaDescription: 'ডকুমেন্ট স্ক্যান ও OCR',
       icon: Icons.document_scanner_rounded,
-      color: Color(0xFF347F9D),
+      color: OFFYNEXTheme.scanAccent,
     ),
     OfficeModule(
       name: 'Database',
@@ -163,7 +169,7 @@ class _HomeScreenState extends State<HomeScreen> {
       description: 'Organize and manage data',
       banglaDescription: 'তথ্য সংরক্ষণ ও ব্যবস্থাপনা',
       icon: Icons.storage_rounded,
-      color: Color(0xFF6875B8),
+      color: OFFYNEXTheme.databaseAccent,
     ),
   ];
 
@@ -512,7 +518,7 @@ class AppInfoScreen extends StatelessWidget {
           padding: const EdgeInsets.all(20),
           children: [
             Container(
-              padding: const EdgeInsets.fromLTRB(22, 26, 22, 24),
+              padding: const EdgeInsets.fromLTRB(22, 28, 22, 26),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [Color(0xFF082B68), Color(0xFF0877C9)],
@@ -536,7 +542,7 @@ class AppInfoScreen extends StatelessWidget {
                       fit: BoxFit.contain,
                     ),
                   ),
-                  const SizedBox(height: 15),
+                  const SizedBox(height: 16),
                   const Text(
                     'OFFYNEXBD',
                     style: TextStyle(
@@ -546,7 +552,7 @@ class AppInfoScreen extends StatelessWidget {
                       letterSpacing: 1.0,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
                   const Text(
                     'The Future of Office Productivity',
                     textAlign: TextAlign.center,
@@ -556,42 +562,70 @@ class AppInfoScreen extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   Text(
                     isBangla
-                        ? 'একটি সমন্বিত অফিস প্রোডাক্টিভিটি প্ল্যাটফর্ম'
-                        : 'An integrated office productivity platform',
+                        ? 'ডকুমেন্ট, স্প্রেডশিট, প্রেজেন্টেশন, PDF এবং আরও অফিস কাজের সমন্বিত প্ল্যাটফর্ম।'
+                        : 'An integrated workspace for documents, spreadsheets, presentations, PDF and more.',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      height: 1.6,
+                    ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 18),
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xFFE3EAF3)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.apps_rounded, color: blue, size: 22),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      isBangla
+                          ? 'একটি অ্যাপের মধ্যেই প্রয়োজনীয় অফিস প্রোডাক্টিভিটি টুল একত্র করার লক্ষ্য নিয়ে OFFYNEXBD তৈরি করা হচ্ছে।'
+                          : 'OFFYNEXBD brings essential office productivity tools together in one application.',
+                      style: const TextStyle(
+                        color: muted,
+                        fontSize: 13,
+                        height: 1.6,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 18),
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: const Color(0xFFE3EAF3)),
               ),
               child: Column(
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(80),
+                  ClipOval(
                     child: Image.asset(
                       'assets/branding/founder_profile.jpg',
-                      width: 116,
-                      height: 116,
+                      width: 112,
+                      height: 112,
                       fit: BoxFit.cover,
                       errorBuilder: (_, _, _) => Container(
-                        width: 116,
-                        height: 116,
+                        width: 112,
+                        height: 112,
                         alignment: Alignment.center,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Color(0xFFE7F0FC),
-                        ),
+                        color: const Color(0xFFE7F0FC),
                         child: const Text(
                           'MD',
                           style: TextStyle(
@@ -604,6 +638,16 @@ class AppInfoScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 14),
+                  Text(
+                    isBangla ? 'তৈরি ও উন্নয়নে:' : 'Created & Developed By:',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: muted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
                   const Text(
                     'MD PIYARUL ISLAM',
                     textAlign: TextAlign.center,
@@ -614,9 +658,11 @@ class AppInfoScreen extends StatelessWidget {
                       letterSpacing: 0.25,
                     ),
                   ),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 6),
                   Text(
-                    isBangla ? 'প্রতিষ্ঠাতা ও মূল নির্মাতা' : 'Founder & Original Creator',
+                    isBangla
+                        ? 'প্রতিষ্ঠাতা ও মূল নির্মাতা'
+                        : 'Founder & Original Creator',
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: blue,
@@ -624,37 +670,36 @@ class AppInfoScreen extends StatelessWidget {
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFE3EAF3)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                  const SizedBox(height: 16),
+                  const Divider(height: 1, color: Color(0xFFE8EDF4)),
+                  const SizedBox(height: 14),
                   Row(
                     children: [
                       const Icon(Icons.verified_user_outlined, color: blue, size: 20),
                       const SizedBox(width: 9),
-                      Text(
-                        isBangla ? 'নির্মাতার ঘোষণা' : 'Creator Statement',
-                        style: const TextStyle(color: ink, fontSize: 15, fontWeight: FontWeight.w800),
+                      Expanded(
+                        child: Text(
+                          isBangla ? 'নির্মাতার স্বীকৃতি' : 'Creator Recognition',
+                          style: const TextStyle(
+                            color: ink,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   Text(
                     isBangla
-                        ? 'OFFYNEXBD-এর মূল ধারণা, পরিকল্পনা ও নির্মাণ উদ্যোগের স্রষ্টা MD PIYARUL ISLAM। এই পরিচয় অ্যাপের নির্মাতা-স্বীকৃতি হিসেবে সংরক্ষিত।'
-                        : 'MD PIYARUL ISLAM is the originator of the OFFYNEXBD concept and the initiative behind its planning and development. This in-app statement records the declared creator attribution.',
-                    style: const TextStyle(color: muted, fontSize: 13, height: 1.6),
+                        ? 'OFFYNEXBD-এর মূল ধারণা, পরিকল্পনা ও নির্মাণ উদ্যোগের স্রষ্টা MD PIYARUL ISLAM।'
+                        : 'MD PIYARUL ISLAM is the originator of the OFFYNEXBD concept and the initiative behind its planning and development.',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: muted,
+                      fontSize: 13,
+                      height: 1.6,
+                    ),
                   ),
                 ],
               ),
@@ -664,10 +709,13 @@ class AppInfoScreen extends StatelessWidget {
               child: Text(
                 '© 2026 OFFYNEXBD. All Rights Reserved.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: muted, fontSize: 11, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  color: muted,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-            const SizedBox(height: 8),
           ],
         ),
       ),

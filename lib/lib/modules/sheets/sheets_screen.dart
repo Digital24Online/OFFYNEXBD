@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:excel_community/excel_community.dart' as xlsx;
@@ -10,6 +11,7 @@ import 'package:printing/printing.dart';
 import 'sheets_pdf_export_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'sheets_formula_engine.dart';
+import 'sheets_reference_guard.dart';
 import 'sheets_workbook_limits.dart';
 import 'sheets_import_safety.dart';
 import 'sheets_workbook_codec.dart';
@@ -18,6 +20,7 @@ import 'sheets_row_view.dart';
 import 'sheets_find_replace.dart';
 import 'sheets_data_validation.dart';
 import 'sheets_xlsx_validation_codec.dart';
+import 'sheets_xlsx_export_guard.dart';
 import 'sheets_analytics.dart';
 import 'sheets_analytics_widgets.dart';
 import '../../theme/offynex_theme.dart';
@@ -160,7 +163,11 @@ class _SheetsScreenState extends State<SheetsScreen> {
   }
 
   double? _numericValue(String reference, [Set<String>? visiting]) {
-    return SheetsFormulaEngine(_cells).evaluateCell(reference, visiting);
+    return SheetsFormulaEngine(
+      _cells,
+      worksheets: {for (final sheet in _workbook.sheets) sheet.name: sheet.cells},
+      activeSheetName: _sheetName,
+    ).evaluateCell(reference, visiting);
   }
 
   String _displayValue(String key) {
@@ -363,7 +370,11 @@ class _SheetsScreenState extends State<SheetsScreen> {
   }
 
   Map<String, String> _resolvedSheetValues(SheetsWorksheet sheet) {
-    final engine = SheetsFormulaEngine(sheet.cells);
+    final engine = SheetsFormulaEngine(
+      sheet.cells,
+      worksheets: {for (final item in _workbook.sheets) item.name: item.cells},
+      activeSheetName: sheet.name,
+    );
     return {
       for (final entry in sheet.cells.entries)
         entry.key: entry.value.startsWith('=')
@@ -920,17 +931,15 @@ class _SheetsScreenState extends State<SheetsScreen> {
     if (_rowCount <= 1) return;
     final rowNumber = _rowCount;
     final cellPattern = RegExp(r'^[A-Z]+' + rowNumber.toString() + r'$');
-    final formulaPattern = RegExp(
-      r'(?<![A-Z0-9_])[A-Z]+' +
-          rowNumber.toString() +
-          r'(?!\d)(?!\s*\()',
-    );
     final hasData = _cells.entries.any((entry) =>
         cellPattern.hasMatch(entry.key.toUpperCase()) && entry.value.isNotEmpty);
     final hasFormatting = _cellStyles.keys.any((key) => cellPattern.hasMatch(key.toUpperCase()));
     final hasValidation = _activeWorksheet.validations.keys.any((key) => cellPattern.hasMatch(key.toUpperCase()));
-    final hasFormulaReference = _cells.values.any((value) =>
-        value.startsWith('=') && formulaPattern.hasMatch(value.toUpperCase()));
+    final hasFormulaReference = SheetsReferenceGuard.referencesRow(
+      workbook: _workbook,
+      targetSheetId: _activeWorksheet.id,
+      row: rowNumber,
+    );
     if (hasData || hasFormatting || hasValidation || hasFormulaReference) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_t('শেষ Row-তে তথ্য বা Formula reference আছে। আগে তা সরান।', 'The last row has data or formula references. Clear them first.'))),
@@ -951,13 +960,15 @@ class _SheetsScreenState extends State<SheetsScreen> {
     if (_columnCount <= 1) return;
     final lastColumn = _columnName(_columnCount - 1);
     final cellPattern = RegExp('^${RegExp.escape(lastColumn)}[1-9]\\d*\$', caseSensitive: false);
-    final formulaPattern = RegExp('(?<![A-Z0-9_])${RegExp.escape(lastColumn)}[1-9]\\d*(?!\\d)', caseSensitive: false);
     final hasData = _cells.entries.any((entry) =>
         cellPattern.hasMatch(entry.key) && entry.value.isNotEmpty);
     final hasFormatting = _cellStyles.keys.any((key) => cellPattern.hasMatch(key));
     final hasValidation = _activeWorksheet.validations.keys.any((key) => cellPattern.hasMatch(key));
-    final hasFormulaReference = _cells.values.any((value) =>
-        value.startsWith('=') && formulaPattern.hasMatch(value));
+    final hasFormulaReference = SheetsReferenceGuard.referencesColumn(
+      workbook: _workbook,
+      targetSheetId: _activeWorksheet.id,
+      column: _columnCount,
+    );
     if (hasData || hasFormatting || hasValidation || hasFormulaReference) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_t('শেষ Column-তে তথ্য বা Formula reference আছে। আগে তা সরান।', 'The last column has data or formula references. Clear them first.'))),
@@ -1399,8 +1410,13 @@ class _SheetsScreenState extends State<SheetsScreen> {
         allowedExtensions: ['xlsx'],
       );
       if (picked == null || !mounted) return;
+      final fileSize = picked.lengthSync() ?? await picked.length() ?? 0;
+      SheetsWorkbookLimits.validateImportBytes(fileSize);
       final bytes = await picked.readAsBytes();
       if (!mounted) return;
+      if (bytes.length != fileSize) {
+        throw const FileSystemException('The XLSX file changed while being read.');
+      }
       SheetsWorkbookLimits.validateImportBytes(bytes.length);
       final sourceWorkbook = xlsx.Excel.decodeBytes(bytes);
       final names = sourceWorkbook.tables.keys.toList(growable: false);
@@ -1421,8 +1437,8 @@ class _SheetsScreenState extends State<SheetsScreen> {
         builder: (dialogContext) => AlertDialog(
           title: Text(_t('সব Worksheet Import করবেন?', 'Import all worksheets?')),
           content: Text(_t(
-            '${imported.length}টি Worksheet এবং $totalCellsটি Cell বর্তমান Workbook-এর জায়গায় আসবে। আগের Workbook-এর Backup রাখা হবে।',
-            '${imported.length} worksheets and $totalCells cells will replace the current workbook. A backup will be kept.',
+            '${imported.length}টি Worksheet এবং $totalCellsটি Cell বর্তমান Workbook-এর জায়গায় আসবে। আগের Workbook-এর Backup রাখা হবে। XLSX-এর কিছু advanced feature (Chart, Pivot, Conditional Formatting, merged cells ও images) এখনো সম্পূর্ণভাবে সংরক্ষিত নাও হতে পারে।',
+            '${imported.length} worksheets and $totalCells cells will replace the current workbook. A backup will be kept. Some advanced XLSX features (charts, PivotTables, conditional formatting, merged cells and images) may not be preserved yet.',
           )),
           actions: [
             TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(_t('বাতিল', 'Cancel'))),
@@ -1462,7 +1478,11 @@ class _SheetsScreenState extends State<SheetsScreen> {
 
   void _writeWorksheetToExcel(xlsx.Excel workbook, SheetsWorksheet source) {
     final sheet = workbook[source.name];
-    final engine = SheetsFormulaEngine(source.cells);
+    final engine = SheetsFormulaEngine(
+        source.cells,
+        worksheets: {for (final item in _workbook.sheets) item.name: item.cells},
+        activeSheetName: source.name,
+      );
     for (final key in {...source.cells.keys, ...source.styles.keys}) {
       final value = source.cells[key] ?? '';
       final cell = sheet.cell(xlsx.CellIndex.indexByString(key.toUpperCase()));
@@ -1527,6 +1547,18 @@ class _SheetsScreenState extends State<SheetsScreen> {
   }
 
   Future<void> _exportWorkbook() async {
+    final unsupported = SheetsXlsxExportGuard.unsupportedFeatures(_workbook);
+    if (unsupported.isNotEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(_t(
+          'এই Workbook-এ Chart, Pivot বা Conditional Formatting আছে। XLSX Export-এ এগুলো অক্ষত রাখা যাচ্ছে না—তথ্য হারানো ঠেকাতে Export বন্ধ করা হয়েছে। সম্পূর্ণ ডেটার জন্য OFFYNEXBD Backup ব্যবহার করুন।',
+          'This workbook contains charts, Pivot settings or conditional formatting that XLSX export cannot preserve yet. Export was stopped to prevent silent data loss. Use an OFFYNEXBD backup for a complete copy.',
+        )),
+        duration: const Duration(seconds: 8),
+      ));
+      return;
+    }
     try {
       final workbook = xlsx.Excel.createExcel();
       final firstName = _workbook.sheets.first.name;
@@ -1845,10 +1877,13 @@ class _SheetsScreenState extends State<SheetsScreen> {
       case 3:
         for (final function in [
           'SUM', 'AVERAGE', 'COUNT', 'MIN', 'MAX', 'PRODUCT', 'MEDIAN',
+          'SUMSQ', 'DEVSQ', 'AVEDEV', 'GEOMEAN', 'HARMEAN',
+          'VARP', 'VARS', 'STDEVP', 'STDEVS',
           'LARGE', 'SMALL', 'ABS', 'ROUND', 'ROUNDUP', 'ROUNDDOWN',
           'CEILING', 'FLOOR', 'SQRT', 'POWER', 'MOD', 'INT', 'SIGN',
           'PI', 'EXP', 'LN', 'LOG', 'LOG10', 'SIN', 'COS', 'TAN',
-          'ASIN', 'ACOS', 'ATAN', 'IF', 'AND', 'OR', 'NOT',
+          'ASIN', 'ACOS', 'ATAN', 'IF', 'IFERROR', 'AND', 'OR', 'NOT',
+          'COUNTIF', 'SUMIF', 'AVERAGEIF', 'COUNTIFS', 'SUMIFS', 'AVERAGEIFS',
         ]) {
           commands.add(_ribbonCommand(function, Icons.functions, () => _insertFunction(function)));
         }

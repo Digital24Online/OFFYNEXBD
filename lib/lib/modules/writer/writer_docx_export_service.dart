@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:docx_creator/docx_creator.dart';
 import 'writer_page_break.dart';
+import 'writer_table.dart';
 
 /// Converts supported OFFYNEX Writer Quill content into a real DOCX file.
 /// Images are embedded as bytes; device-local file paths are never exported.
@@ -93,7 +94,7 @@ class WriterDocxExportService {
         listItemOpen[listItemOpen.length - 1] = true;
       } else {
         closeAllLists();
-        final tag = heading == 1 ? 'h1' : heading == 2 ? 'h2' : heading == 3 ? 'h3' : 'p';
+        final tag = heading is num && heading >= 1 && heading <= 6 ? 'h${heading.toInt()}' : 'p';
         html.write('<$tag>$content</$tag>');
       }
     }
@@ -147,12 +148,30 @@ class WriterDocxExportService {
     final nodes = await DocxParser.fromHtml(html.toString());
     final document = DocxBuiltDocument(elements: nodes);
     final originalBytes = await DocxExporter().exportToBytes(document);
+    final fontSegments = <_WriterFontSegment>[];
+    for (final operation in delta) {
+      final insert = operation['insert'];
+      final attributes = operation['attributes'];
+      if (insert is! String || attributes is! Map) continue;
+      final rawFont = attributes['font']?.toString().trim() ?? '';
+      if (rawFont.isEmpty) continue;
+      final font = rawFont == 'serif'
+          ? 'Noto Serif Bengali'
+          : rawFont == 'sans-serif'
+              ? 'Noto Sans Bengali'
+              : rawFont.replaceAll(RegExp(r'[^A-Za-z0-9 _-]'), '').trim();
+      if (font.isEmpty) continue;
+      for (final part in insert.split('\n').where((part) => part.isNotEmpty)) {
+        fontSegments.add(_WriterFontSegment(part, font));
+      }
+    }
     final bytes = _applyPageAndHeaderFooter(
       originalBytes,
       pageLayout: pageLayout ?? const {},
       headerText: headerText,
       footerText: footerText,
       pageBreakCount: pageBreakCount,
+      fontSegments: fontSegments,
     );
     if (bytes.isEmpty || bytes.length < 4 || bytes[0] != 0x50 || bytes[1] != 0x4B) {
       throw StateError('DOCX export did not produce a valid ZIP-based document.');
@@ -167,6 +186,7 @@ class WriterDocxExportService {
     required String headerText,
     required String footerText,
     int pageBreakCount = 0,
+    List<_WriterFontSegment> fontSegments = const [],
   }) {
     final input = ZipDecoder().decodeBytes(source);
     final files = <String, List<int>>{};
@@ -239,6 +259,7 @@ class WriterDocxExportService {
         'w:left="${margin('left')}" w:right="${margin('right')}" w:header="720" w:footer="720" w:gutter="0"/>'
         '</w:sectPr>';
     var documentXml = utf8.decode(files['word/document.xml'] ?? <int>[]);
+    documentXml = _applyCustomRunFonts(documentXml, fontSegments);
     for (var index = 0; index < pageBreakCount; index++) {
       final marker = 'OFFYNEXBD_WRITER_PAGE_BREAK_$index';
       final markerPattern = RegExp('<w:t(?: [^>]*)?>${RegExp.escape(marker)}</w:t>');
@@ -297,6 +318,8 @@ class WriterDocxExportService {
     if (attributes['italic'] == true) text = '<em>$text</em>';
     if (attributes['underline'] == true) text = '<u>$text</u>';
     if (attributes['strike'] == true) text = '<s>$text</s>';
+    if (attributes['script'] == 'super') text = '<sup>$text</sup>';
+    if (attributes['script'] == 'sub') text = '<sub>$text</sub>';
     final styles = <String>[];
     final color = _safeColor(attributes['color']);
     final background = _safeColor(attributes['background']);
@@ -306,9 +329,15 @@ class WriterDocxExportService {
     if (size != null && size.isFinite && size >= 8 && size <= 96) {
       styles.add('font-size:${(size * 0.75).round()}px');
     }
-    final font = attributes['font']?.toString();
-    if (font == 'serif') styles.add('font-family:Noto Serif Bengali,serif');
-    if (font == 'sans-serif') styles.add('font-family:Noto Sans Bengali,sans-serif');
+    final font = attributes['font']?.toString().trim();
+    if (font == 'serif') {
+      styles.add('font-family:Noto Serif Bengali,serif');
+    } else if (font == 'sans-serif') {
+      styles.add('font-family:Noto Sans Bengali,sans-serif');
+    } else if (font != null) {
+      final safeFont = font.replaceAll(RegExp(r'[^A-Za-z0-9 _-]'), '').trim();
+      if (safeFont.isNotEmpty) styles.add('font-family:"$safeFont"');
+    }
     final link = attributes['link']?.toString();
     if (link != null) {
       final uri = Uri.tryParse(link);
@@ -329,16 +358,44 @@ class WriterDocxExportService {
     try {
       final decoded = jsonDecode(raw);
       if (decoded is! Map || decoded['rows'] is! List) return '';
-      final rows = decoded['rows'] as List;
-      if (rows.isEmpty) return '';
+      final rawRows = decoded['rows'] as List;
+      if (rawRows.isEmpty) return '';
+      final rows = rawRows.map<List<String>>((row) =>
+        row is List ? row.map((cell) => cell?.toString() ?? '').toList()
+                    : <String>[row?.toString() ?? '']
+      ).toList();
+      final columns = rows.fold<int>(1,
+        (max, row) => row.length > max ? row.length : max);
+      for (final row in rows) {
+        while (row.length < columns) { row.add(''); }
+      }
+      final merges = WriterTableBlockEmbed.normalizedMerges(
+        Map<String, dynamic>.from(decoded),
+        rowCount: rows.length,
+        columnCount: columns,
+      );
+      final anchors = <String, Map<String, int>>{
+        for (final merge in merges) '${merge['row']}:${merge['column']}': merge,
+      };
+      final covered = <String>{};
+      for (final merge in merges) {
+        for (var r = merge['row']!; r < merge['row']! + merge['rowSpan']!; r++) {
+          for (var c = merge['column']!; c < merge['column']! + merge['columnSpan']!; c++) {
+            if (r != merge['row'] || c != merge['column']) covered.add('$r:$c');
+          }
+        }
+      }
       final html = StringBuffer('<table border="1">');
       for (var rowIndex = 0; rowIndex < rows.length; rowIndex++) {
-        final row = rows[rowIndex];
-        if (row is! List) continue;
         html.write('<tr>');
-        for (final cell in row) {
+        for (var columnIndex = 0; columnIndex < columns; columnIndex++) {
+          final key = '$rowIndex:$columnIndex';
+          if (covered.contains(key)) continue;
+          final merge = anchors[key];
           final tag = rowIndex == 0 && decoded['headerRow'] == true ? 'th' : 'td';
-          html.write('<$tag>${_escape(cell?.toString() ?? '')}</$tag>');
+          final spans = merge == null ? '' :
+            ' rowspan="${merge['rowSpan']}" colspan="${merge['columnSpan']}"';
+          html.write('<$tag$spans>${_escape(rows[rowIndex][columnIndex])}</$tag>');
         }
         html.write('</tr>');
       }
@@ -355,4 +412,102 @@ class WriterDocxExportService {
       .replaceAll('>', '&gt;')
       .replaceAll('"', '&quot;')
       .replaceAll("'", '&#39;');
+  /// Applies Quill font-family attributes directly to WordprocessingML runs.
+  /// The HTML parser can drop custom CSS font families, so the final DOCX
+  /// runs are repaired while preserving their text and other formatting.
+  static String _applyCustomRunFonts(
+    String documentXml,
+    List<_WriterFontSegment> fontSegments,
+  ) {
+    if (fontSegments.isEmpty) return documentXml;
+    final pending = List<bool>.filled(fontSegments.length, true);
+    final paragraphPattern = RegExp(r'<w:p\b[^>]*>[\s\S]*?</w:p>');
+    final runPattern = RegExp(r'<w:r\b[^>]*>[\s\S]*?</w:r>');
+    final textPattern = RegExp(r'<w:t(?:\s[^>]*)?>([\s\S]*?)</w:t>');
+    return documentXml.replaceAllMapped(paragraphPattern, (paragraphMatch) {
+      final paragraph = paragraphMatch.group(0)!;
+      final runs = runPattern.allMatches(paragraph).toList();
+      final runTexts = <String>[];
+      final runStarts = <int>[];
+      final plain = StringBuffer();
+      for (final run in runs) {
+        runStarts.add(plain.length);
+        final runText = StringBuffer();
+        for (final textMatch in textPattern.allMatches(run.group(0)!)) {
+          runText.write(_decodeXmlText(textMatch.group(1)!));
+        }
+        final value = runText.toString();
+        runTexts.add(value);
+        plain.write(value);
+      }
+      final paragraphText = plain.toString();
+      final replacements = <int, String>{};
+      for (var fontIndex = 0; fontIndex < fontSegments.length; fontIndex++) {
+        if (!pending[fontIndex]) continue;
+        final segment = fontSegments[fontIndex];
+        if (segment.text.isEmpty) continue;
+        final start = paragraphText.indexOf(segment.text);
+        if (start < 0) continue;
+        final end = start + segment.text.length;
+        for (var runIndex = 0; runIndex < runs.length; runIndex++) {
+          final runStart = runStarts[runIndex];
+          final runEnd = runStart + runTexts[runIndex].length;
+          if (runTexts[runIndex].isEmpty || runEnd <= start || runStart >= end) continue;
+          replacements[runIndex] = _setRunFont(
+            runs[runIndex].group(0)!,
+            segment.font,
+          );
+        }
+        pending[fontIndex] = false;
+      }
+      if (replacements.isEmpty) return paragraph;
+      final output = StringBuffer();
+      var cursor = 0;
+      for (var runIndex = 0; runIndex < runs.length; runIndex++) {
+        final match = runs[runIndex];
+        output.write(paragraph.substring(cursor, match.start));
+        output.write(replacements[runIndex] ?? match.group(0)!);
+        cursor = match.end;
+      }
+      output.write(paragraph.substring(cursor));
+      return output.toString();
+    });
+  }
+
+  static String _setRunFont(String runXml, String font) {
+    final escaped = _escape(font);
+    final fontProperties = '<w:rFonts w:ascii="$escaped" w:hAnsi="$escaped" '
+        'w:eastAsia="$escaped" w:cs="$escaped"/>';
+    final runProperties = RegExp(r'<w:rPr\b[^>]*>');
+    final existingProperties = runProperties.firstMatch(runXml);
+    if (existingProperties == null) {
+      final runStart = RegExp(r'<w:r\b[^>]*>').firstMatch(runXml);
+      if (runStart == null) return runXml;
+      return runXml.replaceRange(runStart.end, runStart.end, '<w:rPr>$fontProperties</w:rPr>');
+    }
+    final propertiesEnd = runXml.indexOf('</w:rPr>', existingProperties.end);
+    if (propertiesEnd < 0) return runXml;
+    var properties = runXml.substring(existingProperties.end, propertiesEnd);
+    properties = properties.replaceAll(
+      RegExp(r'<w:rFonts\b[^>]*/>|<w:rFonts\b[^>]*>[\s\S]*?</w:rFonts>'),
+      '',
+    );
+    properties = '$fontProperties$properties';
+    return runXml.replaceRange(existingProperties.end, propertiesEnd, properties);
+  }
+
+  static String _decodeXmlText(String value) => value
+      .replaceAll('&lt;', '<')
+      .replaceAll('&gt;', '>')
+      .replaceAll('&quot;', '"')
+      .replaceAll('&apos;', "'")
+      .replaceAll('&amp;', '&');
+
+
+}
+
+class _WriterFontSegment {
+  const _WriterFontSegment(this.text, this.font);
+  final String text;
+  final String font;
 }

@@ -1,11 +1,70 @@
+import 'dart:convert';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdf/pdf.dart';
 import 'package:bangla_pdf/extract.dart';
+import 'package:bangla_pdf/widgets.dart' as pw;
 import 'package:offynexbd/lib/modules/writer/writer_pdf_export_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  test('Writer PDF maps text highlight and combined underline/strikethrough attributes', () {
+    final highlight = WriterPdfExportService.highlightColorForAttributes({
+      'background': '#FFF200',
+    });
+    expect(highlight, isNotNull);
+
+    final decoration = WriterPdfExportService.textDecorationForAttributes({
+      'underline': true,
+      'strike': true,
+    });
+    expect(decoration, isNotNull);
+    expect(decoration!.contains(pw.TextDecoration.underline), isTrue);
+    expect(decoration.contains(pw.TextDecoration.lineThrough), isTrue);
+
+    expect(
+      WriterPdfExportService.textDecorationForAttributes({'underline': true})!
+          .contains(pw.TextDecoration.underline),
+      isTrue,
+    );
+    expect(
+      WriterPdfExportService.textDecorationForAttributes({'strike': true})!
+          .contains(pw.TextDecoration.lineThrough),
+      isTrue,
+    );
+    expect(
+      WriterPdfExportService.textDecorationForAttributes(const {}),
+      isNull,
+    );
+  });
+
+  test('Writer PDF image width respects page size and horizontal margins', () {
+    final a5Width = WriterPdfExportService.imageContentWidth(
+      pageFormat: PdfPageFormat.a5,
+      marginLeft: 24,
+      marginRight: 24,
+    );
+    final a4LandscapeWidth = WriterPdfExportService.imageContentWidth(
+      pageFormat: PdfPageFormat.a4.landscape,
+      marginLeft: 36,
+      marginRight: 48,
+    );
+
+    expect(a5Width, closeTo(PdfPageFormat.a5.width - 48, 0.001));
+    expect(a4LandscapeWidth,
+        closeTo(PdfPageFormat.a4.landscape.width - 84, 0.001));
+    expect(a4LandscapeWidth, greaterThan(a5Width));
+    expect(
+      () => WriterPdfExportService.imageContentWidth(
+        pageFormat: PdfPageFormat.a5,
+        marginLeft: PdfPageFormat.a5.width,
+        marginRight: 1,
+      ),
+      throwsArgumentError,
+    );
+  });
 
   test('Writer PDF shapes Bengali and preserves styled Unicode text', () async {
     final sans = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
@@ -41,6 +100,50 @@ void main() {
     expect(extracted, contains('ক্ষ্ম'));
     expect(extracted, isNot(contains('ঊহমষরংয')));
   });
+  test('Writer PDF preserves all six Word heading levels in exported content', () async {
+    final sans = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
+    final serif = await rootBundle.load('assets/fonts/NotoSerifBengali.ttf');
+    final latin = await rootBundle.load('assets/fonts/NotoSans.ttf');
+    final bytes = await WriterPdfExportService.build(
+      title: 'Heading export',
+      delta: [
+        {'insert': 'Heading four\n', 'attributes': {'header': 4}},
+        {'insert': 'Heading five\n', 'attributes': {'header': 5}},
+        {'insert': 'Heading six\n', 'attributes': {'header': 6}},
+      ],
+      sansFontData: sans,
+      serifFontData: serif,
+      latinFontData: latin,
+      pageFormat: PdfPageFormat.a4,
+      marginTop: 54, marginBottom: 54, marginLeft: 54, marginRight: 54,
+    );
+    final extracted = BanglaPdfExtractor.extract(bytes).text;
+    expect(extracted, contains('Heading four'));
+    expect(extracted, contains('Heading five'));
+    expect(extracted, contains('Heading six'));
+  });
+
+  test('Writer PDF accepts imported Bengali font families from the document font library', () async {
+    final sans = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
+    final serif = await rootBundle.load('assets/fonts/NotoSerifBengali.ttf');
+    final latin = await rootBundle.load('assets/fonts/NotoSans.ttf');
+    final bytes = await WriterPdfExportService.build(
+      title: 'Custom font test',
+      delta: [
+        {'insert': 'কাস্টম বাংলা ফন্ট', 'attributes': {'font': 'OFFYNEX Test Bengali'}},
+        {'insert': '\n'},
+      ],
+      sansFontData: sans,
+      serifFontData: serif,
+      latinFontData: latin,
+      customFontData: {'OFFYNEX Test Bengali': sans},
+      pageFormat: PdfPageFormat.a4,
+      marginTop: 54, marginBottom: 54, marginLeft: 54, marginRight: 54,
+    );
+    expect(bytes.length, greaterThan(1000));
+    expect(BanglaPdfExtractor.extract(bytes).text, contains('কাস্টম বাংলা ফন্ট'));
+  });
+
   test('Writer PDF renders repeated header and dynamic page numbers', () async {
     final sans = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
     final serif = await rootBundle.load('assets/fonts/NotoSerifBengali.ttf');
@@ -139,6 +242,100 @@ void main() {
     expect(extracted, contains('Second numbered item'));
   });
 
+
+  test('Writer PDF safely exports legacy tables with uneven row lengths and horizontal merges', () async {
+    final sans = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');
+    final serif = await rootBundle.load('assets/fonts/NotoSerifBengali.ttf');
+    final latin = await rootBundle.load('assets/fonts/NotoSans.ttf');
+    final bytes = await WriterPdfExportService.build(
+      title: 'Legacy table export',
+      delta: [
+        {
+          'insert': {
+            'offynexbd-writer-table': jsonEncode({
+              'rows': [
+                ['Merged heading', '', 'Third column'],
+                ['Short legacy row'],
+              ],
+              'merges': [
+                {'row': 0, 'column': 0, 'rowSpan': 1, 'columnSpan': 2},
+              ],
+            }),
+          },
+        },
+        {'insert': '\n'},
+      ],
+      sansFontData: sans,
+      serifFontData: serif,
+      latinFontData: latin,
+      pageFormat: PdfPageFormat.a4,
+      marginTop: 54,
+      marginBottom: 54,
+      marginLeft: 54,
+      marginRight: 54,
+    );
+    final extracted = BanglaPdfExtractor.extract(bytes).text;
+    expect(extracted, contains('Merged heading'));
+    expect(extracted, contains('Third column'));
+    expect(extracted, contains('Short legacy row'));
+    expect(bytes.length, greaterThan(1000));
+  });
+
+  test('Writer PDF table layout gives vertical merges one full-height cell', () {
+    final rectangles = WriterPdfExportService.tableCellRectangles(
+      data: {
+        'rows': [
+          ['Merged vertically', 'Top right'],
+          ['', 'Bottom right'],
+        ],
+        'columnWidths': [100, 100],
+        'rowHeights': [40, 40],
+        'merges': [
+          {'row': 0, 'column': 0, 'rowSpan': 2, 'columnSpan': 1},
+        ],
+      },
+      availableWidth: 200,
+    );
+
+    expect(rectangles, hasLength(3));
+    final merged = rectangles.singleWhere(
+      (cell) => cell['row'] == 0 && cell['column'] == 0,
+    );
+    expect(merged['left'], 0);
+    expect(merged['top'], 0);
+    expect(merged['width'], 100);
+    expect(merged['height'], 60);
+
+    final bottomRight = rectangles.singleWhere(
+      (cell) => cell['row'] == 1 && cell['column'] == 1,
+    );
+    expect(bottomRight['top'], 30);
+    expect(bottomRight['height'], 30);
+  });
+
+  test('Writer PDF table layout preserves both horizontal and vertical spans', () {
+    final rectangles = WriterPdfExportService.tableCellRectangles(
+      data: {
+        'rows': [
+          ['Merged block', '', 'Top right'],
+          ['', '', 'Bottom right'],
+        ],
+        'columnWidths': [100, 100, 100],
+        'rowHeights': [40, 40],
+        'merges': [
+          {'row': 0, 'column': 0, 'rowSpan': 2, 'columnSpan': 2},
+        ],
+      },
+      availableWidth: 300,
+    );
+
+    expect(rectangles, hasLength(3));
+    final merged = rectangles.singleWhere(
+      (cell) => cell['row'] == 0 && cell['column'] == 0,
+    );
+    expect(merged['width'], 200);
+    expect(merged['height'], 60);
+  });
 
   test('Writer PDF keeps content on both sides of an explicit page break', () async {
     final sans = await rootBundle.load('assets/fonts/NotoSansBengali.ttf');

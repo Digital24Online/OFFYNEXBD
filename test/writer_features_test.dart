@@ -19,6 +19,82 @@ Widget _writerTestApp(Widget home) => MaterialApp(
     );
 
 void main() {
+  testWidgets('Writer Home exposes color palettes, text scripts and clear formatting', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: false)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('New Document'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Home'));
+    await tester.tap(find.text('Home'));
+    await tester.pumpAndSettle();
+
+    final fontColor = find.byKey(const ValueKey('writer-home-font-color'));
+    final highlight = find.byKey(const ValueKey('writer-home-text-highlight'));
+    final superscript = find.byKey(const ValueKey('writer-home-superscript'));
+    final subscript = find.byKey(const ValueKey('writer-home-subscript'));
+    final clear = find.byKey(const ValueKey('writer-home-clear-formatting'));
+    for (final control in [fontColor, highlight, superscript, subscript, clear]) {
+      expect(control, findsOneWidget);
+      await tester.ensureVisible(control);
+    }
+
+    await tester.tap(fontColor);
+    await tester.pumpAndSettle();
+    expect(find.text('Blue'), findsOneWidget);
+    await tester.tap(find.text('Blue'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(highlight);
+    await tester.pumpAndSettle();
+    expect(find.text('Bright Green'), findsOneWidget);
+    await tester.tap(find.text('Bright Green'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(superscript);
+    await tester.pumpAndSettle();
+    await tester.tap(subscript);
+    await tester.pumpAndSettle();
+    await tester.tap(clear);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Writer Home exposes Word-style paragraph heading styles', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: false)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('New Document'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Home'));
+    await tester.tap(find.text('Home'));
+    await tester.pumpAndSettle();
+
+    final styles = find.byKey(const ValueKey('writer-home-paragraph-styles'));
+    expect(styles, findsOneWidget);
+    await tester.tap(styles);
+    await tester.pumpAndSettle();
+    for (final label in [
+      'Normal',
+      'Title / Heading 1',
+      'Subtitle / Heading 2',
+      'Heading 3',
+      'Heading 4',
+      'Heading 5',
+      'Heading 6',
+    ]) {
+      // "Normal" is intentionally visible both as the currently selected
+      // paragraph style and as an option in the open menu.
+      expect(
+        find.text(label),
+        label == 'Normal' ? findsNWidgets(2) : findsOneWidget,
+      );
+    }
+    await tester.tap(find.text('Title / Heading 1'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Writer table editor follows Bangla and English language settings', (tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: true)));
@@ -54,6 +130,47 @@ void main() {
     expect(find.text('Add Row'), findsOneWidget);
     expect(find.text('Add Column'), findsOneWidget);
     expect(find.text('Apply Table'), findsOneWidget);
+  });
+
+  testWidgets('Writer table editor does not overflow on a compact phone viewport', (tester) async {
+    final flutterErrors = <FlutterErrorDetails>[];
+    final previousFlutterErrorHandler = FlutterError.onError;
+    FlutterError.onError = (details) {
+      flutterErrors.add(details);
+      previousFlutterErrorHandler?.call(details);
+    };
+    addTearDown(() => FlutterError.onError = previousFlutterErrorHandler);
+    SharedPreferences.setMockInitialValues({});
+    await tester.binding.setSurfaceSize(const Size(360, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: false)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('New Document'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Insert'));
+    await tester.tap(find.text('Insert'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Table'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Apply Table'));
+    await tester.pumpAndSettle();
+
+    final editTable = find.text('Edit Table').first;
+    await tester.ensureVisible(editTable);
+    await tester.tap(editTable);
+    await tester.pumpAndSettle();
+
+    // The dialog title and its action label may both be visible.
+    expect(find.text('Edit Table'), findsNWidgets(2));
+    expect(find.text('Insert Above'), findsOneWidget);
+    expect(find.text('Insert Left'), findsOneWidget);
+    final renderException = tester.takeException();
+    expect(
+      renderException,
+      isNull,
+      reason: flutterErrors.map((details) => details.toString()).join('\n'),
+    );
   });
 
   testWidgets('Writer ribbon follows Bangla and English app language', (tester) async {
@@ -139,6 +256,11 @@ void main() {
     // The editor also has a compact bottom zoom slider; both controls are valid.
     expect(find.byType(Slider), findsAtLeastNWidgets(1));
     expect(find.byType(InteractiveViewer), findsOneWidget);
+    expect(
+      tester.widget<InteractiveViewer>(find.byType(InteractiveViewer)).panEnabled,
+      isTrue,
+      reason: 'The page canvas must support drag panning as well as pinch zoom.',
+    );
 
     await tester.tap(pageWidthLabel);
     await tester.pumpAndSettle();
@@ -232,6 +354,20 @@ void main() {
     expect(slider.value, closeTo(1.0, 0.001));
   });
 
+  testWidgets('new Writer documents persist Full Page as their initial view', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: true)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('নতুন ডকুমেন্ট'));
+    await tester.pumpAndSettle();
+
+    final preferences = await SharedPreferences.getInstance();
+    final savedDocuments = preferences.getString('offynex_writer_documents');
+    expect(savedDocuments, isNotNull);
+    expect(savedDocuments, contains('"viewFit":"Page"'));
+    expect(savedDocuments, contains('"viewFitVersion":2'));
+  });
+
   testWidgets('Writer opens with page width filling the mobile editor viewport', (tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.binding.setSurfaceSize(const Size(600, 1200));
@@ -291,5 +427,30 @@ void main() {
         reason: 'Duplicate Home option detected for $icon',
       );
     }
+  });
+
+  testWidgets('Writer document body receives tap focus for Android text input', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.binding.setSurfaceSize(const Size(400, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(_writerTestApp(const WriterScreen(isBangla: true)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('নতুন ডকুমেন্ট'));
+    await tester.pumpAndSettle();
+
+    final editor = find.byType(QuillEditor);
+    expect(editor, findsOneWidget);
+    await tester.ensureVisible(editor);
+    await tester.tapAt(tester.getCenter(editor));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final quillEditor = tester.widget<QuillEditor>(editor);
+    expect(
+      quillEditor.focusNode.hasFocus,
+      isTrue,
+      reason: 'Tapping the Writer document body must focus the Quill editor so Android can show the soft keyboard.',
+    );
   });
 }
