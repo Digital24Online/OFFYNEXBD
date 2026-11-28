@@ -37,7 +37,7 @@ wait_for_android_services
 
 for attempt in 1 2 3; do
   echo "Writer keyboard integration attempt $attempt/3"
-    # Run integration_test directly. flutter drive adds a second Flutter Driver
+  # Run integration_test directly. flutter drive adds a second Flutter Driver
   # service connection; on slow TCG emulators that service was disappearing
   # and leaving ADB offline.
   if timeout --signal=TERM --kill-after=30s 20m flutter test integration_test/writer_keyboard_test.dart -d emulator-5554 2>&1 | tee "$log_file"; then
